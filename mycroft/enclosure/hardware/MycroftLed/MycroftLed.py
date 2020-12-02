@@ -57,7 +57,9 @@ class MycroftLed:
     def set_leds(self, leds):
         """updates buffer from leds and update hardware
            Arguments:
+
             leds [(of tuples),()]: the RGB color as a three integer Tuple
+        """
         return
 
     @abc.abstractmethod

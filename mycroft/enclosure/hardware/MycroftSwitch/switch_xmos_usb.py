@@ -19,7 +19,8 @@ from mycroft.enclosure.hardware.MycroftSwitch.MycroftSwitch import MycroftSwitch
 
 class Switch(MycroftSwitch):
     sleep_time = 0.2
-    sudo_cmd = "sudo"
+    #sudo_cmd = "sudo"
+    sudo_cmd = ""
     gpi_read_cmd = "GET_GPI_PORT"
     vfctrl_cmd = "/home/pi/mycroft-core/mycroft/enclosure/hardware/util/vfctrl_usb"
 

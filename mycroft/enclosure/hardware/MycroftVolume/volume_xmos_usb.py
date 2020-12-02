@@ -22,7 +22,8 @@ class Volume(MycroftVolume):
     max_vol = 60
     vol_inc = (max_vol - min_vol) / 10 
     fifty_two_zeros = "0 " * 52
-    vfctrl_cmd = "sudo "      # remove when udev rule fixed
+    #vfctrl_cmd = "sudo "      # remove when udev rule fixed
+    vfctrl_cmd = ""      # remove when udev rule fixed
     vfctrl_cmd += "~/mycroft-core/mycroft/enclosure/hardware/util/vfctrl_usb SET_I2C_WITH_REG"
 
     def __init__(self):

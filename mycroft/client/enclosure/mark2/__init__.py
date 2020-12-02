@@ -21,3 +21,6 @@ class EnclosureMark2(Enclosure):
         super().__init__()
 
         # TODO: Any Mark II specific startup actions
+
+    def terminate(self):
+        pass

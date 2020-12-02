@@ -47,7 +47,8 @@ class Led(MycroftLed):
         # send i2c command via usb to xmos chip.
         # xmos usb i2c commands always take the same number
         # of arguments
-        cmd = "sudo"  # when udev rule is fixed remove this
+        #cmd = "sudo"  # when udev rule is fixed remove this
+        cmd = ""  # when udev rule is fixed remove this
         cmd += " %s SET_I2C_WITH_REG " % (self.vfctrl,)
         cmd += "%d %d %d %d %d %d %s" % (
                 self.device_addr,
