@@ -18,13 +18,14 @@ import time
 from mycroft.util import create_signal
 import RPi.GPIO as GPIO
 import os
-
+from mycroft.util.log import LOG
 
 
 class HardwareEnclosure:
     mute_led = 11    # last led is reserved for mute mic switch
 
     def __init__(self, enclosure_type, board_type=None):
+        LOG.debug("Mark2 Starting HardwareEnclosure()")
         self.enclosure_type = enclosure_type
         self.board_type = board_type
 
@@ -77,21 +78,31 @@ class HardwareEnclosure:
         self.watchdog = None
         self.watchdog_timeout = 5
 
+        LOG.debug("Mark2 HardwareEnclosure() initialized")
 
 
     # BUG FIX temp fix for faulty hardware
     def reset_xmos(self):
+        LOG.error("Start Reset Hardware ...")
+        LOG.error("Stopping services ...")
         os.system("~/mycroft-core/stop-mycroft.sh voice")
         os.system("~/mycroft-core/stop-mycroft.sh audio")
+        LOG.error("LEDs Red ...")
         self.leds.fill( self.palette.RED )
-        time.sleep(30)
+        time.sleep(1)
+        LOG.error("Reset Hardware ...")
         self.switches.reset_hardware()
+        LOG.error("Sleep after Hardware Reset ...")
         time.sleep(20)
+        LOG.error("Start audio svc ...")
         os.system("~/mycroft-core/start-mycroft.sh audio")
-        time.sleep(15)
+        time.sleep(10)
+        LOG.error("Start voice svc ...")
         os.system("~/mycroft-core/start-mycroft.sh voice")
+        time.sleep(1)
         os.system("aplay ~/mycroft-core/mycroft/res/snd/start_listening.wav")
         self.leds.fill( self.palette.BLACK )
+        LOG.error("Stop Reset Hardware ...")
 
 
     def get_capabilities(self):

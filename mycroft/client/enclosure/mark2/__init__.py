@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+from .interface import EnclosureMark2
+"""
 from mycroft.client.enclosure.base import Enclosure
 
 
@@ -24,3 +26,4 @@ class EnclosureMark2(Enclosure):
 
     def terminate(self):
         pass
+"""
