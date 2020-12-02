@@ -13,17 +13,3 @@
 # limitations under the License.
 #
 from .interface import EnclosureMark2
-"""
-from mycroft.client.enclosure.base import Enclosure
-
-
-class EnclosureMark2(Enclosure):
-
-    def __init__(self):
-        super().__init__()
-
-        # TODO: Any Mark II specific startup actions
-
-    def terminate(self):
-        pass
-"""
