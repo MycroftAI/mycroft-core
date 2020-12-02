@@ -83,6 +83,7 @@ def main(ready_hook=on_ready, error_hook=on_error, stopping_hook=on_stopping):
             create_daemon(enclosure.run)
             ready_hook()
             wait_for_exit_signal()
+            enclosure.terminate()
             stopping_hook()
         except Exception as e:
             print(e)
