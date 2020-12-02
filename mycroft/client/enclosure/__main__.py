@@ -78,11 +78,12 @@ def main(ready_hook=on_ready, error_hook=on_error, stopping_hook=on_stopping):
     enclosure = create_enclosure(platform)
     if enclosure:
         try:
-            LOG.debug("Enclosure started!")
+            LOG.info("__main__().py Client Enclosure started!")
             reset_sigint_handler()
             create_daemon(enclosure.run)
             ready_hook()
             wait_for_exit_signal()
+            enclosure.terminate()
             stopping_hook()
         except Exception as e:
             print(e)
