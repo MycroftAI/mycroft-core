@@ -14,11 +14,11 @@
 
 import abc
 
-# abstract base class for a Mycroft Volume
-# all volume classes must provide at least 
-# these basic methods
 
-class MycroftVolume(object):
+class MycroftVolume:
+    """ abstract base class for a Mycroft Volume
+     all volume classes must provide at least 
+     these basic methods """
     __metaclass__ = abc.ABCMeta
 
     @abc.abstractmethod

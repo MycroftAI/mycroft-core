@@ -29,7 +29,7 @@ def clip(val, minimum, maximum):
     """
     return min(max(val, minimum), maximum)
 
-class Volume:
+class Volume(MycroftVolume):
     def __init__(self):
         self.volume = 0.5
         self.capabilities = {

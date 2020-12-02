@@ -118,7 +118,6 @@ class Switch:
 
     def handle_mute(self, channel):
         self.SW_MUTE = GPIO.input(self._SW_MUTE)
-        print("Inside handle hardware mute = %s" % (self.SW_MUTE))
         if self.user_mute_handler is not None:
             self.user_mute_handler(self.SW_MUTE)
 

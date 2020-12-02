@@ -47,12 +47,6 @@ class Led:
 
         process = Popen(cmd, shell=True)
 
-    def get_led_capabilities(self):
-        return {
-            "num_leds":self.num_leds, 
-            "led_type":"RGB",
-            "led_colors":"MycroftPalette"
-            }
 
     def fill(self, color):
         """ set all leds to the same color """

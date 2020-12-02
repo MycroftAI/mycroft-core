@@ -98,7 +98,8 @@ class Switch(MycroftSwitch):
             err = err.decode('utf-8')
 
             if err is not None and err != '':
-                print("Creepy Internal Error #001! %s" % (err,))
+                #print("Creepy Internal Error #001! %s" % (err,))
+                pass
 
             port_val = int( out.replace("GET_GPI_PORT: ", "") )
 

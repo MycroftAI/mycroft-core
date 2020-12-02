@@ -39,20 +39,23 @@ class Led(MycroftLed):
     def get_capabilities(self):
         return self.capabilities
 
-    def _set_led(self,pixel,colors):
+    def _set_led(self, pixel, color):
         """physically set the led and update its shadow"""
         if pixel < self.num_leds:
-            self.shadow_leds[pixel] = colors
+            self.shadow_leds[pixel] = color
 
+        # send i2c command via usb to xmos chip.
+        # xmos usb i2c commands always take the same number
+        # of arguments
         cmd = "sudo"  # when udev rule is fixed remove this
         cmd += " %s SET_I2C_WITH_REG " % (self.vfctrl,)
         cmd += "%d %d %d %d %d %d %s" % (
                 self.device_addr,
                 pixel,
                 self.num_bytes,
-                colors[0],
-                colors[1],
-                colors[2],
+                color[0],
+                color[1],
+                color[2],
                 self.fifty_zeros
                 )
         os.system(cmd)
@@ -68,11 +71,11 @@ class Led(MycroftLed):
         """show buffered leds"""
         self._show(self.buffered_leds)
 
-    def set_led(self, pixel, color_tuple, immediate):
+    def set_led(self, pixel, color, immediate):
         """set led, maybe immediately"""
-        self.buffered_leds[pixel] = color_tuple
+        self.buffered_leds[pixel] = color
         if immediate and self.buffered_leds[pixel] != self.shadow_leds[pixel]:
-            self._set_led(pixel, color_tuple)
+            self._set_led(pixel, color)
 
     def fill(self, color):
         """fill all leds with the same color"""

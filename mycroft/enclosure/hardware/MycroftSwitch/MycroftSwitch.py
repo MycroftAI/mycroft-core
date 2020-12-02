@@ -14,10 +14,10 @@
 
 import abc
 
-# abstract base class for a Mycroft Switch Array
-# all switches must provide at least these basic methods
 
-class MycroftSwitch(object):
+class MycroftSwitch:
+    """ abstract base class for a Mycroft Switch Array
+     all switches must provide at least these basic methods """
     __metaclass__ = abc.ABCMeta
 
     @abc.abstractmethod
