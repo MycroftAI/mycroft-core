@@ -26,7 +26,7 @@ class Led(MycroftLed):
     num_bytes = 4
     fifty_zeros = "0 " * 50
     black = (0, 0, 0)
-    vfctrl = "/opt/mycroft/mycroft/enclosure/hardware/util/vfctrl_usb"
+    vfctrl = "/home/mycroft/mycroft-core/mycroft/enclosure/hardware/util/vfctrl_usb"
 
     def __init__(self):
         self.shadow_leds = list((self.black,) * self.num_leds)

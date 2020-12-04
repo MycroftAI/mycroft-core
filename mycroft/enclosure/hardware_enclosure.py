@@ -86,8 +86,8 @@ class HardwareEnclosure:
     def reset_xmos(self):
         LOG.error("Mark2 Start Reset Hardware ...")
         LOG.error("Mark2 Stopping services ...")
-        os.system("/opt/mycroft/stop-mycroft.sh voice")
-        os.system("/opt/mycroft/stop-mycroft.sh audio")
+        os.system("/home/mycroft/mycroft-core/stop-mycroft.sh voice")
+        os.system("/home/mycroft/mycroft-core/stop-mycroft.sh audio")
         LOG.error("Mark2 LEDs Red ...")
         self.leds.fill(self.palette.RED)
         time.sleep(5)
@@ -96,13 +96,13 @@ class HardwareEnclosure:
         LOG.error("Mark2 Sleep after Hardware Reset ...")
         time.sleep(15)
         LOG.error("Mark2 Start audio svc ...")
-        os.system("/opt/mycroft/start-mycroft.sh audio")
+        os.system("/home/mycroft/mycroft-core/start-mycroft.sh audio")
         time.sleep(10)
         LOG.error("Mark2 Start voice svc ...")
-        os.system("/opt/mycroft/start-mycroft.sh voice")
+        os.system("/home/mycroft/mycroft-core/start-mycroft.sh voice")
         time.sleep(3)
         self.leds.fill(self.palette.BLACK)
-        os.system("aplay /opt/mycroft/mycroft/res/snd/start_listening.wav")
+        os.system("aplay /home/mycroft/mycroft-core/mycroft/res/snd/start_listening.wav")
         LOG.error("Mark2 Completed Reset Hardware ...")
 
     def get_capabilities(self):

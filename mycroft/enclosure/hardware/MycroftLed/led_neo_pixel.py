@@ -36,7 +36,7 @@ class Led:
 
     def _update_leds(self):
         cmd = "sudo "
-        cmd += "/opt/mycroft/mycroft/enclosure/hardware/util/"
+        cmd += "/home/mycroft/mycroft-core/mycroft/enclosure/hardware/util/"
         cmd += "neo_pixel_set_leds.py "
 
         cmd += " ".join(map(str, [item for sublist in self.leds for item in sublist]))
