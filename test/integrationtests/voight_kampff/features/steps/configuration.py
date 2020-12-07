@@ -21,6 +21,19 @@ from mycroft.messagebus import Message
 from mycroft.util import resolve_resource_file
 
 
+def reset_config(context):
+    """Cleanup callback to reset patched configuration
+
+    Arguments:
+        context (Context): Behave context of current scenario
+    """
+    context.log.info('Resetting patched configuration...')
+    context.bus.emit(Message('configuration.patch.clear'))
+    key = list(context.original_config)[0]
+    while context.config[key] != context.original_config[key]:
+        time.sleep(0.5)
+
+
 def patch_config(context, patch):
     """Apply patch to config and wait for it to take effect.
 
@@ -28,6 +41,11 @@ def patch_config(context, patch):
         context: Behave context for test
         patch: patch to apply
     """
+    context.log.info('Patching config with {}'.format(patch))
+    # If this is first patch in scenario
+    if not hasattr(context, 'original_config'):
+        context.original_config = {}
+
     # store originals in context
     for key in patch:
         # If this patch is redefining an already changed key don't update
@@ -37,6 +55,8 @@ def patch_config(context, patch):
     # Patch config
     patch_config_msg = Message('configuration.patch', {'config': patch})
     context.bus.emit(patch_config_msg)
+
+    context.add_cleanup(reset_config, context)
 
     # Wait until one of the keys has been updated
     key = list(patch.keys())[0]

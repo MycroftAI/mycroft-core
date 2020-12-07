@@ -42,15 +42,22 @@ extensions = [
     'sphinx.ext.githubpages',
     'sphinx.ext.napoleon'
 ]
+req_path = os.path.join(os.path.dirname(os.path.dirname(
+    os.path.realpath(__file__))), 'requirements', 'requirements.txt')
 
+# To easily run sphinx without additional installation autodoc_mock_imports
+# sets modules to mock.
+
+# Step 1: Pull module names to mock from requirements
 # Assuming package name is the same as the module name
-with open(os.path.join(os.path.dirname(os.path.dirname(
-        os.path.realpath(__file__))), 'requirements.txt')) as f:
+with open(req_path) as f:
     autodoc_mock_imports = map(str.strip, re.findall(r'^\s*[a-zA-Z_]*',
                                f.read().lower().replace('-', '_'),
                                flags=re.MULTILINE))
 
-# Dependencies with different module names
+# Step 2: Add custom names
+# Not all module names match the package name (as stated in requirements.txt)
+# this adds the modules whose names don't match the package name.
 autodoc_mock_imports = list(autodoc_mock_imports) + [
     'adapt',
     'alsaaudio',
@@ -58,7 +65,9 @@ autodoc_mock_imports = list(autodoc_mock_imports) + [
     'past',
     'serial',
     'websocket',
-    'speech_recognition'
+    'speech_recognition',
+    'xdg',
+    'yaml'
 ]
 
 templates_path = ['_templates']

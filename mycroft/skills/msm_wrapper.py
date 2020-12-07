@@ -86,6 +86,11 @@ def create_msm(msm_config: MsmConfig) -> MycroftSkillsManager:
     especially during the boot sequence when this function is called multiple
     times.
     """
+    if msm_config.repo_url != "https://github.com/MycroftAI/mycroft-skills":
+        LOG.warning("You have enabled a third-party skill store.\n"
+                    "Unable to guarantee the safety of skills from "
+                    "sources other than the Mycroft Marketplace.\n"
+                    "Proceed with caution.")
     msm_lock = _init_msm_lock()
     LOG.info('Acquiring lock to instantiate MSM')
     with msm_lock:

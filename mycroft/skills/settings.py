@@ -61,6 +61,8 @@ import re
 from pathlib import Path
 from threading import Timer
 
+import yaml
+
 from mycroft.api import DeviceApi, is_paired
 from mycroft.configuration import Configuration
 from mycroft.messagebus.message import Message
@@ -137,6 +139,12 @@ class SettingsMetaUploader:
         self.settings_meta = {}
         self.api = None
         self.upload_timer = None
+        self.sync_enabled = self.config["server"].get("sync_skill_settings",
+                                                      False)
+        if not self.sync_enabled:
+            LOG.info("Skill settings sync is disabled, settingsmeta will "
+                     "not be uploaded")
+
         self._stopped = None
 
         # Property placeholders
@@ -216,6 +224,8 @@ class SettingsMetaUploader:
         The settingsmeta file does not change often, if at all.  Only perform
         the upload if a change in the file is detected.
         """
+        if not self.sync_enabled:
+            return
         synced = False
         if is_paired():
             self.api = DeviceApi()
@@ -249,8 +259,6 @@ class SettingsMetaUploader:
 
     def _load_settings_meta_file(self):
         """Read the contents of the settingsmeta file into memory."""
-        # Imported here do handle issue with readthedocs build
-        import yaml
         _, ext = os.path.splitext(str(self.settings_meta_path))
         is_json_file = self.settings_meta_path.suffix == ".json"
         try:
@@ -315,6 +323,11 @@ class SkillSettingsDownloader:
         self.remote_settings = None
         self.api = DeviceApi()
         self.download_timer = None
+        self.sync_enabled = Configuration.get()["server"]\
+            .get("sync_skill_settings", False)
+        if not self.sync_enabled:
+            LOG.info("Skill settings sync is disabled, backend settings will "
+                     "not be downloaded")
 
     def stop_downloading(self):
         """Stop synchronizing backend and core."""
@@ -323,8 +336,13 @@ class SkillSettingsDownloader:
             self.download_timer.cancel()
 
     # TODO: implement as websocket
-    def download(self):
-        """Download the settings stored on the backend and check for changes"""
+    def download(self, message=None):
+        """Download the settings stored on the backend and check for changes
+
+        When used as a messagebus handler a message is passed but not used.
+        """
+        if not self.sync_enabled:
+            return
         if is_paired():
             remote_settings = self._get_remote_settings()
             if remote_settings:

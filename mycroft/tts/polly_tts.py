@@ -34,6 +34,7 @@ class PollyTTS(TTS):
         self.key_id = self.config.get("access_key_id", '')
         self.key = self.config.get("secret_access_key", '')
         self.region = self.config.get("region", 'us-east-1')
+        self.engine = self.config.get("engine", "standard")
         self.polly = boto3.Session(aws_access_key_id=self.key_id,
                                    aws_secret_access_key=self.key,
                                    region_name=self.region).client('polly')
@@ -49,7 +50,8 @@ class PollyTTS(TTS):
             OutputFormat=self.audio_ext,
             Text=sentence,
             TextType=text_type,
-            VoiceId=self.voice)
+            VoiceId=self.voice,
+            Engine=self.engine)
 
         with open(wav_file, 'wb') as f:
             f.write(response['AudioStream'].read())

@@ -301,6 +301,7 @@ class SkillManager(Thread):
             load_status = skill_loader.load()
         except Exception:
             LOG.exception('Load of skill {} failed!'.format(skill_directory))
+            load_status = False
         finally:
             self.skill_loaders[skill_directory] = skill_loader
 
