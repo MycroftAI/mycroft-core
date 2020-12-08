@@ -23,7 +23,7 @@ class Switch(MycroftSwitch):
     # sudo_cmd = "sudo"
     sudo_cmd = ""
     gpi_read_cmd = "GET_GPI_PORT"
-    vfctrl_cmd = "/opt/mycroft/mycroft/enclosure/hardware/util/vfctrl_usb"
+    vfctrl_cmd = "vfctrl_usb"
 
     # low nibble is ip_0 thru 3.
     # hi bit is mute mic, then down, up and action
