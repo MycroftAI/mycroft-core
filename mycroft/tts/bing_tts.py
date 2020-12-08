@@ -61,11 +61,10 @@ class BingTTS(TTS):
             "User-Agent": "mycroft.ai open-source voice assistant"
         }
         lang = self.voice[0:4]
-        xml = """
-            <speak version='1.0' xml:lang='{}'><voice name='{}'>
-            {}
-            </voice></speak>
-        """.format(lang, self.voice, sentence)
+        xml = "<speak version='1.0' xml:lang='{}'>"
+        "<voice name='{}'>"
+        "{}"
+        "</voice></speak>".format(lang, self.voice, sentence)
         response = requests.post(tts_service_url, data=xml.encode("utf-8"), headers=headers)
         if response.status_code != 200:
             LOG.error("BingTTS speech request failed with error code {}".format(response.status_code))
