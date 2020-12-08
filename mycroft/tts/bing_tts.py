@@ -92,11 +92,13 @@ class BingTTSValidator(TTSValidator):
     def validate_connection(self):
         try:
             if not self.tts._get_token():
-                raise Exception("BingTTS access token could not be retrieved. Please check your credentials")
+                raise Exception(
+                    "BingTTS access token could not be retrieved. "
+                    "Please check your credentials and internet connection.")
         except TypeError:
             raise Exception(
                 'BingTTS server could not be verified. Please check your '
-                'internet connection.')
+                'credentials and internet connection.')
 
     def get_tts_class(self):
         return BingTTS
