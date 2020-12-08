@@ -522,7 +522,8 @@ fi
 # install optional python modules
 if [[ ! $(pip install -r requirements/extra-audiobackend.txt) ||
 	! $(pip install -r requirements/extra-stt.txt) ||
-	! $(pip install -r requirements/extra-mark1.txt) ]] ; then
+	! $(pip install -r requirements/extra-mark1.txt) ||
+	! $(pip install -r requirements/extra-mark2.txt) ]] ; then
     echo 'Warning: Failed to install some optional dependencies. Continue? y/N'
     read -n1 continue
     if [[ $continue != 'y' ]] ; then

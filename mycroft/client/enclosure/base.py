@@ -128,7 +128,6 @@ class Enclosure:
 
     def send(self, msg_dict):
         """ Send to all registered GUIs. """
-        LOG.info('SENDING...')
         for connection in GUIWebsocketHandler.clients:
             try:
                 connection.send(msg_dict)
@@ -564,7 +563,7 @@ class GUIWebsocketHandler(WebSocketHandler):
             data (dict): Data to transmit
         """
         s = json.dumps(data)
-        LOG.info('Sending {}'.format(s))
+        #LOG.info('Sending {}'.format(s))
         self.write_message(s)
 
     def check_origin(self, origin):
