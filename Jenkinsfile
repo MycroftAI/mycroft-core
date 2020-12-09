@@ -102,7 +102,7 @@ pipeline {
                     }
                     unarchive mapping:['allure-report.zip': 'allure-report.zip']
                     sh 'zip mycroft-logs.zip -r $HOME/core/$BRANCH_ALIAS/mycroft-logs'
-                    sh 'rm -r $HOME/core/$BRANCH_ALIAS/mycroft-logs'
+                    sh 'rm -rf $HOME/core/$BRANCH_ALIAS/mycroft-logs'
                     // This directory should now be empty, rmdir will intentionally fail if not.
                     sh 'rmdir $HOME/core/$BRANCH_ALIAS'
                     sh (
