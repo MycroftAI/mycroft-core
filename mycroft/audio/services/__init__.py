@@ -12,132 +12,129 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+"""Definition of the audio service backends base classes.
+
+These classes can be used to create an Audioservice plugin extending
+Mycroft's media playback options.
+"""
 from abc import ABCMeta, abstractmethod
 
 
 class AudioBackend(metaclass=ABCMeta):
-    """
-        Base class for all audio backend implementations.
+    """Base class for all audio backend implementations.
 
-        Args:
-            config: configuration dict for the instance
-            bus:    Mycroft messagebus emitter
+    Arguments:
+        config (dict): configuration dict for the instance
+        bus (MessageBusClient): Mycroft messagebus emitter
     """
 
     def __init__(self, config, bus):
         self._track_start_callback = None
         self.supports_mime_hints = False
+        self.config = config
+        self.bus = bus
 
     @abstractmethod
     def supported_uris(self):
+        """List of supported uri types.
+
+        Returns:
+            list: Supported uri's
         """
-            Returns: list of supported uri types.
-        """
-        pass
 
     @abstractmethod
     def clear_list(self):
-        """
-            Clear playlist
-        """
-        pass
+        """Clear playlist."""
 
     @abstractmethod
     def add_list(self, tracks):
-        """
-            Add tracks to backend's playlist.
+        """Add tracks to backend's playlist.
 
-            Args:
-                tracks: list of tracks.
+        Arguments:
+            tracks (list): list of tracks.
         """
-        pass
 
     @abstractmethod
     def play(self, repeat=False):
-        """
-            Start playback.
+        """Start playback.
 
-            Args:
-                repeat: Repeat playlist, defaults to False
+        Starts playing the first track in the playlist and will contiune
+        until all tracks have been played.
+
+        Arguments:
+            repeat (bool): Repeat playlist, defaults to False
         """
-        pass
 
     @abstractmethod
     def stop(self):
-        """
-            Stop playback.
+        """Stop playback.
 
-            Returns: (bool) True if playback was stopped, otherwise False
+        Stops the current playback.
+
+        Returns:
+            bool: True if playback was stopped, otherwise False
         """
-        pass
 
     def set_track_start_callback(self, callback_func):
-        """
-            Register callback on track start, should be called as each track
-            in a playlist is started.
+        """Register callback on track start.
+
+        This method should be called as each track in a playlist is started.
         """
         self._track_start_callback = callback_func
 
     def pause(self):
+        """Pause playback.
+
+        Stops playback but may be resumed at the exact position the pause
+        occured.
         """
-            Pause playback.
-        """
-        pass
 
     def resume(self):
+        """Resume paused playback.
+
+        Resumes playback after being paused.
         """
-            Resume paused playback.
-        """
-        pass
 
     def next(self):
-        """
-            Skip to next track in playlist.
-        """
-        pass
+        """Skip to next track in playlist."""
 
     def previous(self):
-        """
-            Skip to previous track in playlist.
-        """
-        pass
+        """Skip to previous track in playlist."""
 
     def lower_volume(self):
+        """Lower volume.
+
+        This method is used to implement audio ducking. It will be called when
+        Mycroft is listening or speaking to make sure the media playing isn't
+        interfering.
         """
-            Lower volume.
-        """
-        pass
 
     def restore_volume(self):
+        """Restore normal volume.
+
+        Called when to restore the playback volume to previous level after
+        Mycroft has lowered it using lower_volume().
         """
-            Restore normal volume.
-        """
-        pass
 
     def seek_forward(self, seconds=1):
-        """
-            Skip X seconds
+        """Skip X seconds.
 
-            Args:
-                seconds (int): number of seconds to seek, if negative rewind
+        Arguments:
+            seconds (int): number of seconds to seek, if negative rewind
         """
-        pass
 
     def seek_backward(self, seconds=1):
-        """
-            Rewind X seconds
+        """Rewind X seconds.
 
-            Args:
-                seconds (int): number of seconds to seek, if negative rewind
+        Arguments:
+            seconds (int): number of seconds to seek, if negative jump forward.
         """
-        pass
 
     def track_info(self):
-        """
-            Fetch info about current playing track.
+        """Get info about current playing track.
 
-            Returns:
-                Dict with track info.
+        Returns:
+            dict: Track info containing atleast the keys artist and album.
         """
         ret = {}
         ret['artist'] = ''
@@ -145,13 +142,19 @@ class AudioBackend(metaclass=ABCMeta):
         return ret
 
     def shutdown(self):
-        """ Perform clean shutdown """
+        """Perform clean shutdown.
+
+        Implements any audio backend specific shutdown procedures.
+        """
         self.stop()
 
 
 class RemoteAudioBackend(AudioBackend):
-    """ Base class for remote audio backends.
+    """Base class for remote audio backends.
 
-        These may be things like Chromecasts, mopidy servers, etc.
+    RemoteAudioBackends will always be checked after the normal
+    AudioBackends to make playback start locally by default.
+
+    An example of a RemoteAudioBackend would be things like Chromecasts,
+    mopidy servers, etc.
     """
-    pass

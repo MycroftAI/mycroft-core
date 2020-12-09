@@ -19,7 +19,7 @@ from adapt.intent import IntentBuilder
 from mycroft.configuration import Configuration
 from mycroft.messagebus import Message
 from mycroft.skills.intent_service import (ContextManager, IntentService,
-                                           _get_message_lang)
+                                           _get_message_lang, AdaptIntent)
 
 from test.util import base_config
 
@@ -327,3 +327,14 @@ class TestIntentServiceApi(TestCase):
         self.intent_service.handle_get_adapt(msg)
         reply = get_last_message(self.intent_service.bus)
         self.assertEqual(reply.data['intent'], None)
+
+
+class TestAdaptIntent(TestCase):
+    """Test the AdaptIntent wrapper."""
+    def test_named_intent(self):
+        intent = AdaptIntent("CallEaglesIntent")
+        self.assertEqual(intent.name, "CallEaglesIntent")
+
+    def test_unnamed_intent(self):
+        intent = AdaptIntent()
+        self.assertEqual(intent.name, "")
