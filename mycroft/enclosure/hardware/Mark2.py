@@ -16,6 +16,12 @@
 
 class Capabilities():
     capabilities = {
+            "sj201r4":{
+                     "Led":{"name":"led_sj201r4", "type":"MycroftLed"},
+                     "Switch":{"name":"switch_gpio", "type":"MycroftSwitch"},
+                     "Volume":{"name":"volume_sj201r4", "type":"MycroftVolume"},
+                     "Palette":{"name":"default_palette", "type":"MycroftPalette"}
+                },
             "xmos_all":{
                      "Led":{"name":"led_xmos_usb", "type":"MycroftLed"},
                      "Switch":{"name":"switch_xmos_usb", "type":"MycroftSwitch"},
@@ -43,4 +49,5 @@ class Capabilities():
         }
     #board_type = "xmos_all"
     #board_type = "i2c_volume_gpio_switches_neo_pixel_leds"
-    board_type = "xmos_volume_gpio_switches_xmos_leds"
+    #board_type = "xmos_volume_gpio_switches_xmos_leds"
+    board_type = "sj201r4"

@@ -14,6 +14,7 @@
 
 import RPi.GPIO as GPIO
 import time
+from mycroft.util.log import LOG
  
 class Switch:
     """
@@ -27,30 +28,54 @@ class Switch:
     pulled up so the active state is actually zero.
     """
     # GPIO pin numbers
+    """ old sj201 mappings 
     _SW_ACTION = 22
     _SW_VOL_UP = 23
     _SW_VOL_DOWN = 24 
     _SW_MUTE = 25
+    """
+    # sj201Rev4
+    _SW_VOL_DOWN = 22
+    _SW_VOL_UP = 23
+    _SW_ACTION = 24
+    _SW_MUTE = 25
+
+    _XMOS_POWER = 16  # Enable1V
+    _XMOS_RESET = 27  # Reset XMOS
 
     def __init__(self, debounce=100):
         self.debounce = debounce
         self.active = 0
+
         # some switch implementations require a thread
         # we don't but we must meet the base requirement
         self.thread_handle = None
 
-        # use BCM GPIO numbering
-        GPIO.setmode(GPIO.BCM)
+        self.capabilities = {
+                "user_volup_handler":"button",
+                "user_voldown_handler":"button",
+                "user_action_handler":"button",
+                "user_mute_handler":"slider"
+                }
 
-        # BUG FIX - remove once sj201 boards are fixed
-        power_pin = 13
-        GPIO.setup(power_pin, GPIO.OUT)
+        # use BCM GPIO pin numbering
+        GPIO.setmode(GPIO.BCM)
+        GPIO.setwarnings(False)
+
+        """
+        # xmos related
+        GPIO.setup(self._XMOS_POWER, GPIO.OUT)
+        GPIO.setup(self._XMOS_RESET, GPIO.OUT)
+
+        # power up the xmos 
+        self.reset_xmos()
+        """
 
         # we need to pull up the 3 buttons
         GPIO.setup(self._SW_ACTION, GPIO.IN, pull_up_down=GPIO.PUD_UP)
         GPIO.setup(self._SW_VOL_UP, GPIO.IN, pull_up_down=GPIO.PUD_UP)
         GPIO.setup(self._SW_VOL_DOWN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-        GPIO.setup(self._SW_MUTE, GPIO.IN)
+        GPIO.setup(self._SW_MUTE, GPIO.IN)   # not sure about the slider
 
         # establish default values
         self.SW_ACTION = GPIO.input(self._SW_ACTION)
@@ -85,48 +110,48 @@ class Switch:
             callback=self.mute_handler, 
             bouncetime=debounce)
 
-        # user must set these
+        # user overides
         self.user_voldown_handler = None
         self.user_volup_handler = None
         self.user_action_handler = None
         self.user_mute_handler = None
-
-        self.capabilities = {
-                    "user_volup_handler":"button",
-                    "user_voldown_handler":"button",
-                    "user_action_handler":"button",
-                    "user_mute_handler":"slider"
-                }
 
     def get_capabilities(self):
         return self.capabilities
 
     def handle_action(self, channel):
         self.SW_ACTION = GPIO.input(self._SW_ACTION)
-        if self.user_action_handler is not None and self.SW_ACTION == self.active:
-            self.user_action_handler()
+        if self.SW_ACTION == self.active:
+            if self.user_action_handler is not None:
+                self.user_action_handler()
 
     def handle_vol_up(self, channel):
         self.SW_VOL_UP = GPIO.input(self._SW_VOL_UP)
-        if self.user_volup_handler is not None and self.SW_VOL_UP == self.active:
-            self.user_volup_handler()
+        if self.SW_VOL_UP == self.active:
+            if self.user_volup_handler is not None:
+                self.user_volup_handler()
 
     def handle_vol_down(self, channel):
         self.SW_VOL_DOWN = GPIO.input(self._SW_VOL_DOWN)
-        if self.user_voldown_handler is not None and self.SW_VOL_DOWN == self.active:
-            self.user_voldown_handler()
+        if self.SW_VOL_DOWN == self.active:
+            if self.user_voldown_handler is not None:
+                self.user_voldown_handler()
 
     def handle_mute(self, channel):
         self.SW_MUTE = GPIO.input(self._SW_MUTE)
         if self.user_mute_handler is not None:
             self.user_mute_handler(self.SW_MUTE)
 
-    # BUG FIX remove once sj201 is fixed
-    def reset_hardware(self):
-        power_pin = 13
-        GPIO.output(power_pin, 0)
-        time.sleep(2.50)
-        GPIO.output(power_pin, 1)
+    # recycle xmos power
+    def reset_xmos(self):
+        GPIO.output(self._XMOS_RESET, 0)
+        time.sleep(0.001)
+        GPIO.output(self._XMOS_POWER, 0)
+        time.sleep(0.001)
+        GPIO.output(self._XMOS_POWER, 1)
+        time.sleep(0.001)
+        GPIO.output(self._XMOS_RESET, 1)
 
     def terminate(self):
-        pass
+        LOG.debug("switch_gpio: terminate hit, calling GPIO.cleanup()")
+        GPIO.cleanup()
