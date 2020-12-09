@@ -37,7 +37,9 @@ class BingTTS(TTS):
             LOG.debug("BingTTS token is still alive")
             return self.token
 
-        fetch_token_url = "https://{}.api.cognitive.microsoft.com/sts/v1.0/issueToken".format(self.service_region)
+        fetch_token_url = "https://{}.api.cognitive.microsoft.com".format(
+            self.service_region)
+        fetch_token_url += "/sts/v1.0/issueToken"
         headers = {
             'Ocp-Apim-Subscription-Key': self.subscription_key
         }
@@ -45,15 +47,22 @@ class BingTTS(TTS):
         if response.status_code == 200:
             self.token = str(response.text)
             self.token_ttl = int(time()) + (9 * 60)
-            LOG.debug("BingTTS get token success - new ttl: {}".format(self.token_ttl))
+            LOG.debug("BingTTS get token success - new ttl: {}".format(
+                self.token_ttl)
+            )
         else:
             self.token = None
             self.token_ttl = 0
-            LOG.error("BingTTS request token failed with error code: {}".format(response.status_code))
+            LOG.error(
+                "BingTTS request token failed with error code: {}".format(
+                    response.status_code)
+            )
         return self.token
 
     def get_tts(self, sentence, wav_file):
-        tts_service_url = "https://{}.tts.speech.microsoft.com/cognitiveservices/v1".format(self.service_region)
+        tts_service_url = "https://{}.tts.speech.microsoft.com".format(
+            self.service_region)
+        tts_service_url += "/cognitiveservices/v1"
         headers = {
             "Authorization": "Bearer {}".format(self._get_token()),
             "X-Microsoft-OutputFormat": self.format,
@@ -61,12 +70,24 @@ class BingTTS(TTS):
             "User-Agent": "mycroft.ai open-source voice assistant"
         }
         lang = self.voice[0:4]
-        xml = "<speak version='1.0' xml:lang='{}'><voice name='{}'>{}</voice></speak>".format(lang, self.voice, sentence)
-        response = requests.post(tts_service_url, data=xml.encode("utf-8"), headers=headers)
+        xml = """
+            <speak version='1.0' xml:lang='{}'>
+                <voice name='{}'>{}</voice>
+            </speak>
+        """.format(lang, self.voice, sentence)
+        response = requests.post(
+            tts_service_url,
+            data=xml.encode("utf-8"),
+            headers=headers
+        )
         if response.status_code != 200:
-            LOG.error("BingTTS speech request failed with error code {}".format(response.status_code))
+            LOG.error(
+                "BingTTS speech request failed with error code {}".format(
+                    response.status_code)
+            )
             return (None, None)
-        LOG.debug("BingTTS speech request success: {}".format(response.status_code))
+        LOG.debug("BingTTS speech request success: {}".format(
+            response.status_code))
         output = response.content
         with open(wav_file, "wb") as f:
             f.write(output)
