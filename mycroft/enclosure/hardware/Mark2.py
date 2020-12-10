@@ -12,42 +12,46 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Mark2 current capabilities
+from mycroft.configuration import Configuration
+from mycroft.util.log import LOG
 
-class Capabilities():
+
+class Capabilities:
+    """Mark II current capabilities"""
+
     capabilities = {
-            "sj201r4":{
-                     "Led":{"name":"led_sj201r4", "type":"MycroftLed"},
-                     "Switch":{"name":"switch_gpio", "type":"MycroftSwitch"},
-                     "Volume":{"name":"volume_sj201r4", "type":"MycroftVolume"},
-                     "Palette":{"name":"default_palette", "type":"MycroftPalette"}
-                },
-            "xmos_all":{
-                     "Led":{"name":"led_xmos_usb", "type":"MycroftLed"},
-                     "Switch":{"name":"switch_xmos_usb", "type":"MycroftSwitch"},
-                     "Volume":{"name":"volume_xmos_usb", "type":"MycroftVolume"},
-                     "Palette":{"name":"default_palette", "type":"MycroftPalette"}
-                },
-            "xmos_volume_gpio_switches_neo_pixel_leds":{
-                     "Led":{"name":"led_neo_pixel", "type":"MycroftLed"},
-                     "Switch":{"name":"switch_gpio", "type":"MycroftSwitch"},
-                     "Volume":{"name":"volume_xmos_usb", "type":"MycroftVolume"},
-                     "Palette":{"name":"default_palette", "type":"MycroftPalette"}
-                },
-            "i2c_volume_gpio_switches_neo_pixel_leds":{
-                     "Led":{"name":"led_neo_pixel", "type":"MycroftLed"},
-                     "Switch":{"name":"switch_gpio", "type":"MycroftSwitch"},
-                     "Volume":{"name":"volume_i2c", "type":"MycroftVolume"},
-                     "Palette":{"name":"default_palette", "type":"MycroftPalette"}
-                },
-            "xmos_volume_gpio_switches_xmos_leds":{
-                     "Led":{"name":"led_xmos_usb", "type":"MycroftLed"},
-                     "Switch":{"name":"switch_gpio", "type":"MycroftSwitch"},
-                     "Volume":{"name":"volume_xmos_usb", "type":"MycroftVolume"},
-                     "Palette":{"name":"default_palette", "type":"MycroftPalette"}
-                }
-        }
-    #board_type = "xmos_all"
-    #board_type = "i2c_volume_gpio_switches_neo_pixel_leds"
-    #board_type = "xmos_volume_gpio_switches_xmos_leds"
-    board_type = "sj201r4"
+        "sj201r4": {
+            "Led": {"name": "led_sj201r4", "type": "MycroftLed"},
+            "Switch": {"name": "switch_gpio", "type": "MycroftSwitch"},
+            "Volume": {"name": "volume_sj201r4", "type": "MycroftVolume"},
+            "Palette": {"name": "default_palette", "type": "MycroftPalette"},
+        },
+        "sj201r3": {
+            "Led": {"name": "led_xmos_usb", "type": "MycroftLed"},
+            "Switch": {"name": "switch_gpio", "type": "MycroftSwitch"},
+            "Volume": {"name": "volume_xmos_usb", "type": "MycroftVolume"},
+            "Palette": {"name": "default_palette", "type": "MycroftPalette"},
+        },
+        "xmos_all": {
+            "Led": {"name": "led_xmos_usb", "type": "MycroftLed"},
+            "Switch": {"name": "switch_xmos_usb", "type": "MycroftSwitch"},
+            "Volume": {"name": "volume_xmos_usb", "type": "MycroftVolume"},
+            "Palette": {"name": "default_palette", "type": "MycroftPalette"},
+        },
+        "xmos_volume_gpio_switches_neo_pixel_leds": {
+            "Led": {"name": "led_neo_pixel", "type": "MycroftLed"},
+            "Switch": {"name": "switch_gpio", "type": "MycroftSwitch"},
+            "Volume": {"name": "volume_xmos_usb", "type": "MycroftVolume"},
+            "Palette": {"name": "default_palette", "type": "MycroftPalette"},
+        },
+        "i2c_volume_gpio_switches_neo_pixel_leds": {
+            "Led": {"name": "led_neo_pixel", "type": "MycroftLed"},
+            "Switch": {"name": "switch_gpio", "type": "MycroftSwitch"},
+            "Volume": {"name": "volume_i2c", "type": "MycroftVolume"},
+            "Palette": {"name": "default_palette", "type": "MycroftPalette"},
+        },
+    }
+
+    config = Configuration.get()
+    board_type = config["enclosure"].get("board_type", "sj201r4")
+    LOG.info(f'Loading board_type: {board_type}')
