@@ -71,7 +71,7 @@ class Switch:
         GPIO.setup(self._XMOS_POWER, GPIO.OUT)
         GPIO.setup(self._XMOS_RESET, GPIO.OUT)
         """
-        if self.board_type == "sj201r3":
+        if "sj201" in self.board_type:
             # power up the xmos
             self.reset_xmos()
 
