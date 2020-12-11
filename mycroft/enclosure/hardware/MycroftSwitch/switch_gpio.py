@@ -62,14 +62,12 @@ class Switch:
         GPIO.setmode(GPIO.BCM)
         GPIO.setwarnings(False)
 
-        """
         # xmos related
         GPIO.setup(self._XMOS_POWER, GPIO.OUT)
         GPIO.setup(self._XMOS_RESET, GPIO.OUT)
 
         # power up the xmos 
         self.reset_xmos()
-        """
 
         # we need to pull up the 3 buttons
         GPIO.setup(self._SW_ACTION, GPIO.IN, pull_up_down=GPIO.PUD_UP)
