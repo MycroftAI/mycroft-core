@@ -62,12 +62,18 @@ class Switch:
         GPIO.setmode(GPIO.BCM)
         GPIO.setwarnings(False)
 
+        """
         # xmos related
         GPIO.setup(self._XMOS_POWER, GPIO.OUT)
         GPIO.setup(self._XMOS_RESET, GPIO.OUT)
 
         # power up the xmos 
         #self.reset_xmos()
+        time.sleep(0.001)
+        GPIO.output(self._XMOS_POWER, 1)
+        time.sleep(0.001)
+        GPIO.output(self._XMOS_RESET, 1)
+        """
 
         # we need to pull up the 3 buttons
         GPIO.setup(self._SW_ACTION, GPIO.IN, pull_up_down=GPIO.PUD_UP)
@@ -142,6 +148,8 @@ class Switch:
 
     # recycle xmos power
     def reset_xmos(self):
+        LOG.info("switch_gpio: reset_xmos() hit")
+        """
         GPIO.output(self._XMOS_RESET, 0)
         time.sleep(0.001)
         GPIO.output(self._XMOS_POWER, 0)
@@ -149,7 +157,8 @@ class Switch:
         GPIO.output(self._XMOS_POWER, 1)
         time.sleep(0.001)
         GPIO.output(self._XMOS_RESET, 1)
+        """
 
     def terminate(self):
-        LOG.debug("switch_gpio: terminate hit, calling GPIO.cleanup()")
-        GPIO.cleanup()
+        LOG.info("switch_gpio: terminate hit, calling GPIO.cleanup()")
+        #GPIO.cleanup()
