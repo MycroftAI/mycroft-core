@@ -355,7 +355,10 @@ class SnowboyHotWord(HotWordEngine):
 
 
 class PorcupineHotWord(HotWordEngine):
-    """Hotword engine using picovoice's Porcupine hot word engine."""
+    """Hotword engine using picovoice's Porcupine hot word engine.
+
+    TODO: Remove in 21.02
+    """
     def __init__(self, key_phrase="hey mycroft", config=None, lang="en-us"):
         super().__init__(key_phrase, config, lang)
         keyword_file_paths = [expanduser(x.strip()) for x in self.config.get(
@@ -382,6 +385,10 @@ class PorcupineHotWord(HotWordEngine):
         self.has_found = False
         self.num_keywords = len(keyword_file_paths)
 
+        LOG.warning('The Porcupine wakeword engine shipped with '
+                    'Mycroft-core is deprecated and will be removed in '
+                    'mycroft-core 21.02. Use the mycroft-porcupine-plugin '
+                    'instead.')
         LOG.info(
             'Loading Porcupine using library path {} and keyword paths {}'
             .format(library_path, keyword_file_paths))
