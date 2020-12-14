@@ -14,6 +14,8 @@
 
 import RPi.GPIO as GPIO
 import time
+
+from mycroft.configuration import Configuration
 from mycroft.util.log import LOG
 
 
