@@ -420,7 +420,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
             n = sample * short_normalize
             sum_squares += n * n
 
-        return math.sqrt(sum_squares / count)    
+        return math.sqrt(sum_squares / count)
 
     @staticmethod
     def calc_energy(sound_chunk, sample_width):
@@ -434,7 +434,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
             result = round(max(math.log10(result),
                                math.log2(result)))
         self.max_amplitude = max(amplitude, self.max_amplitude)
-        payload = {"__from": "system.speech.visualizer", 
+        payload = {"__from": "system.speech.visualizer",
                    "state": "listening", "volume": result}
         self._bus.emit(Message("gui.value.set", data=payload))
 
