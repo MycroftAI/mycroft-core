@@ -13,6 +13,8 @@
 # limitations under the License.
 #
 import audioop
+import struct
+import math
 from time import sleep, time as get_time
 
 from collections import deque, namedtuple
@@ -36,6 +38,7 @@ from threading import Thread, Lock
 from mycroft.api import DeviceApi
 from mycroft.configuration import Configuration
 from mycroft.session import SessionManager
+from mycroft.messagebus.message import Message
 from mycroft.util import (
     check_for_signal,
     get_ipc_directory,
@@ -326,7 +329,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
     # Time between pocketsphinx checks for the wake word
     SEC_BETWEEN_WW_CHECKS = 0.2
 
-    def __init__(self, wake_word_recognizer, watchdog=None):
+    def __init__(self, wake_word_recognizer, bus, watchdog=None):
         self._watchdog = watchdog or (lambda: None)  # Default to dummy func
         self.config = Configuration.get()
         listener_config = self.config.get('listener')
@@ -335,6 +338,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         self.wake_word_name = wake_word_recognizer.key_phrase
 
         self.overflow_exc = listener_config.get('overflow_exception', False)
+        self._bus = bus
 
         super().__init__()
         self.wake_word_recognizer = wake_word_recognizer
@@ -371,6 +375,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         # when not enough noise has been detected
         self.recording_timeout_with_silence = listener_config.get(
             'recording_timeout_with_silence', 3.0)
+        self.max_amplitude = 0.001
 
     @property
     def account_id(self):
@@ -394,8 +399,44 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         return source.stream.read(source.CHUNK, self.overflow_exc)
 
     @staticmethod
+    def get_rms(block):
+        """ RMS amplitude is defined as the square root of the
+        mean over time of the square of the amplitude.
+        so we need to convert this string of bytes into
+        a string of 16-bit samples...
+        """
+        # we will get one short out for each
+        # two chars in the string.
+        short_normalize = (1.0/32768.0)
+        count = len(block) / 2
+        format = "%dh" % (count)
+        shorts = struct.unpack(format, block)
+
+        # iterate over the block.
+        sum_squares = 0.0
+        for sample in shorts:
+            # sample is a signed short in +/- 32768.
+            # normalize it to 1.0
+            n = sample * short_normalize
+            sum_squares += n * n
+
+        return math.sqrt(sum_squares / count)    
+
+    @staticmethod
     def calc_energy(sound_chunk, sample_width):
         return audioop.rms(sound_chunk, sample_width)
+
+    def visualize_amplitude(self, chunk):
+        """ calculate amplitude upto 5 maximum levels """
+        amplitude = self.get_rms(chunk)
+        result = int(amplitude / ((self.max_amplitude) + 0.001) * 10)
+        if result > 5:
+            result = round(max(math.log10(result),
+                               math.log2(result)))
+        self.max_amplitude = max(amplitude, self.max_amplitude)
+        payload = {"__from": "system.speech.visualizer", 
+                   "state": "listening", "volume": result}
+        self._bus.emit(Message("gui.value.set", data=payload))
 
     def _record_phrase(
         self,
@@ -444,6 +485,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
                 chunk = ww_frames.popleft()
             else:
                 chunk = self.record_sound_chunk(source)
+                self.visualize_amplitude(chunk)
             byte_data += chunk
             num_chunks += 1
 

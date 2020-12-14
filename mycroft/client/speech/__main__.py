@@ -17,7 +17,6 @@ from threading import Lock
 from mycroft import dialog
 from mycroft.enclosure.api import EnclosureAPI
 from mycroft.client.speech.listener import RecognizerLoop
-from mycroft.client.speech.visualizer import VolumeVisualizer
 from mycroft.configuration import Configuration
 from mycroft.identity import IdentityManager
 from mycroft.lock import Lock as PIDLock  # Create/Support PID locking file
@@ -37,7 +36,6 @@ config = None
 def handle_record_begin():
     """Forward internal bus message to external bus."""
     LOG.info("Begin Recording...")
-    visualizer.handle_listener_started(bus)
     context = {'client_name': 'mycroft_listener',
                'source': 'audio'}
     bus.emit(Message('recognizer_loop:record_begin', context=context))
@@ -46,7 +44,6 @@ def handle_record_begin():
 def handle_record_end():
     """Forward internal bus message to external bus."""
     LOG.info("End Recording...")
-    visualizer.handle_listener_ended()
     context = {'client_name': 'mycroft_listener',
                'source': 'audio'}
     bus.emit(Message('recognizer_loop:record_end', context=context))
@@ -220,7 +217,6 @@ def main(ready_hook=on_ready, error_hook=on_error, stopping_hook=on_stopping,
     global bus
     global loop
     global config
-    global visualizer
     try:
         reset_sigint_handler()
         PIDLock("voice")
@@ -230,10 +226,9 @@ def main(ready_hook=on_ready, error_hook=on_error, stopping_hook=on_stopping,
         callbacks = StatusCallbackMap(on_ready=ready_hook, on_error=error_hook,
                                       on_stopping=stopping_hook)
         status = ProcessStatus('speech', bus, callbacks)
-        visualizer = VolumeVisualizer()
 
         # Register handlers on internal RecognizerLoop bus
-        loop = RecognizerLoop(watchdog)
+        loop = RecognizerLoop(watchdog, bus)
         connect_loop_events(loop)
         connect_bus_events(bus)
         create_daemon(bus.run_forever)
