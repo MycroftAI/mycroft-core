@@ -28,7 +28,7 @@ from mycroft.enclosure.hardware_enclosure import HardwareEnclosure
 
 class EnclosureMark2(Enclosure):
     def __init__(self):
-        LOG.info('** Starting Mark2 enclosure (interface.py) **')
+        LOG.info('** Initialize EnclosureMark2 **')
         super().__init__()
         self.display_bus_client = None
         self._define_event_handlers()
@@ -37,16 +37,28 @@ class EnclosureMark2(Enclosure):
         self.paused_screen = None
         self.is_pairing = False
         self.active_until_stopped = None
+        self.reserved_led = 10
+        self.mute_led = 11
 
         self.system_volume = 0.5   # pulse audio master system volume
         # if you want to do anything with the system volume
         # (ala pulseaudio, etc) do it here!
-        self.hardware_volume = 0.5 # hardware/board level volume
+        self.current_volume = 0.5 # hardware/board level volume
 
-        self.m2enc = HardwareEnclosure("Mark2", "xmos_volume_gpio_switches_xmos_leds")
+        # TODO these need to come from a config value
+        self.m2enc = HardwareEnclosure("Mark2", "sj201r4")
 
-        LOG.info('** Ending Mark2 enclosure init (interface.py) **')
+        self.m2enc.leds._set_led_with_brightness(
+                self.reserved_led, 
+                self.m2enc.palette.YELLOW, 
+                0.5)
 
+        self.m2enc.leds._set_led_with_brightness(
+                self.mute_led, 
+                self.m2enc.palette.GREEN, 
+                1.0)
+
+        LOG.info('** EnclosureMark2 initalized **')
 
     def _define_event_handlers(self):
         """Assign methods to act upon message bus events."""
@@ -55,7 +67,6 @@ class EnclosureMark2(Enclosure):
         self.bus.on('mycroft.volume.duck', self.on_volume_duck)
         self.bus.on('mycroft.volume.unduck', self.on_volume_unduck)
 
-
     def on_volume_duck(self, message):
         LOG.warning("Mark2 volume duck deprecated! use volume set instead.")
 
@@ -63,14 +74,17 @@ class EnclosureMark2(Enclosure):
         LOG.warning("Mark2 volume unduck deprecated! use volume set instead.")
 
     def on_volume_set(self, message):
-        self.hardware_volume = message.data.get("percent", self.hardware_volume)
-        self.m2enc.hardware_volume.set_hw_volume(self.hardware_volume)
+        self.current_volume = message.data.get("percent",self.current_volume)
+        LOG.info('Mark2:interface.py set volume to %s' % (self.current_volume,))
+        self.m2enc.hardware_volume.set_volume(float(self.current_volume))
 
     def on_volume_get(self, message):
-        #self.bus.emit(message.response(data={'percent': self.hardware_volume, 'muted': False}))
-        LOG.warning("Mark2 will not emit volume response!")
-
+        LOG.info('Mark2:interface.py get and emit volume %s' % (self.current_volume,))
+        self.bus.emit(
+                message.response(
+                    data={'percent': self.current_volume, 'muted': False}))
 
     def terminate(self):
+        self.m2enc.leds._set_led(10,(0,0,0)) # blank out reserved led
+        self.m2enc.leds._set_led(11,(0,0,0)) # BUG set to real value!
         self.m2enc.terminate()
-

@@ -22,16 +22,17 @@ from mycroft.util.log import LOG
 
 
 class HardwareEnclosure:
-    mute_led = 11  # last led is reserved for mute mic switch
+    mute_led = 11    # last led is reserved for mute mic switch
 
     def __init__(self, enclosure_type, board_type=None):
         LOG.info("Mark2 Starting HardwareEnclosure()")
         self.enclosure_type = enclosure_type
         self.board_type = board_type
 
-        self.max_volume = 10
-        self.shadow_volume = 5
-        self.volume_increment = 1
+        self.max_volume = 1.0
+        self.min_volume = 0.0
+        self.shadow_volume = 0.5
+        self.volume_increment = 0.1
         self.last_action = time.time()
         self.last_mute = 0
 
@@ -49,9 +50,7 @@ class HardwareEnclosure:
         switch_driver = self.capabilities["Switch"]["name"]
         volume_driver = self.capabilities["Volume"]["name"]
 
-        pal_module = driver_dir + ".MycroftLed.%s" % (
-            self.capabilities["Palette"]["name"],
-        )
+        pal_module = driver_dir + ".MycroftLed.%s" % (self.capabilities["Palette"]["name"],)
         module = importlib.import_module(pal_module)
         self.palette = module.Palette()
 
@@ -68,13 +67,16 @@ class HardwareEnclosure:
         self.switches = module.Switch()
 
         self.switches.user_action_handler = self.handle_action
-        self.overide_action = self.reset_xmos
+        self.overide_action = None
         self.switches.user_mute_handler = self.handle_mute
         self.switches.user_volup_handler = self.handle_vol_up
         self.switches.user_voldown_handler = self.handle_vol_down
 
         # TODO - pull up/down verified!!!
-        self.leds._set_led(self.mute_led, self.palette.GREEN)
+        self.leds._set_led_with_brightness(
+                self.mute_led, 
+                self.palette.GREEN, 
+                0.5)
 
         # volume display timeout
         self.watchdog = None
@@ -82,35 +84,12 @@ class HardwareEnclosure:
 
         LOG.info("Mark2 HardwareEnclosure() initialized")
 
-    # BUG FIX temp fix for faulty hardware
-    def reset_xmos(self):
-        LOG.error("Mark2 Start Reset Hardware ...")
-        LOG.error("Mark2 Stopping services ...")
-        os.system("/opt/mycroft/stop-mycroft.sh voice")
-        os.system("/opt/mycroft/stop-mycroft.sh audio")
-        LOG.error("Mark2 LEDs Red ...")
-        self.leds.fill(self.palette.RED)
-        time.sleep(5)
-        LOG.error("Mark2 Reset Hardware ...")
-        self.switches.reset_hardware()
-        LOG.error("Mark2 Sleep after Hardware Reset ...")
-        time.sleep(15)
-        LOG.error("Mark2 Start audio svc ...")
-        os.system("/opt/mycroft/start-mycroft.sh audio")
-        time.sleep(10)
-        LOG.error("Mark2 Start voice svc ...")
-        os.system("/opt/mycroft/start-mycroft.sh voice")
-        time.sleep(3)
-        self.leds.fill(self.palette.BLACK)
-        os.system("aplay /opt/mycroft/mycroft/res/snd/start_listening.wav")
-        LOG.error("Mark2 Completed Reset Hardware ...")
-
     def get_capabilities(self):
         return self.capabilities
 
     def handle_watchdog(self):
         # clear the volume leds
-        self.leds.fill(self.palette.BLACK)
+        self.leds.fill( self.palette.BLACK )
         self.watchdog = None
 
     def cancel_watchdog(self):
@@ -119,43 +98,52 @@ class HardwareEnclosure:
 
     def show_volume(self, vol):
         new_leds = []
+        vol = int(vol * 10)
 
         for x in range(vol):
-            new_leds.append(self.palette.BLUE)
+            new_leds.append( self.palette.BLUE )
 
         for x in range(self.leds.num_leds - vol):
-            new_leds.append(self.palette.BLACK)
+            new_leds.append( self.palette.BLACK )
 
-        self.leds.set_leds(new_leds)
+        self.leds.set_leds( new_leds )
         self.cancel_watchdog()
-        self.watchdog = threading.Timer(self.watchdog_timeout, self.handle_watchdog)
+        self.watchdog = threading.Timer(self.watchdog_timeout,
+                                        self.handle_watchdog)
         self.watchdog.start()
 
     def handle_action(self):
+        LOG.debug("Mark2:HardwareEnclosure:handle_action()")
         # debounce this 10 seconds
         if time.time() - self.last_action > 10:
             self.last_action = time.time()
             if self.overide_action is not None:
                 self.overide_action()
             else:
-                create_signal("buttonPress")
+                create_signal('buttonPress')
 
     def handle_mute(self, val):
+        LOG.debug("Mark2:HardwareEnclosure:handle_mute()")
         if val != self.last_mute:
             self.last_mute = val
             if val == 0:
-                self.leds._set_led(self.mute_led, self.palette.GREEN)
+                self.leds._set_led_with_brightness(
+                        self.mute_led, 
+                        self.palette.GREEN, 
+                        0.5)
             else:
                 self.leds._set_led(self.mute_led, self.palette.RED)
 
     def handle_vol_down(self):
-        if self.shadow_volume > 0:
+        LOG.debug("Mark2:HardwareEnclosure:handle_vol_down()")
+        if self.shadow_volume > self.min_volume:
             self.shadow_volume -= self.volume_increment
 
         self.hardware_volume.set_volume(self.shadow_volume)
         self.show_volume(self.shadow_volume)
 
     def handle_vol_up(self):
+        LOG.debug("Mark2:HardwareEnclosure:handle_vol_up()")
         if self.shadow_volume < self.max_volume:
             self.shadow_volume += self.volume_increment
 
@@ -163,10 +151,11 @@ class HardwareEnclosure:
         self.show_volume(self.shadow_volume)
 
     def terminate(self):
+        LOG.info("Mark2:HardwareEnclosure:terminate()")
         self.cancel_watchdog()
-        self.leds.fill(self.palette.BLACK)
-        self.switches._running = False
+        self.leds.fill( self.palette.BLACK )
         self.switches.terminate()
+        self.switches._running = False
 
         if self.switches.thread_handle is not None:
             self.switches.thread_handle.join()
