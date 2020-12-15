@@ -1,1 +1,3 @@
 RPi.GPIO==0.7.0
+smbus2==0.4.0
+spidev==3.5
