@@ -621,6 +621,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         ww_frames = deque(maxlen=7)
 
         said_wake_word = False
+        audio_data = None
         while (not said_wake_word and not self._stop_signaled and
                not self._skip_wake_word()):
             chunk = self.record_sound_chunk(source)
