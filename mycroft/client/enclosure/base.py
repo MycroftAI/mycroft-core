@@ -240,6 +240,10 @@ class Enclosure:
                    })
         # Remove the page from the local reprensentation as well.
         self.loaded[0].pages.pop(pos)
+        # Add a check to return to idle from position 0
+        if pos == 0 and self.config.get("platform") == "mycroft_mark_2" and
+        len(self.loaded[0].pages) == 0:
+            self.bus.emit(Message("mycroft.mark2.reset_idle"))
 
     def __insert_new_namespace(self, namespace, pages):
         """ Insert new namespace and pages.
