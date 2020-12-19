@@ -1,5 +1,5 @@
 six==1.13.0
-requests==2.20.0
+requests==2.25.1
 gTTS==2.2.0
 PyAudio==0.2.11
 pyee==8.1.0
