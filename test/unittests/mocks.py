@@ -12,10 +12,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+from copy import deepcopy
 from unittest.mock import Mock
 
 from msm import MycroftSkillsManager
 from msm.skill_repo import SkillRepo
+
+from mycroft.configuration.config import LocalConf, DEFAULT_CONFIG
+
+__CONFIG = LocalConf(DEFAULT_CONFIG)
+
+
+def base_config():
+    """Base config used when mocking.
+
+    Preload to skip hitting the disk each creation time but make a copy
+    so modifications don't mutate it.
+
+    Returns:
+        (dict) Mycroft default configuration
+    """
+    return deepcopy(__CONFIG)
 
 
 def mock_msm(temp_dir):
@@ -50,27 +67,13 @@ def mock_msm(temp_dir):
 def mock_config(temp_dir):
     """Supply a reliable return value for the Configuration.get() method."""
     get_config_mock = Mock()
-    get_config_mock.return_value = dict(
-        skills=dict(
-            msm=dict(
-                directory='skills',
-                versioned=True,
-                repo=dict(
-                    cache='.skills-repo',
-                    url='https://github.com/MycroftAI/mycroft-skills',
-                    branch='19.02'
-                )
-            ),
-            update_interval=1.0,
-            auto_update=True,
-            blacklisted_skills=[],
-            priority_skills=['foobar'],
-            upload_skill_manifest=True
-        ),
-        data_dir=str(temp_dir),
-        enclosure=dict()
-    )
+    config = base_config()
+    config['skills']['priority_skills'] = ['foobar']
+    config['data_dir'] = str(temp_dir)
+    config['server']['metrics'] = False
+    config['enclosure'] = {}
 
+    get_config_mock.return_value = config
     return get_config_mock
 
 

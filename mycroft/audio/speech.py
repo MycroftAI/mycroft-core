@@ -134,17 +134,31 @@ def mute_and_speak(utterance, ident, listen=False):
         LOG.error('TTS execution failed ({})'.format(repr(e)))
 
 
-def mimic_fallback_tts(utterance, ident, listen):
+def _get_mimic_fallback():
+    """Lazily initializes the fallback TTS if needed."""
     global mimic_fallback_obj
-    # fallback if connection is lost
-    config = Configuration.get()
-    tts_config = config.get('tts', {}).get("mimic", {})
-    lang = config.get("lang", "en-us")
     if not mimic_fallback_obj:
-        mimic_fallback_obj = Mimic(lang, tts_config)
-    tts = mimic_fallback_obj
+        config = Configuration.get()
+        tts_config = config.get('tts', {}).get("mimic", {})
+        lang = config.get("lang", "en-us")
+        tts = Mimic(lang, tts_config)
+        tts.validator.validate()
+        tts.init(bus)
+        mimic_fallback_obj = tts
+
+    return mimic_fallback_obj
+
+
+def mimic_fallback_tts(utterance, ident, listen):
+    """Speak utterance using fallback TTS if connection is lost.
+
+    Arguments:
+        utterance (str): sentence to speak
+        ident (str): interaction id for metrics
+        listen (bool): True if interaction should end with mycroft listening
+    """
+    tts = _get_mimic_fallback()
     LOG.debug("Mimic fallback, utterance : " + str(utterance))
-    tts.init(bus)
     tts.execute(utterance, ident, listen)
 
 

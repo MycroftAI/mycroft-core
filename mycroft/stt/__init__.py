@@ -27,7 +27,7 @@ from mycroft.util.plugins import load_plugin
 
 
 class STT(metaclass=ABCMeta):
-    """ STT Base class, all  STT backends derives from this one. """
+    """STT Base class, all STT backends derive from this one. """
     def __init__(self):
         config_core = Configuration.get()
         self.lang = str(self.init_language(config_core))
@@ -39,6 +39,7 @@ class STT(metaclass=ABCMeta):
 
     @staticmethod
     def init_language(config_core):
+        """Helper method to get language code from Mycroft config."""
         lang = config_core.get("lang", "en-US")
         langs = lang.split("-")
         if len(langs) == 2:
@@ -47,7 +48,21 @@ class STT(metaclass=ABCMeta):
 
     @abstractmethod
     def execute(self, audio, language=None):
-        pass
+        """Implementation of STT functionallity.
+
+        This method needs to be implemented by the derived class to implement
+        the specific STT engine connection.
+
+        The method gets passed audio and optionally a language code and is
+        expected to return a text string.
+
+        Arguments:
+            audio (AudioData): audio recorded by mycroft.
+            language (str): optional language code
+
+        Returns:
+            str: parsed text
+        """
 
 
 class TokenSTT(STT, metaclass=ABCMeta):
@@ -322,8 +337,14 @@ class DeepSpeechServerSTT(STT):
 
 
 class StreamThread(Thread, metaclass=ABCMeta):
-    """
-        ABC class to be used with StreamingSTT class implementations.
+    """ABC class to be used with StreamingSTT class implementations.
+
+    This class reads audio chunks from a queue and sends it to a parsing
+    STT engine.
+
+    Arguments:
+        queue (Queue): Input Queue
+        language (str): language code for the current language.
     """
 
     def __init__(self, queue, language):
@@ -333,6 +354,7 @@ class StreamThread(Thread, metaclass=ABCMeta):
         self.text = None
 
     def _get_data(self):
+        """Generator reading audio data from queue."""
         while True:
             d = self.queue.get()
             if d is None:
@@ -341,23 +363,38 @@ class StreamThread(Thread, metaclass=ABCMeta):
             self.queue.task_done()
 
     def run(self):
+        """Thread entry point."""
         return self.handle_audio_stream(self._get_data(), self.language)
 
     @abstractmethod
     def handle_audio_stream(self, audio, language):
-        pass
+        """Handling of audio stream.
+
+        Needs to be implemented by derived class to process audio data and
+        optionally update `self.text` with the current hypothesis.
+
+        Argumens:
+            audio (bytes): raw audio data.
+            language (str): language code for the current session.
+        """
 
 
 class StreamingSTT(STT, metaclass=ABCMeta):
-    """
-        ABC class for threaded streaming STT implemenations.
-    """
+    """ABC class for threaded streaming STT implemenations."""
     def __init__(self):
         super().__init__()
         self.stream = None
         self.can_stream = True
 
     def stream_start(self, language=None):
+        """Indicate start of new audio stream.
+
+        This creates a new thread for handling the incomming audio stream as
+        it's collected by Mycroft.
+
+        Arguments:
+            language (str): optional language code for the new stream.
+        """
         self.stream_stop()
         language = language or self.lang
         self.queue = Queue()
@@ -365,9 +402,21 @@ class StreamingSTT(STT, metaclass=ABCMeta):
         self.stream.start()
 
     def stream_data(self, data):
+        """Receiver of audio data.
+
+        Arguments:
+            data (bytes): raw audio data.
+        """
         self.queue.put(data)
 
     def stream_stop(self):
+        """Indicate that the audio stream has ended.
+
+        This will tear down the processing thread and collect the result
+
+        Returns:
+            str: parsed text
+        """
         if self.stream is not None:
             self.queue.put(None)
             self.stream.join()
@@ -380,11 +429,20 @@ class StreamingSTT(STT, metaclass=ABCMeta):
         return None
 
     def execute(self, audio, language=None):
+        """End the parsing thread and collect data."""
         return self.stream_stop()
 
     @abstractmethod
     def create_streaming_thread(self):
-        pass
+        """Create thread for parsing audio chunks.
+
+        This method should be implemented by the derived class to return an
+        instance derived from StreamThread to handle the audio stream and
+        send it to the STT engine.
+
+        Returns:
+            StreamThread: Thread to handle audio data.
+        """
 
 
 class DeepSpeechStreamThread(StreamThread):
@@ -550,7 +608,9 @@ def load_stt_plugin(module_name):
     """Wrapper function for loading stt plugin.
 
     Arguments:
-        (str) Mycroft stt module name from config
+        module_name (str): Mycroft stt module name from config
+    Returns:
+        class: STT plugin class
     """
     return load_plugin('mycroft.plugin.stt', module_name)
 

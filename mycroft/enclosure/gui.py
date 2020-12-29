@@ -115,7 +115,11 @@ class SkillGUI:
         return self.__session_data.__contains__(key)
 
     def clear(self):
-        """Reset the value dictionary, and remove namespace from GUI."""
+        """Reset the value dictionary, and remove namespace from GUI.
+
+        This method does not close the GUI for a Skill. For this purpose see
+        the `release` method.
+        """
         self.__session_data = {}
         self.page = None
         self.skill.bus.emit(Message("gui.clear.namespace",
@@ -348,6 +352,15 @@ class SkillGUI:
         self["url"] = url
         self.show_page("SYSTEM_UrlFrame.qml", override_idle,
                        override_animations)
+
+    def release(self):
+        """Signal that this skill is no longer using the GUI,
+        allow different platforms to properly handle this event.
+        Also calls self.clear() to reset the state variables
+        Platforms can close the window or go back to previous page"""
+        self.clear()
+        self.skill.bus.emit(Message("mycroft.gui.screen.close",
+                                    {"skill_id": self.skill.skill_id}))
 
     def shutdown(self):
         """Shutdown gui interface.

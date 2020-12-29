@@ -241,6 +241,19 @@ class CommonPlaySkill(MycroftSkill, ABC):
         # self.CPS_play("http://zoosh.com/stream_music")
         pass
 
+    def CPS_extend_timeout(self, timeout=5):
+        """Request Common Play Framework to wait another {timeout} seconds
+        for an answer from this skill.
+
+        Arguments:
+            timeout (int): Number of seconds
+        """
+        self.bus.emit(Message('play:query.response',
+                              {"phrase": self.play_service_string,
+                               "searching": True,
+                               "timeout": timeout,
+                               "skill_id": self.skill_id}))
+
     def CPS_send_status(self, artist='', track='', album='', image='',
                         uri='', track_length=None, elapsed_time=None,
                         playlist_position=None,
