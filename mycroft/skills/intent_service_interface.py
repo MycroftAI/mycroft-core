@@ -248,7 +248,7 @@ class IntentQueryApi:
             return None
         return data["skills"]
 
-    def get_active_skills(self):
+    def get_active_skills(self, include_timestamps=False):
         msg = Message("intent.service.active_skills.get",
                       context={"destination": "intent_service",
                                "source": "intent_api"})
@@ -259,7 +259,9 @@ class IntentQueryApi:
         if not data:
             LOG.error("Intent Service timed out!")
             return None
-        return data["skills"]
+        if include_timestamps:
+            return data["skills"]
+        return [s[0] for s in data["skills"]]
 
     def get_adapt_manifest(self):
         msg = Message("intent.service.adapt.manifest.get",

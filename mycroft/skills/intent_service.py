@@ -475,10 +475,7 @@ class IntentService:
             message: query message to reply to.
         """
         self.bus.emit(message.reply("intent.service.active_skills.reply",
-                                    {"skills": [s[0] for s in
-                                                self.active_skills],
-                                     "timestamps": [s[1] for s in
-                                                    self.active_skills]}))
+                                    {"skills": self.active_skills}))
 
     def handle_get_adapt(self, message):
         """handler getting the adapt response for an utterance.
