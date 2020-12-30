@@ -439,11 +439,16 @@ class IntentService:
 
         # List of functions to use to match the utterance with intent.
         # These are listed in priority order.
+        # TODO once we have a mechanim for checking is a fallback will
+        #  trigger without actually triggering it, those should be added here
         match_funcs = [
             self.padatious_service.match_high,
-            self.adapt_service.match_intent, self.fallback.high_prio,
-            self.padatious_service.match_medium, self.fallback.medium_prio,
-            self.padatious_service.match_low, self.fallback.low_prio
+            self.adapt_service.match_intent,
+            # self.fallback.high_prio,
+            self.padatious_service.match_medium,
+            # self.fallback.medium_prio,
+            self.padatious_service.match_low,
+            # self.fallback.low_prio
         ]
         # Loop through the matching functions until a match is found.
         for match_func in match_funcs:
@@ -457,7 +462,11 @@ class IntentService:
                     intent_data["handler"] = match_func.__name__
                     self.bus.emit(message.reply("intent.service.intent.reply",
                                                 {"intent": intent_data}))
-                break
+                return
+
+        # signal intent failure
+        self.bus.emit(message.reply("intent.service.intent.reply",
+                                    {"intent": None}))
 
     def handle_get_skills(self, message):
         """Send registered skills to caller.
