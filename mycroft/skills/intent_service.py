@@ -439,7 +439,7 @@ class IntentService:
 
         # List of functions to use to match the utterance with intent.
         # These are listed in priority order.
-        # TODO once we have a mechanim for checking is a fallback will
+        # TODO once we have a mechanism for checking if a fallback will
         #  trigger without actually triggering it, those should be added here
         match_funcs = [
             self.padatious_service.match_high,
