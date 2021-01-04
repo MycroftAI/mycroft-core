@@ -38,7 +38,7 @@ from mycroft.util.plugins import load_plugin
 
 
 RECOGNIZER_DIR = join(abspath(dirname(__file__)), "recognizer")
-INIT_TIMEOUT = 10  # In seconds
+INIT_TIMEOUT = 30  # In seconds
 
 
 class TriggerReload(Exception):
