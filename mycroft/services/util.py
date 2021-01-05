@@ -19,7 +19,7 @@ from mycroft.util import create_daemon, create_echo_function
 from mycroft.util.log import LOG
 
 
-def start_message_bus_client(service, bus=None):
+def start_message_bus_client(service, bus=None, whitelist=None):
     """Start the bus client daemon and wait for connection.
 
     Arguments:
@@ -33,7 +33,7 @@ def start_message_bus_client(service, bus=None):
         bus = MessageBusClient()
     Configuration.set_config_update_handlers(bus)
     bus_connected = Event()
-    bus.on('message', create_echo_function(service))
+    bus.on('message', create_echo_function(service, whitelist))
     # Set the bus connected event when connection is established
     bus.once('open', bus_connected.set)
     create_daemon(bus.run_forever)
