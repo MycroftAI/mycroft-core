@@ -31,7 +31,7 @@ def start_message_bus_client(service, bus=None):
     # Create a client if one was not provided
     if bus is None:
         bus = MessageBusClient()
-    # Configuration.set_config_update_handlers(bus)
+    Configuration.set_config_update_handlers(bus)
     bus_connected = Event()
     bus.on('message', create_echo_function(service))
     # Set the bus connected event when connection is established

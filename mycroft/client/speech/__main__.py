@@ -20,10 +20,10 @@ from mycroft.client.speech.listener import RecognizerLoop
 from mycroft.configuration import Configuration
 from mycroft.identity import IdentityManager
 from mycroft.lock import Lock as PIDLock  # Create/Support PID locking file
-from mycroft.messagebus.client import MessageBusClient
 from mycroft.messagebus.message import Message
+from mycroft.services import start_message_bus_client
 from mycroft.util import create_daemon, wait_for_exit_signal, \
-    reset_sigint_handler, create_echo_function
+    reset_sigint_handler
 from mycroft.util.log import LOG
 
 bus = None  # Mycroft messagebus connection
@@ -208,7 +208,6 @@ def connect_bus_events(bus):
     bus.on('recognizer_loop:audio_output_start', handle_audio_start)
     bus.on('recognizer_loop:audio_output_end', handle_audio_end)
     bus.on('mycroft.stop', handle_stop)
-    bus.on('message', create_echo_function('VOICE'))
 
 
 def main(ready_hook=on_ready, error_hook=on_error, stopping_hook=on_stopping,
@@ -219,15 +218,13 @@ def main(ready_hook=on_ready, error_hook=on_error, stopping_hook=on_stopping,
     try:
         reset_sigint_handler()
         PIDLock("voice")
-        bus = MessageBusClient()  # Mycroft messagebus, see mycroft.messagebus
-        Configuration.set_config_update_handlers(bus)
         config = Configuration.get()
+        bus = start_message_bus_client("VOICE")
+        connect_bus_events(bus)
 
         # Register handlers on internal RecognizerLoop bus
         loop = RecognizerLoop(watchdog)
         connect_loop_events(loop)
-        connect_bus_events(bus)
-        create_daemon(bus.run_forever)
         create_daemon(loop.run)
     except Exception as e:
         error_hook(e)
