@@ -129,6 +129,8 @@ def start_message_bus_client(service, bus=None, whitelist=None):
     Arguments:
         service (str): name of the service starting the connection
         bus (MessageBusClient): an instance of the Mycroft MessageBusClient
+        whitelist (list, optional): List of "type" strings. If defined, only
+                                    messages in this list will be logged.
     Returns:
         A connected instance of the MessageBusClient
     """
