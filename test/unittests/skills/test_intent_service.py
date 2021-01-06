@@ -289,7 +289,7 @@ class TestIntentServiceApi(TestCase):
         """Make sure the manifest returns a list of Intent Parser objects."""
         self.setup_simple_adapt_intent()
         msg = Message('intent.service.adapt.manifest.get')
-        self.intent_service.handle_manifest(msg)
+        self.intent_service.handle_adapt_manifest(msg)
         reply = get_last_message(self.intent_service.bus)
         self.assertEqual(reply.data['intents'][0]['name'],
                          'skill:testIntent')

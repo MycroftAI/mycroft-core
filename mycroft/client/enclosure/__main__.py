@@ -19,8 +19,7 @@ control over the Mark-1 Faceplate.
 """
 from mycroft.configuration import LocalConf, SYSTEM_CONFIG
 from mycroft.util.log import LOG
-from mycroft.util import (create_daemon, wait_for_exit_signal,
-                          reset_sigint_handler)
+from mycroft.util import wait_for_exit_signal, reset_sigint_handler
 
 
 def on_ready():
@@ -32,7 +31,7 @@ def on_stopping():
 
 
 def on_error(e='Unknown'):
-    LOG.error('Enclosure failed to start. ({})'.format(repr(e)))
+    LOG.error('Enclosure failed: {}'.format(repr(e)))
 
 
 def create_enclosure(platform):
@@ -64,7 +63,6 @@ def create_enclosure(platform):
 
 
 def main(ready_hook=on_ready, error_hook=on_error, stopping_hook=on_stopping):
-    # Read the system configuration
     """Launch one of the available enclosure implementations.
 
     This depends on the configured platform and can currently either be
@@ -77,16 +75,17 @@ def main(ready_hook=on_ready, error_hook=on_error, stopping_hook=on_stopping):
 
     enclosure = create_enclosure(platform)
     if enclosure:
+        LOG.debug("Enclosure created")
         try:
             LOG.info("__main__().py Client Enclosure started!")
             reset_sigint_handler()
-            create_daemon(enclosure.run)
+            enclosure.run()
             ready_hook()
             wait_for_exit_signal()
-            enclosure.terminate()
+            enclosure.stop()
             stopping_hook()
         except Exception as e:
-            print(e)
+            error_hook(e)
     else:
         LOG.info("No enclosure available for this hardware, running headless")
 

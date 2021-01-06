@@ -117,14 +117,21 @@ class IntentService:
 
         # Intents API
         self.registered_vocab = []
-        self.bus.on('intent.service.adapt.get', self.handle_get_adapt)
         self.bus.on('intent.service.intent.get', self.handle_get_intent)
         self.bus.on('intent.service.skills.get', self.handle_get_skills)
         self.bus.on('intent.service.active_skills.get',
                     self.handle_get_active_skills)
-        self.bus.on('intent.service.adapt.manifest.get', self.handle_manifest)
+        self.bus.on('intent.service.adapt.get', self.handle_get_adapt)
+        self.bus.on('intent.service.adapt.manifest.get',
+                    self.handle_adapt_manifest)
         self.bus.on('intent.service.adapt.vocab.manifest.get',
                     self.handle_vocab_manifest)
+        self.bus.on('intent.service.padatious.get',
+                    self.handle_get_padatious)
+        self.bus.on('intent.service.padatious.manifest.get',
+                    self.handle_padatious_manifest)
+        self.bus.on('intent.service.padatious.entities.manifest.get',
+                    self.handle_entity_manifest)
 
     @property
     def registered_intents(self):
@@ -420,20 +427,6 @@ class IntentService:
         """Clears all keywords from context """
         self.adapt_service.context_manager.clear_context()
 
-    def handle_get_adapt(self, message):
-        """handler getting the adapt response for an utterance.
-
-        Arguments:
-            message (Message): message containing utterance
-        """
-        utterance = message.data["utterance"]
-        lang = message.data.get("lang", "en-us")
-        combined = _normalize_all_utterances([utterance])
-        intent = self.adapt_service.match_intent(combined, lang)
-        intent_data = intent.intent_data if intent else None
-        self.bus.emit(message.reply("intent.service.adapt.reply",
-                                    {"intent": intent_data}))
-
     def handle_get_intent(self, message):
         """Get intent from either adapt or padatious.
 
@@ -443,14 +436,37 @@ class IntentService:
         utterance = message.data["utterance"]
         lang = message.data.get("lang", "en-us")
         combined = _normalize_all_utterances([utterance])
-        adapt_intent = self.adapt_service.match_intent(combined, lang)
-        # Adapt intent's handler is used unless
-        # Padatious is REALLY sure it was directed at it instead.
-        padatious_intent = self.padatious_service.match_high(combined)
-        intent = padatious_intent or adapt_intent
-        intent_data = intent.intent_data if intent else None
+
+        # List of functions to use to match the utterance with intent.
+        # These are listed in priority order.
+        # TODO once we have a mechanism for checking if a fallback will
+        #  trigger without actually triggering it, those should be added here
+        match_funcs = [
+            self.padatious_service.match_high,
+            self.adapt_service.match_intent,
+            # self.fallback.high_prio,
+            self.padatious_service.match_medium,
+            # self.fallback.medium_prio,
+            self.padatious_service.match_low,
+            # self.fallback.low_prio
+        ]
+        # Loop through the matching functions until a match is found.
+        for match_func in match_funcs:
+            match = match_func(combined, lang, message)
+            if match:
+                if match.intent_type:
+                    intent_data = match.intent_data
+                    intent_data["intent_name"] = match.intent_type
+                    intent_data["intent_service"] = match.intent_service
+                    intent_data["skill_id"] = match.skill_id
+                    intent_data["handler"] = match_func.__name__
+                    self.bus.emit(message.reply("intent.service.intent.reply",
+                                                {"intent": intent_data}))
+                return
+
+        # signal intent failure
         self.bus.emit(message.reply("intent.service.intent.reply",
-                                    {"intent": intent_data}))
+                                    {"intent": None}))
 
     def handle_get_skills(self, message):
         """Send registered skills to caller.
@@ -468,10 +484,23 @@ class IntentService:
             message: query message to reply to.
         """
         self.bus.emit(message.reply("intent.service.active_skills.reply",
-                                    {"skills": [s[0] for s in
-                                                self.active_skills]}))
+                                    {"skills": self.active_skills}))
 
-    def handle_manifest(self, message):
+    def handle_get_adapt(self, message):
+        """handler getting the adapt response for an utterance.
+
+        Arguments:
+            message (Message): message containing utterance
+        """
+        utterance = message.data["utterance"]
+        lang = message.data.get("lang", "en-us")
+        combined = _normalize_all_utterances([utterance])
+        intent = self.adapt_service.match_intent(combined, lang)
+        intent_data = intent.intent_data if intent else None
+        self.bus.emit(message.reply("intent.service.adapt.reply",
+                                    {"intent": intent_data}))
+
+    def handle_adapt_manifest(self, message):
         """Send adapt intent manifest to caller.
 
         Argument:
@@ -488,3 +517,39 @@ class IntentService:
         """
         self.bus.emit(message.reply("intent.service.adapt.vocab.manifest",
                                     {"vocab": self.registered_vocab}))
+
+    def handle_get_padatious(self, message):
+        """messagebus handler for perfoming padatious parsing.
+
+        Arguments:
+            message (Message): message triggering the method
+        """
+        utterance = message.data["utterance"]
+        norm = message.data.get('norm_utt', utterance)
+        intent = self.padatious_service.calc_intent(utterance)
+        if not intent and norm != utterance:
+            intent = self.padatious_service.calc_intent(norm)
+        if intent:
+            intent = intent.__dict__
+        self.bus.emit(message.reply("intent.service.padatious.reply",
+                                    {"intent": intent}))
+
+    def handle_padatious_manifest(self, message):
+        """Messagebus handler returning the registered padatious intents.
+
+        Arguments:
+            message (Message): message triggering the method
+        """
+        self.bus.emit(message.reply(
+            "intent.service.padatious.manifest",
+            {"intents": self.padatious_service.registered_intents}))
+
+    def handle_entity_manifest(self, message):
+        """Messagebus handler returning the registered padatious entities.
+
+        Arguments:
+            message (Message): message triggering the method
+        """
+        self.bus.emit(message.reply(
+            "intent.service.padatious.entities.manifest",
+            {"entities": self.padatious_service.registered_entities}))

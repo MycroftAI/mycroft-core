@@ -19,6 +19,7 @@ from threading import Lock
 
 from mycroft.configuration import Configuration
 from mycroft.messagebus.client import MessageBusClient
+from mycroft.services import start_message_bus_client
 from mycroft.util import create_daemon
 from mycroft.util.log import LOG
 
@@ -61,15 +62,14 @@ def _get_page_data(message):
 
 class Enclosure:
     def __init__(self):
-        # Establish Enclosure's websocket connection to the messagebus
-        self.bus = MessageBusClient()
         # Load full config
-        Configuration.set_config_update_handlers(self.bus)
         config = Configuration.get()
-
         self.lang = config['lang']
         self.config = config.get("enclosure")
         self.global_config = config
+
+        # Create Message Bus Client
+        self.bus = MessageBusClient()
 
         self.gui = create_gui_service(self, config['gui_websocket'])
         # This datastore holds the data associated with the GUI provider. Data
@@ -107,11 +107,14 @@ class Enclosure:
         self.bus.on("gui.status.request", self.handle_gui_status_request)
 
     def run(self):
-        try:
-            self.bus.run_forever()
-        except Exception as e:
-            LOG.error("Error: {0}".format(e))
-            self.stop()
+        """Start the Enclosure after it has been constructed."""
+        # Allow exceptions to be raised to the Enclosure Service
+        # if they may cause the Service to fail.
+        start_message_bus_client("ENCLOSURE", self.bus)
+
+    def stop(self):
+        """Perform any enclosure shutdown processes."""
+        pass
 
     ######################################################################
     # GUI client API
@@ -563,7 +566,7 @@ class GUIWebsocketHandler(WebSocketHandler):
             data (dict): Data to transmit
         """
         s = json.dumps(data)
-        #LOG.info('Sending {}'.format(s))
+        # LOG.info('Sending {}'.format(s))
         self.write_message(s)
 
     def check_origin(self, origin):
