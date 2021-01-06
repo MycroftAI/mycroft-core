@@ -16,9 +16,12 @@
 
     This handles playback of audio and speech
 """
-from mycroft.services import start_message_bus_client
-from mycroft.util import reset_sigint_handler, wait_for_exit_signal, \
-    check_for_signal
+from mycroft.util import (
+    check_for_signal,
+    reset_sigint_handler,
+    start_message_bus_client,
+    wait_for_exit_signal
+)
 from mycroft.util.log import LOG
 
 import mycroft.audio.speech as speech

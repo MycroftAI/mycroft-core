@@ -21,9 +21,12 @@ from mycroft.configuration import Configuration
 from mycroft.identity import IdentityManager
 from mycroft.lock import Lock as PIDLock  # Create/Support PID locking file
 from mycroft.messagebus.message import Message
-from mycroft.services import start_message_bus_client
-from mycroft.util import create_daemon, wait_for_exit_signal, \
-    reset_sigint_handler
+from mycroft.util import (
+    create_daemon,
+    reset_sigint_handler,
+    start_message_bus_client,
+    wait_for_exit_signal
+)
 from mycroft.util.log import LOG
 
 bus = None  # Mycroft messagebus connection

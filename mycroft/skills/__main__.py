@@ -33,9 +33,9 @@ from mycroft.messagebus.message import Message
 from mycroft.util import (
     connected,
     reset_sigint_handler,
+    start_message_bus_client,
     wait_for_exit_signal
 )
-from mycroft.services import start_message_bus_client
 from mycroft.util.lang import set_active_lang
 from mycroft.util.log import LOG
 from .core import FallbackSkill

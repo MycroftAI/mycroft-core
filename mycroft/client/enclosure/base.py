@@ -19,8 +19,7 @@ from threading import Lock
 
 from mycroft.configuration import Configuration
 from mycroft.messagebus.client import MessageBusClient
-from mycroft.services import start_message_bus_client
-from mycroft.util import create_daemon
+from mycroft.util import create_daemon, start_message_bus_client
 from mycroft.util.log import LOG
 
 import json
