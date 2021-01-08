@@ -57,7 +57,7 @@ pipeline {
                     sh 'mkdir -p $HOME/core/$BRANCH_ALIAS/allure'
                     sh 'mkdir -p $HOME/core/$BRANCH_ALIAS/mycroft-logs'
                     sh 'docker run \
-                        -v "$HOME/voight-kampff/identity:/root/.mycroft/identity" \
+                        -v "$HOME/voight-kampff/identity:/root/.config/mycroft/identity" \
                         -v "$HOME/core/$BRANCH_ALIAS/allure:/root/allure" \
                         -v "$HOME/core/$BRANCH_ALIAS/mycroft-logs:/var/log/mycroft" \
                         --label build=${JOB_NAME} \
