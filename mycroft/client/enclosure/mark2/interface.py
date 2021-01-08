@@ -42,20 +42,20 @@ class EnclosureMark2(Enclosure):
         self.system_volume = 0.5   # pulse audio master system volume
         # if you want to do anything with the system volume
         # (ala pulseaudio, etc) do it here!
-        self.current_volume = 0.5 # hardware/board level volume
+        self.current_volume = 0.5  # hardware/board level volume
 
         # TODO these need to come from a config value
         self.m2enc = HardwareEnclosure("Mark2", "sj201r4")
 
         self.m2enc.leds._set_led_with_brightness(
-                self.reserved_led, 
-                self.m2enc.palette.YELLOW, 
-                0.5)
+            self.reserved_led,
+            self.m2enc.palette.YELLOW,
+            0.5)
 
         self.m2enc.leds._set_led_with_brightness(
-                self.mute_led, 
-                self.m2enc.palette.GREEN, 
-                1.0)
+            self.mute_led,
+            self.m2enc.palette.GREEN,
+            1.0)
 
         LOG.info('** EnclosureMark2 initalized **')
         self.bus.once('mycroft.skills.trained', self.is_device_ready)
@@ -92,11 +92,10 @@ class EnclosureMark2(Enclosure):
         for ser in services:
             services[ser] = False
             response = self.bus.wait_for_response(Message(
-                                'mycroft.{}.is_ready'.format(ser)))
+                'mycroft.{}.is_ready'.format(ser)))
             if response and response.data['status']:
                 services[ser] = True
         return all([services[ser] for ser in services])
-
 
     def _define_event_handlers(self):
         """Assign methods to act upon message bus events."""
@@ -112,17 +111,19 @@ class EnclosureMark2(Enclosure):
         LOG.warning("Mark2 volume unduck deprecated! use volume set instead.")
 
     def on_volume_set(self, message):
-        self.current_volume = message.data.get("percent",self.current_volume)
-        LOG.info('Mark2:interface.py set volume to %s' % (self.current_volume,))
+        self.current_volume = message.data.get("percent", self.current_volume)
+        LOG.info('Mark2:interface.py set volume to %s' %
+                 (self.current_volume,))
         self.m2enc.hardware_volume.set_volume(float(self.current_volume))
 
     def on_volume_get(self, message):
-        LOG.info('Mark2:interface.py get and emit volume %s' % (self.current_volume,))
+        LOG.info('Mark2:interface.py get and emit volume %s' %
+                 (self.current_volume,))
         self.bus.emit(
-                message.response(
-                    data={'percent': self.current_volume, 'muted': False}))
+            message.response(
+                data={'percent': self.current_volume, 'muted': False}))
 
     def terminate(self):
-        self.m2enc.leds._set_led(10,(0,0,0)) # blank out reserved led
-        self.m2enc.leds._set_led(11,(0,0,0)) # BUG set to real value!
+        self.m2enc.leds._set_led(10, (0, 0, 0))  # blank out reserved led
+        self.m2enc.leds._set_led(11, (0, 0, 0))  # BUG set to real value!
         self.m2enc.terminate()
