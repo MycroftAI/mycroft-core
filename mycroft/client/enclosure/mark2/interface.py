@@ -14,14 +14,13 @@
 #
 """Define the enclosure interface for Mark II devices."""
 import json
+import time
 from threading import Timer
-from time import sleep
-
 from websocket import WebSocketApp
 
 from mycroft.client.enclosure.base import Enclosure
 from mycroft.messagebus.message import Message
-from mycroft.util import create_daemon
+from mycroft.util import create_daemon, connected
 from mycroft.util.log import LOG
 from mycroft.enclosure.hardware_enclosure import HardwareEnclosure
 
@@ -59,6 +58,45 @@ class EnclosureMark2(Enclosure):
                 1.0)
 
         LOG.info('** EnclosureMark2 initalized **')
+        self.bus.once('mycroft.skills.trained', self.is_device_ready)
+
+    def is_device_ready(self, message):
+        is_ready = False
+        # Bus service assumed to be alive if messages sent and received
+        # Enclosure assumed to be alive if this method is running
+        services = {'audio': False, 'speech': False, 'skills': False}
+        start = time.monotonic()
+        while not is_ready:
+            is_ready = self.check_services_ready(services)
+            if is_ready:
+                break
+            elif time.monotonic() - start >= 60:
+                raise Exception('Timeout waiting for services start.')
+            else:
+                time.sleep(3)
+
+        if is_ready:
+            LOG.info("All Mycroft Services have reported ready.")
+            if connected():
+                self.bus.emit(Message('mycroft.ready'))
+            else:
+                self.bus.emit(Message('mycroft.wifi.setup'))
+
+        return is_ready
+
+    def check_services_ready(self, services):
+        """Report if all specified services are ready.
+
+        services (iterable): service names to check.
+        """
+        for ser in services:
+            services[ser] = False
+            response = self.bus.wait_for_response(Message(
+                                'mycroft.{}.is_ready'.format(ser)))
+            if response and response.data['status']:
+                services[ser] = True
+        return all([services[ser] for ser in services])
+
 
     def _define_event_handlers(self):
         """Assign methods to act upon message bus events."""
