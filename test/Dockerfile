@@ -94,6 +94,7 @@ EXPOSE 8181
 #
 FROM core_builder as voight_kampff_builder
 ARG platform
+ARG test_set
 # Setup a dummy TTS backend for the audio process
 RUN mkdir /etc/mycroft
 RUN echo '{"tts": {"module": "dummy"}}' > /etc/mycroft/mycroft.conf
@@ -104,7 +105,7 @@ RUN mkdir ~/.mycroft/allure-result
 # for test discovery.
 WORKDIR /opt/mycroft/mycroft-core
 # Generate hash of required packages
-RUN python -m test.integrationtests.voight_kampff.test_setup -c test/integrationtests/voight_kampff/default.yml
+RUN python -m test.integrationtests.voight_kampff.test_setup -c test/integrationtests/voight_kampff/$test_set
 
 # Setup and run the integration tests
 ENV PYTHONPATH /opt/mycroft/mycroft-core/

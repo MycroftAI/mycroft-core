@@ -1,10 +1,21 @@
 pipeline {
+
     agent any
     options {
         // Running builds concurrently could cause a race condition with
         // building the Docker image.
         disableConcurrentBuilds()
         buildDiscarder(logRotator(numToKeepStr: '5'))
+    }
+    environment {
+        // Some branches have a "/" in their name (e.g. feature/new-and-cool)
+        // Some commands, such as those tha deal with directories, don't
+        // play nice with this naming convention.  Define an alias for the
+        // branch name that can be used in these scenarios.
+        BRANCH_ALIAS = sh(
+            script: 'echo $BRANCH_NAME | sed -e "s#/#-#g"',
+            returnStdout: true
+        ).trim()
     }
     stages {
         // Run the build in the against the dev branch to check for compile errors
@@ -23,7 +34,7 @@ pipeline {
             }
         }
 
-        stage('Run Integration Tests') {
+        stage('Build docker containers') {
             when {
                 anyOf {
                     branch 'dev'
@@ -34,36 +45,53 @@ pipeline {
             options {
                 lock(resource: "lock_${env.JOB_NAME}")
             }
-            environment {
-                // Some branches have a "/" in their name (e.g. feature/new-and-cool)
-                // Some commands, such as those tha deal with directories, don't
-                // play nice with this naming convention.  Define an alias for the
-                // branch name that can be used in these scenarios.
-                BRANCH_ALIAS = sh(
-                    script: 'echo $BRANCH_NAME | sed -e "s#/#-#g"',
-                    returnStdout: true
-                ).trim()
-            }
             steps {
                 echo 'Building Mark I Voight-Kampff Docker Image'
-                sh 'docker build -f test/Dockerfile \
+                    sh 'docker build -f test/Dockerfile \
                     --target voight_kampff_builder \
                     --build-arg platform=mycroft_mark_1 \
+                    --build-arg test_set=set1.yml \
                     --label build=${JOB_NAME} \
-                    -t voight-kampff-mark-1:${BRANCH_ALIAS} .'
-                echo 'Running Mark I Voight-Kampff Test Suite'
-                timeout(time: 60, unit: 'MINUTES')
-                {
-                    sh 'mkdir -p $HOME/core/$BRANCH_ALIAS/allure'
+                    -t voight-kampff-mark-1:${BRANCH_ALIAS}_a .'
+                    sh 'docker build -f test/Dockerfile \
+                    --target voight_kampff_builder \
+                    --build-arg platform=mycroft_mark_1 \
+                    --build-arg test_set=set2.yml \
+                    --label build=${JOB_NAME} \
+                    -t voight-kampff-mark-1:${BRANCH_ALIAS}_b .'
                     sh 'mkdir -p $HOME/core/$BRANCH_ALIAS/mycroft-logs'
-                    sh 'docker run \
-                        -v "$HOME/voight-kampff/identity:/root/.mycroft/identity" \
-                        -v "$HOME/core/$BRANCH_ALIAS/allure:/root/allure" \
-                        -v "$HOME/core/$BRANCH_ALIAS/mycroft-logs:/var/log/mycroft" \
-                        --label build=${JOB_NAME} \
-                       voight-kampff-mark-1:${BRANCH_ALIAS} \
-                        -f allure_behave.formatter:AllureFormatter \
-                        -o /root/allure/allure-result --tags ~@xfail'
+                    echo 'Running Mark I Voight-Kampff Test Suite'
+            }
+        }
+        stage("Run integration tests") {
+            parallel {
+                stage("Test Skill set 1") {
+                    steps {
+                        sh 'mkdir -p $HOME/core/$BRANCH_ALIAS/allure'
+                        sh 'mkdir -p $HOME/core/$BRANCH_ALIAS/mycroft-logs/set1'
+                        sh 'docker run \
+                            -v "$HOME/voight-kampff/identity:/root/.mycroft/identity" \
+                            -v "$HOME/core/$BRANCH_ALIAS/allure:/root/allure" \
+                            -v "$HOME/core/$BRANCH_ALIAS/mycroft-logs/set1:/var/log/mycroft" \
+                            --label build=${JOB_NAME} \
+                           voight-kampff-mark-1:${BRANCH_ALIAS}_a \
+                            -f allure_behave.formatter:AllureFormatter \
+                            -o /root/allure/allure-result --tags ~@xfail'
+                    }
+                }
+                stage("Test Skill Set 2") {
+                    steps {
+                        sh 'mkdir -p $HOME/core/$BRANCH_ALIAS/allure'
+                        sh 'mkdir -p $HOME/core/$BRANCH_ALIAS/mycroft-logs/set2'
+                        sh 'docker run \
+                            -v "$HOME/voight-kampff/identity:/root/.mycroft/identity" \
+                            -v "$HOME/core/$BRANCH_ALIAS/allure:/root/allure" \
+                            -v "$HOME/core/$BRANCH_ALIAS/mycroft-logs/set2:/var/log/mycroft" \
+                            --label build=${JOB_NAME} \
+                           voight-kampff-mark-1:${BRANCH_ALIAS}_b \
+                            -f allure_behave.formatter:AllureFormatter \
+                            -o /root/allure/allure-result --tags ~@xfail'
+                    }
                 }
             }
             post {
@@ -74,18 +102,25 @@ pipeline {
                         -v "$HOME/core/$BRANCH_ALIAS/allure:/root/allure" \
                         --entrypoint=/bin/bash \
                         --label build=${JOB_NAME} \
-                        voight-kampff-mark-1:${BRANCH_ALIAS} \
+                        voight-kampff-mark-1:${BRANCH_ALIAS}_a \
                         -x -c "chown $(id -u $USER):$(id -g $USER) \
                         -R /root/allure/"'
-                    echo 'Changing ownership of Allure results...'
+                    echo 'Changing ownership of Mycroft logs...'
                     sh 'docker run \
-                        -v "$HOME/core/$BRANCH_ALIAS/mycroft-logs:/var/log/mycroft" \
+                        -v "$HOME/core/$BRANCH_ALIAS/mycroft-logs/set1:/var/log/mycroft" \
                         --entrypoint=/bin/bash \
                         --label build=${JOB_NAME} \
-                        voight-kampff-mark-1:${BRANCH_ALIAS} \
-                        -x -c "chown $(id -u $USER):$(id -g $USER) \
+                        voight-kampff-mark-1:${BRANCH_ALIAS}_a \
+                        -x -c "chown -v $(id -u $USER):$(id -g $USER) \
                         -R /var/log/mycroft"'
-
+                    sh 'docker run \
+                        -v "$HOME/core/$BRANCH_ALIAS/mycroft-logs/set2:/var/log/mycroft" \
+                        --entrypoint=/bin/bash \
+                        --label build=${JOB_NAME} \
+                        voight-kampff-mark-1:${BRANCH_ALIAS}_a \
+                        -x -c "chown -v $(id -u $USER):$(id -g $USER) \
+                        -R /var/log/mycroft"'
+                    
                     echo 'Transferring...'
                     sh 'rm -rf allure-result/*'
                     sh 'mv $HOME/core/$BRANCH_ALIAS/allure/allure-result allure-result'
@@ -101,22 +136,22 @@ pipeline {
                         ])
                     }
                     unarchive mapping:['allure-report.zip': 'allure-report.zip']
-                    sh 'zip mycroft-logs.zip -r $HOME/core/$BRANCH_ALIAS/mycroft-logs'
+                    sh 'tar -czf mycroft-logs.tar.gz -C $HOME/core/$BRANCH_ALIAS/mycroft-logs .'
                     sh 'rm -rf $HOME/core/$BRANCH_ALIAS/mycroft-logs'
                     // This directory should now be empty, rmdir will intentionally fail if not.
-                    sh 'rmdir $HOME/core/$BRANCH_ALIAS'
                     sh (
                         label: 'Publish Report to Web Server',
                         script: '''scp allure-report.zip root@157.245.127.234:~;
                             ssh root@157.245.127.234 "unzip -o ~/allure-report.zip";
                             ssh root@157.245.127.234 "rm -rf /var/www/voight-kampff/core/${BRANCH_ALIAS}";
                             ssh root@157.245.127.234 "mv allure-report /var/www/voight-kampff/core/${BRANCH_ALIAS}"
-                            scp mycroft-logs.zip root@157.245.127.234:~;
+                            scp mycroft-logs.tar.gz root@157.245.127.234:~;
                             ssh root@157.245.127.234 "mkdir -p /var/www/voight-kampff/core/${BRANCH_ALIAS}/logs"
-                            ssh root@157.245.127.234 "unzip -oj ~/mycroft-logs.zip -d /var/www/voight-kampff/core/${BRANCH_ALIAS}/logs/";
+                            ssh root@157.245.127.234 "tar -xzf ~/mycroft-logs.tar.gz -C /var/www/voight-kampff/core/${BRANCH_ALIAS}/logs/";
                         '''
                     )
                     echo 'Report Published'
+                    sh 'rmdir $HOME/core/$BRANCH_ALIAS'
                 }
                 failure {
                     script {
@@ -124,12 +159,20 @@ pipeline {
                         if (env.CHANGE_ID) {
                             echo 'Sending PR comment'
                             pullRequest.comment('Voight Kampff Integration Test Failed ([Results](https://reports.mycroft.ai/core/' + env.BRANCH_ALIAS + ')). ' +
-                                                '\nMycroft logs are also available: ' +
-                                                '[skills.log](https://reports.mycroft.ai/core/' + env.BRANCH_ALIAS + '/logs/skills.log), ' +
-                                                '[audio.log](https://reports.mycroft.ai/core/' + env.BRANCH_ALIAS + '/logs/audio.log), ' +
-                                                '[voice.log](https://reports.mycroft.ai/core/' + env.BRANCH_ALIAS + '/logs/voice.log), ' +
-                                                '[bus.log](https://reports.mycroft.ai/core/' + env.BRANCH_ALIAS + '/logs/bus.log), ' +
-                                                '[enclosure.log](https://reports.mycroft.ai/core/' + env.BRANCH_ALIAS + '/logs/enclosure.log)')
+                                                '\nMycroft logs are also available:\n' +
+                                                'Set 1:\n' +
+                                                '[skills.log](https://reports.mycroft.ai/core/' + env.BRANCH_ALIAS + '/logs/set1/skills.log), ' +
+                                                '[audio.log](https://reports.mycroft.ai/core/' + env.BRANCH_ALIAS + '/logs/set1/audio.log), ' +
+                                                '[voice.log](https://reports.mycroft.ai/core/' + env.BRANCH_ALIAS + '/logs/set1/voice.log), ' +
+                                                '[bus.log](https://reports.mycroft.ai/core/' + env.BRANCH_ALIAS + '/logs/set1/bus.log), ' +
+                                                '[enclosure.log](https://reports.mycroft.ai/core/' + env.BRANCH_ALIAS + '/logs/set1/enclosure.log)\n\n' +
+                                                'Set 2:\n' +
+                                                '[skills.log](https://reports.mycroft.ai/core/' + env.BRANCH_ALIAS + '/logs/set2/skills.log), ' +
+                                                '[audio.log](https://reports.mycroft.ai/core/' + env.BRANCH_ALIAS + '/logs/set2/audio.log), ' +
+                                                '[voice.log](https://reports.mycroft.ai/core/' + env.BRANCH_ALIAS + '/logs/set2/voice.log), ' +
+                                                '[bus.log](https://reports.mycroft.ai/core/' + env.BRANCH_ALIAS + '/logs/set2/bus.log), ' +
+                                                '[enclosure.log](https://reports.mycroft.ai/core/' + env.BRANCH_ALIAS + '/logs/set2/enclosure.log)'
+                                                )
                         }
                     }
                     // Send failure email containing a link to the Jenkins build
