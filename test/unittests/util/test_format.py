@@ -617,6 +617,8 @@ class TestNiceDurationFuncs(unittest.TestCase):
 
 
 class TestErrorHandling(unittest.TestCase):
+    @unittest.skip("Put back when Lingua Franca deprecates "
+                   "'lang=None' and 'lang=Invalid'")
     def test_invalid_lang_code(self):
         dt = datetime.datetime(2018, 2, 4, 0, 2, 3)
         with self.assertRaises(UnsupportedLanguageError):
