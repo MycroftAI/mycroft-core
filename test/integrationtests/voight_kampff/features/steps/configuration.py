@@ -20,6 +20,27 @@ from behave import given
 from mycroft.messagebus import Message
 from mycroft.util import resolve_resource_file
 
+CONFIG_CHANGE_TIMEOUT = 10
+
+
+def wait_for_config_change(context, key, expected_value):
+    """Wait for a config change to apply.
+
+    Waits until the specified key has changed into the expected value, if
+    the change delays for too long a TimeoutError will be raised.
+
+    Arguments:
+        context (Context): Behave context of current scenario
+        key (str): key to verify
+        expected_value (Object): The expected value indicating that the change
+                                 has been applied
+    """
+    start_time = time.monotonic()
+    while context.config.get(key) != expected_value:
+        time.sleep(0.5)
+        if time.monotonic() - start_time >= CONFIG_CHANGE_TIMEOUT:
+            raise TimeoutError
+
 
 def reset_config(context):
     """Cleanup callback to reset patched configuration
@@ -30,8 +51,7 @@ def reset_config(context):
     context.log.info('Resetting patched configuration...')
     context.bus.emit(Message('configuration.patch.clear'))
     key = list(context.original_config)[0]
-    while context.config[key] != context.original_config[key]:
-        time.sleep(0.5)
+    wait_for_config_change(context, key, context.original_config[key])
 
 
 def patch_config(context, patch):
@@ -60,8 +80,7 @@ def patch_config(context, patch):
 
     # Wait until one of the keys has been updated
     key = list(patch.keys())[0]
-    while context.config.get(key) != patch[key]:
-        time.sleep(0.5)
+    wait_for_config_change(context, key, patch[key])
 
 
 def get_config_file_definition(configs_path, config, value):
