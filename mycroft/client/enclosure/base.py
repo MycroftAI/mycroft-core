@@ -242,7 +242,7 @@ class Enclosure:
         self.loaded[0].pages.pop(pos)
         # Add a check to return any display to idle from position 0
         if (pos == 0 and len(self.loaded[0].pages) == 0):
-            self.bus.emit(Message("mycroft.display.reset_idle"))
+            self.bus.emit(Message("mycroft.device.show.idle"))
 
     def __insert_new_namespace(self, namespace, pages):
         """ Insert new namespace and pages.
