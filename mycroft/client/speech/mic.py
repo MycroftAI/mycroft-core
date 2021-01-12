@@ -103,7 +103,7 @@ class MutableStream:
                 """
                 x = self.wrapped_stream.get_read_available()
                 to_read = min(x, remaining)
-                LOG.error("to_read:%s, size:%s, read_avail:%s, remain:%s" % (to_read, size, x, remaining))
+                #LOG.error("to_read:%s, size:%s, read_avail:%s, remain:%s" % (to_read, size, x, remaining))
                 if to_read <= 0:
                     to_ctr += 1
                     if to_ctr > 20:
@@ -115,7 +115,7 @@ class MutableStream:
                     result = self.wrapped_stream.read(to_read,
                                                   exception_on_overflow=True)
                 except:
-                    LOG.error("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX Overflow exception caught")
+                    #LOG.error("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX Overflow exception caught")
                     return self.muted_buffer
 
                 frames.append(result)
