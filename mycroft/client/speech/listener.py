@@ -106,7 +106,9 @@ class AudioProducer(Thread):
                         raise
                 except Exception:
                     LOG.exception('Exception in AudioProducer')
-                    raise
+                    source.restart()
+                    LOG.info('Restarted...')
+                    #raise
                 else:
                     # Reset restart attempt counter on sucessful audio read
                     restart_attempts = 0

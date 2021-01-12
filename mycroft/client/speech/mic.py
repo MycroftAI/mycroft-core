@@ -89,6 +89,7 @@ class MutableStream:
         """
         frames = deque()
         remaining = size
+        to_ctr = 0
         with self.read_lock:
             while remaining > 0:
                 # If muted during read return empty buffer. This ensures no
@@ -96,13 +97,27 @@ class MutableStream:
                 if self.muted:
                     return self.muted_buffer
 
+                """
                 to_read = min(self.wrapped_stream.get_read_available(),
                               remaining)
+                """
+                x = self.wrapped_stream.get_read_available()
+                to_read = min(x, remaining)
+                LOG.error("to_read:%s, size:%s, read_avail:%s, remain:%s" % (to_read, size, x, remaining))
                 if to_read <= 0:
+                    to_ctr += 1
+                    if to_ctr > 20:
+                        raise Exception
+
                     sleep(.01)
                     continue
-                result = self.wrapped_stream.read(to_read,
-                                                  exception_on_overflow=of_exc)
+                try:
+                    result = self.wrapped_stream.read(to_read,
+                                                  exception_on_overflow=True)
+                except:
+                    LOG.error("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX Overflow exception caught")
+                    return self.muted_buffer
+
                 frames.append(result)
                 remaining -= to_read
 
@@ -385,7 +400,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
             except (requests.RequestException, AttributeError):
                 pass  # These are expected and won't be reported
             except Exception as e:
-                LOG.debug('Unhandled exception while determining device_id, '
+                LOG.error('Unhandled exception while determining device_id, '
                           'Error: {}'.format(repr(e)))
 
         return self._account_id or '0'
@@ -495,7 +510,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
             if check_for_signal('buttonPress'):
                 # Signal is still here, assume it was intended to
                 # begin recording
-                LOG.debug("Button Pressed, wakeword not needed")
+                LOG.error("Button Pressed, wakeword not needed")
                 return True
 
         return False
@@ -708,7 +723,6 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         #       speech is detected, but there is no code to actually do that.
         self.adjust_for_ambient_noise(source, 1.0)
 
-        LOG.debug("Waiting for wake word...")
         ww_data = self._wait_until_wake_word(source, sec_per_buffer)
 
         ww_frames = None
@@ -721,7 +735,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
             # If the waiting returned from a stop signal
             return
 
-        LOG.debug("Recording...")
+        LOG.info("Recording...")
         # If enabled, play a wave file with a short sound to audibly
         # indicate recording has begun.
         if self.config.get('confirm_listening'):
