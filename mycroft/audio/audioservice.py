@@ -208,13 +208,13 @@ class AudioService:
         self.volume_is_low = False
 
         self._loaded = MonotonicEvent()
-        bus.once('open', self.load_services_callback)
+        self.load_services()
 
-    def load_services_callback(self):
-        """
-            Main callback function for loading services. Sets up the globals
-            service and default and registers the event handlers for the
-            subsystem.
+    def load_services(self):
+        """Method for loading services.
+
+        Sets up the global service, default and registers the event handlers
+        for the subsystem.
         """
         services = load_services(self.config, self.bus)
         # Sort services so local services are checked first
