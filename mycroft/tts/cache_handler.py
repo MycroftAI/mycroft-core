@@ -45,28 +45,26 @@ wifi_setup_path = '/usr/local/mycroft/mycroft-wifi-setup/dialog/en-us'
 cache_dialog_path = [res_path, wifi_setup_path]
 
 
-def generate_cache_text(cache_audio_dir, cache_text_file):
+def generate_cache_text(cache_text_file):
     """
     This prepares a text file with all the sentences
     from *.dialog files present in
     mycroft/res/text/en-us and mycroft-wifi setup skill
     Args:
-        cache_audio_dir (path): path to store .wav files
         cache_text_file (file): file containing the sentences
     """
     try:
         if not os.path.isfile(cache_text_file):
-            os.makedirs(cache_audio_dir)
-            f = open(cache_text_file, 'w')
+            text_file = open(cache_text_file, 'w')
             for each_path in cache_dialog_path:
                 if os.path.exists(each_path):
-                    write_cache_text(each_path, f)
-            f.close()
+                    write_cache_text(each_path, text_file)
+            text_file.close()
             LOG.debug("Completed generating cache")
         else:
             LOG.debug("Cache file 'cache_text.txt' already exists")
     except Exception:
-        LOG.error("Could not open text file to write cache")
+        LOG.exception("Could not open text file to write cache")
 
 
 def write_cache_text(cache_path, f):
@@ -172,8 +170,10 @@ def copy_cache(cache_audio_dir):
 def main(cache_audio_dir):
     # Path where cache is stored and not cleared on reboot/TTS change
     if cache_audio_dir:
-        cache_text_file = os.path.join(cache_audio_dir,
-                                       '..', 'cache_text.txt')
-        generate_cache_text(cache_audio_dir, cache_text_file)
-        download_audio(cache_audio_dir, cache_text_file)
+        if not os.path.exists(cache_audio_dir):
+            os.makedirs(cache_audio_dir)
+        cache_text_dir = os.path.dirname(cache_audio_dir)
+        cache_text_path = os.path.join(cache_text_dir, 'cache_text.txt')
+        generate_cache_text(cache_text_path)
+        download_audio(cache_audio_dir, cache_text_path)
         copy_cache(cache_audio_dir)
