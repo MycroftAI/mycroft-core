@@ -45,14 +45,23 @@ wifi_setup_path = '/usr/local/mycroft/mycroft-wifi-setup/dialog/en-us'
 cache_dialog_path = [res_path, wifi_setup_path]
 
 
-def generate_cache_text(cache_text_file):
+def generate_cache_text(cache_audio_dir, cache_text_file):
     """
     This prepares a text file with all the sentences
     from *.dialog files present in
     mycroft/res/text/en-us and mycroft-wifi setup skill
     Args:
+        cache_audio_dir (path): DEPRECATED path to store .wav files
         cache_text_file (file): file containing the sentences
     """
+    # TODO: remove in 21.08
+    if cache_audio_dir is not None:
+        LOG.warning(
+            "the cache_audio_dir argument is deprecated. ensure the directory "
+            "exists before executing this function. support for this argument "
+            "will be removed in version 21.08"
+        )
+        os.makedirs(cache_audio_dir)
     try:
         if not os.path.isfile(cache_text_file):
             text_file = open(cache_text_file, 'w')
@@ -174,6 +183,7 @@ def main(cache_audio_dir):
             os.makedirs(cache_audio_dir)
         cache_text_dir = os.path.dirname(cache_audio_dir)
         cache_text_path = os.path.join(cache_text_dir, 'cache_text.txt')
-        generate_cache_text(cache_text_path)
+        # TODO: remove he first argument in 21.08
+        generate_cache_text(None, cache_text_path)
         download_audio(cache_audio_dir, cache_text_path)
         copy_cache(cache_audio_dir)
