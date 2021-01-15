@@ -103,19 +103,20 @@ class MutableStream:
                 """
                 x = self.wrapped_stream.get_read_available()
                 to_read = min(x, remaining)
-                #LOG.error("to_read:%s, size:%s, read_avail:%s, remain:%s" % (to_read, size, x, remaining))
+                # LOG.info("size:%s, read_avail:%s, remain:%s" % (size, x, remaining))
                 if to_read <= 0:
                     to_ctr += 1
-                    if to_ctr > 20:
+                    if to_ctr > 5:
+                        # this signals to the user they must restart the mic
                         raise Exception
 
-                    sleep(.01)
+                    sleep(0.0625)   # default latency
                     continue
                 try:
                     result = self.wrapped_stream.read(to_read,
-                                                  exception_on_overflow=True)
+                                                      exception_on_overflow=True)
                 except:
-                    #LOG.error("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX Overflow exception caught")
+                    LOG.warning("Overflow exception caught")
                     return self.muted_buffer
 
                 frames.append(result)
@@ -145,6 +146,7 @@ class MutableStream:
 class MutableMicrophone(Microphone):
     def __init__(self, device_index=None, sample_rate=16000, chunk_size=1024,
                  mute=False):
+        chunk_size = 4000
         Microphone.__init__(self, device_index=device_index,
                             sample_rate=sample_rate, chunk_size=chunk_size)
         self.muted = False
@@ -235,6 +237,7 @@ class NoiseTracker:
         silence_after_loud (float): time of silence to finalize the sentence.
                                     default 0.25 seconds.
     """
+
     def __init__(self, minimum, maximum, sec_per_buffer, loud_time_limit,
                  silence_time_limit, silence_after_loud_time=0.25):
         self.min_level = minimum
@@ -490,7 +493,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
                 energy,
                 self.energy_threshold,
                 int(source.muted)
-                )
+            )
             )
 
     def _skip_wake_word(self):
@@ -510,7 +513,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
             if check_for_signal('buttonPress'):
                 # Signal is still here, assume it was intended to
                 # begin recording
-                LOG.error("Button Pressed, wakeword not needed")
+                LOG.info("Button Pressed, wakeword not needed")
                 return True
 
         return False
