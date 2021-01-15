@@ -247,10 +247,11 @@ class TestSkillUpdater(MycroftUnitTestBase):
 
     def test_update_download_time(self):
         """Test updating the next time a download will occur."""
-        dot_msm_path = self.temp_dir.joinpath('.msm')
-        dot_msm_path.touch()
-        dot_msm_mtime_before = dot_msm_path.stat().st_mtime
+        skill_updater = SkillUpdater(self.message_bus_mock)
+        skill_updater.dot_msm_path = self.temp_dir.joinpath('.msm')
+        skill_updater.dot_msm_path.touch()
+        dot_msm_mtime_before = skill_updater.dot_msm_path.stat().st_mtime
         sleep(0.5)
-        SkillUpdater(self.message_bus_mock)._update_download_time()
-        dot_msm_mtime_after = dot_msm_path.stat().st_mtime
+        skill_updater._update_download_time()
+        dot_msm_mtime_after = skill_updater.dot_msm_path.stat().st_mtime
         self.assertLess(dot_msm_mtime_before, dot_msm_mtime_after)

@@ -124,7 +124,7 @@ class MycroftSkill:
 
         # Get directory of skill
         #: Member variable containing the absolute path of the skill's root
-        #: directory. E.g. /opt/mycroft/skills/my-skill.me/
+        #: directory. E.g. $XDG_DATA_HOME/mycroft/skills/my-skill.me/
         self.root_dir = dirname(abspath(sys.modules[self.__module__].__file__))
 
         self.gui = SkillGUI(self)
