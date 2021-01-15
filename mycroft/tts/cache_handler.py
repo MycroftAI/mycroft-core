@@ -61,7 +61,8 @@ def generate_cache_text(cache_audio_dir, cache_text_file):
             "exists before executing this function. support for this argument "
             "will be removed in version 21.08"
         )
-        os.makedirs(cache_audio_dir)
+        if not os.path.exists(cache_audio_dir):
+            os.makedirs(cache_audio_dir)
     try:
         if not os.path.isfile(cache_text_file):
             text_file = open(cache_text_file, 'w')
