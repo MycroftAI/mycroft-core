@@ -26,6 +26,8 @@ ROOT_DIRNAME=$(dirname "$0")
 cd "$ROOT_DIRNAME"
 TOP=$(pwd -L)
 
+logdir="${XDG_CACHE_HOME:-$HOME/.cache}/mycroft"
+
 function clean_mycroft_files() {
     echo '
 This will completely remove any files installed by mycroft (including pairing
@@ -39,12 +41,21 @@ Do you wish to continue? (y/n)'
         read -rN1 -s key
         case $key in
         [Yy])
-            sudo rm -rf /var/log/mycroft
+            rm -rf "$logdir"
             rm -f /var/tmp/mycroft_web_cache.json
             rm -rf "${TMPDIR:-/tmp}/mycroft"
             rm -rf "$HOME/.mycroft"
             rm -f "skills"  # The Skills directory symlink
-            sudo rm -rf "/opt/mycroft"
+
+            # If the following directories don't exist anyway we don't have to use sudo
+            # These directories aren't used anymore anyway and are only leftovers
+            if [ -d "/var/log/mycroft" ]; then
+                sudo rm -rf /var/log/mycroft
+            fi
+            if [ -d "/opt/mycroft" ]; then
+                sudo rm -rf /opt/mycroft
+            fi
+            "${VIRTUALENV}"/bin/pip uninstall .
             exit 0
             ;;
         [Nn])
@@ -271,35 +282,6 @@ locally?'
     fi
 
     echo
-    # Add mycroft-core/bin to the .bashrc PATH?
-    sleep 0.5
-    echo '
-There are several Mycroft helper commands in the bin folder.  These
-can be added to your system PATH, making it simpler to use Mycroft.
-Would you like this to be added to your PATH in the .profile?'
-    if get_YN ; then
-        echo -e "$HIGHLIGHT Y - Adding Mycroft commands to your PATH $RESET" | tee -a /var/log/mycroft/setup.log
-
-        if [[ ! -f ~/.profile_mycroft ]] ; then
-            # Only add the following to the .profile if .profile_mycroft
-            # doesn't exist, indicating this script has not been run before
-            {
-                echo ''
-                echo '# include Mycroft commands'
-                echo 'source ~/.profile_mycroft'
-            } >> ~/.profile
-        fi
-
-        echo "
-# WARNING: This file may be replaced in future, do not customize.
-# set path so it includes Mycroft utilities
-if [ -d \"${TOP}/bin\" ] ; then
-    PATH=\"\$PATH:${TOP}/bin\"
-fi" > ~/.profile_mycroft
-        echo -e "Type ${CYAN}mycroft-help$RESET to see available commands."
-    else
-        echo -e "$HIGHLIGHT N - PATH left unchanged $RESET" | tee -a /var/log/mycroft/setup.log
-    fi
 
     # Create a link to the 'skills' folder.
     sleep 0.5
@@ -378,17 +360,14 @@ Please review the following package changes carefully."
     fi
 }
 
-
 function open_suse_install() {
     $SUDO zypper install -y git python3 python3-devel libtool libffi-devel libopenssl-devel autoconf automake bison swig portaudio-devel mpg123 flac curl libicu-devel pkg-config libjpeg-devel libfann-devel python3-curses pulseaudio
     $SUDO zypper install -y -t pattern devel_C_C++
 }
 
-
 function fedora_install() {
     $SUDO dnf install -y git python3 python3-devel python3-pip python3-setuptools python3-virtualenv pygobject3-devel libtool libffi-devel openssl-devel autoconf bison swig glib2-devel portaudio-devel mpg123 mpg123-plugins-pulseaudio screen curl pkgconfig libicu-devel automake libjpeg-turbo-devel fann-devel gcc-c++ redhat-rpm-config jq make pulseaudio-utils
 }
-
 
 function arch_install() {
     pkgs=( git python python-pip python-setuptools python-virtualenv python-gobject libffi swig portaudio mpg123 screen flac curl icu libjpeg-turbo base-devel jq )
@@ -409,7 +388,6 @@ function arch_install() {
         rm -rf fann
     )
 }
-
 
 function centos_install() {
     $SUDO yum install epel-release
@@ -599,30 +577,8 @@ if ! grep -q "$TOP" "$VENV_PATH_FILE" ; then
     sed -i.tmp "1 a$TOP" "$VENV_PATH_FILE"
 fi
 
-# install required python modules
-if ! pip install -r requirements/requirements.txt ; then
-    echo 'Warning: Failed to install required dependencies. Continue? y/N' | tee -a /var/log/mycroft/setup.log
-    read -rn1 continue
-    if [[ $continue != 'y' ]] ; then
-        exit 1
-    fi
-fi
-
-# install optional python modules
-if [[ ! $(pip install -r requirements/extra-audiobackend.txt) ||
-    ! $(pip install -r requirements/extra-stt.txt) ||
-    ! $(pip install -r requirements/extra-mark1.txt) ]] ; then
-    echo 'Warning: Failed to install some optional dependencies. Continue? y/N' | tee -a /var/log/mycroft/setup.log
-    read -rn1 continue
-    if [[ $continue != 'y' ]] ; then
-        exit 1
-    fi
-fi
-
-
-if ! pip install -r requirements/tests.txt ; then
-    echo "Warning: Test requirements failed to install. Note: normal operation should still work fine..." | tee -a /var/log/mycroft/setup.log
-fi
+# Actually install Mycroft and it's deps
+pip install -e ".[test,audio-backend,stt,mark1]"
 
 SYSMEM=$(free | awk '/^Mem:/ { print $2 }')
 MAXCORES=$((SYSMEM / 2202010))
