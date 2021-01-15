@@ -356,19 +356,13 @@ class AudioService:
             self.current.lower_volume()
             self.volume_is_low = True
 
-    def _restore_volume(self, message=None):
-        """
-            Is triggered when mycroft is done speaking and restores the volume
-
-            Args:
-                message: message bus message, not used but required
-        """
-        if self.current:
+    def _restore_volume(self, _=None):
+        """Triggered when mycroft is done speaking and restores the volume."""
+        current = self.current
+        if current:
             LOG.debug('restoring volume')
             self.volume_is_low = False
-            time.sleep(2)
-            if not self.volume_is_low:
-                self.current.restore_volume()
+            current.restore_volume()
 
     def _restore_volume_after_record(self, message=None):
         """
