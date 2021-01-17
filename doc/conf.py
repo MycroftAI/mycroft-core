@@ -66,7 +66,6 @@ autodoc_mock_imports = list(autodoc_mock_imports) + [
     'serial',
     'websocket',
     'speech_recognition',
-    'xdg',
     'yaml'
 ]
 
