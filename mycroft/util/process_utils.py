@@ -1,7 +1,7 @@
 import json
 import logging
 import signal as sig
-from threading import Thread
+from threading import Event, Thread
 from time import sleep
 
 from .log import LOG
@@ -121,3 +121,34 @@ def create_echo_function(name, whitelist=None):
             # Listen for messages and echo them for logging
             LOG(name).info("BUS: {}".format(message))
     return echo
+
+
+def start_message_bus_client(service, bus=None, whitelist=None):
+    """Start the bus client daemon and wait for connection.
+
+    Arguments:
+        service (str): name of the service starting the connection
+        bus (MessageBusClient): an instance of the Mycroft MessageBusClient
+        whitelist (list, optional): List of "type" strings. If defined, only
+                                    messages in this list will be logged.
+    Returns:
+        A connected instance of the MessageBusClient
+    """
+    # Local imports to avoid circular importing
+    from mycroft.messagebus.client import MessageBusClient
+    from mycroft.configuration import Configuration
+    # Create a client if one was not provided
+    if bus is None:
+        bus = MessageBusClient()
+    Configuration.set_config_update_handlers(bus)
+    bus_connected = Event()
+    bus.on('message', create_echo_function(service, whitelist))
+    # Set the bus connected event when connection is established
+    bus.once('open', bus_connected.set)
+    create_daemon(bus.run_forever)
+
+    # Wait for connection
+    bus_connected.wait()
+    LOG.info('Connected to messagebus')
+
+    return bus
