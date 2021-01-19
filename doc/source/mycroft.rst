@@ -56,6 +56,11 @@ removes_context decorator
 -------------------------
 .. autofunction:: mycroft.removes_context
 
+mycroft.filesystem
+==================
+
+.. toctree::
+    mycroft.filesystem
 
 mycroft.util
 ===============

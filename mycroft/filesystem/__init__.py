@@ -17,13 +17,14 @@ from os.path import join, expanduser, isdir
 
 
 class FileSystemAccess:
-    """
-    A class for providing access to the mycroft FS sandbox. Intended to be
-    attached to skills at initialization time to provide a skill-specific
-    namespace.
+    """A class for providing access to the mycroft FS sandbox.
+
+    Intended to be attached to skills at initialization time to provide a
+    skill-specific namespace.
     """
 
     def __init__(self, path):
+        #: Member value containing the root path of the namespace
         self.path = self.__init_path(path)
 
     @staticmethod
@@ -37,19 +38,30 @@ class FileSystemAccess:
         return path
 
     def open(self, filename, mode):
-        """
+        """Open a file in the provided namespace.
+
         Get a handle to a file (with the provided mode) within the
         skill-specific namespace.
 
-        :param filename: a str representing a path relative to the namespace.
-            subdirs not currently supported.
+        Parameters:
+            filename (str): a path relative to the namespace.
+                      subdirs not currently supported.
 
-        :param mode: a file handle mode
+            mode (str): a file handle mode
 
-        :return: an open file handle.
+        Returns:
+            an open file handle.
         """
         file_path = join(self.path, filename)
         return open(file_path, mode)
 
     def exists(self, filename):
+        """Check if file exists in the namespace.
+
+        Arguments:
+            filename (str): a path relative to the namespace.
+                      subdirs not currently supported.
+        Returns:
+            bool: True if file exists, else False.
+        """
         return os.path.exists(join(self.path, filename))
