@@ -1,10 +1,11 @@
 platform: mycroft_mark_1
 test_skills:
-- mycroft-alarm
 - mycroft-timer
 - mycroft-date-time
-- mycroft-npr-news
 - mycroft-weather
 - mycroft-hello-world
 - mycroft-pairing
 - mycroft-wiki
+- fallback-unknown
+- mycroft-volume
+- fallback-query
