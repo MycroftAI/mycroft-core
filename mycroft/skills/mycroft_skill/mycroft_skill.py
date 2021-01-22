@@ -334,7 +334,7 @@ class MycroftSkill:
         """
         return None
 
-    def converse(self, utterances, lang=None):
+    def converse(self, utterances, lang=None, message=None):
         """Handle conversation.
 
         This method gets a peek at utterances before the normal intent
@@ -350,6 +350,8 @@ class MycroftSkill:
                                first entry is the user utt and the second
                                is normalized() version of the first utterance
             lang:       language the utterance is in, None for default
+            message:    a message object containing a message type with an
+                        optional JSON data packet
 
         Returns:
             bool: True if an utterance was handled, otherwise False

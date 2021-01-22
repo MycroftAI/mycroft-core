@@ -447,9 +447,11 @@ class SkillManager(Thread):
                     utterances = message.data['utterances']
                     lang = message.data['lang']
                     # check the signature of a converse method to either pass a message or not
-                    if len(signature(skill_loader.instance.converse).parameters) == 3:
-                        result = skill_loader.instance.converse(utterances, lang, message)
+                    if len(signature(skill_loader.instance.converse).parameters) == 1:
+                        result = skill_loader.instance.converse(message)
                     else:
+                        utterances = message.data['utterances']
+                        lang = message.data['lang']
                         result = skill_loader.instance.converse(utterances, lang)
                     self._emit_converse_response(result, message, skill_loader)
                 except Exception:
