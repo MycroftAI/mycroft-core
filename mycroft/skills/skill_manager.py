@@ -444,8 +444,6 @@ class SkillManager(Thread):
                     self._emit_converse_error(message, skill_id, error_message)
                     break
                 try:
-                    utterances = message.data['utterances']
-                    lang = message.data['lang']
                     # check the signature of a converse method to either pass a message or not
                     if len(signature(skill_loader.instance.converse).parameters) == 1:
                         result = skill_loader.instance.converse(message)
