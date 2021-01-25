@@ -334,7 +334,7 @@ class MycroftSkill:
         """
         return None
 
-    def converse(self, utterances, lang=None, message=None):
+    def converse(self, utterances=None, lang=None, message=None):
         """Handle conversation.
 
         This method gets a peek at utterances before the normal intent
@@ -343,13 +343,9 @@ class MycroftSkill:
         To use, override the converse() method and return True to
         indicate that the utterance has been handled.
 
+        utterances and lang are depreciated and shout NOT be used in newer skills
+
         Arguments:
-            utterances (list): The utterances from the user.  If there are
-                               multiple utterances, consider them all to be
-                               transcription possibilities.  Commonly, the
-                               first entry is the user utt and the second
-                               is normalized() version of the first utterance
-            lang:       language the utterance is in, None for default
             message:    a message object containing a message type with an
                         optional JSON data packet
 
