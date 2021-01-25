@@ -1,0 +1,50 @@
+# This workflow will install Python dependencies, run tests and lint with all supported versions of Python
+# For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
+
+name: Python application
+
+on:
+  push:
+    branches: [ test-github-actions ]
+  pull_request:
+    branches: [ test-github-actions ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.5, 3.6, 3.7, 3.8, 3.9]
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install apt dependencies
+      run: |
+        sudo apt-get update -qq
+        sudo apt-get install -qq mpg123 portaudio19-dev libglib2.0-dev swig bison libtool autoconf libglib2.0-dev libicu-dev libfann-dev realpath
+        sudo apt-get install -y gcc-4.8 g++-4.8
+        export CC="gcc-4.8"
+        export TMPDIR="/tmp/${{ matrix.python-version }}"
+    - name: Run dev_setup script
+      run: |
+        rm -rf ${TMPDIR}
+        mkdir ${TMPDIR}
+        echo ${TMPDIR}
+        if [[ ${{ matrix.python-version }} == 3.9 ]]; then VIRTUALENV_ROOT=${VIRTUAL_ENV} ./dev_setup.sh; fi
+        # Skip mimic build for other versions because they should not differ
+        if [[ ${{ matrix.python-version }} != 3.9 ]]; then VIRTUALENV_ROOT=${VIRTUAL_ENV} ./dev_setup.sh -sm; fi
+    - name: Lint with flake8 and pycodestyle
+      run: |
+        pycodestyle mycroft test
+        # stop the build if there are Python syntax errors or undefined names
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+    - name: Run the unit tests with pytest
+      run: |
+        ./start-mycroft.sh unittest
+    - name: Collect code coverage
+      run: |
+        coveralls
