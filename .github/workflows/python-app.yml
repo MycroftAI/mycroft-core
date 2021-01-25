@@ -30,6 +30,7 @@ jobs:
         export CC="gcc-4.8"
     - name: Run dev_setup script
       run: |
+        export CI=true
         export TMPDIR="/tmp/${{ matrix.python-version }}"
         rm -rf ${TMPDIR}
         mkdir ${TMPDIR}
