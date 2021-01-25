@@ -40,7 +40,7 @@ jobs:
         if [[ ${{ matrix.python-version }} != 3.9 ]]; then VIRTUALENV_ROOT=${VIRTUAL_ENV} ./dev_setup.sh -sm; fi
     - name: Lint with flake8 and pycodestyle
       run: |
-        pycodestyle mycroft test
+        # pycodestyle mycroft test
         # stop the build if there are Python syntax errors or undefined names
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
     - name: Run the unit tests with pytest
