@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.5, 3.6, 3.7, 3.8, 3.9]
+        python-version: [3.5]
     steps:
     - uses: actions/checkout@v2
     - name: Set up Python ${{ matrix.python-version }}
@@ -28,9 +28,9 @@ jobs:
         sudo apt-get install -qq mpg123 portaudio19-dev libglib2.0-dev swig bison libtool autoconf libglib2.0-dev libicu-dev libfann-dev
         sudo apt-get install -y gcc-4.8 g++-4.8
         export CC="gcc-4.8"
-        export TMPDIR="/tmp/${{ matrix.python-version }}"
     - name: Run dev_setup script
       run: |
+        export TMPDIR="/tmp/${{ matrix.python-version }}"
         rm -rf ${TMPDIR}
         mkdir ${TMPDIR}
         echo ${TMPDIR}
