@@ -49,10 +49,10 @@ jobs:
         rm -rf ${TMPDIR}
         mkdir ${TMPDIR}
         echo ${TMPDIR}
-        if [[ ${{ matrix.python-version }} == 3.6 ]]; then VIRTUALENV_ROOT=${VIRTUAL_ENV} ./dev_setup.sh; fi
+        if [[ ${{ matrix.python-version }} == 3.9 ]]; then VIRTUALENV_ROOT=${VIRTUAL_ENV} ./dev_setup.sh; fi
         # Skip mimic build for other versions because they should not differ
-        if [[ ${{ matrix.python-version }} != 3.6 ]]; then VIRTUALENV_ROOT=${VIRTUAL_ENV} ./dev_setup.sh -sm; fi
-    - name: Lint with flake8 and pycodestyle
+        if [[ ${{ matrix.python-version }} != 3.9 ]]; then VIRTUALENV_ROOT=${VIRTUAL_ENV} ./dev_setup.sh -sm; fi
+    - name: Linting and formatting checks
       run: |
         pycodestyle mycroft test
         flake8 mycroft test --count --select=E9,F63,F7,F82 --show-source --statistics
@@ -60,5 +60,15 @@ jobs:
       run: |
         ./start-mycroft.sh unittest
     - name: Code coverage
-      run: |
-        coveralls
+      uses: AndreMiras/coveralls-python-action@develop
+      with:
+        parallel: true
+
+  coveralls_finish:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Coveralls Finished
+        uses: AndreMiras/coveralls-python-action@develop
+        with:
+          parallel-finished: true
