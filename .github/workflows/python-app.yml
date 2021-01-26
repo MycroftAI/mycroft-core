@@ -59,15 +59,3 @@ jobs:
     - name: Run the unit tests with pytest
       run: |
         ./start-mycroft.sh unittest --cov-report html
-    - name: Code coverage
-      uses: AndreMiras/coveralls-python-action@develop
-      with:
-        parallel: true
-  coveralls_finish:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Coveralls Finished
-        uses: AndreMiras/coveralls-python-action@develop
-        with:
-          parallel-finished: true
