@@ -7,7 +7,7 @@ on:
   push:
     branches: [ test-github-actions ]
   pull_request:
-    branches: [ test-github-actions ]
+    branches: [ dev ]
 
 jobs:
   build:
