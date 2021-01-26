@@ -58,17 +58,6 @@ jobs:
         flake8 mycroft test --count --select=E9,F63,F7,F82 --show-source --statistics
     - name: Run the unit tests with pytest
       run: |
-        ./start-mycroft.sh unittest
-    - name: Code coverage
-      uses: AndreMiras/coveralls-python-action@develop
-      with:
-        parallel: true
-
-  coveralls_finish:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Coveralls Finished
-        uses: AndreMiras/coveralls-python-action@develop
-        with:
-          parallel-finished: true
+        source ${VIRTUALENV_ROOT}/bin/activate
+        python3 -m pip install pytest-cov
+        pytest test/unittests/ --cov=mycroft --cov-report html
