@@ -45,10 +45,6 @@ jobs:
       run: |
         export CC="gcc-4.8"
         export CI=true
-        export TMPDIR="/tmp/${{ matrix.python-version }}"
-        rm -rf ${TMPDIR}
-        mkdir ${TMPDIR}
-        echo ${TMPDIR}
         if [[ ${{ matrix.python-version }} == 3.9 ]]; then VIRTUALENV_ROOT=${VIRTUAL_ENV} ./dev_setup.sh; fi
         # Skip mimic build for other versions because they should not differ
         if [[ ${{ matrix.python-version }} != 3.9 ]]; then VIRTUALENV_ROOT=${VIRTUAL_ENV} ./dev_setup.sh -sm; fi
@@ -58,11 +54,11 @@ jobs:
         flake8 mycroft test --count --select=E9,F63,F7,F82 --show-source --statistics
     - name: Run the unit tests
       run: |
+        # Only generate the html report for one of the versions, other should not differ
         if [[ ${{ matrix.python-version }} == 3.9 ]]; then ./start-mycroft.sh unittest --cov-report html; fi
-        # Skip code coverage for other versions because they should not differ
         if [[ ${{ matrix.python-version }} != 3.9 ]]; then ./start-mycroft.sh unittest; fi
     - name: Publish coverage report
       uses: actions/upload-artifact@v2
       with:
-        name: test_coverage_report.html
+        name: test_coverage_report
         path: htmlcov
