@@ -55,11 +55,10 @@ jobs:
     - name: Run the unit tests
       run: |
         # Only generate the html report for one of the versions, other should not differ
-        if [[ ${{ matrix.python-version }} == 3.9 ]]; then ./start-mycroft.sh unittest --cov-report xml; fi
+        if [[ ${{ matrix.python-version }} == 3.9 ]]; then ./start-mycroft.sh unittest --cov-report html; fi
         if [[ ${{ matrix.python-version }} != 3.9 ]]; then ./start-mycroft.sh unittest; fi
     - name: Publish coverage report
-      # uses: actions/upload-artifact@v2
-      uses: coverallsapp/github-action@master
+      uses: actions/upload-artifact@v2
       with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        path: coverage.xml
+        name: test_coverage_report
+        path: htmlcov
