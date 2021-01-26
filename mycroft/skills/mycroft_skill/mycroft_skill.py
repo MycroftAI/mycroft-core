@@ -343,7 +343,7 @@ class MycroftSkill:
         To use, override the converse() method and return True to
         indicate that the utterance has been handled.
 
-        utterances and lang are depreciated and shout NOT be used in newer skills
+        utterances and lang are depreciated
 
         Arguments:
             message:    a message object containing a message type with an
