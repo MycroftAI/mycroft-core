@@ -37,7 +37,6 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get update -qq
-        sudo apt-get install -qq mpg123 portaudio19-dev libglib2.0-dev swig bison libtool autoconf libglib2.0-dev libicu-dev libfann-dev coreutils
         sudo apt-get install -y gcc-4.8 g++-4.8
         export CI=true
         export CC="gcc-4.8"
