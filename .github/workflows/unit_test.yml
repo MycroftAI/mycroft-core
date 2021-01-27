@@ -1,3 +1,7 @@
+# Perform linting, code style checking, and unit tests on mycroft-core
+#
+# This is only part of the continuous integration (CI) process for mycroft-core
+# behavioral tests (Voight-Kampff) are run in a Jenkins job.
 name: Unit Tests
 
 on:
@@ -15,6 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
+        # Run for all versions of Python officially supported by mycroft-core
         python-version: [3.5, 3.6, 3.7, 3.8, 3.9]
     steps:
     - uses: actions/checkout@v2
@@ -34,26 +39,31 @@ jobs:
           ${{ runner.os }}-build-${{ env.cache-name }}-
           ${{ runner.os }}-build-
           ${{ runner.os }}-
-    - name: Install dependencies
+    - name: Install compilers
       run: |
         sudo apt-get update -qq
         sudo apt-get install -y gcc-4.8 g++-4.8
-        export CI=true
-        export CC="gcc-4.8"
-        pip install -r requirements/tests.txt
+    - name: Install Python packages for testing
+      run: pip install -r requirements/tests.txt
+    - name: Setup mycroft core
+      # Only build mimic for one Python version; others should not differ
+      run: |
         if [[ ${{ matrix.python-version }} == 3.9 ]]; then ./dev_setup.sh; fi
-        # Skip mimic build for other versions because they should not differ
         if [[ ${{ matrix.python-version }} != 3.9 ]]; then ./dev_setup.sh -sm; fi
-    - name: Codestyle
+      env:
+        CC: gcc-4.8
+        CI: true
+    - name: Linting and code style
       run: |
         pycodestyle mycroft test
         flake8 mycroft test --count --select=E9,F63,F7,F82 --show-source --statistics
     - name: Run unit tests
+      # Only generate the html report for one of the versions, others should not differ
       run: |
-        # Only generate the html report for one of the versions, others should not differ
         if [[ ${{ matrix.python-version }} == 3.9 ]]; then ./start-mycroft.sh unittest --cov-report html; fi
         if [[ ${{ matrix.python-version }} != 3.9 ]]; then ./start-mycroft.sh unittest; fi
     - name: Upload code coverage
+      # Only upload the report for the Python version that generated it
       run: if [[ ${{ matrix.python-version }} == 3.9 ]]; then bash <(curl -s https://codecov.io/bash); fi
       env:
         CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
