@@ -54,10 +54,9 @@ jobs:
     - name: Run the unit tests
       run: |
         # Only generate the html report for one of the versions, other should not differ
-        ./start-mycroft.sh unittest --cov-report xml;
-        # if [[ ${{ matrix.python-version }} == 3.9 ]]; then ./start-mycroft.sh unittest --cov-report xml; fi
-        # if [[ ${{ matrix.python-version }} != 3.9 ]]; then ./start-mycroft.sh unittest; fi
+        if [[ ${{ matrix.python-version }} == 3.9 ]]; then ./start-mycroft.sh unittest --cov-report html; fi
+        if [[ ${{ matrix.python-version }} != 3.9 ]]; then ./start-mycroft.sh unittest; fi
     - name: Upload code coverage
-      run: bash <(curl -s https://codecov.io/bash)
+      run: if [[ ${{ matrix.python-version }} == 3.9 ]]; then bash <(curl -s https://codecov.io/bash); fi
       env:
         CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
