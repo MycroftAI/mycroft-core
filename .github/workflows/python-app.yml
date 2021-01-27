@@ -37,16 +37,17 @@ jobs:
       run: |
         sudo apt-get update -qq
         # sudo apt-get install -qq mpg123 portaudio19-dev libglib2.0-dev swig bison libtool autoconf libglib2.0-dev libicu-dev libfann-dev coreutils
-        sudo apt-get install -y gcc-4.8 g++-4.8
+        # sudo apt-get install -y gcc-4.8 g++-4.8
     - name: Install test dependencies
       run: pip install -r requirements/tests.txt
     - name: Run dev_setup script
       run: |
-        export CC="gcc-4.8"
-        export CI=true
         if [[ ${{ matrix.python-version }} == 3.9 ]]; then VIRTUALENV_ROOT=${VIRTUAL_ENV} ./dev_setup.sh; fi
         # Skip mimic build for other versions because they should not differ
         if [[ ${{ matrix.python-version }} != 3.9 ]]; then VIRTUALENV_ROOT=${VIRTUAL_ENV} ./dev_setup.sh -sm; fi
+      env:
+        CC: gcc-4.8
+        CI: true
     - name: Linting and formatting
       run: |
         pycodestyle mycroft test
