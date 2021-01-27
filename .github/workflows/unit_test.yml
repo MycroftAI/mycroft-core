@@ -48,19 +48,12 @@ jobs:
       run: |
         pycodestyle mycroft test
         flake8 mycroft test --count --select=E9,F63,F7,F82 --show-source --statistics
-    - name: Tests
+    - name: Run unit tests
       run: |
-        ./start-mycroft.sh unittest
-    - name: Coveralls
-      uses: AndreMiras/coveralls-python-action@develop
-      with:
-        parallel: true
-
-  coveralls_finish:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Coveralls Finished
-        uses: AndreMiras/coveralls-python-action@develop
-        with:
-          parallel-finished: true
+        # Only generate the html report for one of the versions, others should not differ
+        if [[ ${{ matrix.python-version }} == 3.9 ]]; then ./start-mycroft.sh unittest --cov-report html; fi
+        if [[ ${{ matrix.python-version }} != 3.9 ]]; then ./start-mycroft.sh unittest; fi
+    - name: Upload code coverage
+      run: if [[ ${{ matrix.python-version }} == 3.9 ]]; then bash <(curl -s https://codecov.io/bash); fi
+      env:
+        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
