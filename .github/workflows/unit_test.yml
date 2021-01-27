@@ -20,7 +20,7 @@ jobs:
     strategy:
       matrix:
         # Run for all versions of Python officially supported by mycroft-core
-        python-version: [3.5, 3.6, 3.7, 3.8, 3.9]
+        python-version: [3.6, 3.7, 3.8, 3.9]
     steps:
     - uses: actions/checkout@v2
     - name: Set up Python ${{ matrix.python-version }}
