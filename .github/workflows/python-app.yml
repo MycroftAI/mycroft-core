@@ -39,8 +39,7 @@ jobs:
         sudo apt-get install -qq mpg123 portaudio19-dev libglib2.0-dev swig bison libtool autoconf libglib2.0-dev libicu-dev libfann-dev coreutils
         sudo apt-get install -y gcc-4.8 g++-4.8
     - name: Install test dependencies
-      run: |
-        pip install -r requirements/tests.txt
+      run: pip install -r requirements/tests.txt
     - name: Run dev_setup script
       run: |
         export CC="gcc-4.8"
@@ -58,8 +57,7 @@ jobs:
         ./start-mycroft.sh unittest --cov-report xml;
         # if [[ ${{ matrix.python-version }} == 3.9 ]]; then ./start-mycroft.sh unittest --cov-report xml; fi
         # if [[ ${{ matrix.python-version }} != 3.9 ]]; then ./start-mycroft.sh unittest; fi
-    - name: Publish coverage report
-      uses: 5monkeys/cobertura-action@master
-      with:
-        repo_token: ${{ secrets.GITHUB_TOKEN }}
-        minimum_coverage: 0
+    - name: Upload code coverage
+      run: bash <(curl -s https://codecov.io/bash)
+      env:
+        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
