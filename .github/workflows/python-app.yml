@@ -33,14 +33,13 @@ jobs:
            ${{ runner.os }}-build-${{ env.cache-name }}-
            ${{ runner.os }}-build-
            ${{ runner.os }}-
-    - name: Install apt dependencies
+    - name: Install compilers
       run: |
         sudo apt-get update -qq
-        # sudo apt-get install -qq mpg123 portaudio19-dev libglib2.0-dev swig bison libtool autoconf libglib2.0-dev libicu-dev libfann-dev coreutils
-        # sudo apt-get install -y gcc-4.8 g++-4.8
-    - name: Install test dependencies
+        sudo apt-get install -y gcc-4.8 g++-4.8
+    - name: Install Python dependencies for testing
       run: pip install -r requirements/tests.txt
-    - name: Run dev_setup script
+    - name: Mycroft core setup
       run: |
         if [[ ${{ matrix.python-version }} == 3.9 ]]; then VIRTUALENV_ROOT=${VIRTUAL_ENV} ./dev_setup.sh; fi
         # Skip mimic build for other versions because they should not differ
