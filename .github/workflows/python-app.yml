@@ -1,20 +1,26 @@
-# This workflow will install Python dependencies, run tests and lint with all supported versions of Python
-# For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
-
-name: Myroft Core CI
+# Perform linting, code style checking, and unit tests on mycroft-core
+#
+# This is only part of the continuous integration (CI) process for mycroft-core
+# behavioral tests (Voight-Kampff) are run in a Jenkins job.
+name: Unit Tests
 
 on:
   push:
-    branches: [ test-github-actions ]
+    branches:
+      - dev
+      - master
   pull_request:
-    branches: [ dev ]
+    branches:
+      - dev
+      - master
 
 jobs:
   build:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.6, 3.7, 3.8, 3.9]
+        # Run for all versions of Python officially supported by mycroft-core
+        python-version: [3.5, 3.6, 3.7, 3.8, 3.9]
     steps:
     - uses: actions/checkout@v2
     - name: Set up Python ${{ matrix.python-version }}
@@ -27,36 +33,37 @@ jobs:
         cache-name: cache-pypi-modules
       with:
         # pip cache files are stored in `~/.cache/pip` on Linux
-         path: ~/.cache/pip
-         key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('requirements/requirements.txt', 'requirements/tests.txt') }}
-         restore-keys: |
-           ${{ runner.os }}-build-${{ env.cache-name }}-
-           ${{ runner.os }}-build-
-           ${{ runner.os }}-
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('requirements/requirements.txt', 'requirements/tests.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-build-${{ env.cache-name }}-
+          ${{ runner.os }}-build-
+          ${{ runner.os }}-
     - name: Install compilers
       run: |
         sudo apt-get update -qq
         sudo apt-get install -y gcc-4.8 g++-4.8
-    - name: Install Python dependencies for testing
+    - name: Install Python packages for testing
       run: pip install -r requirements/tests.txt
-    - name: Mycroft core setup
+    - name: Setup mycroft core
+      # Only build mimic for one Python version; others should not differ
       run: |
-        if [[ ${{ matrix.python-version }} == 3.9 ]]; then VIRTUALENV_ROOT=${VIRTUAL_ENV} ./dev_setup.sh; fi
-        # Skip mimic build for other versions because they should not differ
-        if [[ ${{ matrix.python-version }} != 3.9 ]]; then VIRTUALENV_ROOT=${VIRTUAL_ENV} ./dev_setup.sh -sm; fi
+        if [[ ${{ matrix.python-version }} == 3.9 ]]; then ./dev_setup.sh; fi
+        if [[ ${{ matrix.python-version }} != 3.9 ]]; then ./dev_setup.sh -sm; fi
       env:
         CC: gcc-4.8
         CI: true
-    - name: Linting and formatting
+    - name: Linting and code style
       run: |
         pycodestyle mycroft test
         flake8 mycroft test --count --select=E9,F63,F7,F82 --show-source --statistics
-    - name: Run the unit tests
+    - name: Run unit tests
+      # Only generate the html report for one of the versions, others should not differ
       run: |
-        # Only generate the html report for one of the versions, other should not differ
         if [[ ${{ matrix.python-version }} == 3.9 ]]; then ./start-mycroft.sh unittest --cov-report html; fi
         if [[ ${{ matrix.python-version }} != 3.9 ]]; then ./start-mycroft.sh unittest; fi
     - name: Upload code coverage
+      # Only upload the report for the Python version that generated it
       run: if [[ ${{ matrix.python-version }} == 3.9 ]]; then bash <(curl -s https://codecov.io/bash); fi
       env:
         CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
