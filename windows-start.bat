@@ -1,0 +1,5 @@
+start "Mycroft Message Bus" cmd /c "venv-activate.bat&&python -m mycroft.messagebus.service"
+start "Mycroft Skills" cmd /c "venv-activate.bat&&python -m mycroft.skills"
+start "Mycroft Text Interface" cmd /c "venv-activate.bat&&python -m mycroft.client.text"
+start "Mycroft Audio" cmd /c "venv-activate.bat&&python -m mycroft.audio"
+start "Mycroft Speech" cmd /c "venv-activate.bat&&python -m mycroft.client.speech"
