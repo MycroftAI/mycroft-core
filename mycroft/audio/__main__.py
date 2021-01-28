@@ -23,6 +23,7 @@ from mycroft.util import (
     wait_for_exit_signal
 )
 from mycroft.util.log import LOG
+from mycroft.util.process_utils import ProcessStatus, StatusCallbackMap
 
 import mycroft.audio.speech as speech
 from .audioservice import AudioService
@@ -48,20 +49,25 @@ def main(ready_hook=on_ready, error_hook=on_error, stopping_hook=on_stopping):
         check_for_signal("isSpeaking")
         whitelist = ['mycroft.audio.service']
         bus = start_message_bus_client("AUDIO", whitelist=whitelist)
+        callbacks = StatusCallbackMap(on_ready=ready_hook, on_error=error_hook,
+                                      on_stopping=stopping_hook)
+        status = ProcessStatus('audio', bus, callbacks)
+
         speech.init(bus)
 
         # Connect audio service instance to message bus
         audio = AudioService(bus)
+        status.set_started()
     except Exception as e:
-        error_hook(e)
+        status.set_error(e)
     else:
         if audio.wait_for_load() and len(audio.service) > 0:
             # If at least one service exists, report ready
-            ready_hook()
+            status.set_ready()
             wait_for_exit_signal()
-            stopping_hook()
+            status.set_stopping()
         else:
-            error_hook('No audio services loaded')
+            status.set_error('No audio services loaded')
 
         speech.shutdown()
         audio.shutdown()

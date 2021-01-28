@@ -28,6 +28,7 @@ from mycroft.util import (
     wait_for_exit_signal
 )
 from mycroft.util.log import LOG
+from mycroft.util.process_utils import ProcessStatus, StatusCallbackMap
 
 bus = None  # Mycroft messagebus connection
 lock = Lock()
@@ -224,17 +225,21 @@ def main(ready_hook=on_ready, error_hook=on_error, stopping_hook=on_stopping,
         config = Configuration.get()
         bus = start_message_bus_client("VOICE")
         connect_bus_events(bus)
+        callbacks = StatusCallbackMap(on_ready=ready_hook, on_error=error_hook,
+                                      on_stopping=stopping_hook)
+        status = ProcessStatus('speech', bus, callbacks)
 
         # Register handlers on internal RecognizerLoop bus
         loop = RecognizerLoop(watchdog)
         connect_loop_events(loop)
         create_daemon(loop.run)
+        status.set_started()
     except Exception as e:
         error_hook(e)
     else:
-        ready_hook()
+        status.set_ready()
         wait_for_exit_signal()
-        stopping_hook()
+        status.set_stopping()
 
 
 if __name__ == "__main__":
