@@ -19,6 +19,8 @@ from mycroft.enclosure.hardware.MycroftVolume.MycroftVolume import MycroftVolume
 import time
 from math import log, exp
 
+MAX_VOL
+
 class Volume(MycroftVolume):
     dev_addr = 0x2f
     vol_set_reg = 0x4c
@@ -66,8 +68,8 @@ class Volume(MycroftVolume):
         x0 = 0      # input range low
         x1 = 100    # input range hi
 
-        y0 = 30     # min hw vol
-        y1 = 210    # max hw val
+        y0 = MAX_VOL    # max hw vol
+        y1 = 210        # min hw val
 
         p1 = (x - x0) / (x1 - x0)
         p2 = log(y0) - log(y1)
@@ -79,7 +81,7 @@ class Volume(MycroftVolume):
         """ given y produce x. takes in an int
         30-210 returns a value from 0-100 """
         if y < 0:
-            y = 30
+            y = MAX_VOL
 
         if y > 210:
             y = 210 
@@ -87,8 +89,8 @@ class Volume(MycroftVolume):
         x0 = 0      # input range low
         x1 = 100    # input range hi
 
-        y0 = 30     # min hw vol
-        y1 = 210    # max hw val
+        y0 = MAX_VOL    # max hw vol
+        y1 = 210        # min hw val
 
         x = x1 - x0
         p1 = (log(y) - log(y0)) / (log(y1) - log(y0))
@@ -96,13 +98,13 @@ class Volume(MycroftVolume):
         return x * p1 + x0
 
     def _set_hw_volume(self, vol):
-        # takes an int between 30-210
+        # takes an int between 90-210
         self.level = vol
         LOG.debug("Driver:sj201Rev4: Setting ti amp to %s" % (self.level,))
         self.write_ti_data(self.vol_set_reg, int(vol))
 
     def _get_hw_volume(self):
-        # returns an int between 30 - 210
+        # returns an int between 90 - 210
         LOG.debug("Driver:sj201Rev4: Getting ti amp value %s" % (self.level,))
         return self.level
 
