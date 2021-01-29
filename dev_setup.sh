@@ -151,7 +151,7 @@ function get_YN() {
 
 # If tput is available and can handle multiple colors
 if found_exe tput ; then
-    if [[ $(tput colors) != "-1" ]]; then
+    if [[ $(tput colors) != "-1" && -z $CI ]]; then
         GREEN=$(tput setaf 2)
         BLUE=$(tput setaf 4)
         CYAN=$(tput setaf 6)
