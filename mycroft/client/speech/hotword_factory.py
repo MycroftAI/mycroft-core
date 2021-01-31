@@ -16,6 +16,7 @@
 """
 from contextlib import suppress
 from glob import glob
+import sys
 import os
 from os.path import dirname, exists, join, abspath, expanduser, isfile, isdir
 import platform
