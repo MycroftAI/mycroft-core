@@ -31,6 +31,11 @@ ONE_HOUR = 3600
 FIVE_MINUTES = 300  # number of seconds in a minute
 
 
+def skill_is_blacklisted(skill):
+    blacklist = Configuration.get()['skills']['blacklisted_skills']
+    return os.path.basename(skill.path) in blacklist or skill.name in blacklist
+
+
 class SkillUpdater:
     """Class facilitating skill update / install actions.
 
@@ -218,6 +223,18 @@ class SkillUpdater:
                     self.default_skill_install_error = True
                 raise
         self.installed_skills.add(skill.name)
+
+    def defaults_installed(self):
+        """Check if all default skills are installed.
+
+        Returns:
+            True if all default skills are installed, else False.
+        """
+        defaults = []
+        for skill in self.msm.default_skills.values():
+            if not skill_is_blacklisted(skill):
+                defaults.append(skill)
+        return all([skill.is_local for skill in defaults])
 
     def _get_device_skill_state(self, skill_name):
         """Get skill data structure from name."""

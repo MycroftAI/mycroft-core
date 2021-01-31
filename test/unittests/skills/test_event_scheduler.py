@@ -4,10 +4,9 @@
 
 import unittest
 import time
+from pyee import ExecutorEventEmitter
 
 from unittest.mock import MagicMock, patch
-from mycroft.messagebus.client.threaded_event_emitter import (
-        ThreadedEventEmitter)
 from mycroft.skills.event_scheduler import (EventScheduler,
                                             EventSchedulerInterface)
 
@@ -108,7 +107,7 @@ class TestEventSchedulerInterface(unittest.TestCase):
         def f(message):
             print('TEST FUNC')
 
-        bus = ThreadedEventEmitter()
+        bus = ExecutorEventEmitter()
 
         es = EventSchedulerInterface('tester')
         es.set_bus(bus)
@@ -116,9 +115,9 @@ class TestEventSchedulerInterface(unittest.TestCase):
 
         # Schedule a repeating event
         es.schedule_repeating_event(f, None, 10, name='f')
-        es.shutdown()
+        self.assertTrue(len(bus._events['id:f']) == 1)
 
+        es.shutdown()
         # Check that the reference to the function has been removed from the
         # bus emitter
-        self.assertTrue(len(bus.wrappers) == 0)
         self.assertTrue(len(bus._events['id:f']) == 0)

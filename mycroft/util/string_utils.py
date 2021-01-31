@@ -17,33 +17,6 @@
 import re
 
 
-def get_http(uri):
-    """Change an uri from https:// to http://.
-    TODO: Remove as part of 20.08
-
-    Arguments:
-        uri: uri to convert
-
-    Returns: (string) uri where https:// has been replaced with http://
-    """
-    return uri.replace("https://", "http://")
-
-
-def remove_last_slash(url):
-    """Remove the last slash from the given url.
-    TODO: Remove as part of 20.08
-
-    Arguments:
-        url (str): url to trim
-
-    Returns:
-        (str) url without ending slash
-    """
-    if url and url.endswith('/'):
-        url = url[:-1]
-    return url
-
-
 def camel_case_split(identifier: str) -> str:
     """Split camel case string."""
     regex = '.+?(?:(?<=[a-z])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])|$)'

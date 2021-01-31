@@ -142,6 +142,7 @@ class RemoteConf(LocalConf):
             api = DeviceApi()
             setting = api.get_settings()
 
+            location = None
             try:
                 location = api.get_location()
             except RequestException as e:

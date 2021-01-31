@@ -41,7 +41,10 @@ class EnclosureGeneric(Enclosure):
         super().__init__()
 
         # Notifications from mycroft-core
-        self.bus.on("enclosure.notify.no_internet", self.on_no_internet)
+        self.bus.on('enclosure.notify.no_internet', self.on_no_internet)
+        # TODO: this requires the Enclosure to be up and running before the
+        # training is complete.
+        self.bus.on('mycroft.skills.trained', self.is_device_ready)
 
         # initiates the web sockets on display manager
         # NOTE: this is a temporary place to connect the display manager
@@ -54,6 +57,40 @@ class EnclosureGeneric(Enclosure):
             # receive the "speak".  This was sometimes happening too
             # quickly and the user wasn't notified what to do.
             Timer(5, self._do_net_check).start()
+
+    def is_device_ready(self, message):
+        is_ready = False
+        # Bus service assumed to be alive if messages sent and received
+        # Enclosure assumed to be alive if this method is running
+        services = {'audio': False, 'speech': False, 'skills': False}
+        start = time.monotonic()
+        while not is_ready:
+            is_ready = self.check_services_ready(services)
+            if is_ready:
+                break
+            elif time.monotonic() - start >= 60:
+                raise Exception('Timeout waiting for services start.')
+            else:
+                time.sleep(3)
+
+        if is_ready:
+            LOG.info("Mycroft is all loaded and ready to roll!")
+            self.bus.emit(Message('mycroft.ready'))
+
+        return is_ready
+
+    def check_services_ready(self, services):
+        """Report if all specified services are ready.
+
+        services (iterable): service names to check.
+        """
+        for ser in services:
+            services[ser] = False
+            response = self.bus.wait_for_response(Message(
+                                'mycroft.{}.is_ready'.format(ser)))
+            if response and response.data['status']:
+                services[ser] = True
+        return all([services[ser] for ser in services])
 
     def on_no_internet(self, event=None):
         if connected():
@@ -80,7 +117,7 @@ class EnclosureGeneric(Enclosure):
     def speak(self, text):
         self.bus.emit(Message("speak", {'utterance': text}))
 
-    def _handle_pairing_complete(self, Message):
+    def _handle_pairing_complete(self, _):
         """
         Handler for 'mycroft.paired', unmutes the mic after the pairing is
         complete.

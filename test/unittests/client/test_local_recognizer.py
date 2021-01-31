@@ -48,6 +48,27 @@ class PocketSphinxRecognizerTest(unittest.TestCase):
         with source as audio:
             assert self.recognizer.found_wake_word(audio.stream.read())
 
+    @patch.object(Configuration, 'get')
+    def testRecognitionFallback(self, mock_config_get):
+        """If language config doesn't exist set default (english)"""
+        conf = base_config()
+        conf['hotwords']['hey mycroft'] = {
+            'lang': 'DOES NOT EXIST',
+            'module': 'pocketsphinx',
+            'phonemes': 'HH EY . M AY K R AO F T',
+            'threshold': 1e-90
+        }
+        conf['lang'] = 'DOES NOT EXIST'
+        mock_config_get.return_value = conf
+
+        rl = RecognizerLoop()
+        ps_hotword = RecognizerLoop.create_wake_word_recognizer(rl)
+
+        expected = 'en-us'
+        res = ps_hotword.decoder.get_config().get_string('-hmm')
+        self.assertEqual(expected, res.split('/')[-2])
+        self.assertEqual('does not exist', ps_hotword.lang)
+
 
 class LocalRecognizerInitTest(unittest.TestCase):
     @patch.object(Configuration, 'get')

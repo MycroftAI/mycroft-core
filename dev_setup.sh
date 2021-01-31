@@ -16,7 +16,7 @@
 ##########################################################################
 
 # Set a default locale to handle output from commands reliably
-export LANG=C
+export LANG=C.UTF-8
 
 # exit on any error
 set -Ee
@@ -151,7 +151,7 @@ function get_YN() {
 
 # If tput is available and can handle multiple colors
 if found_exe tput ; then
-    if [[ $(tput colors) != "-1" ]]; then
+    if [[ $(tput colors) != "-1" && -z $CI ]]; then
         GREEN=$(tput setaf 2)
         BLUE=$(tput setaf 4)
         CYAN=$(tput setaf 6)
@@ -337,7 +337,7 @@ function open_suse_install() {
 
 
 function fedora_install() {
-    $SUDO dnf install -y git python3 python3-devel python3-pip python3-setuptools python3-virtualenv pygobject3-devel libtool libffi-devel openssl-devel autoconf bison swig glib2-devel portaudio-devel mpg123 mpg123-plugins-pulseaudio screen curl pkgconfig libicu-devel automake libjpeg-turbo-devel fann-devel gcc-c++ redhat-rpm-config jq
+    $SUDO dnf install -y git python3 python3-devel python3-pip python3-setuptools python3-virtualenv pygobject3-devel libtool libffi-devel openssl-devel autoconf bison swig glib2-devel portaudio-devel mpg123 mpg123-plugins-pulseaudio screen curl pkgconfig libicu-devel automake libjpeg-turbo-devel fann-devel gcc-c++ redhat-rpm-config jq make
 }
 
 
@@ -398,14 +398,14 @@ function install_deps() {
         # Fedora
         echo "$GREEN Installing packages for Fedora...$RESET"
         fedora_install
-    elif found_exe pacman && os_is arch ; then
+    elif found_exe pacman && (os_is arch || os_is_like arch); then
         # Arch Linux
         echo "$GREEN Installing packages for Arch...$RESET"
         arch_install
     elif found_exe emerge && os_is gentoo; then
         # Gentoo Linux
         echo "$GREEN Installing packages for Gentoo Linux ...$RESET"
-        gentoo_install	
+        gentoo_install
     elif found_exe apk && os_is alpine; then
         # Alpine Linux
         echo "$GREEN Installing packages for Alpine Linux...$RESET"
@@ -536,7 +536,7 @@ if ! pip install -r requirements/tests.txt ; then
 fi
 
 SYSMEM=$(free | awk '/^Mem:/ { print $2 }')
-MAXCORES=$(($SYSMEM / 512000))
+MAXCORES=$(($SYSMEM / 2202010))
 MINCORES=1
 CORES=$(nproc)
 
@@ -545,7 +545,7 @@ if [[ $MAXCORES -lt 1 ]] ; then
     MAXCORES=${MINCORES}
 fi
 
-# look for positive integer
+# Be positive!
 if ! [[ $CORES =~ ^[0-9]+$ ]] ; then
     CORES=$MINCORES
 elif [[ $MAXCORES -lt $CORES ]] ; then
@@ -555,9 +555,8 @@ fi
 echo "Building with $CORES cores."
 
 #build and install pocketsphinx
-#cd $TOP
-#${TOP}/scripts/install-pocketsphinx.sh -q
 #build and install mimic
+
 cd "$TOP"
 
 if [[ $build_mimic == 'y' || $build_mimic == 'Y' ]] ; then

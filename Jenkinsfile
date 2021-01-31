@@ -5,15 +5,12 @@ pipeline {
         // building the Docker image.
         disableConcurrentBuilds()
         buildDiscarder(logRotator(numToKeepStr: '5'))
-        lock resource: 'VoightKampff'
     }
     stages {
         // Run the build in the against the dev branch to check for compile errors
         stage('Add CLA label to PR') {
-            when {
-                anyOf {
-                    changeRequest target: 'dev'
-                }
+            options {
+                lock(resource: "lock_${env.JOB_NAME}")
             }
             environment {
                 //spawns GITHUB_USR and GITHUB_PSW environment variables
@@ -34,6 +31,9 @@ pipeline {
                     changeRequest target: 'dev'
                 }
             }
+            options {
+                lock(resource: "lock_${env.JOB_NAME}")
+            }
             environment {
                 // Some branches have a "/" in their name (e.g. feature/new-and-cool)
                 // Some commands, such as those tha deal with directories, don't
@@ -46,17 +46,21 @@ pipeline {
             }
             steps {
                 echo 'Building Mark I Voight-Kampff Docker Image'
-                sh 'cp test/Dockerfile.test Dockerfile'
-                sh 'docker build \
+                sh 'docker build -f test/Dockerfile \
                     --target voight_kampff_builder \
                     --build-arg platform=mycroft_mark_1 \
+                    --label build=${JOB_NAME} \
                     -t voight-kampff-mark-1:${BRANCH_ALIAS} .'
                 echo 'Running Mark I Voight-Kampff Test Suite'
                 timeout(time: 60, unit: 'MINUTES')
                 {
+                    sh 'mkdir -p $HOME/core/$BRANCH_ALIAS/allure'
+                    sh 'mkdir -p $HOME/core/$BRANCH_ALIAS/mycroft-logs'
                     sh 'docker run \
                         -v "$HOME/voight-kampff/identity:/root/.mycroft/identity" \
-                        -v "$HOME/voight-kampff/:/root/allure" \
+                        -v "$HOME/core/$BRANCH_ALIAS/allure:/root/allure" \
+                        -v "$HOME/core/$BRANCH_ALIAS/mycroft-logs:/var/log/mycroft" \
+                        --label build=${JOB_NAME} \
                        voight-kampff-mark-1:${BRANCH_ALIAS} \
                         -f allure_behave.formatter:AllureFormatter \
                         -o /root/allure/allure-result --tags ~@xfail'
@@ -65,17 +69,28 @@ pipeline {
             post {
                 always {
                     echo 'Report Test Results'
-                    echo 'Changing ownership...'
+                    echo 'Changing ownership of Allure results...'
                     sh 'docker run \
-                        -v "$HOME/voight-kampff/:/root/allure" \
+                        -v "$HOME/core/$BRANCH_ALIAS/allure:/root/allure" \
                         --entrypoint=/bin/bash \
+                        --label build=${JOB_NAME} \
                         voight-kampff-mark-1:${BRANCH_ALIAS} \
                         -x -c "chown $(id -u $USER):$(id -g $USER) \
                         -R /root/allure/"'
+                    echo 'Changing ownership of Allure results...'
+                    sh 'docker run \
+                        -v "$HOME/core/$BRANCH_ALIAS/mycroft-logs:/var/log/mycroft" \
+                        --entrypoint=/bin/bash \
+                        --label build=${JOB_NAME} \
+                        voight-kampff-mark-1:${BRANCH_ALIAS} \
+                        -x -c "chown $(id -u $USER):$(id -g $USER) \
+                        -R /var/log/mycroft"'
 
                     echo 'Transferring...'
                     sh 'rm -rf allure-result/*'
-                    sh 'mv $HOME/voight-kampff/allure-result allure-result'
+                    sh 'mv $HOME/core/$BRANCH_ALIAS/allure/allure-result allure-result'
+                    // This directory should now be empty, rmdir will intentionally fail if not.
+                    sh 'rmdir $HOME/core/$BRANCH_ALIAS/allure'
                     script {
                         allure([
                             includeProperties: false,
@@ -86,12 +101,19 @@ pipeline {
                         ])
                     }
                     unarchive mapping:['allure-report.zip': 'allure-report.zip']
+                    sh 'zip mycroft-logs.zip -r $HOME/core/$BRANCH_ALIAS/mycroft-logs'
+                    sh 'rm -rf $HOME/core/$BRANCH_ALIAS/mycroft-logs'
+                    // This directory should now be empty, rmdir will intentionally fail if not.
+                    sh 'rmdir $HOME/core/$BRANCH_ALIAS'
                     sh (
                         label: 'Publish Report to Web Server',
                         script: '''scp allure-report.zip root@157.245.127.234:~;
                             ssh root@157.245.127.234 "unzip -o ~/allure-report.zip";
                             ssh root@157.245.127.234 "rm -rf /var/www/voight-kampff/core/${BRANCH_ALIAS}";
                             ssh root@157.245.127.234 "mv allure-report /var/www/voight-kampff/core/${BRANCH_ALIAS}"
+                            scp mycroft-logs.zip root@157.245.127.234:~;
+                            ssh root@157.245.127.234 "mkdir -p /var/www/voight-kampff/core/${BRANCH_ALIAS}/logs"
+                            ssh root@157.245.127.234 "unzip -oj ~/mycroft-logs.zip -d /var/www/voight-kampff/core/${BRANCH_ALIAS}/logs/";
                         '''
                     )
                     echo 'Report Published'
@@ -101,7 +123,13 @@ pipeline {
                         // Create comment for Pull Requests
                         if (env.CHANGE_ID) {
                             echo 'Sending PR comment'
-                            pullRequest.comment('Voight Kampff Integration Test Failed ([Results](https://reports.mycroft.ai/core/' + env.BRANCH_ALIAS + '))')
+                            pullRequest.comment('Voight Kampff Integration Test Failed ([Results](https://reports.mycroft.ai/core/' + env.BRANCH_ALIAS + ')). ' +
+                                                '\nMycroft logs are also available: ' +
+                                                '[skills.log](https://reports.mycroft.ai/core/' + env.BRANCH_ALIAS + '/logs/skills.log), ' +
+                                                '[audio.log](https://reports.mycroft.ai/core/' + env.BRANCH_ALIAS + '/logs/audio.log), ' +
+                                                '[voice.log](https://reports.mycroft.ai/core/' + env.BRANCH_ALIAS + '/logs/voice.log), ' +
+                                                '[bus.log](https://reports.mycroft.ai/core/' + env.BRANCH_ALIAS + '/logs/bus.log), ' +
+                                                '[enclosure.log](https://reports.mycroft.ai/core/' + env.BRANCH_ALIAS + '/logs/enclosure.log)')
                         }
                     }
                     // Send failure email containing a link to the Jenkins build
@@ -130,6 +158,17 @@ pipeline {
                                 <a href='https://reports.mycroft.ai/core/${BRANCH_ALIAS}'>
                                     Report of Test Results
                                 </a>
+                            </p>
+                            <br>
+                            <p>
+                                Mycroft logs are also available:
+                                <ul>
+                                    <li><a href='https://reports.mycroft.ai/core/${BRANCH_ALIAS}/logs/skills.log'>skills.log</a></li>
+                                    <li><a href='https://reports.mycroft.ai/core/${BRANCH_ALIAS}/logs/audio.log'>audio.log</a></li>
+                                    <li><a href='https://reports.mycroft.ai/core/${BRANCH_ALIAS}/logs/voice.log'>voice.log</a></li>
+                                    <li><a href='https://reports.mycroft.ai/core/${BRANCH_ALIAS}/logs/bus.log'>bus.log</a></li>
+                                    <li><a href='https://reports.mycroft.ai/core/${BRANCH_ALIAS}/logs/enclosure.log'>enclosure.log</a></li>
+                                </ul>
                             </p>
                             <br>
                             <p>Console log is attached.</p>""",
@@ -230,8 +269,7 @@ pipeline {
             }
             steps {
                 echo 'Building ${TAG_NAME} Docker Image for Skill Testing'
-                sh 'cp test/Dockerfile.test Dockerfile'
-                sh 'docker build \
+                sh 'docker build -f test/Dockerfile \
                     --target voight_kampff_builder \
                     --build-arg platform=mycroft_mark_1 \
                     -t voight-kampff-mark-1:${SKILL_BRANCH} .'
@@ -239,6 +277,17 @@ pipeline {
         }
     }
     post {
+        success {
+            // Docker images should remain upon failure for troubleshooting purposes.  However,
+            // if the stage is successful, there is no reason to look back at the Docker image.  In theory
+            // broken builds will eventually be fixed so this step should run eventually for every PR
+            sh(
+                label: 'Delete Docker Image on Success',
+                script: '''
+                    docker image prune --all --force --filter label=build=${JOB_NAME};
+                '''
+            )
+        }
         cleanup {
             sh(
                 label: 'Docker Container and Image Cleanup',

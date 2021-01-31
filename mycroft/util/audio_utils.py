@@ -22,7 +22,6 @@ import re
 import subprocess
 
 import mycroft.configuration
-from .string_utils import get_http
 from .log import LOG
 
 
@@ -86,7 +85,7 @@ def _play_cmd(cmd, uri, config, environment):
     """
     environment = environment or _get_pulse_environment(config)
     cmd_elements = str(cmd).split(" ")
-    cmdline = [e if e != '%1' else get_http(uri) for e in cmd_elements]
+    cmdline = [e if e != '%1' else uri for e in cmd_elements]
     return subprocess.Popen(cmdline, env=environment)
 
 
