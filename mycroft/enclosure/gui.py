@@ -14,10 +14,17 @@
 #
 """ Interface for interacting with the Mycroft gui qml viewer. """
 from os.path import join
-
+from enum import IntEnum
 from mycroft.configuration import Configuration
 from mycroft.messagebus.message import Message
 from mycroft.util import resolve_resource_file
+
+
+class GUIPlaybackStatus(IntEnum):
+    STOPPED = 0
+    PLAYING = 1
+    PAUSED = 2
+    UNDEFINED = 3
 
 
 class SkillGUI:
@@ -38,6 +45,7 @@ class SkillGUI:
         self.skill = skill
         self.on_gui_changed_callback = None
         self.config = Configuration.get()
+        self.video_info = None
 
     @property
     def connected(self):
@@ -62,6 +70,42 @@ class SkillGUI:
         """Sets the handlers for the default messages."""
         msg_type = self.build_message_type('set')
         self.skill.add_event(msg_type, self.gui_set)
+
+        # TODO can we rename this namespace to mycroft.playback.XXX ?
+        self.skill.add_event('mycroft.audio.service.pause',
+                             self.__handle_gui_pause)
+        self.skill.add_event('mycroft.audio.service.resume',
+                             self.__handle_gui_resume)
+        self.skill.add_event('mycroft.audio.service.stop',
+                             self.__handle_gui_stop)
+        self.skill.add_event('mycroft.audio.service.track_info',
+                             self.__handle_gui_track_info)
+        self.skill.add_event('mycroft.audio.queue_end',
+                             self.__handle_gui_stop)
+        self.skill.gui.register_handler('video.media.playback.ended',
+                                        self.__handle_gui_stop)
+
+    # Audio Service bus messages
+    def __handle_gui_resume(self, message):
+        """Resume video playback in gui"""
+        self.resume_video()
+
+    def __handle_gui_stop(self, message):
+        """Stop video playback in gui"""
+        self.stop_video()
+
+    def __handle_gui_pause(self, message):
+        """Pause video playback in gui"""
+        self.pause_video()
+
+    def __handle_gui_track_info(self, message):
+        """Answer request information of current playing track.
+         Needed for handling stop """
+        if self.video_info:
+            self.skill.bus.emit(
+                message.reply('mycroft.audio.service.track_info_reply',
+                              self.video_info))
+        return self.video_info
 
     def register_handler(self, event, handler):
         """Register a handler for GUI events.
@@ -367,6 +411,71 @@ class SkillGUI:
         self.clear()
         self.skill.bus.emit(Message("mycroft.gui.screen.close",
                                     {"skill_id": self.skill.skill_id}))
+                                    
+    def play_video(self, url, title="", repeat=None, override_idle=True,
+                   override_animations=None):
+        """ Play video stream
+
+        Arguments:
+            url (str): URL of video source
+            title (str): Title of media to be displayed
+            repeat (boolean, int):
+                True: Infinitly loops the current video track
+                (int): Loops the video track for specified number of
+                times.
+            override_idle (boolean, int):
+                True: Takes over the resting page indefinitely
+                (int): Delays resting page for the specified number of
+                       seconds.
+            override_animations (boolean):
+                True: Disables showing all platform skill animations.
+                False: 'Default' always show animations.
+        """
+        self["playStatus"] = "play"
+        self["video"] = url
+        self["title"] = title
+        self["playerRepeat"] = repeat
+        self.video_info = {"title": title, "url": url}
+        self.show_page("SYSTEM_VideoPlayer.qml",
+                       override_idle=override_idle,
+                       override_animations=override_animations)
+
+    @property
+    def is_video_displayed(self):
+        """Returns whether the gui is in a video playback state.
+        Eg if the video is paused, it would still be displayed on screen
+        but the video itself is not "playing" so to speak"""
+        return self.video_info is not None
+
+    @property
+    def playback_status(self):
+        """Returns gui playback status,
+        indicates if gui is playing, paused or stopped"""
+        if self.__session_data.get("playStatus", -1) == "play":
+            return GUIPlaybackStatus.PLAYING
+        if self.__session_data.get("playStatus", -1) == "pause":
+            return GUIPlaybackStatus.PAUSED
+        if self.__session_data.get("playStatus", -1) == "stop":
+            return GUIPlaybackStatus.STOPPED
+        return GUIPlaybackStatus.UNDEFINED
+
+    def pause_video(self):
+        """Pause video playback."""
+        if self.is_video_displayed:
+            self["playStatus"] = "pause"
+
+    def stop_video(self):
+        """Stop video playback."""
+        # TODO detect end of media playback from gui and call this
+        if self.is_video_displayed:
+            self["playStatus"] = "stop"
+            self.clear()
+        self.video_info = None
+
+    def resume_video(self):
+        """Resume paused video playback."""
+        if self.__session_data.get("playStatus", "stop") == "pause":
+            self["playStatus"] = "play"
 
     def shutdown(self):
         """Shutdown gui interface.
