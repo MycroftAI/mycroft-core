@@ -159,3 +159,27 @@ class TestSkillGUI(TestCase):
         self.assertEqual(self.gui.get(0), None)
         self.gui[0] = "value"
         self.assertEqual(self.gui.get(0), "value")
+
+    def test_clear(self):
+        """Ensure that namespace is cleared."""
+        self.gui["example"] = "value"
+        self.assertEqual(self.gui.get("example"), "value")
+        self.gui.clear()
+        self.assertEqual(self.gui.get("example"), None)
+
+    def test_release(self):
+        """Ensure the correct method and data is sent to close a Skill."""
+        self.gui.show_page('meaning.qml')
+        self.gui.release()
+        sent_message = self.mock_skill.bus.emit.call_args_list[-1][0][0]
+        self.assertEqual(sent_message.msg_type, 'mycroft.gui.screen.close')
+        self.assertEqual(sent_message.data['skill_id'], 'fortytwo-skill')
+
+    def test_shutdown(self):
+        """Ensure the GUI is cleared and Skill ref removed on shutdown."""
+        self.gui["example"] = "value"
+        self.gui.show_page('meaning.qml')
+        self.assertEqual(self.gui.skill, self.mock_skill)
+        self.gui.shutdown()
+        self.assertEqual(self.gui.get("example"), None)
+        self.assertEqual(self.gui.skill, None)
