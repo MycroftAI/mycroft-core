@@ -150,3 +150,12 @@ class TestSkillGUI(TestCase):
         response = None
         self.mock_skill.bus.wait_for_response.return_value = response
         self.assertFalse(self.gui.connected)
+
+    def test_get(self):
+        """Ensure the get method returns expected values."""
+        self.gui["example"] = "value"
+        self.assertEqual(self.gui.get("example"), "value")
+        self.assertEqual(self.gui.get("nothing"), None)
+        self.assertEqual(self.gui.get(0), None)
+        self.gui[0] = "value"
+        self.assertEqual(self.gui.get(0), "value")
