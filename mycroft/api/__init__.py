@@ -51,13 +51,13 @@ class Api:
 
         # Load the config, skipping the REMOTE_CONFIG since we are
         # getting the info needed to get to it!
-        config = Configuration.get([DEFAULT_CONFIG,
+        self.config = Configuration.get([DEFAULT_CONFIG,
                                     SYSTEM_CONFIG,
                                     USER_CONFIG],
                                    cache=False)
-        config_server = config.get("server")
-        self.url = config_server.get("url")
-        self.version = config_server.get("version")
+        server_config = self.config.get("server")
+        self.url = server_config.get("url")
+        self.version = server_config.get("version")
         self.identity = IdentityManager.get()
 
     def request(self, params):
@@ -164,6 +164,7 @@ class Api:
         """
         data = self.get_data(response)
 
+        print(self.identity.is_expired())
         if 200 <= response.status_code < 300:
             return data
         elif (not no_refresh and response.status_code == 401 and not
@@ -224,13 +225,17 @@ class DeviceApi(Api):
     """ Web API wrapper for obtaining device-level information """
 
     def __init__(self):
-        super(DeviceApi, self).__init__("device")
+        super().__init__("device")
+        self.enclosure_config = self.config.get("enclosure")
 
     def get_code(self, state):
         IdentityManager.update()
-        return self.request({
-            "path": "/code?state=" + state
-        })
+        request_data = dict(path="/code?state=" + state)
+        packaging_type = self.enclosure_config.get("packaging_type")
+        if packaging_type is not None:
+            request_data["path"] += "&packaging=" + packaging_type
+
+        return self.request(request_data)
 
     def activate(self, state, token):
         version = VersionManager.get()
@@ -241,9 +246,9 @@ class DeviceApi(Api):
         config = Configuration.get([SYSTEM_CONFIG,
                                     USER_CONFIG],
                                    cache=False)
-        if "enclosure" in config:
-            platform = config.get("enclosure").get("platform", "unknown")
-            platform_build = config.get("enclosure").get("platform_build", "")
+        if self.enclosure_config is not None:
+            platform = self.enclosure_config.get("platform", "unknown")
+            platform_build = self.enclosure_config.get("platform_build", "")
 
         return self.request({
             "method": "POST",

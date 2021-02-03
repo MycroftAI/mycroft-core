@@ -62,7 +62,12 @@ class ApiTestBase(TestCase):
             update=True,
             metrics=False
         )
-        config.update(data_dir='/opt/mycroft', server=server_config)
+        enclosure_config = dict(packaging_type='pantacor')
+        config.update(
+            data_dir='/opt/mycroft',
+            server=server_config,
+            enclosure=enclosure_config
+        )
         patcher = patch(
             'mycroft.configuration.Configuration.get', return_value=config
         )
@@ -161,7 +166,9 @@ class TestDeviceApi(ApiTestBase):
         device = DeviceApi()
         pairing_code = device.get_code('state')
         self.assertEqual(pairing_code, '123ABC')
-        self._check_api_request('/v1/device/code?state=state', 'GET')
+        self._check_api_request(
+            '/v1/device/code?state=state&packaging=pantacor', 'GET'
+        )
 
     def test_device_get_settings(self):
         device = DeviceApi()
