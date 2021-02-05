@@ -127,6 +127,8 @@ function found_exe() {
 
 if found_exe sudo ; then
     SUDO=sudo
+elif found_exe doas ; then
+    SUDO=doas
 elif [[ $opt_allowroot != true ]]; then
     echo 'This script requires "sudo" to install system packages. Please install it, then re-run this script.'
     exit 1
