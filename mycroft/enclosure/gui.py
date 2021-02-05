@@ -110,6 +110,10 @@ class SkillGUI:
         """Implements get part of dict-like behaviour with named keys."""
         return self.__session_data[key]
 
+    def get(self, *args, **kwargs):
+        """Implements the get method for accessing dict keys."""
+        return self.__session_data.get(*args, **kwargs)
+
     def __contains__(self, key):
         """Implements the "in" operation."""
         return self.__session_data.__contains__(key)
