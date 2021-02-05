@@ -47,18 +47,24 @@ class EnclosureMark2(Enclosure):
         # TODO these need to come from a config value
         self.m2enc = HardwareEnclosure("Mark2", "sj201r4")
 
+        # set reserved led to yellow
         self.m2enc.leds._set_led_with_brightness(
             self.reserved_led,
-            self.m2enc.palette.YELLOW,
-            0.5)
+            self.m2enc.palette.MYCROFT_BLUE,
+            0.25)
+
+        # et mute led based on current state of the switch
+        mute_led_color = self.m2enc.palette.GREEN
+        if self.m2enc.switches.SW_MUTE == 1:
+            mute_led_color = self.m2enc.palette.RED
 
         self.m2enc.leds._set_led_with_brightness(
             self.mute_led,
-            self.m2enc.palette.GREEN,
+            mute_led_color,
             1.0)
 
-        LOG.info('** EnclosureMark2 initalized **')
         self.bus.once('mycroft.skills.trained', self.is_device_ready)
+        LOG.info('** EnclosureMark2 initalized **')
 
     def is_device_ready(self, message):
         is_ready = False
@@ -117,6 +123,7 @@ class EnclosureMark2(Enclosure):
         self.m2enc.hardware_volume.set_volume(float(self.current_volume))
 
     def on_volume_get(self, message):
+        self.current_volume = self.m2enc.hardware_volume.get_volume()
         LOG.info('Mark2:interface.py get and emit volume %s' %
                  (self.current_volume,))
         self.bus.emit(
