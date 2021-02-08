@@ -42,7 +42,7 @@ jobs:
     - name: Install compilers
       run: |
         sudo apt-get update -qq
-        sudo apt-get install -y gcc-4.8 g++-4.8
+        sudo apt-get install -y gcc g++
     - name: Install Python packages for testing
       run: pip install -r requirements/tests.txt
     - name: Setup mycroft core
@@ -51,7 +51,6 @@ jobs:
         if [[ ${{ matrix.python-version }} == 3.9 ]]; then ./dev_setup.sh; fi
         if [[ ${{ matrix.python-version }} != 3.9 ]]; then ./dev_setup.sh -sm; fi
       env:
-        CC: gcc-4.8
         CI: true
     - name: Linting and code style
       run: |
