@@ -27,7 +27,7 @@ class MozillaTTS(TTS):
             self.config = config
         super(MozillaTTS, self).__init__(lang, self.config,
                                          MozillaTTSValidator(self))
-        self.url = self.config['url']
+        self.url = self.config['url'] + "/api/tts"
         self.type = 'wav'
 
     def get_tts(self, sentence, wav_file):
@@ -49,8 +49,10 @@ class MozillaTTSValidator(TTSValidator):
         pass
 
     def validate_connection(self):
-        # TODO
-        pass
+        url = self.tts.config['url']
+        response = requests.get(url)
+        if not response.status_code == 200:
+            raise ConnectionRefusedError
 
     def get_tts_class(self):
         return MozillaTTS
