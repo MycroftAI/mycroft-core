@@ -571,10 +571,10 @@ class TTSFactory:
                 LOG.exception('The selected TTS backend couldn\'t be loaded. '
                               'Falling back to Mimic')
                 clazz = TTSFactory.CLASSES.get('mimic')
+                tts_config = config.get('tts', {}).get('mimic', {})
                 tts = clazz(tts_lang, tts_config)
                 tts.validator.validate()
             else:
                 LOG.exception('The TTS could not be loaded.')
                 raise
-
         return tts

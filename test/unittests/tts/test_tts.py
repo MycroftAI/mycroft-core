@@ -190,7 +190,8 @@ class TestTTSFactory(unittest.TestCase):
     def test_create(self, mock_config):
         config = {
             'tts': {
-                'module': 'mock'
+                'module': 'mock',
+                'mimic': {'mock': True}
             }
         }
 
@@ -217,6 +218,10 @@ class TestTTSFactory(unittest.TestCase):
         mock_tts_class.side_effect = side_effect
         tts_instance = mycroft.tts.TTSFactory.create()
         self.assertEqual(tts_instance, mock_mimic_instance)
+
+        # Check that mimic get's the proper config
+        mimic_conf = mock_mimic.call_args[0][1]
+        self.assertEqual(mimic_conf, config['tts']['mimic'])
 
         # Make sure exception is raised when mimic fails
         mock_mimic.side_effect = side_effect
