@@ -1,5 +1,5 @@
 requests==2.20.0
-gTTS==2.2.0
+gTTS>=2.2.2,<2.3.0
 PyAudio==0.2.11
 pyee==8.1.0
 SpeechRecognition==3.8.1
