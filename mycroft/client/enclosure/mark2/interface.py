@@ -24,6 +24,79 @@ from mycroft.util import create_daemon, connected
 from mycroft.util.log import LOG
 from mycroft.enclosure.hardware_enclosure import HardwareEnclosure
 
+import threading
+
+
+class pulseLedThread(threading.Thread):
+    def __init__(self, led_obj):
+        self.led_obj = led_obj
+        self.exit_flag = False
+        self.color_tup = (255,0,0)
+        self.delay = 0.1
+        self.brightness = 100
+        self.step_size = 5
+        threading.Thread.__init__(self)
+
+    def run(self):
+        LOG.debug("pulse thread started")
+        self.tmp_leds = []
+        for x in range(0,10):
+            self.tmp_leds.append( self.color_tup )
+
+        self.led_obj.brightness = self.brightness / 100
+        self.led_obj.set_leds( self.tmp_leds )
+
+        while not self.exit_flag:
+
+            if (self.brightness + self.step_size) > 100:
+                self.brightness = self.brightness - self.step_size
+                self.step_size = self.step_size * -1
+
+            elif (self.brightness + self.step_size) < 0:
+                self.brightness = self.brightness - self.step_size
+                self.step_size = self.step_size * -1
+
+            else:
+                self.brightness += self.step_size
+
+            self.led_obj.brightness = self.brightness / 100
+            self.led_obj.set_leds( self.tmp_leds )
+
+            time.sleep(self.delay)
+
+
+        LOG.debug("pulse thread stopped")
+        self.led_obj.brightness = 1.0
+        self.led_obj.fill( (0,0,0) )
+
+
+
+class chaseLedThread(threading.Thread):
+    def __init__(self, led_obj, background_color, foreground_color):
+        self.led_obj = led_obj
+        self.bkgnd_col = background_color
+        self.fgnd_col = foreground_color
+        self.exit_flag = False
+        self.color_tup = foreground_color
+        self.delay = 0.1
+        tmp_leds = []
+        for indx in range(0,10):
+            tmp_leds.append(self.bkgnd_col)
+
+        self.led_obj.set_leds(tmp_leds)
+        threading.Thread.__init__(self)
+
+    def run(self):
+        LOG.debug("chase thread started")
+        while not self.exit_flag:
+            for x in range(0,10):
+                self.led_obj.set_led(x, self.fgnd_col)
+                time.sleep(self.delay)
+                self.led_obj.set_led(x, self.bkgnd_col)
+
+        LOG.debug("chase thread stopped")
+        self.led_obj.fill( (0,0,0) )
+
 
 class EnclosureMark2(Enclosure):
     def __init__(self):
@@ -47,24 +120,31 @@ class EnclosureMark2(Enclosure):
         # TODO these need to come from a config value
         self.m2enc = HardwareEnclosure("Mark2", "sj201r4")
 
-        # set reserved led to yellow
+        self.m2enc.leds.set_leds([
+                self.m2enc.palette.BLACK,
+                self.m2enc.palette.BLACK,
+                self.m2enc.palette.BLACK,
+                self.m2enc.palette.BLACK,
+                self.m2enc.palette.BLACK,
+                self.m2enc.palette.BLACK,
+                self.m2enc.palette.BLACK,
+                self.m2enc.palette.BLACK,
+                self.m2enc.palette.BLACK,
+                self.m2enc.palette.BLACK
+                ])
+
         self.m2enc.leds._set_led_with_brightness(
             self.reserved_led,
-            self.m2enc.palette.MYCROFT_BLUE,
+            self.m2enc.palette.YELLOW,
             0.25)
-
-        # et mute led based on current state of the switch
-        mute_led_color = self.m2enc.palette.GREEN
-        if self.m2enc.switches.SW_MUTE == 1:
-            mute_led_color = self.m2enc.palette.RED
 
         self.m2enc.leds._set_led_with_brightness(
             self.mute_led,
-            mute_led_color,
-            1.0)
+            self.m2enc.palette.GREEN,
+            0.5)
 
-        self.bus.once('mycroft.skills.trained', self.is_device_ready)
         LOG.info('** EnclosureMark2 initalized **')
+        self.bus.once('mycroft.skills.trained', self.is_device_ready)
 
     def is_device_ready(self, message):
         is_ready = False
@@ -110,10 +190,40 @@ class EnclosureMark2(Enclosure):
         self.bus.on('mycroft.volume.duck', self.on_volume_duck)
         self.bus.on('mycroft.volume.unduck', self.on_volume_unduck)
 
+        self.bus.on('recognizer_loop:record_begin', self.handle_start_recording)
+        self.bus.on('recognizer_loop:record_end', self.handle_stop_recording)
+        #self.bus.on('recognizer_loop:utterance', self.handle_utterance)
+        self.bus.on('recognizer_loop:audio_output_end', self.handle_end_audio)
+        self.bus.on('mycroft.speech.recognition.unknown', self.handle_end_audio)
+
+    def handle_start_recording(self, message):
+        LOG.debug("Gathering speech stuff")
+        background_color = (0,0,255)
+        foreground_color = (0,0,0)
+        self.chaseLedThread = chaseLedThread(self.m2enc.leds, background_color, foreground_color)
+        self.chaseLedThread.start()
+
+    def handle_stop_recording(self, message):
+        LOG.debug("Got spoken stuff")
+        self.chaseLedThread.exit_flag = True
+        self.chaseLedThread.join()
+        self.pulseLedThread = pulseLedThread(self.m2enc.leds)
+        self.pulseLedThread.start()
+
+    def handle_utterance(self, message):
+        LOG.error("Got speech to text from the network")
+        self.pulseLedThread.exit_flag = True
+
+    def handle_end_audio(self, message):
+        LOG.error("Finished playing audio")
+        self.pulseLedThread.exit_flag = True
+
     def on_volume_duck(self, message):
+        # TODO duck it anyway using set vol
         LOG.warning("Mark2 volume duck deprecated! use volume set instead.")
 
     def on_volume_unduck(self, message):
+        # TODO duck it anyway using set vol
         LOG.warning("Mark2 volume unduck deprecated! use volume set instead.")
 
     def on_volume_set(self, message):
@@ -123,7 +233,6 @@ class EnclosureMark2(Enclosure):
         self.m2enc.hardware_volume.set_volume(float(self.current_volume))
 
     def on_volume_get(self, message):
-        self.current_volume = self.m2enc.hardware_volume.get_volume()
         LOG.info('Mark2:interface.py get and emit volume %s' %
                  (self.current_volume,))
         self.bus.emit(
