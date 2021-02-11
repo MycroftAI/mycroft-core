@@ -51,22 +51,30 @@ def generate_cache_text(cache_audio_dir, cache_text_file):
     from *.dialog files present in
     mycroft/res/text/en-us and mycroft-wifi setup skill
     Args:
-        cache_audio_dir (path): path to store .wav files
+        cache_audio_dir (path): DEPRECATED path to store .wav files
         cache_text_file (file): file containing the sentences
     """
+    # TODO: remove in 21.08
+    if cache_audio_dir is not None:
+        LOG.warning(
+            "the cache_audio_dir argument is deprecated. ensure the directory "
+            "exists before executing this function. support for this argument "
+            "will be removed in version 21.08"
+        )
+        if not os.path.exists(cache_audio_dir):
+            os.makedirs(cache_audio_dir)
     try:
         if not os.path.isfile(cache_text_file):
-            os.makedirs(cache_audio_dir)
-            f = open(cache_text_file, 'w')
+            text_file = open(cache_text_file, 'w')
             for each_path in cache_dialog_path:
                 if os.path.exists(each_path):
-                    write_cache_text(each_path, f)
-            f.close()
+                    write_cache_text(each_path, text_file)
+            text_file.close()
             LOG.debug("Completed generating cache")
         else:
             LOG.debug("Cache file 'cache_text.txt' already exists")
     except Exception:
-        LOG.error("Could not open text file to write cache")
+        LOG.exception("Could not open text file to write cache")
 
 
 def write_cache_text(cache_path, f):
@@ -172,8 +180,11 @@ def copy_cache(cache_audio_dir):
 def main(cache_audio_dir):
     # Path where cache is stored and not cleared on reboot/TTS change
     if cache_audio_dir:
-        cache_text_file = os.path.join(cache_audio_dir,
-                                       '..', 'cache_text.txt')
-        generate_cache_text(cache_audio_dir, cache_text_file)
-        download_audio(cache_audio_dir, cache_text_file)
+        if not os.path.exists(cache_audio_dir):
+            os.makedirs(cache_audio_dir)
+        cache_text_dir = os.path.dirname(cache_audio_dir)
+        cache_text_path = os.path.join(cache_text_dir, 'cache_text.txt')
+        # TODO: remove he first argument in 21.08
+        generate_cache_text(None, cache_text_path)
+        download_audio(cache_audio_dir, cache_text_path)
         copy_cache(cache_audio_dir)

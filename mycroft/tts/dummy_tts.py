@@ -27,6 +27,7 @@ class DummyTTS(TTS):
     def execute(self, sentence, ident=None, listen=False):
         """Don't do anything, return nothing."""
         LOG.info('Mycroft: {}'.format(sentence))
+        self.end_audio(listen)
         return None
 
 

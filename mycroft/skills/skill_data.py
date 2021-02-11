@@ -29,7 +29,7 @@ def read_vocab_file(path):
     """ Read voc file.
 
         This reads a .voc file, stripping out empty lines comments and expand
-        parentheses. It retruns each line as a list of all expanded
+        parentheses. It returns each line as a list of all expanded
         alternatives.
 
         Arguments:

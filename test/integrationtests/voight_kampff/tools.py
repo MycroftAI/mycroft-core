@@ -23,7 +23,7 @@ from mycroft.messagebus import Message
 TIMEOUT = 10
 
 
-def then_wait(msg_type, criteria_func, context, timeout=TIMEOUT):
+def then_wait(msg_type, criteria_func, context, timeout=None):
     """Wait for a specified time for criteria to be fulfilled.
 
     Arguments:
@@ -31,11 +31,13 @@ def then_wait(msg_type, criteria_func, context, timeout=TIMEOUT):
         criteria_func: Function to determine if a message fulfilling the
                        test case has been found.
         context: behave context
-        timeout: Time allowance for a message fulfilling the criteria
+        timeout: Time allowance for a message fulfilling the criteria, if
+                 provided will override the normal normal step timeout.
 
     Returns:
         tuple (bool, str) test status and debug output
     """
+    timeout = timeout or context.step_timeout
     start_time = time.monotonic()
     debug = ''
     while time.monotonic() < start_time + timeout:
@@ -51,7 +53,7 @@ def then_wait(msg_type, criteria_func, context, timeout=TIMEOUT):
     return False, debug
 
 
-def then_wait_fail(msg_type, criteria_func, context, timeout=TIMEOUT):
+def then_wait_fail(msg_type, criteria_func, context, timeout=None):
     """Wait for a specified time, failing if criteria is fulfilled.
 
     Arguments:
@@ -82,7 +84,7 @@ def mycroft_responses(context):
         responses = 'Mycroft responded with:\n'
         for m in messages:
             responses += 'Mycroft: '
-            if 'dialog' in m.data['meta']:
+            if 'meta' in m.data and 'dialog' in m.data['meta']:
                 responses += '{}.dialog'.format(m.data['meta']['dialog'])
             responses += '({})\n'.format(m.data['meta'].get('skill'))
             responses += '"{}"\n'.format(m.data['utterance'])
@@ -108,14 +110,20 @@ def emit_utterance(bus, utt):
                      context={'client_name': 'mycroft_listener'}))
 
 
-def wait_for_dialog(bus, dialogs, timeout=TIMEOUT):
+def wait_for_dialog(bus, dialogs, context=None, timeout=None):
     """Wait for one of the dialogs given as argument.
 
     Arguments:
         bus (InterceptAllBusClient): Bus instance to listen on
         dialogs (list): list of acceptable dialogs
-        timeout (int): how long to wait for the messagem, defaults to 10 sec.
+        context (behave Context): optional context providing scenario timeout
+        timeout (int): how long to wait for the message, defaults to timeout
+                       provided by context or 10 seconds
     """
+    if context:
+        timeout = timeout or context.step_timeout
+    else:
+        timeout = timeout or TIMEOUT
     start_time = time.monotonic()
     while time.monotonic() < start_time + timeout:
         for message in bus.get_messages('speak'):
@@ -125,3 +133,30 @@ def wait_for_dialog(bus, dialogs, timeout=TIMEOUT):
                 return
         bus.new_message_available.wait(0.5)
     bus.clear_messages()
+
+
+def wait_for_audio_service(context, message_type):
+    """Wait for audio.service message that matches type provided.
+
+    May be play, stop, or pause messages
+
+    Arguments:
+        context (behave Context): optional context providing scenario timeout
+        message_type (string): final component of bus message in form
+                               `mycroft.audio.service.{type}
+    """
+    msg_type = 'mycroft.audio.service.{}'.format(message_type)
+
+    def check_for_msg(message):
+        return (message.msg_type == msg_type, '')
+
+    passed, debug = then_wait(msg_type, check_for_msg, context)
+
+    if not passed:
+        debug += mycroft_responses(context)
+    if not debug:
+        if message_type == 'play':
+            message_type = 'start'
+        debug = "Mycroft didn't {} playback".format(message_type)
+
+    assert passed, debug

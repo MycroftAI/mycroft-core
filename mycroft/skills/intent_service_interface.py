@@ -29,7 +29,7 @@ class IntentServiceInterface:
 
     This class wraps the messagebus interface of the intent service allowing
     for easier interaction with the service. It wraps both the Adapt and
-    Precise parts of the intent services.
+    Padatious parts of the intent services.
     """
 
     def __init__(self, bus=None):
@@ -225,8 +225,11 @@ class IntentQueryApi:
         intent = self.get_intent(utterance, lang)
         if not intent:
             return None
+        # theoretically skill_id might be missing
+        if intent.get("skill_id"):
+            return intent["skill_id"]
         # retrieve skill from munged intent name
-        if intent.get("name"):  # padatious
+        if intent.get("intent_name"):  # padatious + adapt
             return intent["name"].split(":")[0]
         if intent.get("intent_type"):  # adapt
             return intent["intent_type"].split(":")[0]
@@ -245,7 +248,7 @@ class IntentQueryApi:
             return None
         return data["skills"]
 
-    def get_active_skills(self):
+    def get_active_skills(self, include_timestamps=False):
         msg = Message("intent.service.active_skills.get",
                       context={"destination": "intent_service",
                                "source": "intent_api"})
@@ -256,7 +259,9 @@ class IntentQueryApi:
         if not data:
             LOG.error("Intent Service timed out!")
             return None
-        return data["skills"]
+        if include_timestamps:
+            return data["skills"]
+        return [s[0] for s in data["skills"]]
 
     def get_adapt_manifest(self):
         msg = Message("intent.service.adapt.manifest.get",

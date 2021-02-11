@@ -61,18 +61,25 @@ class FallbackSkill(MycroftSkill):
         """Goes through all fallback handlers until one returns True"""
 
         def handler(message):
+            start, stop = message.data.get('fallback_range', (0, 101))
             # indicate fallback handling start
+            LOG.debug('Checking fallbacks in range '
+                      '{} - {}'.format(start, stop))
             bus.emit(message.forward("mycroft.skill.handler.start",
                                      data={'handler': "fallback"}))
 
             stopwatch = Stopwatch()
             handler_name = None
             with stopwatch:
-                for _, handler in sorted(cls.fallback_handlers.items(),
-                                         key=operator.itemgetter(0)):
+                sorted_handlers = sorted(cls.fallback_handlers.items(),
+                                         key=operator.itemgetter(0))
+                handlers = [f[1] for f in sorted_handlers
+                            if start <= f[0] < stop]
+                for handler in handlers:
                     try:
                         if handler(message):
-                            #  indicate completion
+                            # indicate completion
+                            status = True
                             handler_name = get_handler_name(handler)
                             bus.emit(message.forward(
                                      'mycroft.skill.handler.complete',
@@ -81,14 +88,21 @@ class FallbackSkill(MycroftSkill):
                             break
                     except Exception:
                         LOG.exception('Exception in fallback.')
-                else:  # No fallback could handle the utterance
-                    bus.emit(message.forward('complete_intent_failure'))
-                    warning = "No fallback could handle intent."
-                    LOG.warning(warning)
+                else:
+                    status = False
                     #  indicate completion with exception
+                    warning = 'No fallback could handle intent.'
                     bus.emit(message.forward('mycroft.skill.handler.complete',
                                              data={'handler': "fallback",
                                                    'exception': warning}))
+                    if 'fallback_range' not in message.data:
+                        # Old system TODO: Remove in 20.08
+                        # No fallback could handle the utterance
+                        bus.emit(message.forward('complete_intent_failure'))
+                        LOG.warning(warning)
+
+            # return if the utterance was handled to the caller
+            bus.emit(message.response(data={'handled': status}))
 
             # Send timing metric
             if message.context.get('ident'):

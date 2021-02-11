@@ -19,7 +19,7 @@ from threading import Lock
 
 from mycroft.configuration import Configuration
 from mycroft.messagebus.client import MessageBusClient
-from mycroft.util import create_daemon
+from mycroft.util import create_daemon, start_message_bus_client
 from mycroft.util.log import LOG
 
 import json
@@ -61,15 +61,14 @@ def _get_page_data(message):
 
 class Enclosure:
     def __init__(self):
-        # Establish Enclosure's websocket connection to the messagebus
-        self.bus = MessageBusClient()
         # Load full config
-        Configuration.set_config_update_handlers(self.bus)
         config = Configuration.get()
-
         self.lang = config['lang']
         self.config = config.get("enclosure")
         self.global_config = config
+
+        # Create Message Bus Client
+        self.bus = MessageBusClient()
 
         self.gui = create_gui_service(self, config['gui_websocket'])
         # This datastore holds the data associated with the GUI provider. Data
@@ -104,20 +103,33 @@ class Enclosure:
         self.bus.on("gui.page.delete", self.on_gui_delete_page)
         self.bus.on("gui.clear.namespace", self.on_gui_delete_namespace)
         self.bus.on("gui.event.send", self.on_gui_send_event)
+        self.bus.on("gui.status.request", self.handle_gui_status_request)
 
     def run(self):
-        try:
-            self.bus.run_forever()
-        except Exception as e:
-            LOG.error("Error: {0}".format(e))
-            self.stop()
+        """Start the Enclosure after it has been constructed."""
+        # Allow exceptions to be raised to the Enclosure Service
+        # if they may cause the Service to fail.
+        start_message_bus_client("ENCLOSURE", self.bus)
+
+    def stop(self):
+        """Perform any enclosure shutdown processes."""
+        pass
 
     ######################################################################
     # GUI client API
+    @property
+    def gui_connected(self):
+        """Returns True if at least 1 gui is connected, else False"""
+        return len(GUIWebsocketHandler.clients) > 0
+
+    def handle_gui_status_request(self, message):
+        """Reply to gui status request, allows querying if a gui is
+        connected using the message bus"""
+        self.bus.emit(message.reply("gui.status.request.response",
+                                    {"connected": self.gui_connected}))
 
     def send(self, msg_dict):
         """ Send to all registered GUIs. """
-        LOG.info('SENDING...')
         for connection in GUIWebsocketHandler.clients:
             try:
                 connection.send(msg_dict)
@@ -229,6 +241,9 @@ class Enclosure:
                    })
         # Remove the page from the local reprensentation as well.
         self.loaded[0].pages.pop(pos)
+        # Add a check to return any display to idle from position 0
+        if (pos == 0 and len(self.loaded[0].pages) == 0):
+            self.bus.emit(Message("mycroft.device.show.idle"))
 
     def __insert_new_namespace(self, namespace, pages):
         """ Insert new namespace and pages.
@@ -519,7 +534,8 @@ class GUIWebsocketHandler(WebSocketHandler):
             # System event, a page was changed
             msg_type = 'gui.page_interaction'
             msg_data = {'namespace': msg['namespace'],
-                        'page_number': msg['parameters'].get('number')}
+                        'page_number': msg['parameters'].get('number'),
+                        'skill_id': msg['parameters'].get('skillId')}
         elif msg.get('type') == "mycroft.events.triggered":
             # A normal event was triggered
             msg_type = '{}.{}'.format(msg['namespace'], msg['event_name'])

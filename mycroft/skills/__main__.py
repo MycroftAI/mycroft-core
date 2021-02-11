@@ -29,21 +29,19 @@ from mycroft.api import is_paired, BackendDown, DeviceApi
 from mycroft.audio import wait_while_speaking
 from mycroft.enclosure.api import EnclosureAPI
 from mycroft.configuration import Configuration
-from mycroft.messagebus.client import MessageBusClient
 from mycroft.messagebus.message import Message
 from mycroft.util import (
     connected,
-    create_echo_function,
-    create_daemon,
     reset_sigint_handler,
+    start_message_bus_client,
     wait_for_exit_signal
 )
 from mycroft.util.lang import set_active_lang
 from mycroft.util.log import LOG
+from mycroft.util.process_utils import ProcessStatus, StatusCallbackMap
 from .core import FallbackSkill
 from .event_scheduler import EventScheduler
 from .intent_service import IntentService
-from .padatious_service import PadatiousService
 from .skill_manager import SkillManager
 
 RASPBERRY_PI_PLATFORMS = ('mycroft_mark_1', 'picroft', 'mycroft_mark_2pi')
@@ -173,20 +171,28 @@ class DevicePrimer(object):
             wait_while_speaking()
 
 
+def on_started():
+    LOG.info('Skills service is starting up.')
+
+
+def on_alive():
+    LOG.info('Skills service is alive.')
+
+
 def on_ready():
-    LOG.info('Skill service is ready.')
+    LOG.info('Skills service is ready.')
 
 
 def on_error(e='Unknown'):
-    LOG.info('Skill service failed to launch ({})'.format(repr(e)))
+    LOG.info('Skills service failed to launch ({})'.format(repr(e)))
 
 
 def on_stopping():
-    LOG.info('Skill service is shutting down...')
+    LOG.info('Skills service is shutting down...')
 
 
-def main(ready_hook=on_ready, error_hook=on_error, stopping_hook=on_stopping,
-         watchdog=None):
+def main(alive_hook=on_alive, started_hook=on_started, ready_hook=on_ready,
+         error_hook=on_error, stopping_hook=on_stopping, watchdog=None):
     reset_sigint_handler()
     # Create PID file, prevent multiple instances of this service
     mycroft.lock.Lock('skills')
@@ -195,11 +201,19 @@ def main(ready_hook=on_ready, error_hook=on_error, stopping_hook=on_stopping,
     set_active_lang(config.get('lang', 'en-us'))
 
     # Connect this process to the Mycroft message bus
-    bus = _start_message_bus_client()
+    bus = start_message_bus_client("SKILLS")
     _register_intent_services(bus)
     event_scheduler = EventScheduler(bus)
+    callbacks = StatusCallbackMap(on_started=started_hook,
+                                  on_alive=alive_hook,
+                                  on_ready=ready_hook,
+                                  on_error=error_hook,
+                                  on_stopping=stopping_hook)
+    status = ProcessStatus('skills', bus, callbacks)
+
     skill_manager = _initialize_skill_manager(bus, watchdog)
 
+    status.set_started()
     _wait_for_internet_connection()
 
     if skill_manager is None:
@@ -210,27 +224,15 @@ def main(ready_hook=on_ready, error_hook=on_error, stopping_hook=on_stopping,
     skill_manager.start()
     while not skill_manager.is_alive():
         time.sleep(0.1)
-    ready_hook()  # Report ready status
+    status.set_alive()
+
+    while not skill_manager.is_all_loaded():
+        time.sleep(0.1)
+    status.set_ready()
+
     wait_for_exit_signal()
-    stopping_hook()  # Report shutdown started
+    status.set_stopping()
     shutdown(skill_manager, event_scheduler)
-
-
-def _start_message_bus_client():
-    """Start the bus client daemon and wait for connection."""
-    bus = MessageBusClient()
-    Configuration.set_config_update_handlers(bus)
-    bus_connected = Event()
-    bus.on('message', create_echo_function('SKILLS'))
-    # Set the bus connected event when connection is established
-    bus.once('open', bus_connected.set)
-    create_daemon(bus.run_forever)
-
-    # Wait for connection
-    bus_connected.wait()
-    LOG.info('Connected to messagebus')
-
-    return bus
 
 
 def _register_intent_services(bus):
@@ -240,14 +242,14 @@ def _register_intent_services(bus):
         bus: messagebus client to register the services on
     """
     service = IntentService(bus)
-    try:
-        PadatiousService(bus, service)
-    except Exception as e:
-        LOG.exception('Failed to create padatious handlers '
-                      '({})'.format(repr(e)))
-
     # Register handler to trigger fallback system
+    bus.on(
+        'mycroft.skills.fallback',
+        FallbackSkill.make_intent_failure_handler(bus)
+    )
+    # Backwards compatibility TODO: remove in 20.08
     bus.on('intent_failure', FallbackSkill.make_intent_failure_handler(bus))
+    return service
 
 
 def _initialize_skill_manager(bus, watchdog):
@@ -278,14 +280,14 @@ def _wait_for_internet_connection():
 
 
 def shutdown(skill_manager, event_scheduler):
-    LOG.info('Shutting down skill service')
+    LOG.info('Shutting down Skills service')
     if event_scheduler is not None:
         event_scheduler.shutdown()
     # Terminate all running threads that update skills
     if skill_manager is not None:
         skill_manager.stop()
         skill_manager.join()
-    LOG.info('Skill service shutdown complete!')
+    LOG.info('Skills service shutdown complete!')
 
 
 if __name__ == "__main__":

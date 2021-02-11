@@ -13,6 +13,7 @@
 # limitations under the License.
 #
 import signal
+from threading import Lock
 from time import sleep
 
 from mycroft.audio.services import AudioBackend
@@ -61,6 +62,7 @@ class SimpleAudioService(AudioBackend):
         self.index = 0
         self.supports_mime_hints = True
         mimetypes.init()
+        self.track_lock = Lock()
 
         self.bus.on('SimpleAudioServicePlay', self._play)
 
@@ -68,16 +70,29 @@ class SimpleAudioService(AudioBackend):
         return ['file', 'http']
 
     def clear_list(self):
-        self.tracks = []
+        with self.track_lock:
+            self.tracks = []
 
     def add_list(self, tracks):
-        self.tracks += tracks
-        LOG.info("Track list is " + str(tracks))
+        with self.track_lock:
+            self.tracks += tracks
+            LOG.info("Track list is " + str(tracks))
+
+    def _get_track(self, track_data):
+        if isinstance(track_data, list):
+            track = track_data[0]
+            mime = track_data[1]
+            mime = mime.split('/')
+        else:  # Assume string
+            track = track_data
+            mime = find_mime(track)
+        return track, mime
 
     def _play(self, message):
-        """ Implementation specific async method to handle playback.
-            This allows mpg123 service to use the "next method as well
-            as basic play/stop.
+        """Implementation specific async method to handle playback.
+
+        This allows mpg123 service to use the next method as well
+        as basic play/stop.
         """
         LOG.info('SimpleAudioService._play')
 
@@ -87,13 +102,12 @@ class SimpleAudioService(AudioBackend):
         repeat = message.data.get('repeat', False)
         self._is_playing = True
         self._paused = False
-        if isinstance(self.tracks[self.index], list):
-            track = self.tracks[self.index][0]
-            mime = self.tracks[self.index][1]
-            mime = mime.split('/')
-        else:  # Assume string
-            track = self.tracks[self.index]
-            mime = find_mime(track)
+        with self.track_lock:
+            if len(self.tracks) > self.index:
+                track, mime = self._get_track(self.tracks[self.index])
+            else:
+                return
+
         LOG.debug('Mime info: {}'.format(mime))
 
         # Indicate to audio service which track is being played
@@ -133,15 +147,16 @@ class SimpleAudioService(AudioBackend):
 
         # if there are more tracks available play next
         self.index += 1
-        if self.index < len(self.tracks) or repeat:
-            if self.index >= len(self.tracks):
-                self.index = 0
-            self.bus.emit(Message('SimpleAudioServicePlay',
-                                  {'repeat': repeat}))
-        else:
-            self._track_start_callback(None)
-            self._is_playing = False
-            self._paused = False
+        with self.track_lock:
+            if self.index < len(self.tracks) or repeat:
+                if self.index >= len(self.tracks):
+                    self.index = 0
+                self.bus.emit(Message('SimpleAudioServicePlay',
+                                      {'repeat': repeat}))
+            else:
+                self._track_start_callback(None)
+                self._is_playing = False
+                self._paused = False
 
     def play(self, repeat=False):
         LOG.info('Call SimpleAudioServicePlay')
