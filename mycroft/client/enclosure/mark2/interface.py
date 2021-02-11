@@ -111,6 +111,8 @@ class EnclosureMark2(Enclosure):
         self.active_until_stopped = None
         self.reserved_led = 10
         self.mute_led = 11
+        self.chaseLedThread = None
+        self.pulseLedThread = None
 
         self.system_volume = 0.5   # pulse audio master system volume
         # if you want to do anything with the system volume
@@ -189,34 +191,36 @@ class EnclosureMark2(Enclosure):
         self.bus.on('mycroft.volume.get', self.on_volume_get)
         self.bus.on('mycroft.volume.duck', self.on_volume_duck)
         self.bus.on('mycroft.volume.unduck', self.on_volume_unduck)
-
         self.bus.on('recognizer_loop:record_begin', self.handle_start_recording)
         self.bus.on('recognizer_loop:record_end', self.handle_stop_recording)
-        #self.bus.on('recognizer_loop:utterance', self.handle_utterance)
         self.bus.on('recognizer_loop:audio_output_end', self.handle_end_audio)
         self.bus.on('mycroft.speech.recognition.unknown', self.handle_end_audio)
+        self.bus.on('mycroft.stop.handled', self.handle_end_audio)
 
     def handle_start_recording(self, message):
         LOG.debug("Gathering speech stuff")
         background_color = (0,0,255)
         foreground_color = (0,0,0)
-        self.chaseLedThread = chaseLedThread(self.m2enc.leds, background_color, foreground_color)
-        self.chaseLedThread.start()
+        if self.chaseLedThread is None:
+            self.chaseLedThread = chaseLedThread(self.m2enc.leds, background_color, foreground_color)
+            self.chaseLedThread.start()
 
     def handle_stop_recording(self, message):
         LOG.debug("Got spoken stuff")
-        self.chaseLedThread.exit_flag = True
-        self.chaseLedThread.join()
-        self.pulseLedThread = pulseLedThread(self.m2enc.leds)
-        self.pulseLedThread.start()
-
-    def handle_utterance(self, message):
-        LOG.error("Got speech to text from the network")
-        self.pulseLedThread.exit_flag = True
+        if self.chaseLedThread is not None:
+            self.chaseLedThread.exit_flag = True
+            self.chaseLedThread.join()
+            self.chaseLedThread = None
+        if self.pulseLedThread is None:
+            self.pulseLedThread = pulseLedThread(self.m2enc.leds)
+            self.pulseLedThread.start()
 
     def handle_end_audio(self, message):
-        LOG.error("Finished playing audio")
-        self.pulseLedThread.exit_flag = True
+        LOG.debug("Finished playing audio")
+        if self.pulseLedThread is not None:
+            self.pulseLedThread.exit_flag = True
+            self.pulseLedThread.join()
+            self.pulseLedThread = None
 
     def on_volume_duck(self, message):
         # TODO duck it anyway using set vol

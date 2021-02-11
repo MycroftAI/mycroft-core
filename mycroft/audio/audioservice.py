@@ -381,7 +381,11 @@ class AudioService:
         """
         def restore_volume():
             LOG.debug('restoring volume')
-            self.current.restore_volume()
+            # TODO fix this band aid - why is current None?
+            try:
+                self.current.restore_volume()
+            except:
+                pass
 
         if self.current:
             self.bus.on('recognizer_loop:speech.recognition.unknown',
