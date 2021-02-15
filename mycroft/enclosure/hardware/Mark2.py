@@ -20,6 +20,7 @@ class Capabilities():
                      "Led":{"name":"led_sj201r4", "type":"MycroftLed"},
                      "Switch":{"name":"switch_gpio", "type":"MycroftSwitch"},
                      "Volume":{"name":"volume_sj201r4", "type":"MycroftVolume"},
+                     "Fan":{"name":"fan_sj201r4", "type":"MycroftFan"},
                      "Palette":{"name":"default_palette", "type":"MycroftPalette"}
                 },
             "xmos_all":{

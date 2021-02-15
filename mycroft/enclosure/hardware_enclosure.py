@@ -46,9 +46,12 @@ class HardwareEnclosure:
         self.capabilities = enclosure_capabilities.capabilities[self.board_type]
 
         # eventually this could also be driven by the capabilities
+        # in fact it is actually a BUG that it is not, as every 
+        # enclosure does not need the exact same hardware configuration.
         led_driver = self.capabilities["Led"]["name"]
         switch_driver = self.capabilities["Switch"]["name"]
         volume_driver = self.capabilities["Volume"]["name"]
+        fan_driver = self.capabilities["Fan"]["name"]
 
         pal_module = driver_dir + ".MycroftLed.%s" % (self.capabilities["Palette"]["name"],)
         module = importlib.import_module(pal_module)
@@ -61,6 +64,10 @@ class HardwareEnclosure:
         vol_module = driver_dir + ".MycroftVolume.%s" % (volume_driver,)
         module = importlib.import_module(vol_module)
         self.hardware_volume = module.Volume()
+
+        fan_module = driver_dir + ".MycroftFan.%s" % (fan_driver,)
+        module = importlib.import_module(fan_module)
+        self.fan = module.FanControl()
 
         switch_module = driver_dir + ".MycroftSwitch.%s" % (switch_driver,)
         module = importlib.import_module(switch_module)

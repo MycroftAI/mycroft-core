@@ -27,6 +27,46 @@ from mycroft.enclosure.hardware_enclosure import HardwareEnclosure
 import threading
 
 
+
+class temperatureMonitorThread(threading.Thread):
+    def __init__(self, fan_obj):
+        self.fan_obj = fan_obj
+        self.exit_flag = False
+        threading.Thread.__init__(self)
+
+    def run(self):
+        LOG.debug("temperature monitor thread started")
+        while not self.exit_flag:
+            time.sleep(60)
+
+            LOG.info("CPU temperature is %s" % (self.fan_obj.get_cpu_temp(),))
+
+            # TODO make this ratiometric
+            current_temperature = self.fan_obj.get_cpu_temp()
+            if current_temperature < 50.0:
+                # anything below 122F we are fine
+                continue
+
+            if current_temperature < 60.0:
+                # 122 - 140F we run fan at 25%
+                self.fan_obj.set_fan_speed(25)
+                LOG.debug("Fan set to 25%")
+                continue
+
+            if current_temperature <= 70.0:
+                # 140 - 160F we run fan at 50%
+                self.fan_obj.set_fan_speed(50)
+                LOG.debug("Fan set to 50%")
+                continue
+
+            if current_temperature > 70.0:
+                # > 160F we run fan at 100%
+                self.fan_obj.set_fan_speed(100)
+                LOG.debug("Fan set to 100%")
+                continue
+
+
+
 class pulseLedThread(threading.Thread):
     def __init__(self, led_obj):
         self.led_obj = led_obj
@@ -122,6 +162,10 @@ class EnclosureMark2(Enclosure):
         # TODO these need to come from a config value
         self.m2enc = HardwareEnclosure("Mark2", "sj201r4")
 
+        # start the temperature monitor thread
+        self.temperatureMonitorThread = temperatureMonitorThread(self.m2enc.fan)
+        self.temperatureMonitorThread.start()
+
         self.m2enc.leds.set_leds([
                 self.m2enc.palette.BLACK,
                 self.m2enc.palette.BLACK,
@@ -137,8 +181,8 @@ class EnclosureMark2(Enclosure):
 
         self.m2enc.leds._set_led_with_brightness(
             self.reserved_led,
-            self.m2enc.palette.YELLOW,
-            0.25)
+            self.m2enc.palette.MAGENTA,
+            0.5)
 
         self.m2enc.leds._set_led_with_brightness(
             self.mute_led,
