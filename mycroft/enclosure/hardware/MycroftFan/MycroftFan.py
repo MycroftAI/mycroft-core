@@ -16,8 +16,8 @@ import abc
 
 
 class MycroftFan:
-    """ abstract base class for a Mycroft Volume
-     all volume classes must provide at least 
+    """ abstract base class for a Mycroft Fan
+     all fan classes must provide at least 
      these basic methods """
     __metaclass__ = abc.ABCMeta
 
