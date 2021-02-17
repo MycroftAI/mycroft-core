@@ -11,14 +11,14 @@ class TestGoogleTTS(unittest.TestCase):
     def test_get_tts(self, _, gtts_mock):
         gtts_response = mock.Mock()
         gtts_mock.return_value = gtts_response
-        tts = GoogleTTS('en-US', {})
+        tts = GoogleTTS('en', {})
         sentence = 'help me Obi-Wan Kenobi, you are my only hope'
         mp3_file, vis = tts.get_tts(sentence, 'output.mp3')
-        gtts_mock.assert_called_with(text=sentence, lang='en-us')
+        gtts_mock.assert_called_with(text=sentence, lang='en')
         gtts_response.save.assert_called_with('output.mp3')
 
     def test_validator(self, _, gtts_mock):
-        validator = GoogleTTSValidator(GoogleTTS('en-US', {}))
+        validator = GoogleTTSValidator(GoogleTTS('en', {}))
         validator.validate_connection()
         with self.assertRaises(Exception):
             def sideeffect(**kwargs):
@@ -33,5 +33,5 @@ class TestGoogleTTS(unittest.TestCase):
         def sideeffect(**kwargs):
             raise Exception
         mock_get_langs.side_effect = sideeffect
-        tts = GoogleTTS('en-US', {})
-        self.assertEqual(tts.google_lang, 'en-us')
+        tts = GoogleTTS('en', {})
+        self.assertEqual(tts.google_lang, 'en')

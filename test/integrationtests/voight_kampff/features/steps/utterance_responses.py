@@ -123,6 +123,20 @@ def given_english(context):
     context.lang = 'en-us'
 
 
+@given('a {timeout} seconds timeout')
+@given('a {timeout} second timeout')
+def given_timeout(context, timeout):
+    """Set the timeout for the steps in this scenario."""
+    context.step_timeout = float(timeout)
+
+
+@given('a {timeout} minutes timeout')
+@given('a {timeout} minute timeout')
+def given_timeout(context, timeout):
+    """Set the timeout for the steps in this scenario."""
+    context.step_timeout = float(timeout) * 60
+
+
 @when('the user says "{text}"')
 def when_user_says(context, text):
     context.bus.emit(Message('recognizer_loop:utterance',
@@ -233,6 +247,7 @@ def then_user_follow_up(context, text):
 
 @then('mycroft should send the message "{message_type}"')
 def then_messagebus_message(context, message_type):
+    """Set a timeout for the current Scenario."""
     cnt = 0
     while context.bus.get_messages(message_type) == []:
         if cnt > int(TIMEOUT * (1.0 / SLEEP_LENGTH)):

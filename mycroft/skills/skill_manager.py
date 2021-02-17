@@ -131,13 +131,14 @@ class SkillManager(Thread):
         self.initial_load_complete = False
         self.num_install_retries = 0
         self.settings_downloader = SkillSettingsDownloader(self.bus)
-        self._define_message_bus_events()
-        self.skill_updater = SkillUpdater()
-        self.daemon = True
 
         # Statuses
         self._alive_status = False  # True after priority skills has loaded
         self._loaded_status = False  # True after all skills has loaded
+
+        self.skill_updater = SkillUpdater()
+        self._define_message_bus_events()
+        self.daemon = True
 
     def _define_message_bus_events(self):
         """Define message bus events with handlers defined in this class."""
@@ -157,8 +158,6 @@ class SkillManager(Thread):
         self.bus.on('skillmanager.keep', self.deactivate_except)
         self.bus.on('skillmanager.activate', self.activate_skill)
         self.bus.on('mycroft.paired', self.handle_paired)
-        self.bus.on('mycroft.skills.is_alive', self.is_alive)
-        self.bus.on('mycroft.skills.all_loaded', self.is_all_loaded)
         self.bus.on(
             'mycroft.skills.settings.update',
             self.settings_downloader.download
@@ -241,9 +240,9 @@ class SkillManager(Thread):
         # unload the existing version from memory and reload from the disk.
         while not self._stop_event.is_set():
             try:
+                self._unload_removed_skills()
                 self._reload_modified_skills()
                 self._load_new_skills()
-                self._unload_removed_skills()
                 self._update_skills()
                 if (is_paired() and self.upload_queue.started and
                         len(self.upload_queue) > 0):
@@ -300,6 +299,7 @@ class SkillManager(Thread):
             load_status = skill_loader.load()
         except Exception:
             LOG.exception('Load of skill {} failed!'.format(skill_directory))
+            load_status = False
         finally:
             self.skill_loaders[skill_directory] = skill_loader
 
@@ -351,17 +351,10 @@ class SkillManager(Thread):
 
     def is_alive(self, message=None):
         """Respond to is_alive status request."""
-        if message:
-            status = {'status': self._alive_status}
-            self.bus.emit(message.response(data=status))
         return self._alive_status
 
     def is_all_loaded(self, message=None):
         """ Respond to all_loaded status request."""
-        if message:
-            status = {'status': self._loaded_status}
-            self.bus.emit(message.response(data=status))
-
         return self._loaded_status
 
     def send_skill_list(self, _):

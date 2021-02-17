@@ -16,7 +16,7 @@ import time
 from threading import Thread
 import speech_recognition as sr
 import pyaudio
-from pyee import BaseEventEmitter
+from pyee import EventEmitter
 from requests import RequestException
 from requests.exceptions import ConnectionError
 
@@ -271,7 +271,7 @@ def recognizer_conf_hash(config):
     return hash(json.dumps(c, sort_keys=True))
 
 
-class RecognizerLoop(BaseEventEmitter):
+class RecognizerLoop(EventEmitter):
     """ EventEmitter loop running speech recognition.
 
     Local wake word recognizer and remote general speech recognition.

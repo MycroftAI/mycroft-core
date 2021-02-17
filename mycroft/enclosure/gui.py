@@ -40,6 +40,16 @@ class SkillGUI:
         self.config = Configuration.get()
 
     @property
+    def connected(self):
+        """Returns True if at least 1 gui is connected, else False"""
+        if self.skill.bus:
+            reply = self.skill.bus.wait_for_response(
+                Message("gui.status.request"), "gui.status.request.response")
+            if reply:
+                return reply.data["connected"]
+        return False
+
+    @property
     def remote_url(self):
         """Returns configuration value for url of remote-server."""
         return self.config.get('remote-server')
@@ -100,12 +110,20 @@ class SkillGUI:
         """Implements get part of dict-like behaviour with named keys."""
         return self.__session_data[key]
 
+    def get(self, *args, **kwargs):
+        """Implements the get method for accessing dict keys."""
+        return self.__session_data.get(*args, **kwargs)
+
     def __contains__(self, key):
         """Implements the "in" operation."""
         return self.__session_data.__contains__(key)
 
     def clear(self):
-        """Reset the value dictionary, and remove namespace from GUI."""
+        """Reset the value dictionary, and remove namespace from GUI.
+
+        This method does not close the GUI for a Skill. For this purpose see
+        the `release` method.
+        """
         self.__session_data = {}
         self.page = None
         self.skill.bus.emit(Message("gui.clear.namespace",
@@ -214,9 +232,15 @@ class SkillGUI:
         # Convert pages to full reference
         page_urls = []
         for name in page_names:
-            page = self.skill.find_resource(name, 'ui')
+            if name.startswith("SYSTEM"):
+                page = resolve_resource_file(join('ui', name))
+            else:
+                page = self.skill.find_resource(name, 'ui')
             if page:
-                page_urls.append("file://" + page)
+                if self.config.get('remote'):
+                    page_urls.append(self.remote_url + "/" + page)
+                else:
+                    page_urls.append("file://" + page)
             else:
                 raise FileNotFoundError("Unable to find page: {}".format(name))
 
@@ -239,7 +263,6 @@ class SkillGUI:
                 True: Disables showing all platform skill animations.
                 False: 'Default' always show animations.
         """
-        self.clear()
         self["text"] = text
         self["title"] = title
         self.show_page("SYSTEM_TextFrame.qml", override_idle,
@@ -264,7 +287,6 @@ class SkillGUI:
                 True: Disables showing all platform skill animations.
                 False: 'Default' always show animations.
         """
-        self.clear()
         self["image"] = url
         self["title"] = title
         self["caption"] = caption
@@ -291,7 +313,6 @@ class SkillGUI:
                 True: Disables showing all platform skill animations.
                 False: 'Default' always show animations.
         """
-        self.clear()
         self["image"] = url
         self["title"] = title
         self["caption"] = caption
@@ -314,7 +335,6 @@ class SkillGUI:
                 True: Disables showing all platform skill animations.
                 False: 'Default' always show animations.
         """
-        self.clear()
         self["html"] = html
         self["resourceLocation"] = resource_url
         self.show_page("SYSTEM_HtmlFrame.qml", override_idle,
@@ -334,10 +354,18 @@ class SkillGUI:
                 True: Disables showing all platform skill animations.
                 False: 'Default' always show animations.
         """
-        self.clear()
         self["url"] = url
         self.show_page("SYSTEM_UrlFrame.qml", override_idle,
                        override_animations)
+
+    def release(self):
+        """Signal that this skill is no longer using the GUI,
+        allow different platforms to properly handle this event.
+        Also calls self.clear() to reset the state variables
+        Platforms can close the window or go back to previous page"""
+        self.clear()
+        self.skill.bus.emit(Message("mycroft.gui.screen.close",
+                                    {"skill_id": self.skill.skill_id}))
 
     def shutdown(self):
         """Shutdown gui interface.

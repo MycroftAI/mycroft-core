@@ -1134,9 +1134,17 @@ class MycroftSkill:
             wait (bool):            set to True to block while the text
                                     is being spoken.
         """
-        data = data or {}
-        self.speak(self.dialog_renderer.render(key, data),
-                   expect_response, wait, meta={'dialog': key, 'data': data})
+        if self.dialog_renderer:
+            data = data or {}
+            self.speak(
+                self.dialog_renderer.render(key, data),
+                expect_response, wait, meta={'dialog': key, 'data': data}
+            )
+        else:
+            self.log.warning(
+                'dialog_render is None, does the locale/dialog folder exist?'
+            )
+            self.speak(key, expect_response, wait, {})
 
     def acknowledge(self):
         """Acknowledge a successful request.
