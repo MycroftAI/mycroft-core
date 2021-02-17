@@ -483,4 +483,4 @@ class SkillGUI:
         reference to make ref counting warning more precise.
         """
         self.clear()
-        self.skill = None 
+        self.skill = None
