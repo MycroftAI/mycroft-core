@@ -97,9 +97,9 @@ def before_all(context):
     sleep(10)
 
     context.bus = bus
+    context.step_timeout = 10  # Reset the step_timeout to 10 seconds
     context.matched_message = None
     context.log = log
-    context.original_config = {}
     context.config = Configuration.get()
     Configuration.set_config_update_handlers(bus)
 
@@ -120,18 +120,6 @@ def after_feature(context, feature):
     sleep(1)
 
 
-def reset_config(context):
-    """Reset configuration with changes stored in original_config of context.
-    """
-    context.log.info('Resetting patched configuration...')
-
-    context.bus.emit(Message('configuration.patch.clear'))
-    key = list(context.original_config)[0]
-    while context.config[key] != context.original_config[key]:
-        sleep(0.5)
-    context.original_config = {}
-
-
 def after_scenario(context, scenario):
     """Wait for mycroft completion and reset any changed state."""
     # TODO wait for skill handler complete
@@ -139,7 +127,4 @@ def after_scenario(context, scenario):
     wait_while_speaking()
     context.bus.clear_messages()
     context.matched_message = None
-
-    if context.original_config:
-        # something has changed, reset changes by done in the context
-        reset_config(context)
+    context.step_timeout = 10  # Reset the step_timeout to 10 seconds

@@ -58,6 +58,16 @@ class SkillGUI:
         return False
 
     @property
+    def connected(self):
+        """Returns True if at least 1 gui is connected, else False"""
+        if self.skill.bus:
+            reply = self.skill.bus.wait_for_response(
+                Message("gui.status.request"), "gui.status.request.response")
+            if reply:
+                return reply.data["connected"]
+        return False
+
+    @property
     def remote_url(self):
         """Returns configuration value for url of remote-server."""
         return self.config.get('remote-server')

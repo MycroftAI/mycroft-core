@@ -21,7 +21,7 @@ from mycroft.util.log import LOG
 class VlcService(AudioBackend):
     def __init__(self, config, bus=None, name='vlc'):
         super(VlcService, self).__init__(config, bus)
-        self.instance = vlc.Instance()
+        self.instance = vlc.Instance("--no-video")
         self.list_player = self.instance.media_list_player_new()
         self.player = self.instance.media_player_new()
         self.list_player.set_media_player(self.player)

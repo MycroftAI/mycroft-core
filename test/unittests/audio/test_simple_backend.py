@@ -19,6 +19,23 @@ config = {
 }
 
 
+class CallWaiter:
+    """Wrapper for logic waiting for play status to be called."""
+    def __init__(self):
+        self.called = False
+
+    def set(self):
+        """Call has been received."""
+        self.called = True
+
+    def wait(self):
+        """Wait for call."""
+        while not self.called:
+            time.sleep(0.1)
+        time.sleep(0.1)
+        self.called = False
+
+
 class TestSimpleBackend(unittest.TestCase):
     @mock.patch('mycroft.audio.services.simple.Session')
     def test_find_mime(self, mock_session):
@@ -79,9 +96,12 @@ class TestSimpleBackend(unittest.TestCase):
         process_mock = mock.Mock(name='process')
 
         completed = False
+        called = CallWaiter()
 
         def wait_for_completion():
             nonlocal completed
+            nonlocal called
+            called.set()
             if not completed:
                 return None
             else:
@@ -101,7 +121,7 @@ class TestSimpleBackend(unittest.TestCase):
         thread = Thread(target=service._play, args=[Message('plaything')])
         thread.daemon = True
         thread.start()
-        time.sleep(0.1)
+        called.wait()
 
         play_mp3_mock.assert_called_with('a.mp3')
         completed = True
@@ -112,7 +132,8 @@ class TestSimpleBackend(unittest.TestCase):
         thread = Thread(target=service._play, args=[Message('plaything')])
         thread.daemon = True
         thread.start()
-        time.sleep(0.1)
+        called.wait()
+
         play_ogg_mock.assert_called_with('b.ogg')
 
         service.pause()
@@ -126,7 +147,7 @@ class TestSimpleBackend(unittest.TestCase):
         thread = Thread(target=service._play, args=[Message('plaything')])
         thread.daemon = True
         thread.start()
-        time.sleep(0.2)
+        called.wait()
         play_wav_mock.assert_called_with('c.wav')
 
         service.stop()

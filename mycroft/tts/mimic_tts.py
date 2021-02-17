@@ -12,14 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+"""Mimic TTS, a local TTS backend.
+
+This Backend uses the mimic executable to render text into speech.
+"""
 import os
+import os.path
+from os.path import exists, join, expanduser
 import stat
 import subprocess
 from threading import Thread
 from time import sleep
-
-import os.path
-from os.path import exists, join, expanduser
 
 from mycroft import MYCROFT_ROOT_PATH
 from mycroft.api import DeviceApi
@@ -29,10 +32,10 @@ from mycroft.util.log import LOG
 
 from .tts import TTS, TTSValidator
 
-config = Configuration.get().get("tts").get("mimic")
-data_dir = expanduser(Configuration.get()['data_dir'])
+CONFIG = Configuration.get().get("tts").get("mimic")
+DATA_DIR = expanduser(Configuration.get()['data_dir'])
 
-BIN = config.get("path",
+BIN = CONFIG.get("path",
                  os.path.join(MYCROFT_ROOT_PATH, 'mimic', 'bin', 'mimic'))
 
 if not os.path.isfile(BIN):
@@ -41,7 +44,7 @@ if not os.path.isfile(BIN):
 
     BIN = distutils.spawn.find_executable("mimic")
 
-SUBSCRIBER_VOICES = {'trinity': join(data_dir, 'voices/mimic_tn')}
+SUBSCRIBER_VOICES = {'trinity': join(DATA_DIR, 'voices/mimic_tn')}
 
 
 def download_subscriber_voices(selected_voice):
@@ -54,8 +57,8 @@ def download_subscriber_voices(selected_voice):
         """Call back function to make the downloaded file executable."""
         LOG.info('Make executable new voice binary executable')
         # make executable
-        st = os.stat(dest)
-        os.chmod(dest, st.st_mode | stat.S_IEXEC)
+        file_stat = os.stat(dest)
+        os.chmod(dest, file_stat.st_mode | stat.S_IEXEC)
 
     # First download the selected voice if needed
     voice_file = SUBSCRIBER_VOICES.get(selected_voice)
@@ -64,9 +67,9 @@ def download_subscriber_voices(selected_voice):
         url = DeviceApi().get_subscriber_voice_url(selected_voice)
         # Check we got an url
         if url:
-            dl = download(url, voice_file, make_executable)
+            dl_status = download(url, voice_file, make_executable)
             # Wait for completion
-            while not dl.done:
+            while not dl_status.done:
                 sleep(1)
         else:
             LOG.debug('{} is not available for this architecture'
@@ -79,9 +82,9 @@ def download_subscriber_voices(selected_voice):
             url = DeviceApi().get_subscriber_voice_url(voice)
             # Check we got an url
             if url:
-                dl = download(url, voice_file, make_executable)
+                dl_status = download(url, voice_file, make_executable)
                 # Wait for completion
-                while not dl.done:
+                while not dl_status.done:
                     sleep(1)
             else:
                 LOG.debug('{} is not available for this architecture'
@@ -95,25 +98,26 @@ class Mimic(TTS):
             lang, config, MimicValidator(self), 'wav',
             ssml_tags=["speak", "ssml", "phoneme", "voice", "audio", "prosody"]
         )
-        self.dl = None
         self.clear_cache()
 
         # Download subscriber voices if needed
         self.is_subscriber = DeviceApi().is_subscriber
         if self.is_subscriber:
-            t = Thread(target=download_subscriber_voices, args=[self.voice])
-            t.daemon = True
-            t.start()
+            trd = Thread(target=download_subscriber_voices, args=[self.voice])
+            trd.daemon = True
+            trd.start()
 
     def modify_tag(self, tag):
-        for key, value in [
-            ('x-slow', '0.4'),
-            ('slow', '0.7'),
-            ('medium', '1.0'),
-            ('high', '1.3'),
-            ('x-high', '1.6'),
-            ('speed', 'rate')
-        ]:
+        """Modify the SSML to suite Mimic."""
+        ssml_conversions = {
+            'x-slow': '0.4',
+            'slow': '0.7',
+            'medium': '1.0',
+            'high': '1.3',
+            'x-high': '1.6',
+            'speed': 'rate'
+        }
+        for key, value in ssml_conversions.items():
             tag = tag.replace(key, value)
         return tag
 
@@ -136,9 +140,9 @@ class Mimic(TTS):
 
         args = [mimic_bin, '-voice', voice, '-psdur', '-ssml']
 
-        stretch = config.get('duration_stretch', None)
+        stretch = self.config.get('duration_stretch', None)
         if stretch:
-            args += ['--setf', 'duration_stretch=' + stretch]
+            args += ['--setf', 'duration_stretch={}'.format(stretch)]
         return args
 
     def get_tts(self, sentence, wav_file):
@@ -175,22 +179,26 @@ class Mimic(TTS):
 
 
 class MimicValidator(TTSValidator):
-    def __init__(self, tts):
-        super(MimicValidator, self).__init__(tts)
-
+    """Validator class checking that Mimic can be used."""
     def validate_lang(self):
+        """Verify that the language is supported."""
         # TODO: Verify version of mimic can handle the requested language
-        pass
 
     def validate_connection(self):
+        """Check that Mimic executable is found and works."""
         try:
             subprocess.call([BIN, '--version'])
-        except Exception:
-            LOG.info("Failed to find mimic at: " + BIN)
+        except Exception as err:
+            if BIN:
+                LOG.error('Failed to find mimic at: {}'.format(BIN))
+            else:
+                LOG.error('Mimic executable not found')
             raise Exception(
-                'Mimic was not found. Run install-mimic.sh to install it.')
+                'Mimic was not found. Run install-mimic.sh to install it.') \
+                from err
 
     def get_tts_class(self):
+        """Return the TTS class associated with the validator."""
         return Mimic
 
 
