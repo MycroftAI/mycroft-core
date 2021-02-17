@@ -86,14 +86,14 @@ Item {
                     }
                     
                     onClicked: {
-                        Mycroft.MycroftController.sendRequest("mycroft.gui.screen.close", {});
+                        triggerGuiEvent("video.media.playback.ended", {})
                         video.stop();
                     }
                     KeyNavigation.up: video
                     KeyNavigation.right: button
                     Keys.onReturnPressed: {
                         hideTimer.restart();
-                        Mycroft.MycroftController.sendRequest("mycroft.gui.screen.close", {});
+                        triggerGuiEvent("video.media.playback.ended", {})
                         video.stop();
                     }
                     onFocusChanged: {

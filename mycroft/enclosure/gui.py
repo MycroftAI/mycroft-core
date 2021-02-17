@@ -478,7 +478,8 @@ class SkillGUI:
         # TODO detect end of media playback from gui and call this
         if self.is_video_displayed:
             self["playStatus"] = "stop"
-            self.clear()
+            self.skill.bus.emit(Message("mycroft.gui.screen.close",
+                                    {"skill_id": self.skill.skill_id}))
         self.video_info = None
 
     def resume_video(self):
