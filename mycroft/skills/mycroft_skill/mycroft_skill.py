@@ -255,7 +255,6 @@ class MycroftSkill:
             self.event_scheduler.set_id(self.skill_id)
             self._enclosure = EnclosureAPI(bus, self.name)
             self._register_system_event_handlers()
-
             # Initialize the SkillGui
             self.gui.setup_default_handlers()
 
