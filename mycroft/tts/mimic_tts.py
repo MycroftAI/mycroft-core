@@ -17,6 +17,7 @@
 This Backend uses the mimic executable to render text into speech.
 """
 import os
+import sys
 import os.path
 from os.path import exists, join, expanduser
 import stat
@@ -35,14 +36,16 @@ from .tts import TTS, TTSValidator
 CONFIG = Configuration.get().get("tts").get("mimic")
 DATA_DIR = expanduser(Configuration.get()['data_dir'])
 
+mimic_base = "mimic.exe" if sys.platform.startswith("win") else "mimic"
+
 BIN = CONFIG.get("path",
-                 os.path.join(MYCROFT_ROOT_PATH, 'mimic', 'bin', 'mimic'))
+                 os.path.join(MYCROFT_ROOT_PATH, 'mimic', 'bin', mimic_base))
 
 if not os.path.isfile(BIN):
     # Search for mimic on the path
     import distutils.spawn
 
-    BIN = distutils.spawn.find_executable("mimic")
+    BIN = distutils.spawn.find_executable(mimic_base)
 
 SUBSCRIBER_VOICES = {'trinity': join(DATA_DIR, 'voices/mimic_tn')}
 

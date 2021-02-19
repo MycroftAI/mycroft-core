@@ -13,14 +13,31 @@
 # limitations under the License.
 import os
 from os.path import join, dirname, expanduser, exists
+from tempfile import gettempdir
+import sys
+
+is_windows = sys.platform.startswith('win')
 
 DEFAULT_CONFIG = join(dirname(__file__), 'mycroft.conf')
-SYSTEM_CONFIG = os.environ.get('MYCROFT_SYSTEM_CONFIG',
-                               '/etc/mycroft/mycroft.conf')
+DEFAULT_CONFIG_WINDOWS_OVERRIDES = join(dirname(__file__), 'mycroft-win.conf')
+
+if is_windows:
+    FALLBACK_SYSTEM_CONFIG = join(os.environ.get('PROGRAMDATA'),
+                                  'mycroft/mycroft.conf')
+else:
+    FALLBACK_SYSTEM_CONFIG = '/etc/mycroft/mycroft.conf'
+
+SYSTEM_CONFIG = os.environ.get('MYCROFT_SYSTEM_CONFIG', FALLBACK_SYSTEM_CONFIG)
 USER_CONFIG = join(expanduser('~'), '.mycroft/mycroft.conf')
 REMOTE_CONFIG = "mycroft.ai"
-WEB_CONFIG_CACHE = os.environ.get('MYCROFT_WEB_CACHE',
-                                  '/var/tmp/mycroft_web_cache.json')
+
+if is_windows:
+    WEB_CONFIG_CACHE = os.environ.get('MYCROFT_WEB_CACHE',
+                                      join(gettempdir(),
+                                           'mycroft_web_cache.json'))
+else:
+    WEB_CONFIG_CACHE = os.environ.get('MYCROFT_WEB_CACHE',
+                                      '/var/tmp/mycroft_web_cache.json')
 
 
 def __ensure_folder_exists(path):

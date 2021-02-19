@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-from signal import getsignal, signal, SIGKILL, SIGINT, SIGTERM, \
+from signal import getsignal, signal, SIGINT, SIGTERM, \
     SIG_DFL, default_int_handler, SIG_IGN  # signals
 
 import os  # Operating System functions
@@ -22,6 +22,15 @@ import os  # Operating System functions
 # Wrapper around chain of handler functions for a specific system level signal.
 # Often used to trap Ctrl-C for specific application purposes.
 from mycroft.util import LOG
+
+import sys
+
+# windows does not have SIGKILL, but SIGTERM can't be caught
+# in another process so it works the same way.
+if not sys.platform.startswith('win'):
+    from signal import SIGKILL as FORCED_KILL_SIGNAL
+else:
+    FORCED_KILL_SIGNAL = SIGTERM
 
 
 class Signal:  # python 3+ class Signal
@@ -142,7 +151,7 @@ class Lock:  # python 3+ 'class Lock'
             return
         with open(self.path, 'r') as L:
             try:
-                os.kill(int(L.read()), SIGKILL)
+                os.kill(int(L.read()), FORCED_KILL_SIGNAL)
             except Exception as E:
                 pass
 
