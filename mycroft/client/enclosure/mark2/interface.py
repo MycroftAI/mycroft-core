@@ -24,6 +24,119 @@ from mycroft.util import create_daemon, connected
 from mycroft.util.log import LOG
 from mycroft.enclosure.hardware_enclosure import HardwareEnclosure
 
+import threading
+
+
+
+class temperatureMonitorThread(threading.Thread):
+    def __init__(self, fan_obj):
+        self.fan_obj = fan_obj
+        self.exit_flag = False
+        threading.Thread.__init__(self)
+
+    def run(self):
+        LOG.debug("temperature monitor thread started")
+        while not self.exit_flag:
+            time.sleep(60)
+
+            LOG.info("CPU temperature is %s" % (self.fan_obj.get_cpu_temp(),))
+
+            # TODO make this ratiometric
+            current_temperature = self.fan_obj.get_cpu_temp()
+            if current_temperature < 50.0:
+                # anything below 122F we are fine
+                continue
+
+            if current_temperature < 60.0:
+                # 122 - 140F we run fan at 25%
+                self.fan_obj.set_fan_speed(25)
+                LOG.debug("Fan set to 25%")
+                continue
+
+            if current_temperature <= 70.0:
+                # 140 - 160F we run fan at 50%
+                self.fan_obj.set_fan_speed(50)
+                LOG.debug("Fan set to 50%")
+                continue
+
+            if current_temperature > 70.0:
+                # > 160F we run fan at 100%
+                self.fan_obj.set_fan_speed(100)
+                LOG.debug("Fan set to 100%")
+                continue
+
+
+
+class pulseLedThread(threading.Thread):
+    def __init__(self, led_obj):
+        self.led_obj = led_obj
+        self.exit_flag = False
+        self.color_tup = (255,0,0)
+        self.delay = 0.1
+        self.brightness = 100
+        self.step_size = 5
+        threading.Thread.__init__(self)
+
+    def run(self):
+        LOG.debug("pulse thread started")
+        self.tmp_leds = []
+        for x in range(0,10):
+            self.tmp_leds.append( self.color_tup )
+
+        self.led_obj.brightness = self.brightness / 100
+        self.led_obj.set_leds( self.tmp_leds )
+
+        while not self.exit_flag:
+
+            if (self.brightness + self.step_size) > 100:
+                self.brightness = self.brightness - self.step_size
+                self.step_size = self.step_size * -1
+
+            elif (self.brightness + self.step_size) < 0:
+                self.brightness = self.brightness - self.step_size
+                self.step_size = self.step_size * -1
+
+            else:
+                self.brightness += self.step_size
+
+            self.led_obj.brightness = self.brightness / 100
+            self.led_obj.set_leds( self.tmp_leds )
+
+            time.sleep(self.delay)
+
+
+        LOG.debug("pulse thread stopped")
+        self.led_obj.brightness = 1.0
+        self.led_obj.fill( (0,0,0) )
+
+
+
+class chaseLedThread(threading.Thread):
+    def __init__(self, led_obj, background_color, foreground_color):
+        self.led_obj = led_obj
+        self.bkgnd_col = background_color
+        self.fgnd_col = foreground_color
+        self.exit_flag = False
+        self.color_tup = foreground_color
+        self.delay = 0.1
+        tmp_leds = []
+        for indx in range(0,10):
+            tmp_leds.append(self.bkgnd_col)
+
+        self.led_obj.set_leds(tmp_leds)
+        threading.Thread.__init__(self)
+
+    def run(self):
+        LOG.debug("chase thread started")
+        while not self.exit_flag:
+            for x in range(0,10):
+                self.led_obj.set_led(x, self.fgnd_col)
+                time.sleep(self.delay)
+                self.led_obj.set_led(x, self.bkgnd_col)
+
+        LOG.debug("chase thread stopped")
+        self.led_obj.fill( (0,0,0) )
+
 
 class EnclosureMark2(Enclosure):
     def __init__(self):
@@ -38,6 +151,8 @@ class EnclosureMark2(Enclosure):
         self.active_until_stopped = None
         self.reserved_led = 10
         self.mute_led = 11
+        self.chaseLedThread = None
+        self.pulseLedThread = None
 
         self.system_volume = 0.5   # pulse audio master system volume
         # if you want to do anything with the system volume
@@ -47,15 +162,32 @@ class EnclosureMark2(Enclosure):
         # TODO these need to come from a config value
         self.m2enc = HardwareEnclosure("Mark2", "sj201r4")
 
+        # start the temperature monitor thread
+        self.temperatureMonitorThread = temperatureMonitorThread(self.m2enc.fan)
+        self.temperatureMonitorThread.start()
+
+        self.m2enc.leds.set_leds([
+                self.m2enc.palette.BLACK,
+                self.m2enc.palette.BLACK,
+                self.m2enc.palette.BLACK,
+                self.m2enc.palette.BLACK,
+                self.m2enc.palette.BLACK,
+                self.m2enc.palette.BLACK,
+                self.m2enc.palette.BLACK,
+                self.m2enc.palette.BLACK,
+                self.m2enc.palette.BLACK,
+                self.m2enc.palette.BLACK
+                ])
+
         self.m2enc.leds._set_led_with_brightness(
             self.reserved_led,
-            self.m2enc.palette.YELLOW,
+            self.m2enc.palette.MAGENTA,
             0.5)
 
         self.m2enc.leds._set_led_with_brightness(
             self.mute_led,
             self.m2enc.palette.GREEN,
-            1.0)
+            0.5)
 
         LOG.info('** EnclosureMark2 initalized **')
         self.bus.once('mycroft.skills.trained', self.is_device_ready)
@@ -103,11 +235,43 @@ class EnclosureMark2(Enclosure):
         self.bus.on('mycroft.volume.get', self.on_volume_get)
         self.bus.on('mycroft.volume.duck', self.on_volume_duck)
         self.bus.on('mycroft.volume.unduck', self.on_volume_unduck)
+        self.bus.on('recognizer_loop:record_begin', self.handle_start_recording)
+        self.bus.on('recognizer_loop:record_end', self.handle_stop_recording)
+        self.bus.on('recognizer_loop:audio_output_end', self.handle_end_audio)
+        self.bus.on('mycroft.speech.recognition.unknown', self.handle_end_audio)
+        self.bus.on('mycroft.stop.handled', self.handle_end_audio)
+
+    def handle_start_recording(self, message):
+        LOG.debug("Gathering speech stuff")
+        background_color = (0,0,255)
+        foreground_color = (0,0,0)
+        if self.chaseLedThread is None:
+            self.chaseLedThread = chaseLedThread(self.m2enc.leds, background_color, foreground_color)
+            self.chaseLedThread.start()
+
+    def handle_stop_recording(self, message):
+        LOG.debug("Got spoken stuff")
+        if self.chaseLedThread is not None:
+            self.chaseLedThread.exit_flag = True
+            self.chaseLedThread.join()
+            self.chaseLedThread = None
+        if self.pulseLedThread is None:
+            self.pulseLedThread = pulseLedThread(self.m2enc.leds)
+            self.pulseLedThread.start()
+
+    def handle_end_audio(self, message):
+        LOG.debug("Finished playing audio")
+        if self.pulseLedThread is not None:
+            self.pulseLedThread.exit_flag = True
+            self.pulseLedThread.join()
+            self.pulseLedThread = None
 
     def on_volume_duck(self, message):
+        # TODO duck it anyway using set vol
         LOG.warning("Mark2 volume duck deprecated! use volume set instead.")
 
     def on_volume_unduck(self, message):
+        # TODO duck it anyway using set vol
         LOG.warning("Mark2 volume unduck deprecated! use volume set instead.")
 
     def on_volume_set(self, message):

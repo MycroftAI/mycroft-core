@@ -34,7 +34,7 @@ class HardwareEnclosure:
         self.shadow_volume = 0.5
         self.volume_increment = 0.1
         self.last_action = time.time()
-        self.last_mute = 0
+        self.last_mute = -1
 
         driver_dir = "mycroft.enclosure.hardware"
 
@@ -46,9 +46,12 @@ class HardwareEnclosure:
         self.capabilities = enclosure_capabilities.capabilities[self.board_type]
 
         # eventually this could also be driven by the capabilities
+        # in fact it is actually a BUG that it is not, as every 
+        # enclosure does not need the exact same hardware configuration.
         led_driver = self.capabilities["Led"]["name"]
         switch_driver = self.capabilities["Switch"]["name"]
         volume_driver = self.capabilities["Volume"]["name"]
+        fan_driver = self.capabilities["Fan"]["name"]
 
         pal_module = driver_dir + ".MycroftLed.%s" % (self.capabilities["Palette"]["name"],)
         module = importlib.import_module(pal_module)
@@ -62,6 +65,10 @@ class HardwareEnclosure:
         module = importlib.import_module(vol_module)
         self.hardware_volume = module.Volume()
 
+        fan_module = driver_dir + ".MycroftFan.%s" % (fan_driver,)
+        module = importlib.import_module(fan_module)
+        self.fan = module.FanControl()
+
         switch_module = driver_dir + ".MycroftSwitch.%s" % (switch_driver,)
         module = importlib.import_module(switch_module)
         self.switches = module.Switch()
@@ -71,12 +78,6 @@ class HardwareEnclosure:
         self.switches.user_mute_handler = self.handle_mute
         self.switches.user_volup_handler = self.handle_vol_up
         self.switches.user_voldown_handler = self.handle_vol_down
-
-        # TODO - pull up/down verified!!!
-        self.leds._set_led_with_brightness(
-                self.mute_led, 
-                self.palette.GREEN, 
-                0.5)
 
         # volume display timeout
         self.watchdog = None
@@ -123,7 +124,7 @@ class HardwareEnclosure:
                 create_signal('buttonPress')
 
     def handle_mute(self, val):
-        LOG.debug("Mark2:HardwareEnclosure:handle_mute()")
+        LOG.debug("Mark2:HardwareEnclosure:handle_mute() - val = %s" % (val,))
         if val != self.last_mute:
             self.last_mute = val
             if val == 0:
@@ -132,10 +133,14 @@ class HardwareEnclosure:
                         self.palette.GREEN, 
                         0.5)
             else:
-                self.leds._set_led(self.mute_led, self.palette.RED)
+                self.leds._set_led_with_brightness(
+                        self.mute_led, 
+                        self.palette.RED, 
+                        0.5)
 
     def handle_vol_down(self):
-        LOG.debug("Mark2:HardwareEnclosure:handle_vol_down()")
+        self.shadow_volume = self.hardware_volume.get_volume()
+        LOG.debug("Mark2:HardwareEnclosure:handle_vol_down()-was %s" % (self.shadow_volume))
         if self.shadow_volume > self.min_volume:
             self.shadow_volume -= self.volume_increment
 
@@ -143,7 +148,8 @@ class HardwareEnclosure:
         self.show_volume(self.shadow_volume)
 
     def handle_vol_up(self):
-        LOG.debug("Mark2:HardwareEnclosure:handle_vol_up()")
+        self.shadow_volume = self.hardware_volume.get_volume()
+        LOG.debug("Mark2:HardwareEnclosure:handle_vol_up()-was %s" % (self.shadow_volume))
         if self.shadow_volume < self.max_volume:
             self.shadow_volume += self.volume_increment
 
