@@ -47,7 +47,7 @@ def _get_pantacor_device_id():
     # TODO: replace this with reading a file accessible by the mycroft user
     cmd = ['sudo', 'cat', '/pantavisor/device-id']
     result = run(cmd, capture_output=True)
-    pantacor_device_id = result.stdout.decode()
+    pantacor_device_id = result.stdout.decode().strip()
 
     return pantacor_device_id
 
