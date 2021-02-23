@@ -334,7 +334,7 @@ class MycroftSkill:
         """
         return None
 
-    def converse(self, utterances=None, lang=None, message=None):
+    def converse(self, message=None):
         """Handle conversation.
 
         This method gets a peek at utterances before the normal intent
