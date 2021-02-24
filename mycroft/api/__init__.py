@@ -175,7 +175,6 @@ class Api:
         """
         data = self.get_data(response)
 
-        print(self.identity.is_expired())
         if 200 <= response.status_code < 300:
             return data
         elif (not no_refresh and response.status_code == 401 and not
