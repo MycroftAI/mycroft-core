@@ -23,6 +23,7 @@ from mycroft.messagebus.message import Message
 from mycroft.util import create_daemon, connected
 from mycroft.util.log import LOG
 from mycroft.enclosure.hardware_enclosure import HardwareEnclosure
+from mycroft.util.hardware_capabilities import EnclosureCapabilities
 
 import threading
 
@@ -194,6 +195,8 @@ class EnclosureMark2(Enclosure):
             mute_led_color,
             1.0)
 
+        self.default_caps = EnclosureCapabilities()
+
         LOG.info('** EnclosureMark2 initalized **')
         self.bus.once('mycroft.skills.trained', self.is_device_ready)
 
@@ -254,6 +257,7 @@ class EnclosureMark2(Enclosure):
         self.bus.on('recognizer_loop:audio_output_end', self.handle_end_audio)
         self.bus.on('mycroft.speech.recognition.unknown', self.handle_end_audio)
         self.bus.on('mycroft.stop.handled', self.handle_end_audio)
+        self.bus.on('mycroft.capabilities.get', self.on_capabilities_get)
 
     def handle_start_recording(self, message):
         LOG.debug("Gathering speech stuff")
@@ -309,6 +313,21 @@ class EnclosureMark2(Enclosure):
         self.bus.emit(
             message.response(
                 data={'percent': self.current_volume, 'muted': False}))
+
+    def on_capabilities_get(self, message):
+        LOG.info('Mark2:interface.py get capabilities requested')
+
+        self.bus.emit(
+            message.response(
+                data={
+                    'default': self.default_caps.caps, 
+                    'extra': self.m2enc.capabilities,
+                    'board_type': self.m2enc.board_type,
+                    'leds': self.m2enc.leds.capabilities,
+                    'volume': self.m2enc.hardware_volume.capabilities,
+                    'switches': self.m2enc.switches.capabilities
+                    }
+                ))
 
     def terminate(self):
         self.m2enc.leds._set_led(10, (0, 0, 0))  # blank out reserved led
