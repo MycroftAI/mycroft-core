@@ -27,7 +27,6 @@ from mycroft.enclosure.hardware_enclosure import HardwareEnclosure
 import threading
 
 
-
 class temperatureMonitorThread(threading.Thread):
     def __init__(self, fan_obj):
         self.fan_obj = fan_obj
@@ -45,6 +44,8 @@ class temperatureMonitorThread(threading.Thread):
             current_temperature = self.fan_obj.get_cpu_temp()
             if current_temperature < 50.0:
                 # anything below 122F we are fine
+                self.fan_obj.set_fan_speed(0)
+                LOG.debug("Fan turned off")
                 continue
 
             if current_temperature < 60.0:
@@ -64,7 +65,6 @@ class temperatureMonitorThread(threading.Thread):
                 self.fan_obj.set_fan_speed(100)
                 LOG.debug("Fan set to 100%")
                 continue
-
 
 
 class pulseLedThread(threading.Thread):
@@ -108,7 +108,6 @@ class pulseLedThread(threading.Thread):
         LOG.debug("pulse thread stopped")
         self.led_obj.brightness = 1.0
         self.led_obj.fill( (0,0,0) )
-
 
 
 class chaseLedThread(threading.Thread):
@@ -161,6 +160,7 @@ class EnclosureMark2(Enclosure):
 
         # TODO these need to come from a config value
         self.m2enc = HardwareEnclosure("Mark2", "sj201r4")
+        self.m2enc.client_volume_handler = self.async_volume_handler
 
         # start the temperature monitor thread
         self.temperatureMonitorThread = temperatureMonitorThread(self.m2enc.fan)
@@ -184,13 +184,19 @@ class EnclosureMark2(Enclosure):
             self.m2enc.palette.MAGENTA,
             0.5)
 
+        # set mute led based on reality
+        mute_led_color = self.m2enc.palette.GREEN
+        if self.m2enc.switches.SW_MUTE == 1:
+            mute_led_color = self.m2enc.palette.RED
+
         self.m2enc.leds._set_led_with_brightness(
             self.mute_led,
-            self.m2enc.palette.GREEN,
-            0.5)
+            mute_led_color,
+            1.0)
 
         LOG.info('** EnclosureMark2 initalized **')
         self.bus.once('mycroft.skills.trained', self.is_device_ready)
+
 
     def is_device_ready(self, message):
         is_ready = False
@@ -228,6 +234,14 @@ class EnclosureMark2(Enclosure):
             if response and response.data['status']:
                 services[ser] = True
         return all([services[ser] for ser in services])
+
+    def async_volume_handler(self, vol):
+        if vol > 1.0:
+            vol = vol / 10
+        self.current_volume = vol
+        # notify anybody listening on the bus who cares
+        self.bus.emit(Message("hardware.volume", {
+            "volume": self.current_volume}, context={"source": ["enclosure"]}))
 
     def _define_event_handlers(self):
         """Assign methods to act upon message bus events."""
@@ -280,7 +294,16 @@ class EnclosureMark2(Enclosure):
                  (self.current_volume,))
         self.m2enc.hardware_volume.set_volume(float(self.current_volume))
 
+        # notify anybody listening on the bus who cares
+        self.bus.emit(Message("hardware.volume", {
+            "volume": self.current_volume}, context={"source": ["enclosure"]}))
+
     def on_volume_get(self, message):
+        self.current_volume = self.m2enc.hardware_volume.get_volume()
+
+        if self.current_volume > 1.0:
+            self.current_volume = self.current_volume / 10
+
         LOG.info('Mark2:interface.py get and emit volume %s' %
                  (self.current_volume,))
         self.bus.emit(
