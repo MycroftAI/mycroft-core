@@ -29,8 +29,10 @@ import threading
 
 
 class temperatureMonitorThread(threading.Thread):
-    def __init__(self, fan_obj):
+    def __init__(self, fan_obj, led_obj, pal_obj):
         self.fan_obj = fan_obj
+        self.led_obj = led_obj
+        self.pal_obj = pal_obj
         self.exit_flag = False
         threading.Thread.__init__(self)
 
@@ -47,32 +49,38 @@ class temperatureMonitorThread(threading.Thread):
                 # anything below 122F we are fine
                 self.fan_obj.set_fan_speed(0)
                 LOG.debug("Fan turned off")
+                self.led_obj._set_led(10, self.pal_obj.BLUE)
                 continue
 
-            if current_temperature < 60.0:
+            if current_temperature > 50.0 and current_temperature < 60.0:
                 # 122 - 140F we run fan at 25%
                 self.fan_obj.set_fan_speed(25)
                 LOG.debug("Fan set to 25%")
+                self.led_obj._set_led(10, self.pal_obj.MAGENTA)
                 continue
 
-            if current_temperature <= 70.0:
+            if current_temperature > 60.0 and current_temperature <= 70.0:
                 # 140 - 160F we run fan at 50%
                 self.fan_obj.set_fan_speed(50)
                 LOG.debug("Fan set to 50%")
+                self.led_obj._set_led(10, self.pal_obj.BURNT_ORANGE)
                 continue
 
             if current_temperature > 70.0:
                 # > 160F we run fan at 100%
                 self.fan_obj.set_fan_speed(100)
                 LOG.debug("Fan set to 100%")
+                self.led_obj._set_led(10, self.pal_obj.RED)
                 continue
 
 
 class pulseLedThread(threading.Thread):
-    def __init__(self, led_obj):
+    def __init__(self, led_obj, pal_obj):
         self.led_obj = led_obj
+        self.pal_obj = pal_obj
         self.exit_flag = False
-        self.color_tup = (255,0,0)
+        #self.color_tup = (204,85,0)
+        self.color_tup = self.pal_obj.BURNT_ORANGE
         self.delay = 0.1
         self.brightness = 100
         self.step_size = 5
@@ -104,7 +112,6 @@ class pulseLedThread(threading.Thread):
             self.led_obj.set_leds( self.tmp_leds )
 
             time.sleep(self.delay)
-
 
         LOG.debug("pulse thread stopped")
         self.led_obj.brightness = 1.0
@@ -164,7 +171,7 @@ class EnclosureMark2(Enclosure):
         self.m2enc.client_volume_handler = self.async_volume_handler
 
         # start the temperature monitor thread
-        self.temperatureMonitorThread = temperatureMonitorThread(self.m2enc.fan)
+        self.temperatureMonitorThread = temperatureMonitorThread(self.m2enc.fan, self.m2enc.leds, self.m2enc.palette)
         self.temperatureMonitorThread.start()
 
         self.m2enc.leds.set_leds([
@@ -274,7 +281,7 @@ class EnclosureMark2(Enclosure):
             self.chaseLedThread.join()
             self.chaseLedThread = None
         if self.pulseLedThread is None:
-            self.pulseLedThread = pulseLedThread(self.m2enc.leds)
+            self.pulseLedThread = pulseLedThread(self.m2enc.leds, self.m2enc.palette)
             self.pulseLedThread.start()
 
     def handle_end_audio(self, message):
