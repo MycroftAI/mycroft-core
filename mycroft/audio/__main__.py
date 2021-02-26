@@ -16,10 +16,12 @@
 
     This handles playback of audio and speech
 """
-from mycroft.configuration import Configuration
-from mycroft.messagebus.client import MessageBusClient
-from mycroft.util import reset_sigint_handler, wait_for_exit_signal, \
-    create_daemon, create_echo_function, check_for_signal
+from mycroft.util import (
+    check_for_signal,
+    reset_sigint_handler,
+    start_message_bus_client,
+    wait_for_exit_signal
+)
 from mycroft.util.log import LOG
 from mycroft.util.process_utils import ProcessStatus, StatusCallbackMap
 
@@ -40,20 +42,18 @@ def on_stopping():
 
 
 def main(ready_hook=on_ready, error_hook=on_error, stopping_hook=on_stopping):
-    """ Main function. Run when file is invoked. """
+    """Start the Audio Service and connect to the Message Bus"""
+    LOG.info("Starting Audio Service")
     try:
         reset_sigint_handler()
         check_for_signal("isSpeaking")
-        bus = MessageBusClient()  # Connect to the Mycroft Messagebus
-        Configuration.set_config_update_handlers(bus)
+        whitelist = ['mycroft.audio.service']
+        bus = start_message_bus_client("AUDIO", whitelist=whitelist)
         callbacks = StatusCallbackMap(on_ready=ready_hook, on_error=error_hook,
                                       on_stopping=stopping_hook)
         status = ProcessStatus('audio', bus, callbacks)
-        speech.init(bus)
 
-        LOG.info("Starting Audio Services")
-        bus.on('message', create_echo_function('AUDIO',
-                                               ['mycroft.audio.service']))
+        speech.init(bus)
 
         # Connect audio service instance to message bus
         audio = AudioService(bus)
@@ -61,7 +61,6 @@ def main(ready_hook=on_ready, error_hook=on_error, stopping_hook=on_stopping):
     except Exception as e:
         status.set_error(e)
     else:
-        create_daemon(bus.run_forever)
         if audio.wait_for_load() and len(audio.service) > 0:
             # If at least one service exists, report ready
             status.set_ready()

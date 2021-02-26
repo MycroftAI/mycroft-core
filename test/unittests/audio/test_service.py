@@ -75,7 +75,7 @@ class TestService(unittest.TestCase):
         backend, second_backend = setup_mock_backends(mock_load_services,
                                                       self.emitter)
         service = audio_service.AudioService(self.emitter)
-        service.load_services_callback()
+        service.load_services()
 
         service.default = backend
 
@@ -91,7 +91,7 @@ class TestService(unittest.TestCase):
         backend, second_backend = setup_mock_backends(mock_load_services,
                                                       self.emitter)
         service = audio_service.AudioService(self.emitter)
-        service.load_services_callback()
+        service.load_services()
         service.default = backend
 
         self.emitter.reset()
@@ -112,7 +112,7 @@ class TestService(unittest.TestCase):
         mock_load_services.return_value = [backend, second_backend]
 
         service = audio_service.AudioService(self.emitter)
-        service.load_services_callback()
+        service.load_services()
 
         service.default = backend
 
@@ -145,7 +145,7 @@ class TestService(unittest.TestCase):
         mock_load_services.return_value = [backend, second_backend]
 
         service = audio_service.AudioService(self.emitter)
-        service.load_services_callback()
+        service.load_services()
 
         service.default = backend
 
@@ -207,7 +207,7 @@ class TestService(unittest.TestCase):
         mock_load_services.return_value = [backend, second_backend]
 
         service = audio_service.AudioService(self.emitter)
-        service.load_services_callback()
+        service.load_services()
 
         service.default = backend
 

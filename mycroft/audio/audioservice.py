@@ -208,13 +208,13 @@ class AudioService:
         self.volume_is_low = False
 
         self._loaded = MonotonicEvent()
-        bus.once('open', self.load_services_callback)
+        self.load_services()
 
-    def load_services_callback(self):
-        """
-            Main callback function for loading services. Sets up the globals
-            service and default and registers the event handlers for the
-            subsystem.
+    def load_services(self):
+        """Method for loading services.
+
+        Sets up the global service, default and registers the event handlers
+        for the subsystem.
         """
         services = load_services(self.config, self.bus)
         # Sort services so local services are checked first
@@ -326,6 +326,16 @@ class AudioService:
         if self.current:
             self.current.previous()
 
+    def _perform_stop(self):
+        """Stop audioservice if active."""
+        if self.current:
+            name = self.current.name
+            if self.current.stop():
+                self.bus.emit(Message("mycroft.stop.handled",
+                                      {"by": "audio:" + name}))
+
+        self.current = None
+
     def _stop(self, message=None):
         """
             Handler for mycroft.stop. Stops any playing service.
@@ -336,13 +346,8 @@ class AudioService:
         if time.monotonic() - self.play_start_time > 1:
             LOG.debug('stopping all playing services')
             with self.service_lock:
-                if self.current:
-                    name = self.current.name
-                    if self.current.stop():
-                        self.bus.emit(Message("mycroft.stop.handled",
-                                              {"by": "audio:" + name}))
-
-                    self.current = None
+                self._perform_stop()
+        LOG.info('END Stop')
 
     def _lower_volume(self, message=None):
         """
@@ -356,19 +361,13 @@ class AudioService:
             self.current.lower_volume()
             self.volume_is_low = True
 
-    def _restore_volume(self, message=None):
-        """
-            Is triggered when mycroft is done speaking and restores the volume
-
-            Args:
-                message: message bus message, not used but required
-        """
-        if self.current:
+    def _restore_volume(self, _=None):
+        """Triggered when mycroft is done speaking and restores the volume."""
+        current = self.current
+        if current:
             LOG.debug('restoring volume')
             self.volume_is_low = False
-            time.sleep(2)
-            if not self.volume_is_low:
-                self.current.restore_volume()
+            current.restore_volume()
 
     def _restore_volume_after_record(self, message=None):
         """
@@ -410,7 +409,7 @@ class AudioService:
                 prefered_service: indecates the service the user prefer to play
                                   the tracks.
         """
-        self._stop()
+        self._perform_stop()
 
         if isinstance(tracks[0], str):
             uri_type = tracks[0].split(':')[0]
@@ -444,8 +443,9 @@ class AudioService:
 
     def _queue(self, message):
         if self.current:
-            tracks = message.data['tracks']
-            self.current.add_list(tracks)
+            with self.service_lock:
+                tracks = message.data['tracks']
+                self.current.add_list(tracks)
         else:
             self._play(message)
 
@@ -458,18 +458,20 @@ class AudioService:
             Args:
                 message: message bus message, not used but required
         """
-        tracks = message.data['tracks']
-        repeat = message.data.get('repeat', False)
-        # Find if the user wants to use a specific backend
-        for s in self.service:
-            if ('utterance' in message.data and
-                    s.name in message.data['utterance']):
-                prefered_service = s
-                LOG.debug(s.name + ' would be prefered')
-                break
-        else:
-            prefered_service = None
-        self.play(tracks, prefered_service, repeat)
+        with self.service_lock:
+            tracks = message.data['tracks']
+            repeat = message.data.get('repeat', False)
+            # Find if the user wants to use a specific backend
+            for s in self.service:
+                if ('utterance' in message.data and
+                        s.name in message.data['utterance']):
+                    prefered_service = s
+                    LOG.debug(s.name + ' would be prefered')
+                    break
+            else:
+                prefered_service = None
+            self.play(tracks, prefered_service, repeat)
+            time.sleep(0.5)
 
     def _track_info(self, message):
         """

@@ -29,18 +29,17 @@ from mycroft.api import is_paired, BackendDown, DeviceApi
 from mycroft.audio import wait_while_speaking
 from mycroft.enclosure.api import EnclosureAPI
 from mycroft.configuration import Configuration
-from mycroft.messagebus.client import MessageBusClient
 from mycroft.messagebus.message import Message
 from mycroft.util import (
     connected,
-    create_echo_function,
-    create_daemon,
     reset_sigint_handler,
+    start_message_bus_client,
     wait_for_exit_signal
 )
 from mycroft.util.lang import set_active_lang
 from mycroft.util.log import LOG
 from mycroft.util.process_utils import ProcessStatus, StatusCallbackMap
+from .api import SkillApi
 from .core import FallbackSkill
 from .event_scheduler import EventScheduler
 from .intent_service import IntentService
@@ -203,7 +202,7 @@ def main(alive_hook=on_alive, started_hook=on_started, ready_hook=on_ready,
     set_active_lang(config.get('lang', 'en-us'))
 
     # Connect this process to the Mycroft message bus
-    bus = _start_message_bus_client()
+    bus = start_message_bus_client("SKILLS")
     _register_intent_services(bus)
     event_scheduler = EventScheduler(bus)
     callbacks = StatusCallbackMap(on_started=started_hook,
@@ -213,6 +212,7 @@ def main(alive_hook=on_alive, started_hook=on_started, ready_hook=on_ready,
                                   on_stopping=stopping_hook)
     status = ProcessStatus('skills', bus, callbacks)
 
+    SkillApi.connect_bus(bus)
     skill_manager = _initialize_skill_manager(bus, watchdog)
 
     status.set_started()
@@ -235,23 +235,6 @@ def main(alive_hook=on_alive, started_hook=on_started, ready_hook=on_ready,
     wait_for_exit_signal()
     status.set_stopping()
     shutdown(skill_manager, event_scheduler)
-
-
-def _start_message_bus_client():
-    """Start the bus client daemon and wait for connection."""
-    bus = MessageBusClient()
-    Configuration.set_config_update_handlers(bus)
-    bus_connected = Event()
-    bus.on('message', create_echo_function('SKILLS'))
-    # Set the bus connected event when connection is established
-    bus.once('open', bus_connected.set)
-    create_daemon(bus.run_forever)
-
-    # Wait for connection
-    bus_connected.wait()
-    LOG.info('Connected to messagebus')
-
-    return bus
 
 
 def _register_intent_services(bus):

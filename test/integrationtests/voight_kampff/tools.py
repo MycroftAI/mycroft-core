@@ -133,3 +133,30 @@ def wait_for_dialog(bus, dialogs, context=None, timeout=None):
                 return
         bus.new_message_available.wait(0.5)
     bus.clear_messages()
+
+
+def wait_for_audio_service(context, message_type):
+    """Wait for audio.service message that matches type provided.
+
+    May be play, stop, or pause messages
+
+    Arguments:
+        context (behave Context): optional context providing scenario timeout
+        message_type (string): final component of bus message in form
+                               `mycroft.audio.service.{type}
+    """
+    msg_type = 'mycroft.audio.service.{}'.format(message_type)
+
+    def check_for_msg(message):
+        return (message.msg_type == msg_type, '')
+
+    passed, debug = then_wait(msg_type, check_for_msg, context)
+
+    if not passed:
+        debug += mycroft_responses(context)
+    if not debug:
+        if message_type == 'play':
+            message_type = 'start'
+        debug = "Mycroft didn't {} playback".format(message_type)
+
+    assert passed, debug

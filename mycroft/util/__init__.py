@@ -30,7 +30,8 @@ from .file_utils import (resolve_resource_file, read_stripped_lines, read_dict,
                          curate_cache, get_cache_directory)
 from .network_utils import connected
 from .process_utils import (reset_sigint_handler, create_daemon,
-                            wait_for_exit_signal, create_echo_function)
+                            wait_for_exit_signal, create_echo_function,
+                            start_message_bus_client)
 from .log import LOG
 from .parse import extract_datetime, extract_number, normalize
 from .signal import check_for_signal, create_signal, get_ipc_directory

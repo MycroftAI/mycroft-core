@@ -110,6 +110,10 @@ class SkillGUI:
         """Implements get part of dict-like behaviour with named keys."""
         return self.__session_data[key]
 
+    def get(self, *args, **kwargs):
+        """Implements the get method for accessing dict keys."""
+        return self.__session_data.get(*args, **kwargs)
+
     def __contains__(self, key):
         """Implements the "in" operation."""
         return self.__session_data.__contains__(key)
@@ -259,7 +263,6 @@ class SkillGUI:
                 True: Disables showing all platform skill animations.
                 False: 'Default' always show animations.
         """
-        self.clear()
         self["text"] = text
         self["title"] = title
         self.show_page("SYSTEM_TextFrame.qml", override_idle,
@@ -284,7 +287,6 @@ class SkillGUI:
                 True: Disables showing all platform skill animations.
                 False: 'Default' always show animations.
         """
-        self.clear()
         self["image"] = url
         self["title"] = title
         self["caption"] = caption
@@ -311,7 +313,6 @@ class SkillGUI:
                 True: Disables showing all platform skill animations.
                 False: 'Default' always show animations.
         """
-        self.clear()
         self["image"] = url
         self["title"] = title
         self["caption"] = caption
@@ -334,7 +335,6 @@ class SkillGUI:
                 True: Disables showing all platform skill animations.
                 False: 'Default' always show animations.
         """
-        self.clear()
         self["html"] = html
         self["resourceLocation"] = resource_url
         self.show_page("SYSTEM_HtmlFrame.qml", override_idle,
@@ -354,7 +354,6 @@ class SkillGUI:
                 True: Disables showing all platform skill animations.
                 False: 'Default' always show animations.
         """
-        self.clear()
         self["url"] = url
         self.show_page("SYSTEM_UrlFrame.qml", override_idle,
                        override_animations)
