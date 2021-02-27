@@ -19,7 +19,7 @@ from mycroft.enclosure.hardware.MycroftVolume.MycroftVolume import MycroftVolume
 import time
 from math import log, exp
 
-MAX_VOL = 90
+MAX_VOL = 84
 
 
 class Volume(MycroftVolume):
