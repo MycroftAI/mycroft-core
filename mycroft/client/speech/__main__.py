@@ -21,6 +21,7 @@ from mycroft.configuration import Configuration
 from mycroft.identity import IdentityManager
 from mycroft.lock import Lock as PIDLock  # Create/Support PID locking file
 from mycroft.messagebus.message import Message
+from mycroft.util.process_utils import ProcessStatus, StatusCallbackMap
 from mycroft.util import (
     create_daemon,
     reset_sigint_handler,
