@@ -35,8 +35,8 @@ class Switch:
     _SW_MUTE = 25
     """
     # sj201Rev4
-    _SW_VOL_DOWN = 22
-    _SW_VOL_UP = 23
+    _SW_VOL_UP = 22
+    _SW_VOL_DOWN = 23
     _SW_ACTION = 24
     _SW_MUTE = 25
 
