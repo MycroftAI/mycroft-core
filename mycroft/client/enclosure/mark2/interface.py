@@ -79,8 +79,7 @@ class pulseLedThread(threading.Thread):
         self.led_obj = led_obj
         self.pal_obj = pal_obj
         self.exit_flag = False
-        #self.color_tup = (204,85,0)
-        self.color_tup = self.pal_obj.BURNT_ORANGE
+        self.color_tup = self.pal_obj.MYCROFT_GREEN
         self.delay = 0.1
         self.brightness = 100
         self.step_size = 5
@@ -115,7 +114,7 @@ class pulseLedThread(threading.Thread):
 
         LOG.debug("pulse thread stopped")
         self.led_obj.brightness = 1.0
-        self.led_obj.fill( (0,0,0) )
+        self.led_obj.fill( self.pal_obj.BLACK )
 
 
 class chaseLedThread(threading.Thread):
@@ -246,9 +245,11 @@ class EnclosureMark2(Enclosure):
         return all([services[ser] for ser in services])
 
     def async_volume_handler(self, vol):
+        LOG.error("ASYNC SET VOL PASSED IN %s" % (vol,))
         if vol > 1.0:
             vol = vol / 10
         self.current_volume = vol
+        LOG.error("ASYNC SET VOL TO %s" % (self.current_volume,))
         # notify anybody listening on the bus who cares
         self.bus.emit(Message("hardware.volume", {
             "volume": self.current_volume}, context={"source": ["enclosure"]}))
@@ -268,28 +269,28 @@ class EnclosureMark2(Enclosure):
 
     def handle_start_recording(self, message):
         LOG.debug("Gathering speech stuff")
-        background_color = (0,0,255)
-        foreground_color = (0,0,0)
-        if self.chaseLedThread is None:
-            self.chaseLedThread = chaseLedThread(self.m2enc.leds, background_color, foreground_color)
-            self.chaseLedThread.start()
-
-    def handle_stop_recording(self, message):
-        LOG.debug("Got spoken stuff")
-        if self.chaseLedThread is not None:
-            self.chaseLedThread.exit_flag = True
-            self.chaseLedThread.join()
-            self.chaseLedThread = None
         if self.pulseLedThread is None:
             self.pulseLedThread = pulseLedThread(self.m2enc.leds, self.m2enc.palette)
             self.pulseLedThread.start()
 
-    def handle_end_audio(self, message):
-        LOG.debug("Finished playing audio")
+    def handle_stop_recording(self, message):
+        background_color = self.m2enc.palette.BLUE
+        foreground_color = self.m2enc.palette.BLACK
+        LOG.debug("Got spoken stuff")
         if self.pulseLedThread is not None:
             self.pulseLedThread.exit_flag = True
             self.pulseLedThread.join()
             self.pulseLedThread = None
+        if self.chaseLedThread is None:
+            self.chaseLedThread = chaseLedThread(self.m2enc.leds, background_color, foreground_color)
+            self.chaseLedThread.start()
+
+    def handle_end_audio(self, message):
+        LOG.debug("Finished playing audio")
+        if self.chaseLedThread is not None:
+            self.chaseLedThread.exit_flag = True
+            self.chaseLedThread.join()
+            self.chaseLedThread = None
 
     def on_volume_duck(self, message):
         # TODO duck it anyway using set vol
