@@ -353,12 +353,13 @@ class TTS(metaclass=ABCMeta):
         for sentence, l in chunks:
             key = str(hashlib.md5(
                 sentence.encode('utf-8', 'ignore')).hexdigest())
+            LOG.info("hash: {}   sentence: {}".format(key, sentence))
             wav_file = os.path.join(
                 mycroft.util.get_cache_directory("tts/" + self.tts_name),
                 key + '.' + self.audio_ext)
 
             if os.path.exists(wav_file):
-                LOG.debug("TTS cache hit")
+                LOG.info("TTS cache hit")
                 phonemes = self.load_phonemes(key)
             else:
                 wav_file, phonemes = self.get_tts(sentence, wav_file)
