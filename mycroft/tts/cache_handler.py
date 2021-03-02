@@ -70,9 +70,9 @@ def generate_cache_text(cache_audio_dir, cache_text_file):
                 if os.path.exists(each_path):
                     write_cache_text(each_path, text_file)
             text_file.close()
-            LOG.debug("Completed generating cache")
+            LOG.info("Completed generating cache")
         else:
-            LOG.debug("Cache file 'cache_text.txt' already exists")
+            LOG.info("Cache file 'cache_text.txt' already exists")
     except Exception:
         LOG.exception("Could not open text file to write cache")
 
@@ -137,16 +137,14 @@ def download_audio(cache_audio_dir, cache_text_file):
                             with open(pho_file, "w") as cachefile:
                                 cachefile.write(json.dumps(vis))  # Mimic2
                                 # cachefile.write(str(vis))  # Mimic
-                    except Exception as e:
+                    except Exception:
                         # Skip this dialog and continue
-                        LOG.error("Unable to get pre-loaded cache "
-                                  "due to ({})".format(repr(e)))
+                        LOG.exception("Unable to get pre-loaded cache")
 
-            LOG.debug("Completed getting cache for {}".format(TTS))
+            LOG.info("Completed getting cache for {}".format(TTS))
 
         else:
-            LOG.debug("Pre-loaded cache for {} already exists".
-                      format(TTS))
+            LOG.info("Pre-loaded cache for {} already exists".format(TTS))
     else:
         missing_path = cache_text_file if not \
             os.path.isfile(cache_text_file)\
@@ -169,11 +167,11 @@ def copy_cache(cache_audio_dir):
         files = os.listdir(cache_audio_dir)
         for f in files:
             shutil.copy2(os.path.join(cache_audio_dir, f), dest)
-        LOG.debug("Copied all pre-loaded cache for {} to {}"
-                  .format(TTS, dest))
+        LOG.info(
+            "Copied all pre-loaded cache for {} to {}".format(TTS, dest))
     else:
-        LOG.debug("No Source directory for {} pre-loaded cache"
-                  .format(TTS))
+        LOG.info(
+            "No Source directory for {} pre-loaded cache".format(TTS))
 
 
 # Start here
