@@ -15,11 +15,12 @@
 import RPi.GPIO as GPIO
 import time
 from mycroft.util.log import LOG
- 
+
+
 class Switch:
     """
-    Class to handle the Mark2 switches.                                       x 
-    Note - a switch is an abstract concept 
+    Class to handle the Mark2 switches.
+    Note - a switch is an abstract concept
     which applies to buttons and switches.
     The Mark2 actually has 4 different switches.
     Three buttons (volume up, down and activate)
@@ -28,15 +29,15 @@ class Switch:
     pulled up so the active state is actually zero.
     """
     # GPIO pin numbers
-    """ old sj201 mappings 
+    """ old sj201 mappings
     _SW_ACTION = 22
     _SW_VOL_UP = 23
-    _SW_VOL_DOWN = 24 
+    _SW_VOL_DOWN = 24
     _SW_MUTE = 25
     """
     # sj201Rev4
-    _SW_VOL_DOWN = 22
-    _SW_VOL_UP = 23
+    _SW_VOL_UP = 22
+    _SW_VOL_DOWN = 23
     _SW_ACTION = 24
     _SW_MUTE = 25
 
@@ -52,11 +53,11 @@ class Switch:
         self.thread_handle = None
 
         self.capabilities = {
-                "user_volup_handler":"button",
-                "user_voldown_handler":"button",
-                "user_action_handler":"button",
-                "user_mute_handler":"slider"
-                }
+            "user_volup_handler": "button",
+            "user_voldown_handler": "button",
+            "user_action_handler": "button",
+            "user_mute_handler": "slider"
+        }
 
         # use BCM GPIO pin numbering
         GPIO.setmode(GPIO.BCM)
@@ -67,7 +68,7 @@ class Switch:
         GPIO.setup(self._XMOS_POWER, GPIO.OUT)
         GPIO.setup(self._XMOS_RESET, GPIO.OUT)
 
-        # power up the xmos 
+        # power up the xmos
         #self.reset_xmos()
         time.sleep(0.001)
         GPIO.output(self._XMOS_POWER, 1)
@@ -87,32 +88,32 @@ class Switch:
         self.SW_VOL_DOWN = GPIO.input(self._SW_VOL_DOWN)
         self.SW_MUTE = GPIO.input(self._SW_MUTE)
 
-        # establish default handlers for each switch 
+        # establish default handlers for each switch
         self.action_handler = self.handle_action
         self.vol_up_handler = self.handle_vol_up
         self.vol_down_handler = self.handle_vol_down
         self.mute_handler = self.handle_mute
 
         # attach callbacks
-        GPIO.add_event_detect(self._SW_ACTION, 
-            GPIO.BOTH, 
-            callback=self.action_handler, 
-            bouncetime=debounce)
+        GPIO.add_event_detect(self._SW_ACTION,
+                              GPIO.BOTH,
+                              callback=self.action_handler,
+                              bouncetime=debounce)
 
-        GPIO.add_event_detect(self._SW_VOL_UP, 
-            GPIO.BOTH, 
-            callback=self.vol_up_handler, 
-            bouncetime=debounce)
+        GPIO.add_event_detect(self._SW_VOL_UP,
+                              GPIO.BOTH,
+                              callback=self.vol_up_handler,
+                              bouncetime=debounce)
 
-        GPIO.add_event_detect(self._SW_VOL_DOWN, 
-            GPIO.BOTH, 
-            callback=self.vol_down_handler, 
-            bouncetime=debounce)
+        GPIO.add_event_detect(self._SW_VOL_DOWN,
+                              GPIO.BOTH,
+                              callback=self.vol_down_handler,
+                              bouncetime=debounce)
 
-        GPIO.add_event_detect(self._SW_MUTE, 
-            GPIO.BOTH, 
-            callback=self.mute_handler, 
-            bouncetime=debounce)
+        GPIO.add_event_detect(self._SW_MUTE,
+                              GPIO.BOTH,
+                              callback=self.mute_handler,
+                              bouncetime=debounce)
 
         # user overides
         self.user_voldown_handler = None
@@ -161,4 +162,4 @@ class Switch:
 
     def terminate(self):
         LOG.info("switch_gpio: terminate hit, calling GPIO.cleanup()")
-        #GPIO.cleanup()
+        # GPIO.cleanup()

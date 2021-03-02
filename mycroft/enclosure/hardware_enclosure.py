@@ -83,6 +83,9 @@ class HardwareEnclosure:
         self.watchdog = None
         self.watchdog_timeout = 5
 
+        # client volume notification
+        self.client_volume_handler = None
+
         LOG.info("Mark2 HardwareEnclosure() initialized")
 
     def get_capabilities(self):
@@ -112,6 +115,8 @@ class HardwareEnclosure:
         self.watchdog = threading.Timer(self.watchdog_timeout,
                                         self.handle_watchdog)
         self.watchdog.start()
+        if self.client_volume_handler != None:
+            self.client_volume_handler(vol)
 
     def handle_action(self):
         LOG.debug("Mark2:HardwareEnclosure:handle_action()")
