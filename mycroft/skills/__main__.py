@@ -45,7 +45,7 @@ from .event_scheduler import EventScheduler
 from .intent_service import IntentService
 from .skill_manager import SkillManager
 
-RASPBERRY_PI_PLATFORMS = ('mycroft_mark_1', 'picroft', 'mycroft_mark_2pi')
+RASPBERRY_PI_PLATFORMS = ('mycroft_mark_1', 'picroft', 'mycroft_mark_2')
 
 
 class DevicePrimer(object):
