@@ -132,6 +132,8 @@ class SkillManager(Thread):
         self.num_install_retries = 0
         self.settings_downloader = SkillSettingsDownloader(self.bus)
 
+        self.empty_skill_dirs = set()  # Save a record of empty skill dirs.
+
         # Statuses
         self._alive_status = False  # True after priority skills has loaded
         self._loaded_status = False  # True after all skills has loaded
@@ -314,8 +316,13 @@ class SkillManager(Thread):
             # check if folder is a skill (must have __init__.py)
             if SKILL_MAIN_MODULE in os.listdir(skill_dir):
                 skill_directories.append(skill_dir.rstrip('/'))
+                if skill_dir in self.empty_skill_dirs:
+                    self.empty_skill_dirs.discard(skill_dir)
             else:
-                LOG.debug('Found skills directory with no skill: ' + skill_dir)
+                if skill_dir not in self.empty_skill_dirs:
+                    self.empty_skill_dirs.add(skill_dir)
+                    LOG.debug('Found skills directory with no skill: ' +
+                              skill_dir)
 
         return skill_directories
 
