@@ -111,6 +111,31 @@ class AudioService:
         """Resume paused playback."""
         self.bus.emit(Message('mycroft.audio.service.resume'))
 
+    def get_track_length(self):
+        """
+        getting the duration of the audio in mlilliseconds
+        """
+        info = self.bus.wait_for_response(
+            Message('mycroft.audio.service.get_track_length'),
+            timeout=1)
+        if info:
+            return info.data.get("length")
+        return 0
+
+    def get_track_position(self):
+        """
+        get current position in milliseconds
+
+          Args:
+                seconds (int): number of seconds of final position
+        """
+        info = self.bus.wait_for_response(
+            Message('mycroft.audio.service.get_track_position'),
+            timeout=1)
+        if info:
+            return info.data.get("position")
+        return 0
+
     def set_track_position(self, seconds=1):
         """Seek X seconds.
 

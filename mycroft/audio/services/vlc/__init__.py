@@ -130,14 +130,29 @@ class VlcService(AudioBackend):
         ret['name'] = t.get_meta(meta.Title)
         return ret
 
-    def set_track_position(self, seconds=1):
+    def get_track_length(self):
+        """
+        getting the duration of the audio in mlilliseconds
+        """
+        return self.player.get_length()
+
+    def get_track_position(self):
+        """
+        get current position in milliseconds
+
+          Args:
+                seconds (int): number of seconds of final position
+        """
+        return self.player.get_time()
+
+    def set_track_position(self, seconds):
         """
         go to position in seconds
 
           Args:
                 seconds (int): number of seconds of final position
         """
-        self.player.set_time(seconds * 1000)
+        self.player.set_time(int(seconds * 1000))
 
     def seek_forward(self, seconds=1):
         """
@@ -151,7 +166,7 @@ class VlcService(AudioBackend):
         duration = self.player.get_length()
         if new_time > duration:
             new_time = duration
-        self.player.set_time(new_time)
+        self.player.set_time(int(new_time))
 
     def seek_backward(self, seconds=1):
         """
@@ -164,7 +179,7 @@ class VlcService(AudioBackend):
         new_time = self.player.get_time() - seconds
         if new_time < 0:
             new_time = 0
-        self.player.set_time(new_time)
+        self.player.set_time(int(new_time))
 
 
 def load_service(base_config, bus):
