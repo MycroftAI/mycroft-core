@@ -248,6 +248,8 @@ class AudioService:
         self.bus.on('mycroft.audio.service.prev', self._prev)
         self.bus.on('mycroft.audio.service.track_info', self._track_info)
         self.bus.on('mycroft.audio.service.list_backends', self._list_backends)
+        self.bus.on('mycroft.audio.service.set_track_position',
+                    self._set_track_position)
         self.bus.on('mycroft.audio.service.seek_forward', self._seek_forward)
         self.bus.on('mycroft.audio.service.seek_backward', self._seek_backward)
         self.bus.on('recognizer_loop:audio_output_start', self._lower_volume)
@@ -495,6 +497,17 @@ class AudioService:
             data[s.name] = info
         self.bus.emit(message.response(data))
 
+    def _set_track_position(self, message):
+        """
+            Handle message bus command to go to position (in seconds)
+
+            Args:
+                message: message bus message
+        """
+        seconds = message.data.get("seconds")
+        if seconds and self.current:
+            self.current.set_track_position(seconds)
+
     def _seek_forward(self, message):
         """
             Handle message bus command to skip X seconds
@@ -534,6 +547,8 @@ class AudioService:
         self.bus.remove('mycroft.audio.service.next', self._next)
         self.bus.remove('mycroft.audio.service.prev', self._prev)
         self.bus.remove('mycroft.audio.service.track_info', self._track_info)
+        self.bus.remove('mycroft.audio.service.set_track_position',
+                        self._set_track_position)
         self.bus.remove('mycroft.audio.service.seek_forward',
                         self._seek_forward)
         self.bus.remove('mycroft.audio.service.seek_backward',

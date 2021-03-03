@@ -130,6 +130,15 @@ class VlcService(AudioBackend):
         ret['name'] = t.get_meta(meta.Title)
         return ret
 
+    def set_track_position(self, seconds=1):
+        """
+        go to position in seconds
+
+          Args:
+                seconds (int): number of seconds of final position
+        """
+        self.player.set_time(seconds * 1000)
+
     def seek_forward(self, seconds=1):
         """
         skip X seconds

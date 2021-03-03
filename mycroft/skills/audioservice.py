@@ -111,6 +111,15 @@ class AudioService:
         """Resume paused playback."""
         self.bus.emit(Message('mycroft.audio.service.resume'))
 
+    def set_track_position(self, seconds=1):
+        """Seek X seconds.
+
+        Arguments:
+            seconds (int): number of seconds to seek, if negative rewind
+        """
+        self.bus.emit(Message('mycroft.audio.service.set_track_position',
+                              {"seconds": seconds}))
+
     def seek(self, seconds=1):
         """Seek X seconds.
 
