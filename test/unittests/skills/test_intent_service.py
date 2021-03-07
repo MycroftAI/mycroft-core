@@ -18,8 +18,9 @@ from adapt.intent import IntentBuilder
 
 from mycroft.configuration import Configuration
 from mycroft.messagebus import Message
-from mycroft.skills.intent_service import (ContextManager, IntentService,
-                                           _get_message_lang, AdaptIntent)
+from mycroft.skills.intent_service import IntentService, _get_message_lang
+from mycroft.skills.intent_services.adapt_service import (ContextManager,
+                                                          AdaptIntent)
 
 from test.util import base_config
 

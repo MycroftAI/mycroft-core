@@ -26,9 +26,6 @@ from .intent_services import (
 )
 from .intent_service_interface import open_intent_envelope
 
-# TODO: Remove in 20.08 (Backwards compatibility)
-from .intent_services.adapt_service import ContextManager
-
 
 def _get_message_lang(message):
     """Get the language from the message or the default language.
