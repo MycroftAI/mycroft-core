@@ -15,8 +15,8 @@
 """Periodically run by skill manager to load skills into memory."""
 import gc
 import importlib
+from inspect import isclass
 import os
-from os.path import dirname
 import sys
 from time import time
 
@@ -26,6 +26,7 @@ from mycroft.skills.settings import save_settings
 from mycroft.util.log import LOG
 
 from .settings import SettingsMetaUploader
+from .mycroft_skill.mycroft_skill import MycroftSkill, skill_id_from_path
 
 SKILL_MAIN_MODULE = '__init__.py'
 
@@ -123,11 +124,28 @@ def _get_last_modified_time(path):
         return 0
 
 
+def get_v3_skill_class(skill_module):
+    for obj in dir(skill_module):
+        if isclass(obj) and issubclass(obj, MycroftSkill):
+            return obj
+    else:
+        return None
+
+
+def is_skill_v3(skill_module):
+    get_v3_skill_class(skill_module) is not None
+
+
+def is_skill_v2(skill_module):
+    return (hasattr(skill_module, 'create_skill') and
+            callable(skill_module.create_skill))
+
+
 class SkillLoader:
     def __init__(self, bus, skill_directory):
         self.bus = bus
         self.skill_directory = skill_directory
-        self.skill_id = os.path.basename(skill_directory)
+        self.skill_id = skill_id_from_path(skill_directory)
         self.load_attempted = False
         self.loaded = False
         self.last_modified = 0
@@ -241,7 +259,12 @@ class SkillLoader:
             self._skip_load()
         else:
             skill_module = self._load_skill_source()
-            if skill_module and self._create_skill_instance(skill_module):
+            if is_skill_v2(skill_module):
+                self._create_v2_skill_instance(skill_module)
+                self._check_for_first_run()
+                self.loaded = True
+            if is_skill_v3(skill_module):
+                self._create_v3_skill_instance(skill_module)
                 self._check_for_first_run()
                 self.loaded = True
 
@@ -268,6 +291,7 @@ class SkillLoader:
     def _load_skill_source(self):
         """Use Python's import library to load a skill's source code."""
         main_file_path = os.path.join(self.skill_directory, SKILL_MAIN_MODULE)
+        skill_module = None
         if not os.path.exists(main_file_path):
             error_msg = 'Failed to load {} due to a missing file.'
             LOG.error(error_msg.format(self.skill_id))
@@ -277,18 +301,12 @@ class SkillLoader:
             except Exception as e:
                 LOG.exception('Failed to load skill: '
                               '{} ({})'.format(self.skill_id, repr(e)))
-            else:
-                module_is_skill = (
-                    hasattr(skill_module, 'create_skill') and
-                    callable(skill_module.create_skill)
-                )
-                if module_is_skill:
-                    return skill_module
-        return None  # Module wasn't loaded
+        return skill_module
 
-    def _create_skill_instance(self, skill_module):
+    def _create_v2_skill_instance(self, skill_module):
         """Use v2 skills framework to create the skill."""
         try:
+            print('!!!!!! STARTING V2 SKILL !!!!!!!')
             self.instance = skill_module.create_skill()
         except Exception as e:
             log_msg = 'Skill __init__ failed with {}'
@@ -297,20 +315,20 @@ class SkillLoader:
 
         if self.instance:
             self.instance.skill_id = self.skill_id
-            self.instance.bind(self.bus)
             try:
-                self.instance.load_data_files()
-                # Set up intent handlers
-                # TODO: can this be a public method?
-                self.instance._register_decorated()
-                self.instance.register_resting_screen()
-                self.instance.initialize()
-            except Exception as e:
-                # If an exception occurs, make sure to clean up the skill
-                self.instance.default_shutdown()
-                self.instance = None
-                log_msg = 'Skill initialization failed with {}'
-                LOG.exception(log_msg.format(repr(e)))
+                self.instance._startup(self.bus)
+            except Exception:
+                pass  # Exception logged in startup already
+        return self.instance is not None
+
+    def _create_v3_skill_instance(self, skill_module):
+        """Use v3 skills framework to create the skill."""
+        try:
+            self.instance = get_v3_skill_class(bus=self.bus)
+        except Exception as e:
+            log_msg = 'Skill __init__ failed with {}'
+            LOG.exception(log_msg.format(repr(e)))
+            self.instance = None
 
         return self.instance is not None
 
