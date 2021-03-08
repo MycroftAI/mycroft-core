@@ -17,7 +17,12 @@ Cache handler - reads all the .dialog files (The default
 mycroft responses) and does a tts inference.
 It then saves the .wav files to mark1 device
 
+* * * *   D E P R E C A T E D   * * * *
+THIS MODULE IS DEPRECATED IN FAVOR OF tts/cache.py. IT WILL BE REMOVED
+IN THE NEXT MAJOR RELEASE, 21.08
+
 """
+# TODO: remove in 21.08
 
 import base64
 import glob
@@ -78,6 +83,7 @@ def generate_cache_text(cache_audio_dir, cache_text_file):
 
 
 def write_cache_text(cache_path, f):
+    # TODO: remove in 21.08
     for file in glob.glob(cache_path + "/*.dialog"):
         try:
             with open(file, 'r') as fp:
@@ -109,6 +115,7 @@ def download_audio(cache_audio_dir, cache_text_file):
         cache_audio_dir (path): path to store .wav files
         cache_text_file (file): file containing the sentences
     """
+    # TODO: remove in 21.08
     if os.path.isfile(cache_text_file) and \
             os.path.exists(cache_audio_dir):
         if not os.listdir(cache_audio_dir):
@@ -163,6 +170,7 @@ def copy_cache(cache_audio_dir):
     Args:
         cache_audio_dir (path): path containing .wav files
     """
+    # TODO: remove in 21.08
     if os.path.exists(cache_audio_dir):
         # get tmp directory where tts cache is stored
         dest = util.get_cache_directory('tts/' + 'Mimic2')
@@ -178,6 +186,7 @@ def copy_cache(cache_audio_dir):
 
 # Start here
 def main(cache_audio_dir):
+    # TODO: remove in 21.08
     # Path where cache is stored and not cleared on reboot/TTS change
     if cache_audio_dir:
         if not os.path.exists(cache_audio_dir):
