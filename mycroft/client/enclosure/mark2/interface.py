@@ -134,11 +134,16 @@ class chaseLedThread(threading.Thread):
 
     def run(self):
         LOG.debug("chase thread started")
+        chase_ctr = 0
         while not self.exit_flag:
+            chase_ctr += 1
+            LOG.error("chase thread %s" % (chase_ctr,))
             for x in range(0,10):
                 self.led_obj.set_led(x, self.fgnd_col)
                 time.sleep(self.delay)
                 self.led_obj.set_led(x, self.bkgnd_col)
+            if chase_ctr > 10:
+                self.exit_flag = True
 
         LOG.debug("chase thread stopped")
         self.led_obj.fill( (0,0,0) )
