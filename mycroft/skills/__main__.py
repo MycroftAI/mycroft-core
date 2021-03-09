@@ -39,14 +39,13 @@ from mycroft.util import (
 from mycroft.util.lang import set_active_lang
 from mycroft.util.log import LOG
 from mycroft.util.process_utils import ProcessStatus, StatusCallbackMap
-
 from .api import SkillApi
 from .core import FallbackSkill
 from .event_scheduler import EventScheduler
 from .intent_service import IntentService
 from .skill_manager import SkillManager
 
-RASPBERRY_PI_PLATFORMS = ('mycroft_mark_1', 'picroft', 'mycroft_mark_2pi')
+RASPBERRY_PI_PLATFORMS = ('mycroft_mark_1', 'picroft', 'mycroft_mark_2')
 
 
 class DevicePrimer(object):

@@ -20,7 +20,7 @@ control over the Mark-1 Faceplate.
 from mycroft.configuration import LocalConf, SYSTEM_CONFIG
 from mycroft.util.log import LOG
 from mycroft.util import wait_for_exit_signal, reset_sigint_handler
-
+from mycroft.util.hardware_capabilities import EnclosureCapabilities
 
 def on_ready():
     LOG.info("Enclosure started!")
@@ -74,9 +74,23 @@ def main(ready_hook=on_ready, error_hook=on_error, stopping_hook=on_stopping):
     platform = system_config.get("enclosure", {}).get("platform")
 
     enclosure = create_enclosure(platform)
+
     if enclosure:
-        LOG.debug("Enclosure created")
+        # crude attempt to deal with hardware beyond custom hat
+        # note - if using a Mark2 you will also have
+        # enclosure.m2enc.capabilities
+        enclosure.default_caps = EnclosureCapabilities()
+
+        LOG.info("Enclosure created, capabilities ===>%s" % (enclosure.default_caps.caps,))
+
+        if platform == "mycroft_mark_2":
+            LOG.info("Mark2 detected[%s], additional capabilities ===>%s" % (enclosure.m2enc.board_type, enclosure.m2enc.capabilities))
+            LOG.info("Leds ===>%s" % (enclosure.m2enc.leds.capabilities))
+            LOG.info("Volume ===>%s" % (enclosure.m2enc.hardware_volume.capabilities))
+            LOG.info("Switches ===>%s" % (enclosure.m2enc.switches.capabilities))
+
         try:
+            LOG.info("__main__().py Starting Client Enclosure!")
             reset_sigint_handler()
             enclosure.run()
             ready_hook()
