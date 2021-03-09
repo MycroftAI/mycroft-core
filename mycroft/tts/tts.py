@@ -35,6 +35,7 @@ from mycroft.util import (
 from mycroft.util.log import LOG
 from mycroft.util.plugins import load_plugin
 from queue import Queue, Empty
+from .cache import AudioFile, hash_sentence, PhonemeFile, TextToSpeechCache
 
 
 _TTS_ENV = deepcopy(os.environ)
@@ -175,6 +176,9 @@ class TTS(metaclass=ABCMeta):
         self.audio_ext = audio_ext
         self.ssml_tags = ssml_tags or []
 
+        self.cache = TextToSpeechCache(
+            self.config, self.tts_name, self.audio_ext
+        )
         self.voice = config.get("voice")
         self.filename = '/tmp/tts.wav'
         self.enclosure = None
@@ -182,7 +186,7 @@ class TTS(metaclass=ABCMeta):
         self.queue = Queue()
         self.playback = PlaybackThread(self.queue)
         self.playback.start()
-        self.clear_cache()
+        self.cache.clear()
         self.spellings = self.load_spellings()
         self.tts_name = type(self).__name__
 
@@ -351,22 +355,39 @@ class TTS(metaclass=ABCMeta):
                   for i in range(len(chunks))]
 
         for sentence, l in chunks:
-            key = str(hashlib.md5(
-                sentence.encode('utf-8', 'ignore')).hexdigest())
-            wav_file = os.path.join(
-                mycroft.util.get_cache_directory("tts/" + self.tts_name),
-                key + '.' + self.audio_ext)
+            sentence_hash = hash_sentence(sentence)
+            if sentence_hash in self.cache.cached_sentences:
+                audio_file, phoneme_file = self._get_sentence_from_cache(
+                    sentence_hash
+                )
+                phonemes = phoneme_file.load()
 
-            if os.path.exists(wav_file):
-                LOG.debug("TTS cache hit")
-                phonemes = self.load_phonemes(key)
             else:
-                wav_file, phonemes = self.get_tts(sentence, wav_file)
+                audio_file, phoneme_file = self._add_sentence_to_cache(
+                    sentence_hash
+                )
+                _, phonemes = self.get_tts(sentence, str(audio_file.path))
                 if phonemes:
-                    self.save_phonemes(key, phonemes)
+                    phoneme_file.save(phonemes)
 
-            vis = self.viseme(phonemes) if phonemes else None
-            self.queue.put((self.audio_ext, wav_file, vis, ident, l))
+            viseme = self.viseme(phonemes) if phonemes else None
+            self.queue.put((self.audio_ext, audio_file.path, viseme, ident, l))
+
+    def _get_sentence_from_cache(self, sentence_hash):
+        cached_sentence = self.cache.cached_sentences[sentence_hash]
+        audio_file, phoneme_file = cached_sentence
+        LOG.info("Found {} in TTS cache".format(audio_file.name))
+
+        return audio_file, phoneme_file
+
+    def _add_sentence_to_cache(self, sentence_hash):
+        audio_file = self.cache.define_audio_file(sentence_hash)
+        phoneme_file = self.cache.define_phoneme_file(sentence_hash)
+        self.cache.cached_sentences[sentence_hash] = (
+            audio_file, phoneme_file
+        )
+
+        return audio_file, phoneme_file
 
     def viseme(self, phonemes):
         """Create visemes from phonemes.
@@ -384,6 +405,8 @@ class TTS(metaclass=ABCMeta):
 
     def clear_cache(self):
         """Remove all cached files."""
+        # TODO: remove in 21.08
+        LOG.warning("This method is deprecated, use TextToSpeechCache.clear")
         if not os.path.exists(mycroft.util.get_cache_directory('tts')):
             return
         for d in os.listdir(mycroft.util.get_cache_directory("tts")):
@@ -404,6 +427,8 @@ class TTS(metaclass=ABCMeta):
             key (str):        Hash key for the sentence
             phonemes (str):   phoneme string to save
         """
+        # TODO: remove in 21.08
+        LOG.warning("This method is deprecated, use PhonemeFile.save")
         cache_dir = mycroft.util.get_cache_directory("tts/" + self.tts_name)
         pho_file = os.path.join(cache_dir, key + ".pho")
         try:
@@ -419,6 +444,8 @@ class TTS(metaclass=ABCMeta):
         Arguments:
             key (str): Key identifying phoneme cache
         """
+        # TODO: remove in 21.08
+        LOG.warning("This method is deprecated, use PhonemeFile.load")
         pho_file = os.path.join(
             mycroft.util.get_cache_directory("tts/" + self.tts_name),
             key + ".pho")
