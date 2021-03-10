@@ -189,8 +189,9 @@ class IntentService:
         Arguments:
             message (Message): info about the error.
         """
-        LOG.error(message.data['error'])
         skill_id = message.data["skill_id"]
+        error_msg = message.data['error']
+        LOG.error("{}: {}".format(skill_id, error_msg))
         if message.data["error"] == "skill id does not exist":
             self.remove_active_skill(skill_id)
 
