@@ -22,7 +22,7 @@ persistent because the files are stored in a location that is not cleared on
 reboot.  TTS inference on these sentences should only need to occur once.  The
 persistent cache contains commonly spoken sentences.
 
-The second cache type a temporary cache stored in the /tmp directory,
+The second cache type is a temporary cache stored in the /tmp directory,
 which is cleared when a device is rebooted.  Sentences are added to this cache
 on the fly every time a TTS engine returns audio for a sentence that is not
 already cached.
@@ -33,7 +33,7 @@ import json
 import re
 from collections import defaultdict
 from pathlib import Path
-from typing import List, Optional, Set, Tuple
+from typing import List, Set, Tuple
 from urllib import parse
 
 import requests
@@ -60,18 +60,76 @@ def _get_mimic2_audio(sentence: str, url: str) -> Tuple[bytes, str]:
     return audio, phonemes
 
 
-def hash_sentence(sentence):
+def hash_sentence(sentence: str):
+    """Convert the sentence into a hash value used for the file name
+
+    Arguments:
+        sentence: The sentence to be cached
+    """
     encoded_sentence = sentence.encode("utf-8", "ignore")
     sentence_hash = hashlib.md5(encoded_sentence).hexdigest()
 
     return sentence_hash
 
 
+class AudioFile:
+    def __init__(self, cache_dir: Path, sentence_hash: str, file_type: str):
+        self.name = f"{sentence_hash}.{file_type}"
+        self.path = cache_dir.joinpath(self.name)
+
+    def save(self, audio: bytes):
+        """Write a TTS cache file containing the audio to be spoken.
+
+        Arguments:
+            audio: TTS inference of a sentence
+        """
+        try:
+            with open(self.path, "wb") as audio_file:
+                audio_file.write(audio)
+        except Exception:
+            LOG.exception("Failed to write {} to cache".format(self.name))
+
+
+class PhonemeFile:
+    def __init__(self, cache_dir: Path, sentence_hash: str):
+        self.name = f"{sentence_hash}.pho"
+        self.path = cache_dir.joinpath(self.name)
+
+    def load(self) -> str:
+        """Load phonemes from cache file."""
+        phonemes = None
+        if self.path.exists():
+            try:
+                with open(self.path) as phoneme_file:
+                    phonemes = phoneme_file.read().strip()
+            except Exception:
+                LOG.exception("Failed to read phoneme from cache")
+
+        return phonemes
+
+    def save(self, phonemes):
+        """Write a TTS cache file containing the phoneme to be displayed.
+
+        Arguments:
+            phonemes: instructions for how to make the mouth on a device move
+        """
+        if type(phonemes) == str:
+            rec = phonemes
+        else:
+            rec = json.dumps(phonemes)
+        try:
+            with open(self.path, "w") as phoneme_file:
+                phoneme_file.write(rec)
+        except Exception:
+            LOG.exception("Failed to write {} to cache".format(self.name))
+
+
 class TextToSpeechCache:
+    """Class for all persistent and temporary caching operations."""
     def __init__(self, tts_config, tts_name, audio_file_type):
         self.config = tts_config
         self.tts_name = tts_name
-        self.persistent_cache_dir = Path(tts_config["preloaded_cache"])
+        self.persistent_cache_dir = Path(tts_config.get("preloaded_cache"))
         self.temporary_cache_dir = Path(
             get_cache_directory("tts/" + tts_name)
         )
@@ -98,7 +156,7 @@ class TextToSpeechCache:
         ANOTHER NOTE:  Mimic2 is the only TTS engine that supports this.  This
         logic will need to change if another TTS engine implements it.
         """
-        if self.tts_name == "Mimic2":
+        if self.persistent_cache_dir is not None:
             LOG.info("Adding dialog resources to persistent TTS cache...")
             preloaded_files = self._find_preloaded_files()
             self._add_preloaded_files(preloaded_files)
@@ -108,30 +166,34 @@ class TextToSpeechCache:
                 self._load_sentence(sentence)
             LOG.info("Persistent TTS cache files added successfully.")
 
-    def _find_preloaded_files(self):
-        preloaded_files = defaultdict(list)
+    def _find_preloaded_files(self) -> dict:
+        """Find the TTS files already in the persistent cache.
+
+        Discovery of pre-loaded files is done in two phases because the result
+        of the Path.iterdir() function returns directory contents in a
+        random order.
+        """
+        preloaded_files = defaultdict(dict)
         for preloaded_file in self.persistent_cache_dir.iterdir():
             if preloaded_file.name.endswith(self.audio_file_type):
-                sentence_hash = preloaded_file.name.strip(
-                    "." + self.audio_file_type
-                )
-                preloaded_files[sentence_hash].append("audio")
+                sentence_hash = preloaded_file.name.split(".")[0]
+                audio_file = self.define_audio_file(sentence_hash)
+                preloaded_files[sentence_hash]["audio"] = audio_file
             else:
-                sentence_hash = preloaded_file.name.strip(
-                    "." + self.audio_file_type
-                )
-                preloaded_files[sentence_hash].append("phoneme")
+                sentence_hash = preloaded_file.name.split(".")[0]
+                phoneme_file = self.define_phoneme_file(sentence_hash)
+                preloaded_files[sentence_hash]["phoneme"] = phoneme_file
 
         return preloaded_files
 
-    def _add_preloaded_files(self, preloaded_files):
+    def _add_preloaded_files(self, preloaded_files: dict):
+        """Add the discovered preloaded files into cache attribute."""
         for sentence_hash, file_types in preloaded_files.items():
-            if "audio" in file_types:
-                audio_file = self.define_audio_file(sentence_hash)
-                phoneme_file = None
-                if "phoneme" in file_types:
-                    phoneme_file = self.define_phoneme_file(sentence_hash)
-                self.cached_sentences[sentence_hash] = audio_file, phoneme_file
+            audio_file = file_types.get("audio")
+            phoneme_file = file_types.get("phoneme")
+            if audio_file is None:
+                continue
+            self.cached_sentences[sentence_hash] = audio_file, phoneme_file
 
     def _collect_dialogs(self) -> List:
         """Build a set of unique sentences from the dialog files.
@@ -194,6 +256,7 @@ class TextToSpeechCache:
                 self.add_to_cache(sentence_hash, audio, phonemes)
 
     def add_to_cache(self, sentence_hash: str, audio: bytes, phonemes: str):
+        """Add a audio/phoneme file pair to the cache."""
         audio_file = self.define_audio_file(sentence_hash)
         audio_file.save(audio)
         if phonemes is None:
@@ -213,66 +276,16 @@ class TextToSpeechCache:
             elif cache_file_path.is_file():
                 cache_file_path.unlink()
 
-    def define_audio_file(self, sentence_hash):
+    def define_audio_file(self, sentence_hash: str) -> AudioFile:
+        """Build an instance of an object representing an audio file."""
         audio_file = AudioFile(
             self.persistent_cache_dir, sentence_hash, self.audio_file_type
         )
         return audio_file
 
-    def define_phoneme_file(self, sentence_hash):
+    def define_phoneme_file(self, sentence_hash: str) -> PhonemeFile:
+        """Build an instance of an object representing an phoneme file."""
         phoneme_file = PhonemeFile(
             self.persistent_cache_dir, sentence_hash
         )
         return phoneme_file
-
-
-class AudioFile:
-    def __init__(self, cache_dir: Path, sentence_hash: str, file_type: str):
-        self.name = f"{sentence_hash}.{file_type}"
-        self.path = cache_dir.joinpath(self.name)
-
-    def save(self, audio: bytes):
-        """Write a TTS cache file containing the audio to be spoken.
-
-        Arguments:
-            audio: TTS inference of a sentence
-        """
-        try:
-            with open(self.path, "wb") as audio_file:
-                audio_file.write(audio)
-        except Exception:
-            LOG.exception("Failed to write {} to cache".format(self.name))
-
-
-class PhonemeFile:
-    def __init__(self, cache_dir: Path, sentence_hash: str):
-        self.name = f"{sentence_hash}.pho"
-        self.path = cache_dir.joinpath(self.name)
-
-    def load(self) -> str:
-        """Load phonemes from cache file."""
-        phonemes = None
-        if self.path.exists():
-            try:
-                with open(self.path) as phoneme_file:
-                    phonemes = phoneme_file.read().strip()
-            except Exception:
-                LOG.exception("Failed to read phoneme from cache")
-
-        return phonemes
-
-    def save(self, phonemes):
-        """Write a TTS cache file containing the phoneme to be displayed.
-
-        Arguments:
-            phonemes: instructions for how to make the mouth on a device move
-        """
-        if type(phonemes) == str:
-            rec = phonemes
-        else:
-            rec = json.dumps(phonemes)
-        try:
-            with open(self.path, "w") as phoneme_file:
-                phoneme_file.write(rec)
-        except Exception:
-            LOG.exception("Failed to write {} to cache".format(self.name))

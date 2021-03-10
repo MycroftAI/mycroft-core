@@ -366,6 +366,10 @@ class TTS(metaclass=ABCMeta):
                     phonemes = phoneme_file.load()
 
             else:
+                # TODO: this should be changed return the audio data from
+                #  the API call and then to call the add_to_cache method
+                #  of the TTS cache.  But this requires changing the public
+                #  API of the get_tts method in each engine.
                 audio_file, phoneme_file = self._add_sentence_to_cache(
                     sentence_hash
                 )
