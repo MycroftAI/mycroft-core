@@ -29,6 +29,7 @@ already cached.
 """
 import base64
 import hashlib
+import json
 import re
 from collections import defaultdict
 from pathlib import Path
@@ -260,14 +261,18 @@ class PhonemeFile:
 
         return phonemes
 
-    def save(self, phonemes: str):
+    def save(self, phonemes):
         """Write a TTS cache file containing the phoneme to be displayed.
 
         Arguments:
             phonemes: instructions for how to make the mouth on a device move
         """
+        if type(phonemes) == str:
+            rec = phonemes
+        else:
+            rec = json.dumps(phonemes)
         try:
             with open(self.path, "w") as phoneme_file:
-                phoneme_file.write(phonemes)
+                phoneme_file.write(rec)
         except Exception:
             LOG.exception("Failed to write {} to cache".format(self.name))
