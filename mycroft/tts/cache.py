@@ -42,17 +42,15 @@ from mycroft.util.file_utils import (
 )
 from mycroft.util.log import LOG
 
-MIMIC2_URL = 'https://mimic-api.mycroft.ai/synthesize?text='
 
-
-def _get_mimic2_audio(sentence: str) -> Tuple[Optional[bytes], Optional[str]]:
+def _get_mimic2_audio(sentence: str, url: str) -> Tuple[bytes, str]:
     """Use the Mimic2 API to retrieve the audio for a sentence.
 
     Arguments:
         sentence: The sentence to be cached
     """
     LOG.debug("Retrieving Mimic2 audio for sentence \"{}\'".format(sentence))
-    mimic2_url = MIMIC2_URL + parse.quote(sentence) + '&visimes=True'
+    mimic2_url = url + parse.quote(sentence) + '&visimes=True'
     response = requests.get(mimic2_url)
     response_data = response.json()
     audio = base64.b64decode(response_data["audio_base64"])
@@ -70,6 +68,8 @@ def hash_sentence(sentence):
 
 class TextToSpeechCache:
     def __init__(self, tts_config, tts_name, audio_file_type):
+        self.config = tts_config
+        self.tts_name = tts_name
         self.persistent_cache_dir = Path(tts_config["preloaded_cache"])
         self.temporary_cache_dir = Path(
             get_cache_directory("tts/" + tts_name)
@@ -94,15 +94,18 @@ class TextToSpeechCache:
         prior to run time, such as pre-recorded audio files.  This will add
         files that do not already exist.
 
+        ANOTHER NOTE:  Mimic2 is the only TTS engine that supports this.  This
+        logic will need to change if another TTS engine implements it.
         """
-        LOG.info("Adding dialog resources to persistent TTS cache...")
-        preloaded_files = self._find_preloaded_files()
-        self._add_preloaded_files(preloaded_files)
-        dialogs = self._collect_dialogs()
-        sentences = self._parse_dialogs(dialogs)
-        for sentence in sentences:
-            self._load_sentence(sentence)
-        LOG.info("Persistent TTS cache files added successfully.")
+        if self.tts_name == "Mimic2":
+            LOG.info("Adding dialog resources to persistent TTS cache...")
+            preloaded_files = self._find_preloaded_files()
+            self._add_preloaded_files(preloaded_files)
+            dialogs = self._collect_dialogs()
+            sentences = self._parse_dialogs(dialogs)
+            for sentence in sentences:
+                self._load_sentence(sentence)
+            LOG.info("Persistent TTS cache files added successfully.")
 
     def _find_preloaded_files(self):
         preloaded_files = defaultdict(list)
@@ -169,14 +172,20 @@ class TextToSpeechCache:
     def _load_sentence(self, sentence: str):
         """Build audio and phoneme files for each sentence to be cached.
 
-        Perform TTS inference on sentences parsed from dialog files.  Store the
-        results in the persistent cache directory.
+        Perform TTS inference on sentences parsed from dialog files.  Store
+        the results in the persistent cache directory.
+
+        ASSUMPTION: The only TTS that supports persistent cache right now is
+        Mimic2.  This method assumes a call to the Mimic2 API.  If other TTS
+        engines want to take advantage of the persistent cache, this logic
+        will need to be more dynamic.
         """
         sentence_hash = hash_sentence(sentence)
         if sentence_hash not in self.cached_sentences:
             LOG.info("Adding \"{}\" to cache".format(sentence))
             try:
-                audio, phonemes = _get_mimic2_audio(sentence)
+                mimic2_url = self.config["mimic2"]["url"]
+                audio, phonemes = _get_mimic2_audio(sentence, mimic2_url)
             except Exception:
                 log_msg = "Failed to get audio for sentence \"{}\""
                 LOG.exception(log_msg.format(sentence))
