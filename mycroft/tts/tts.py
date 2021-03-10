@@ -360,7 +360,10 @@ class TTS(metaclass=ABCMeta):
                 audio_file, phoneme_file = self._get_sentence_from_cache(
                     sentence_hash
                 )
-                phonemes = phoneme_file.load()
+                if phoneme_file is None:
+                    phonemes = None
+                else:
+                    phonemes = phoneme_file.load()
 
             else:
                 audio_file, phoneme_file = self._add_sentence_to_cache(
