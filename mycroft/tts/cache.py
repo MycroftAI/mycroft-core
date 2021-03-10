@@ -214,7 +214,8 @@ class TextToSpeechCache:
     def _parse_dialogs(dialogs: List[str]) -> Set[str]:
         """Split each dialog in the resources directory into sentences.
 
-        Do not consider sentences with special characters other than punctuation
+        Do not consider sentences with special characters other than
+        punctuation
             example : <<< LOADING <<<
 
         Arguments:
