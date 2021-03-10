@@ -34,7 +34,8 @@ class TestCache(TestCase):
         preloaded_file_path = self._write_preloaded_file()
         before_modified_time = preloaded_file_path.stat().st_mtime
         requests_mock.return_value = _mock_mimic2_api()
-        tts_cache = self._load_persistent_cache()
+        tts_config = dict(preloaded_cache=self.cache_dir, url="testurl")
+        tts_cache = self._load_persistent_cache(tts_config)
         actual_file_names = [path.name for path in self.cache_dir.iterdir()]
 
         self.assertEqual(3, len(actual_file_names))
@@ -52,6 +53,14 @@ class TestCache(TestCase):
         after_modified_time = preloaded_file_path.stat().st_mtime
         self.assertEqual(before_modified_time, after_modified_time)
 
+    def test_no_persistent_cache(self):
+        tts_config = dict(url="testurl")
+        tts_cache = self._load_persistent_cache(tts_config)
+        actual_file_names = [path.name for path in self.cache_dir.iterdir()]
+
+        self.assertEqual(0, len(actual_file_names))
+        self.assertEqual(0, len(tts_cache.cached_sentences))
+
     def _write_preloaded_file(self):
         preloaded_file_name = "92ee7866d8154bb2cbf6fb49504e49fc.wav"
         preloaded_file_path = self.cache_dir.joinpath(preloaded_file_name)
@@ -60,10 +69,10 @@ class TestCache(TestCase):
 
         return preloaded_file_path
 
-    def _load_persistent_cache(self):
+    def _load_persistent_cache(self, tts_config):
         test_resource_directory = Path(__file__).parent.parent.joinpath("res")
         tts_cache = TextToSpeechCache(
-            tts_config=dict(preloaded_cache=self.cache_dir, url="testurl"),
+            tts_config=tts_config,
             tts_name="Test",
             audio_file_type="wav"
         )

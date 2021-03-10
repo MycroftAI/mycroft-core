@@ -129,7 +129,10 @@ class TextToSpeechCache:
     def __init__(self, tts_config, tts_name, audio_file_type):
         self.config = tts_config
         self.tts_name = tts_name
-        self.persistent_cache_dir = Path(tts_config.get("preloaded_cache"))
+        if "preloaded_cache" in self.config:
+            self.persistent_cache_dir = Path(self.config["preloaded_cache"])
+        else:
+            self.persistent_cache_dir = None
         self.temporary_cache_dir = Path(
             get_cache_directory("tts/" + tts_name)
         )
