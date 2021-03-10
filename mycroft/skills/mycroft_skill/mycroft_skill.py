@@ -600,7 +600,7 @@ class MycroftSkill:
                 else:
                     num = extract_number(resp, self.lang, ordinals=True)
                     resp = None
-                    if num and num < len(options):
+                    if num and num <= len(options):
                         resp = options[num - 1]
             else:
                 resp = match

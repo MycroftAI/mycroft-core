@@ -23,6 +23,15 @@ from mycroft.configuration.config import LocalConf, DEFAULT_CONFIG
 __CONFIG = LocalConf(DEFAULT_CONFIG)
 
 
+class AnyCallable:
+    """Class matching any callable.
+
+    Useful for assert_called_with arguments.
+    """
+    def __eq__(self, other):
+        return callable(other)
+
+
 def base_config():
     """Base config used when mocking.
 
