@@ -63,7 +63,7 @@ class TestCache(TestCase):
     def _load_persistent_cache(self):
         test_resource_directory = Path(__file__).parent.parent.joinpath("res")
         tts_cache = TextToSpeechCache(
-            tts_config=dict(preloaded_cache=self.cache_dir),
+            tts_config=dict(preloaded_cache=self.cache_dir, url="testurl"),
             tts_name="Test",
             audio_file_type="wav"
         )
