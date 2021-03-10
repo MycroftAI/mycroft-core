@@ -176,9 +176,6 @@ class TTS(metaclass=ABCMeta):
         self.audio_ext = audio_ext
         self.ssml_tags = ssml_tags or []
 
-        self.cache = TextToSpeechCache(
-            self.config, self.tts_name, self.audio_ext
-        )
         self.voice = config.get("voice")
         self.filename = '/tmp/tts.wav'
         self.enclosure = None
@@ -186,9 +183,12 @@ class TTS(metaclass=ABCMeta):
         self.queue = Queue()
         self.playback = PlaybackThread(self.queue)
         self.playback.start()
-        self.cache.clear()
         self.spellings = self.load_spellings()
         self.tts_name = type(self).__name__
+        self.cache = TextToSpeechCache(
+            self.config, self.tts_name, self.audio_ext
+        )
+        self.cache.clear()
 
     def load_spellings(self):
         """Load phonetic spellings of words as dictionary."""
