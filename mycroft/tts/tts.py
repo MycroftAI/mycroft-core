@@ -370,13 +370,18 @@ class TTS(metaclass=ABCMeta):
                 #  the API call and then to call the add_to_cache method
                 #  of the TTS cache.  But this requires changing the public
                 #  API of the get_tts method in each engine.
-                audio_file, phoneme_file = self._add_sentence_to_cache(
-                    sentence_hash
-                )
+                audio_file = self.cache.define_audio_file(sentence_hash)
                 _, phonemes = self.get_tts(sentence, str(audio_file.path))
                 if phonemes:
+                    phoneme_file = self.cache.define_phoneme_file(
+                        sentence_hash
+                    )
                     phoneme_file.save(phonemes)
-
+                else:
+                    phoneme_file = None
+                self.cache.cached_sentences[sentence_hash] = (
+                    audio_file, phoneme_file
+                )
             viseme = self.viseme(phonemes) if phonemes else None
             self.queue.put((self.audio_ext, audio_file.path, viseme, ident, l))
 
@@ -384,15 +389,6 @@ class TTS(metaclass=ABCMeta):
         cached_sentence = self.cache.cached_sentences[sentence_hash]
         audio_file, phoneme_file = cached_sentence
         LOG.info("Found {} in TTS cache".format(audio_file.name))
-
-        return audio_file, phoneme_file
-
-    def _add_sentence_to_cache(self, sentence_hash):
-        audio_file = self.cache.define_audio_file(sentence_hash)
-        phoneme_file = self.cache.define_phoneme_file(sentence_hash)
-        self.cache.cached_sentences[sentence_hash] = (
-            audio_file, phoneme_file
-        )
 
         return audio_file, phoneme_file
 
