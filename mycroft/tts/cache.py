@@ -185,7 +185,7 @@ class TextToSpeechCache:
         if sentence_hash not in self.cached_sentences:
             LOG.info("Adding \"{}\" to cache".format(sentence))
             try:
-                mimic2_url = self.config["mimic2"]["url"]
+                mimic2_url = self.config["url"]
                 audio, phonemes = _get_mimic2_audio(sentence, mimic2_url)
             except Exception:
                 log_msg = "Failed to get audio for sentence \"{}\""
