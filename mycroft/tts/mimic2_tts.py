@@ -12,24 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import base64
+import json
+import math
+import os
+import re
+from urllib import parse
 
-from .tts import TTS, TTSValidator
-from .remote_tts import RemoteTTSException, RemoteTTSTimeoutException
-from mycroft.util.log import LOG
-from mycroft.tts import cache_handler
-from mycroft.util import get_cache_directory
 from requests_futures.sessions import FuturesSession
 from requests.exceptions import (
     ReadTimeout, ConnectionError, ConnectTimeout, HTTPError
 )
-from urllib import parse
-from .mimic_tts import VISIMES
-import math
-import base64
-import os
-import re
-import json
 
+from mycroft.util.file_utils import get_cache_directory
+from mycroft.util.log import LOG
+from .mimic_tts import VISIMES
+from .tts import TTS, TTSValidator
+from .remote_tts import RemoteTTSException, RemoteTTSTimeoutException
 
 # Heuristic value, caps character length of a chunk of text to be spoken as a
 # work around for current Mimic2 implementation limits.
@@ -169,16 +168,8 @@ def _sentence_chunker(text):
 class Mimic2(TTS):
     """Interface to the Mimic2 TTS."""
     def __init__(self, lang, config):
-        super(Mimic2, self).__init__(
-            lang, config, Mimic2Validator(self)
-        )
-        try:
-            LOG.info("Getting Pre-loaded cache")
-            cache_handler.main(config['preloaded_cache'])
-            LOG.info("Successfully downloaded Pre-loaded cache")
-        except Exception as e:
-            LOG.error("Could not get the pre-loaded cache ({})"
-                      .format(repr(e)))
+        super().__init__(lang, config, Mimic2Validator(self))
+        self.cache.load_persistent_cache()
         self.url = config['url']
         self.session = FuturesSession()
 
