@@ -383,7 +383,9 @@ class TTS(metaclass=ABCMeta):
                     audio_file, phoneme_file
                 )
             viseme = self.viseme(phonemes) if phonemes else None
-            self.queue.put((self.audio_ext, audio_file.path, viseme, ident, l))
+            self.queue.put(
+                (self.audio_ext, str(audio_file.path), viseme, ident, l)
+            )
 
     def _get_sentence_from_cache(self, sentence_hash):
         cached_sentence = self.cache.cached_sentences[sentence_hash]
