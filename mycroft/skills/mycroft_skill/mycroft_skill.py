@@ -162,6 +162,9 @@ class MycroftSkill:
         self.event_scheduler = EventSchedulerInterface(self.name)
         self.intent_service = IntentServiceInterface()
 
+        # Skill Public API
+        self.public_api = {}
+
     def _init_settings(self):
         """Setup skill settings."""
 
@@ -258,6 +261,55 @@ class MycroftSkill:
             # Initialize the SkillGui
             self.gui.setup_default_handlers()
 
+            self._register_public_api()
+
+    def _register_public_api(self):
+        """ Find and register api methods.
+        Api methods has been tagged with the api_method member, for each
+        method where this is found the method a message bus handler is
+        registered.
+        Finally create a handler for fetching the api info from any requesting
+        skill.
+        """
+
+        def wrap_method(func):
+            """Boiler plate for returning the response to the sender."""
+            def wrapper(message):
+                result = func(*message.data['args'], **message.data['kwargs'])
+                self.bus.emit(message.response(data={'result': result}))
+
+            return wrapper
+
+        methods = [attr_name for attr_name in get_non_properties(self)
+                   if hasattr(getattr(self, attr_name), '__name__')]
+
+        for attr_name in methods:
+            method = getattr(self, attr_name)
+
+            if hasattr(method, 'api_method'):
+                doc = method.__doc__ or ''
+                name = method.__name__
+                self.public_api[name] = {
+                    'help': doc,
+                    'type': '{}.{}'.format(self.skill_id, name),
+                    'func': method
+                }
+        for key in self.public_api:
+            if ('type' in self.public_api[key] and
+                    'func' in self.public_api[key]):
+                LOG.debug('Adding api method: '
+                          '{}'.format(self.public_api[key]['type']))
+
+                # remove the function member since it shouldn't be
+                # reused and can't be sent over the messagebus
+                func = self.public_api[key].pop('func')
+                self.add_event(self.public_api[key]['type'],
+                               wrap_method(func))
+
+        if self.public_api:
+            self.add_event('{}.public_api'.format(self.skill_id),
+                           self._send_public_api)
+
     def _register_system_event_handlers(self):
         """Add all events allowing the standard interaction with the Mycroft
         system.
@@ -324,6 +376,10 @@ class MycroftSkill:
         """
         pass
 
+    def _send_public_api(self, message):
+        """Respond with the skill's public api."""
+        self.bus.emit(message.response(data=self.public_api))
+
     def get_intro_message(self):
         """Get a message to speak on first load of the skill.
 
@@ -334,7 +390,7 @@ class MycroftSkill:
         """
         return None
 
-    def converse(self, utterances, lang=None):
+    def converse(self, message=None):
         """Handle conversation.
 
         This method gets a peek at utterances before the normal intent
@@ -343,13 +399,11 @@ class MycroftSkill:
         To use, override the converse() method and return True to
         indicate that the utterance has been handled.
 
+        utterances and lang are depreciated
+
         Arguments:
-            utterances (list): The utterances from the user.  If there are
-                               multiple utterances, consider them all to be
-                               transcription possibilities.  Commonly, the
-                               first entry is the user utt and the second
-                               is normalized() version of the first utterance
-            lang:       language the utterance is in, None for default
+            message:    a message object containing a message type with an
+                        optional JSON data packet
 
         Returns:
             bool: True if an utterance was handled, otherwise False
@@ -544,7 +598,7 @@ class MycroftSkill:
                 else:
                     num = extract_number(resp, self.lang, ordinals=True)
                     resp = None
-                    if num and num < len(options):
+                    if num and num <= len(options):
                         resp = options[num - 1]
             else:
                 resp = match

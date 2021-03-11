@@ -115,8 +115,6 @@ class TestSkillManager(MycroftUnitTestBase):
             'skillmanager.keep',
             'skillmanager.activate',
             'mycroft.paired',
-            'mycroft.skills.is_alive',
-            'mycroft.skills.all_loaded',
             'mycroft.skills.settings.update'
         ]
         self.assertListEqual(

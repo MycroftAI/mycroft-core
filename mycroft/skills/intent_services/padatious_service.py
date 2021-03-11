@@ -52,11 +52,6 @@ class PadatiousService:
         self.bus.on('detach_intent', self.handle_detach_intent)
         self.bus.on('detach_skill', self.handle_detach_skill)
         self.bus.on('mycroft.skills.initialized', self.train)
-        self.bus.on('intent.service.padatious.get', self.handle_get_padatious)
-        self.bus.on('intent.service.padatious.manifest.get',
-                    self.handle_manifest)
-        self.bus.on('intent.service.padatious.entities.manifest.get',
-                    self.handle_entity_manifest)
 
         self.finished_training_event = Event()
         self.finished_initial_train = False
@@ -89,8 +84,7 @@ class PadatiousService:
 
         self.finished_training_event.set()
         if not self.finished_initial_train:
-            LOG.info("Mycroft is all loaded and ready to roll!")
-            self.bus.emit(Message('mycroft.ready'))
+            self.bus.emit(Message('mycroft.skills.trained'))
             self.finished_initial_train = True
 
     def wait_and_train(self):
@@ -228,41 +222,6 @@ class PadatiousService:
                                          with optional normalized version.
         """
         return self._match_level(utterances, 0.5)
-
-    def handle_get_padatious(self, message):
-        """messagebus handler for perfoming padatious parsing.
-
-        Arguments:
-            message (Message): message triggering the method
-        """
-        utterance = message.data["utterance"]
-        norm = message.data.get('norm_utt', utterance)
-        intent = self.calc_intent(utterance)
-        if not intent and norm != utterance:
-            intent = self.calc_intent(norm)
-        if intent:
-            intent = intent.__dict__
-        self.bus.emit(message.reply("intent.service.padatious.reply",
-                                    {"intent": intent}))
-
-    def handle_manifest(self, message):
-        """Messagebus handler returning the registered padatious intents.
-
-        Arguments:
-            message (Message): message triggering the method
-        """
-        self.bus.emit(message.reply("intent.service.padatious.manifest",
-                                    {"intents": self.registered_intents}))
-
-    def handle_entity_manifest(self, message):
-        """Messagebus handler returning the registered padatious entities.
-
-        Arguments:
-            message (Message): message triggering the method
-        """
-        self.bus.emit(
-            message.reply("intent.service.padatious.entities.manifest",
-                          {"entities": self.registered_entities}))
 
     @lru_cache(maxsize=2)  # 2 catches both raw and normalized utts in cache
     def calc_intent(self, utt):

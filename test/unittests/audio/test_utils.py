@@ -58,10 +58,21 @@ class TestInterface(unittest.TestCase):
         sleep(2)
         self.assertTrue(done_waiting)
 
+    @mock.patch('mycroft.audio.utils.is_speaking')
     @mock.patch('mycroft.messagebus.send_func.send')
-    def test_stop_speaking(self, mock_send):
+    def test_stop_speaking(self, mock_send, mock_is_speaking):
+        """Test that stop speak message is sent."""
+        mock_is_speaking.return_value = True
         mycroft.audio.stop_speaking()
         mock_send.assert_called_with('mycroft.audio.speech.stop')
+
+    @mock.patch('mycroft.audio.utils.is_speaking')
+    @mock.patch('mycroft.messagebus.send_func.send')
+    def test_stop_speaking_when_not(self, mock_send, mock_is_speaking):
+        """Check that the stop speaking msg isn't sent when not speaking."""
+        mock_is_speaking.return_value = False
+        mycroft.audio.stop_speaking()
+        mock_send.assert_not_called()
 
 
 if __name__ == "__main__":

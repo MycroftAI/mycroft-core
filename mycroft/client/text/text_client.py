@@ -872,6 +872,7 @@ help_struct = [
      "Skill Debugging Commands",
      [
       (":skills",               "list installed skills"),
+      (":api SKILL",            "show skill's public API"),
       (":activate SKILL",       "activate skill, e.g. 'activate skill-wiki'"),
       (":deactivate SKILL",     "deactivate skill"),
       (":keep SKILL",           "deactivate all skills except " +
@@ -1035,6 +1036,62 @@ def show_skills(skills):
     scr.refresh()
 
 
+def show_skill_api(skill, data):
+    """Show available help on skill's API."""
+    global scr
+    global screen_mode
+
+    if not scr:
+        return
+
+    screen_mode = SCR_SKILLS
+
+    row = 2
+    column = 0
+
+    def prepare_page():
+        global scr
+        nonlocal row
+        nonlocal column
+        scr.erase()
+        scr.addstr(0, 0, center(25) + "Skill-API for {}".format(skill),
+                   CLR_CMDLINE)
+        scr.addstr(1, 1, "=" * (curses.COLS - 2), CLR_CMDLINE)
+        row = 2
+        column = 4
+
+    prepare_page()
+    for key in data:
+        color = curses.color_pair(4)
+
+        scr.addstr(row, column, "{} ({})".format(key, data[key]['type']),
+                   CLR_HEADING)
+        row += 2
+        if 'help' in data[key]:
+            help_text = data[key]['help'].split('\n')
+            for line in help_text:
+                scr.addstr(row, column + 2, line, color)
+                row += 1
+            row += 2
+        else:
+            row += 1
+
+        if row == curses.LINES - 5:
+            scr.addstr(curses.LINES - 1, 0,
+                       center(23) + "Press any key to continue", CLR_HEADING)
+            scr.refresh()
+            wait_for_any_key()
+            prepare_page()
+        elif row == curses.LINES - 5:
+            # Reached bottom of screen, start at top and move output to a
+            # New column
+            row = 2
+
+    scr.addstr(curses.LINES - 1, 0, center(23) + "Press any key to return",
+               CLR_HEADING)
+    scr.refresh()
+
+
 def center(str_len):
     # generate number of characters needed to center a string
     # of the given length
@@ -1182,6 +1239,17 @@ def handle_cmd(cmd):
                 bus.emit(Message("skillmanager.activate", data={'skill': s}))
         else:
             add_log_message('Usage :activate SKILL [SKILL2] [...]')
+    elif "api" in cmd:
+        parts = cmd.split()
+        if len(parts) < 2:
+            return
+        skill = parts[1]
+        message = bus.wait_for_response(Message('{}.public_api'.format(skill)))
+        if message:
+            show_skill_api(skill, message.data)
+            scr.get_wch()  # blocks
+            screen_mode = SCR_MAIN
+            set_screen_dirty()
 
     # TODO: More commands
     return 0  # do nothing upon return

@@ -17,6 +17,7 @@ import os
 from glob import glob
 from threading import Thread, Event, Lock
 from time import sleep, time, monotonic
+from inspect import signature
 
 from mycroft.api import is_paired
 from mycroft.enclosure.api import EnclosureAPI
@@ -132,6 +133,8 @@ class SkillManager(Thread):
         self.num_install_retries = 0
         self.settings_downloader = SkillSettingsDownloader(self.bus)
 
+        self.empty_skill_dirs = set()  # Save a record of empty skill dirs.
+
         # Statuses
         self._alive_status = False  # True after priority skills has loaded
         self._loaded_status = False  # True after all skills has loaded
@@ -158,8 +161,6 @@ class SkillManager(Thread):
         self.bus.on('skillmanager.keep', self.deactivate_except)
         self.bus.on('skillmanager.activate', self.activate_skill)
         self.bus.on('mycroft.paired', self.handle_paired)
-        self.bus.on('mycroft.skills.is_alive', self.is_alive)
-        self.bus.on('mycroft.skills.all_loaded', self.is_all_loaded)
         self.bus.on(
             'mycroft.skills.settings.update',
             self.settings_downloader.download
@@ -242,9 +243,9 @@ class SkillManager(Thread):
         # unload the existing version from memory and reload from the disk.
         while not self._stop_event.is_set():
             try:
+                self._unload_removed_skills()
                 self._reload_modified_skills()
                 self._load_new_skills()
-                self._unload_removed_skills()
                 self._update_skills()
                 if (is_paired() and self.upload_queue.started and
                         len(self.upload_queue) > 0):
@@ -316,8 +317,13 @@ class SkillManager(Thread):
             # check if folder is a skill (must have __init__.py)
             if SKILL_MAIN_MODULE in os.listdir(skill_dir):
                 skill_directories.append(skill_dir.rstrip('/'))
+                if skill_dir in self.empty_skill_dirs:
+                    self.empty_skill_dirs.discard(skill_dir)
             else:
-                LOG.debug('Found skills directory with no skill: ' + skill_dir)
+                if skill_dir not in self.empty_skill_dirs:
+                    self.empty_skill_dirs.add(skill_dir)
+                    LOG.debug('Found skills directory with no skill: ' +
+                              skill_dir)
 
         return skill_directories
 
@@ -353,17 +359,10 @@ class SkillManager(Thread):
 
     def is_alive(self, message=None):
         """Respond to is_alive status request."""
-        if message:
-            status = {'status': self._alive_status}
-            self.bus.emit(message.response(data=status))
         return self._alive_status
 
     def is_all_loaded(self, message=None):
         """ Respond to all_loaded status request."""
-        if message:
-            status = {'status': self._loaded_status}
-            self.bus.emit(message.response(data=status))
-
         return self._loaded_status
 
     def send_skill_list(self, _):
@@ -443,9 +442,17 @@ class SkillManager(Thread):
                     self._emit_converse_error(message, skill_id, error_message)
                     break
                 try:
-                    utterances = message.data['utterances']
-                    lang = message.data['lang']
-                    result = skill_loader.instance.converse(utterances, lang)
+                    # check the signature of a converse method
+                    # to either pass a message or not
+                    if len(signature(
+                            skill_loader.instance.converse).parameters) == 1:
+                        result = skill_loader.instance.converse(
+                            message=message)
+                    else:
+                        utterances = message.data['utterances']
+                        lang = message.data['lang']
+                        result = skill_loader.instance.converse(
+                            utterances=utterances, lang=lang)
                     self._emit_converse_response(result, message, skill_loader)
                 except Exception:
                     error_message = 'exception in converse method'

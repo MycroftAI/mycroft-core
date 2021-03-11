@@ -19,7 +19,7 @@ from threading import Lock
 
 from mycroft.configuration import Configuration
 from mycroft.messagebus.client import MessageBusClient
-from mycroft.util import create_daemon
+from mycroft.util import create_daemon, start_message_bus_client
 from mycroft.util.log import LOG
 
 import json
@@ -61,15 +61,14 @@ def _get_page_data(message):
 
 class Enclosure:
     def __init__(self):
-        # Establish Enclosure's websocket connection to the messagebus
-        self.bus = MessageBusClient()
         # Load full config
-        Configuration.set_config_update_handlers(self.bus)
         config = Configuration.get()
-
         self.lang = config['lang']
         self.config = config.get("enclosure")
         self.global_config = config
+
+        # Create Message Bus Client
+        self.bus = MessageBusClient()
 
         self.gui = create_gui_service(self, config['gui_websocket'])
         # This datastore holds the data associated with the GUI provider. Data
@@ -107,11 +106,14 @@ class Enclosure:
         self.bus.on("gui.status.request", self.handle_gui_status_request)
 
     def run(self):
-        try:
-            self.bus.run_forever()
-        except Exception as e:
-            LOG.error("Error: {0}".format(e))
-            self.stop()
+        """Start the Enclosure after it has been constructed."""
+        # Allow exceptions to be raised to the Enclosure Service
+        # if they may cause the Service to fail.
+        start_message_bus_client("ENCLOSURE", self.bus)
+
+    def stop(self):
+        """Perform any enclosure shutdown processes."""
+        pass
 
     ######################################################################
     # GUI client API
@@ -128,7 +130,6 @@ class Enclosure:
 
     def send(self, msg_dict):
         """ Send to all registered GUIs. """
-        LOG.info('SENDING...')
         for connection in GUIWebsocketHandler.clients:
             try:
                 connection.send(msg_dict)
@@ -240,6 +241,9 @@ class Enclosure:
                    })
         # Remove the page from the local reprensentation as well.
         self.loaded[0].pages.pop(pos)
+        # Add a check to return any display to idle from position 0
+        if (pos == 0 and len(self.loaded[0].pages) == 0):
+            self.bus.emit(Message("mycroft.device.show.idle"))
 
     def __insert_new_namespace(self, namespace, pages):
         """ Insert new namespace and pages.

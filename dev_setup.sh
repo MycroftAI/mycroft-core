@@ -127,6 +127,8 @@ function found_exe() {
 
 if found_exe sudo ; then
     SUDO=sudo
+elif found_exe doas ; then
+    SUDO=doas
 elif [[ $opt_allowroot != true ]]; then
     echo 'This script requires "sudo" to install system packages. Please install it, then re-run this script.'
     exit 1
@@ -151,7 +153,7 @@ function get_YN() {
 
 # If tput is available and can handle multiple colors
 if found_exe tput ; then
-    if [[ $(tput colors) != "-1" ]]; then
+    if [[ $(tput colors) != "-1" && -z $CI ]]; then
         GREEN=$(tput setaf 2)
         BLUE=$(tput setaf 4)
         CYAN=$(tput setaf 6)
@@ -373,7 +375,7 @@ function gentoo_install() {
 }
 
 function alpine_install() {
-    $SUDO apk add alpine-sdk git python3 py3-pip py3-setuptools py3-virtualenv mpg123 vorbis-tools pulseaudio-utils fann-dev automake autoconf libtool pcre2-dev pulseaudio-dev alsa-lib-dev swig python3-dev portaudio-dev libjpeg-turbo-dev
+    $SUDO apk add --virtual makedeps-mycroft-core alpine-sdk git python3 py3-pip py3-setuptools py3-virtualenv mpg123 vorbis-tools pulseaudio-utils fann-dev automake autoconf libtool pcre2-dev pulseaudio-dev alsa-lib-dev swig python3-dev portaudio-dev libjpeg-turbo-dev
 }
 
 function install_deps() {
