@@ -17,6 +17,7 @@ import os
 from glob import glob
 from threading import Thread, Event, Lock
 from time import sleep, time, monotonic
+from inspect import signature
 
 from mycroft.api import is_paired
 from mycroft.enclosure.api import EnclosureAPI
@@ -441,9 +442,17 @@ class SkillManager(Thread):
                     self._emit_converse_error(message, skill_id, error_message)
                     break
                 try:
-                    utterances = message.data['utterances']
-                    lang = message.data['lang']
-                    result = skill_loader.instance.converse(utterances, lang)
+                    # check the signature of a converse method
+                    # to either pass a message or not
+                    if len(signature(
+                            skill_loader.instance.converse).parameters) == 1:
+                        result = skill_loader.instance.converse(
+                            message=message)
+                    else:
+                        utterances = message.data['utterances']
+                        lang = message.data['lang']
+                        result = skill_loader.instance.converse(
+                            utterances=utterances, lang=lang)
                     self._emit_converse_response(result, message, skill_loader)
                 except Exception:
                     error_message = 'exception in converse method'
