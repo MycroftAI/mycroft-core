@@ -31,7 +31,6 @@ import base64
 import hashlib
 import json
 import re
-from collections import defaultdict
 from pathlib import Path
 from typing import List, Set, Tuple
 from urllib import parse
@@ -161,42 +160,39 @@ class TextToSpeechCache:
         """
         if self.persistent_cache_dir is not None:
             LOG.info("Adding dialog resources to persistent TTS cache...")
-            preloaded_files = self._find_preloaded_files()
-            self._add_preloaded_files(preloaded_files)
+            self._load_existing_audio_files()
+            self._load_existing_phoneme_files()
             dialogs = self._collect_dialogs()
             sentences = self._parse_dialogs(dialogs)
             for sentence in sentences:
                 self._load_sentence(sentence)
             LOG.info("Persistent TTS cache files added successfully.")
 
-    def _find_preloaded_files(self) -> dict:
-        """Find the TTS files already in the persistent cache.
+    def _load_existing_audio_files(self):
+        """Find the TTS audio files already in the persistent cache."""
+        glob_pattern = "*." + self.audio_file_type
+        for file_path in self.persistent_cache_dir.glob(glob_pattern):
+            sentence_hash = file_path.name.split(".")[0]
+            audio_file = AudioFile(
+                self.persistent_cache_dir, sentence_hash, self.audio_file_type
+            )
+            self.cached_sentences[sentence_hash] = audio_file, None
 
-        Discovery of pre-loaded files is done in two phases because the result
-        of the Path.iterdir() function returns directory contents in a
-        random order.
+    def _load_existing_phoneme_files(self):
+        """Find the TTS phoneme files already in the persistent cache.
+
+        A phoneme file is no good without an audio file to pair it with.  If
+        no audio file matches, do not load the phoneme.
         """
-        preloaded_files = defaultdict(dict)
-        for preloaded_file in self.persistent_cache_dir.iterdir():
-            if preloaded_file.name.endswith(self.audio_file_type):
-                sentence_hash = preloaded_file.name.split(".")[0]
-                audio_file = self.define_audio_file(sentence_hash)
-                preloaded_files[sentence_hash]["audio"] = audio_file
-            else:
-                sentence_hash = preloaded_file.name.split(".")[0]
-                phoneme_file = self.define_phoneme_file(sentence_hash)
-                preloaded_files[sentence_hash]["phoneme"] = phoneme_file
-
-        return preloaded_files
-
-    def _add_preloaded_files(self, preloaded_files: dict):
-        """Add the discovered preloaded files into cache attribute."""
-        for sentence_hash, file_types in preloaded_files.items():
-            audio_file = file_types.get("audio")
-            phoneme_file = file_types.get("phoneme")
-            if audio_file is None:
-                continue
-            self.cached_sentences[sentence_hash] = audio_file, phoneme_file
+        for file_path in self.persistent_cache_dir.glob("*.pho"):
+            sentence_hash = file_path.name.split(".")[0]
+            cached_sentence = self.cached_sentences.get(sentence_hash)
+            if cached_sentence is not None:
+                audio_file = cached_sentence[0]
+                phoneme_file = PhonemeFile(
+                    self.persistent_cache_dir, sentence_hash
+                )
+                self.cached_sentences[sentence_hash] = audio_file, phoneme_file
 
     def _collect_dialogs(self) -> List:
         """Build a set of unique sentences from the dialog files.
@@ -257,16 +253,22 @@ class TextToSpeechCache:
                 log_msg = "Failed to get audio for sentence \"{}\""
                 LOG.exception(log_msg.format(sentence))
             else:
-                self.add_to_cache(sentence_hash, audio, phonemes)
+                self._add_to_persistent_cache(sentence_hash, audio, phonemes)
 
-    def add_to_cache(self, sentence_hash: str, audio: bytes, phonemes: str):
-        """Add a audio/phoneme file pair to the cache."""
-        audio_file = self.define_audio_file(sentence_hash)
+    def _add_to_persistent_cache(
+            self, sentence_hash: str, audio: bytes, phonemes: str
+    ):
+        """Add a audio/phoneme file pair to the persistent cache."""
+        audio_file = AudioFile(
+            self.persistent_cache_dir, sentence_hash, self.audio_file_type
+        )
         audio_file.save(audio)
         if phonemes is None:
             phoneme_file = None
         else:
-            phoneme_file = self.define_phoneme_file(sentence_hash)
+            phoneme_file = PhonemeFile(
+                self.persistent_cache_dir, sentence_hash
+            )
             phoneme_file.save(phonemes)
         self.cached_sentences[sentence_hash] = audio_file, phoneme_file
 
@@ -283,13 +285,11 @@ class TextToSpeechCache:
     def define_audio_file(self, sentence_hash: str) -> AudioFile:
         """Build an instance of an object representing an audio file."""
         audio_file = AudioFile(
-            self.persistent_cache_dir, sentence_hash, self.audio_file_type
+            self.temporary_cache_dir, sentence_hash, self.audio_file_type
         )
         return audio_file
 
     def define_phoneme_file(self, sentence_hash: str) -> PhonemeFile:
         """Build an instance of an object representing an phoneme file."""
-        phoneme_file = PhonemeFile(
-            self.persistent_cache_dir, sentence_hash
-        )
+        phoneme_file = PhonemeFile(self.temporary_cache_dir, sentence_hash)
         return phoneme_file
