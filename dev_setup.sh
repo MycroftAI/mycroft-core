@@ -17,6 +17,7 @@
 
 # Set a default locale to handle output from commands reliably
 export LANG=C.UTF-8
+export LANGUAGE=en
 
 # exit on any error
 set -Ee
