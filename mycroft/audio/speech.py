@@ -130,8 +130,8 @@ def mute_and_speak(utterance, ident, listen=False):
     except RemoteTTSException as e:
         LOG.error(e)
         mimic_fallback_tts(utterance, ident, listen)
-    except Exception as e:
-        LOG.error('TTS execution failed ({})'.format(repr(e)))
+    except Exception:
+        LOG.exception('TTS execution failed.')
 
 
 def _get_mimic_fallback():

@@ -95,11 +95,6 @@ class FallbackSkill(MycroftSkill):
                     bus.emit(message.forward('mycroft.skill.handler.complete',
                                              data={'handler': "fallback",
                                                    'exception': warning}))
-                    if 'fallback_range' not in message.data:
-                        # Old system TODO: Remove in 20.08
-                        # No fallback could handle the utterance
-                        bus.emit(message.forward('complete_intent_failure'))
-                        LOG.warning(warning)
 
             # return if the utterance was handled to the caller
             bus.emit(message.response(data={'handled': status}))

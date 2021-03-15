@@ -4,14 +4,7 @@ from mycroft.messagebus import Message
 from mycroft.skills.common_query_skill import (CommonQuerySkill, CQSMatchLevel,
                                                CQSVisualMatchLevel,
                                                handles_visuals)
-
-
-class AnyCallable:
-    """Class matching any callable.
-    Useful for assert_called_with arguments.
-    """
-    def __eq__(self, other):
-        return callable(other)
+from test.unittests.mocks import AnyCallable
 
 
 class TestCommonQuerySkill(TestCase):
