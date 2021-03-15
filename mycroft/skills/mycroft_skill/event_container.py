@@ -153,7 +153,7 @@ class EventContainer:
         Returns:
             bool: True if found and removed, False if not found
         """
-        print("Removing event {}".format(name))
+        LOG.debug("Removing event {}".format(name))
         removed = False
         for _name, _handler in list(self.events):
             if name == _name:
