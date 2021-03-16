@@ -34,6 +34,10 @@ class AudioBackend(metaclass=ABCMeta):
         self.config = config
         self.bus = bus
 
+    @property
+    def playback_time(self):
+        return 0
+
     @abstractmethod
     def supported_uris(self):
         """List of supported uri types.
@@ -114,6 +118,24 @@ class AudioBackend(metaclass=ABCMeta):
 
         Called when to restore the playback volume to previous level after
         Mycroft has lowered it using lower_volume().
+        """
+
+    def get_track_length(self):
+        """
+        getting the duration of the audio in milliseconds
+        """
+
+    def get_track_position(self):
+        """
+        get current position in milliseconds
+        """
+
+    def set_track_position(self, milliseconds):
+        """
+        go to position in milliseconds
+
+          Args:
+                milliseconds (int): number of milliseconds of final position
         """
 
     def seek_forward(self, seconds=1):

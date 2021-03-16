@@ -31,6 +31,8 @@ class VlcService(AudioBackend):
         self.vlc_list_events = self.list_player.event_manager()
         self.vlc_events.event_attach(vlc.EventType.MediaPlayerPlaying,
                                      self.track_start, 1)
+        self.vlc_events.event_attach(vlc.EventType.MediaPlayerTimeChanged,
+                                     self.update_playback_time, None)
         self.vlc_list_events.event_attach(vlc.EventType.MediaListPlayerPlayed,
                                           self.queue_ended, 0)
         self.config = config
@@ -38,6 +40,16 @@ class VlcService(AudioBackend):
         self.name = name
         self.normal_volume = None
         self.low_volume = self.config.get('low_volume', 30)
+        self._playback_time = 0
+        self.player.audio_set_volume(100)
+
+    @property
+    def playback_time(self):
+        """ in milliseconds """
+        return self._playback_time
+
+    def update_playback_time(self, data, other):
+        self._playback_time = data.u.new_time
 
     def track_start(self, data, other):
         if self._track_start_callback:
@@ -129,6 +141,27 @@ class VlcService(AudioBackend):
         ret['artists'] = [t.get_meta(meta.Artist)]
         ret['name'] = t.get_meta(meta.Title)
         return ret
+
+    def get_track_length(self):
+        """
+        getting the duration of the audio in milliseconds
+        """
+        return self.player.get_length()
+
+    def get_track_position(self):
+        """
+        get current position in milliseconds
+        """
+        return self.player.get_time()
+
+    def set_track_position(self, milliseconds):
+        """
+        go to position in milliseconds
+
+          Args:
+                milliseconds (int): number of milliseconds of final position
+        """
+        self.player.set_time(int(milliseconds))
 
     def seek_forward(self, seconds=1):
         """

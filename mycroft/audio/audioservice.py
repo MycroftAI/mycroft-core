@@ -251,6 +251,12 @@ class AudioService:
         self.bus.on('mycroft.audio.service.prev', self._prev)
         self.bus.on('mycroft.audio.service.track_info', self._track_info)
         self.bus.on('mycroft.audio.service.list_backends', self._list_backends)
+        self.bus.on('mycroft.audio.service.set_track_position',
+                    self._set_track_position)
+        self.bus.on('mycroft.audio.service.get_track_position',
+                    self._get_track_position)
+        self.bus.on('mycroft.audio.service.get_track_length',
+                    self._get_track_length)
         self.bus.on('mycroft.audio.service.seek_forward', self._seek_forward)
         self.bus.on('mycroft.audio.service.seek_backward', self._seek_backward)
         self.bus.on('recognizer_loop:audio_output_start', self._lower_volume)
@@ -558,6 +564,41 @@ class AudioService:
             data[s.name] = info
         self.bus.emit(message.response(data))
 
+    def _get_track_length(self, message):
+        """
+        getting the duration of the audio in milliseconds
+        """
+        if not self._is_message_for_service(message):
+            return
+        dur = None
+        if self.current:
+            dur = self.current.get_track_length()
+        self.bus.emit(message.response({"length": dur}))
+
+    def _get_track_position(self, message):
+        """
+        get current position in milliseconds
+        """
+        if not self._is_message_for_service(message):
+            return
+        pos = None
+        if self.current:
+            pos = self.current.get_track_position()
+        self.bus.emit(message.response({"position": pos}))
+
+    def _set_track_position(self, message):
+        """
+            Handle message bus command to go to position (in milliseconds)
+
+            Args:
+                message: message bus message
+        """
+        if not self._is_message_for_service(message):
+            return
+        milliseconds = message.data.get("position")
+        if milliseconds and self.current:
+            self.current.set_track_position(milliseconds)
+
     def _seek_forward(self, message):
         """
             Handle message bus command to skip X seconds
@@ -601,6 +642,12 @@ class AudioService:
         self.bus.remove('mycroft.audio.service.next', self._next)
         self.bus.remove('mycroft.audio.service.prev', self._prev)
         self.bus.remove('mycroft.audio.service.track_info', self._track_info)
+        self.bus.remove('mycroft.audio.service.get_track_position',
+                        self._get_track_position)
+        self.bus.remove('mycroft.audio.service.set_track_position',
+                        self._set_track_position)
+        self.bus.remove('mycroft.audio.service.get_track_length',
+                        self._get_track_length)
         self.bus.remove('mycroft.audio.service.seek_forward',
                         self._seek_forward)
         self.bus.remove('mycroft.audio.service.seek_backward',

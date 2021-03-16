@@ -13,6 +13,7 @@
 # limitations under the License.
 #
 from os.path import abspath
+from datetime import timedelta
 
 from mycroft.messagebus.message import Message, dig_for_message
 
@@ -133,12 +134,46 @@ class AudioService:
         msg = self._format_msg('mycroft.audio.service.resume')
         self.bus.emit(msg)
 
+    def get_track_length(self):
+        """
+        getting the duration of the audio in seconds
+        """
+        length = 0
+        msg = self._format_msg('mycroft.audio.service.get_track_length')
+        info = self.bus.wait_for_response(msg, timeout=1)
+        if info:
+            length = info.data.get("length", 0)
+        return length / 1000  # convert to seconds
+
+    def get_track_position(self):
+        """
+        get current position in seconds
+        """
+        pos = 0
+        msg = self._format_msg('mycroft.audio.service.get_track_position')
+        info = self.bus.wait_for_response(msg, timeout=1)
+        if info:
+            pos = info.data.get("position", 0)
+        return pos / 1000  # convert to seconds
+
+    def set_track_position(self, seconds):
+        """Seek X seconds.
+
+        Arguments:
+            seconds (int): number of seconds to seek, if negative rewind
+        """
+        msg = self._format_msg('mycroft.audio.service.set_track_position',
+                               {"position": seconds * 1000})  # convert to ms
+        self.bus.emit(msg)
+
     def seek(self, seconds=1):
         """Seek X seconds.
 
         Args:
             seconds (int): number of seconds to seek, if negative rewind
         """
+        if isinstance(seconds, timedelta):
+            seconds = seconds.total_seconds()
         if seconds < 0:
             self.seek_backward(abs(seconds))
         else:
@@ -150,6 +185,8 @@ class AudioService:
         Args:
             seconds (int): number of seconds to skip
         """
+        if isinstance(seconds, timedelta):
+            seconds = seconds.total_seconds()
         msg = self._format_msg('mycroft.audio.service.seek_forward',
                                {"seconds": seconds})
         self.bus.emit(msg)
@@ -160,6 +197,8 @@ class AudioService:
          Args:
             seconds (int): number of seconds to rewind
         """
+        if isinstance(seconds, timedelta):
+            seconds = seconds.total_seconds()
         msg = self._format_msg('mycroft.audio.service.seek_backward',
                                {"seconds": seconds})
         self.bus.emit(msg)
