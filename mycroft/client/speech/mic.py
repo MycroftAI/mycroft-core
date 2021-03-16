@@ -154,7 +154,14 @@ class MutableMicrophone(Microphone):
             self.mute()
 
     def __enter__(self):
-        return self._start()
+        exit_flag = False
+        while not exit_flag:
+            try:
+                return self._start()
+            except Exception:
+                LOG.error("Can't start mic!")
+            sleep(1)
+
 
     def _start(self):
         """Open the selected device and setup the stream."""
