@@ -182,20 +182,27 @@ def init(messagebus):
     """
 
     global bus
-    global tts
-    global tts_hash
     global config
-
     bus = messagebus
     Configuration.set_config_update_handlers(bus)
-    config = Configuration.get()
     bus.on('mycroft.stop', handle_stop)
     bus.on('mycroft.audio.speech.stop', handle_stop)
     bus.on('speak', handle_speak)
+    bus.on('configuration.updated', _create_tts)
+    _create_tts(None)
 
+
+def _create_tts(_):
+    global config
+    global tts
+    global tts_hash
+    LOG.info('waiting for config reload')
+    time.sleep(1)  # Give the config object time to update.
+    config = Configuration.get()
+    LOG.info('Loading the {} TTS engine'.format(config['tts']['module']))
     tts = TTSFactory.create()
     tts.init(bus)
-    tts_hash = hash(str(config.get('tts', '')))
+    tts_hash = hash(str(config['tts']))
 
 
 def shutdown():
