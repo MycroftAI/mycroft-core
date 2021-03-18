@@ -13,7 +13,6 @@
 # limitations under the License.
 #
 from copy import deepcopy
-import hashlib
 import os
 import random
 import re
