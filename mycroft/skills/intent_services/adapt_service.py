@@ -251,7 +251,60 @@ class AdaptService:
             p for p in self.engine.intent_parsers if
             not p.name.startswith(skill_id)
         ]
+        if len(new_parsers) == len(self.engine.intent_parsers):
+            LOG.error('No parsers removed!')
+
         self.engine.intent_parsers = new_parsers
+        skill_id = skill_id[:-1]
+        skill_id = skill_id.replace('-', '_')
+        skill_id = skill_id.replace('.', '_')
+        self._detach_skill_vocabs(skill_id)
+
+    def _detach_skill_vocabs(self, skill_id):
+        """Detach all registered vocabs for specific skill.
+
+        TODO: Implemet in Adapt
+
+        Arguments:
+            skill_id: identifier used to match skill
+        """
+        LOG.debug('Detaching vocabs related to {}'.format(skill_id))
+        removables = []
+
+        def _find_type(beginning_string, node, current=''):
+            """Search adapt Trie for nodes with a matching beginning.
+
+            Performs depth first search of the Trie adding any matches to
+            res above.
+
+            Arguments:
+                beginning_string (str): start of string
+                node (trie node): Node to parse
+                current (str): string "position" in Trie
+            """
+            nonlocal removables
+            # Check if node matches
+            vocab_types = [d[1] for d in node.data if len(d[1])]
+            matches = any([v.startswith(skill_id) for v in vocab_types])
+
+            if node.data and matches:
+                LOG.debug('Detaching word {}'.format(current))
+                if len(vocab_types) == 1:
+                    # If this is the last mark it as a removable node
+                    removables.append(current)
+                else:
+                    # just remove the matching type from data list
+                    node.data = [d for d in node.data
+                                 if not d[1].startswith(beginning_string)]
+
+            for c in node.children:
+                _find_type(beginning_string, node.children[c], current + c)
+
+        _find_type(skill_id, self.engine.trie.root)
+
+        # Remove any nodes that would be completely empty
+        for word in removables:
+            self.engine.trie.remove(word)
 
     def detach_intent(self, intent_name):
         """Detatch a single intent
