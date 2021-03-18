@@ -94,3 +94,14 @@ class TestCache(TestCase):
         tts_cache.clear()
         cache_contents = [path for path in self.cache_dir.iterdir()]
         self.assertListEqual([], cache_contents)
+
+    @patch('mycroft.tts.cache.curate_cache')
+    def test_curate_cache(self, curate_mock):
+        tts_cache = TextToSpeechCache(
+            tts_config=dict(preloaded_cache=self.cache_dir),
+            tts_name="Test",
+            audio_file_type="wav"
+        )
+        tts_cache.curate()
+        curate_mock.assert_called_with(tts_cache.temporary_cache_dir,
+                                       min_free_percent=100)
