@@ -94,7 +94,7 @@ class PhonemeFile:
         self.name = f"{sentence_hash}.pho"
         self.path = cache_dir.joinpath(self.name)
 
-    def load(self) -> str:
+    def load(self) -> List:
         """Load phonemes from cache file."""
         phonemes = None
         if self.path.exists():
