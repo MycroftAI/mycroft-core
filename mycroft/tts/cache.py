@@ -94,7 +94,7 @@ class PhonemeFile:
         self.name = f"{sentence_hash}.pho"
         self.path = cache_dir.joinpath(self.name)
 
-    def load(self) -> str:
+    def load(self) -> List:
         """Load phonemes from cache file."""
         phonemes = None
         if self.path.exists():
@@ -104,7 +104,7 @@ class PhonemeFile:
             except Exception:
                 LOG.exception("Failed to read phoneme from cache")
 
-        return phonemes
+        return json.loads(phonemes)
 
     def save(self, phonemes):
         """Write a TTS cache file containing the phoneme to be displayed.
