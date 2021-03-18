@@ -104,7 +104,7 @@ class PhonemeFile:
             except Exception:
                 LOG.exception("Failed to read phoneme from cache")
 
-        return phonemes
+        return json.loads(phonemes)
 
     def save(self, phonemes):
         """Write a TTS cache file containing the phoneme to be displayed.
