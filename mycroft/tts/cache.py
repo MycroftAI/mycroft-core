@@ -38,7 +38,7 @@ from urllib import parse
 import requests
 
 from mycroft.util.file_utils import (
-    ensure_directory_exists, get_cache_directory
+    ensure_directory_exists, get_cache_directory, curate_cache
 )
 from mycroft.util.log import LOG
 
@@ -281,6 +281,10 @@ class TextToSpeechCache:
                         sub_path.unlink()
             elif cache_file_path.is_file():
                 cache_file_path.unlink()
+
+    def curate(self):
+        """Remove cache data if disk space is running low."""
+        curate_cache(self.temporary_cache_dir, min_free_percent=100)
 
     def define_audio_file(self, sentence_hash: str) -> AudioFile:
         """Build an instance of an object representing an audio file."""

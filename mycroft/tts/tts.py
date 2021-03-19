@@ -13,7 +13,6 @@
 # limitations under the License.
 #
 from copy import deepcopy
-import hashlib
 import os
 import random
 import re
@@ -225,10 +224,8 @@ class TTS(metaclass=ABCMeta):
         self.bus.emit(Message("recognizer_loop:audio_output_end"))
         if listen:
             self.bus.emit(Message('mycroft.mic.listen'))
-        # Clean the cache as needed
-        cache_dir = mycroft.util.get_cache_directory("tts/" + self.tts_name)
-        mycroft.util.curate_cache(cache_dir, min_free_percent=100)
 
+        self.cache.curate()
         # This check will clear the "signal"
         check_for_signal("isSpeaking")
 
