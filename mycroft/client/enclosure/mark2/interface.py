@@ -14,12 +14,9 @@
 #
 """Define the enclosure interface for Mark II devices."""
 import json
-import threading
 import time
 from threading import Timer
 from websocket import WebSocketApp
-
-from pako import PakoManager
 
 from mycroft.client.enclosure.base import Enclosure
 from mycroft.messagebus.message import Message
@@ -28,6 +25,7 @@ from mycroft.util.log import LOG
 from mycroft.enclosure.hardware_enclosure import HardwareEnclosure
 from mycroft.util.hardware_capabilities import EnclosureCapabilities
 
+import threading
 
 class temperatureMonitorThread(threading.Thread):
     def __init__(self, fan_obj, led_obj, pal_obj):
@@ -209,13 +207,6 @@ class EnclosureMark2(Enclosure):
 
         self.default_caps = EnclosureCapabilities()
 
-        # TODO move this out of immediate boot sequence.
-        # Is only needed to install new Skills.
-        if connected():
-            self.pako_update()
-        else:
-            self.bus.once('mycroft.internet.connected', self.pako_update)
-
         LOG.info('** EnclosureMark2 initalized **')
         self.bus.once('mycroft.skills.trained', self.is_device_ready)
 
@@ -353,8 +344,3 @@ class EnclosureMark2(Enclosure):
         self.m2enc.leds._set_led(10, (0, 0, 0))  # blank out reserved led
         self.m2enc.leds._set_led(11, (0, 0, 0))  # BUG set to real value!
         self.m2enc.terminate()
-
-    def pako_update(self, _):
-        """Update system package manager cache."""
-        manager = PakoManager()
-        manager.update()
