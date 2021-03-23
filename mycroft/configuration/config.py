@@ -203,9 +203,18 @@ class Configuration:
         Returns:
             (dict) merged dict of all configuration files
         """
+        # system administrators can define different constraints in how
+        # configurations are loaded
+        system_conf = LocalConf(SYSTEM_CONFIG).get("system") or {}
+        protected_keys = system_conf.get("protected_keys") or {}
+        protected_remote = protected_keys.get("remote") or []
+        protected_user = protected_keys.get("user") or []
+        skip_user = system_conf.get("disable_user_config", False)
+        skip_remote = system_conf.get("disable_remote_config", False)
+
         if not configs:
-            configs = [LocalConf(DEFAULT_CONFIG), RemoteConf(),
-                       LocalConf(SYSTEM_CONFIG), LocalConf(USER_CONFIG),
+            configs = [LocalConf(DEFAULT_CONFIG), LocalConf(SYSTEM_CONFIG),
+                       RemoteConf(), LocalConf(USER_CONFIG),
                        Configuration.__patch]
         else:
             # Handle strings in stack
@@ -216,6 +225,17 @@ class Configuration:
         # Merge all configs into one
         base = {}
         for c in configs:
+
+            # handle system constraints
+            if isinstance(c, RemoteConf):
+                if skip_remote:
+                    continue
+                c = {k: v for k, v in c.items() if k not in protected_remote}
+            elif isinstance(c, LocalConf) and c.path == USER_CONFIG:
+                if skip_user:
+                    continue
+                c = {k: v for k, v in c.items() if k not in protected_user}
+
             merge_dict(base, c)
 
         # copy into cache
