@@ -71,6 +71,20 @@ def hash_sentence(sentence: str):
     return sentence_hash
 
 
+def hash_from_path(path: Path) -> str:
+    """Returns hash from a given path.
+
+    Simply removes extension and folder structure leaving the hash.
+
+    Arguments:
+        path: path to get hash from
+
+    Returns:
+        Hash reference for file.
+    """
+    return path.with_suffix('').name
+
+
 class AudioFile:
     def __init__(self, cache_dir: Path, sentence_hash: str, file_type: str):
         self.name = f"{sentence_hash}.{file_type}"
@@ -284,7 +298,13 @@ class TextToSpeechCache:
 
     def curate(self):
         """Remove cache data if disk space is running low."""
-        curate_cache(self.temporary_cache_dir, min_free_percent=100)
+        files_removed = curate_cache(self.temporary_cache_dir,
+                                     min_free_percent=100)
+
+        hashes = set([hash_from_path(Path(path)) for path in files_removed])
+        for sentence_hash in hashes:
+            if sentence_hash in self.cached_sentences:
+                self.cached_sentences.pop(sentence_hash)
 
     def define_audio_file(self, sentence_hash: str) -> AudioFile:
         """Build an instance of an object representing an audio file."""

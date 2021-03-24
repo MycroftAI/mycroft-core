@@ -102,6 +102,22 @@ class TestCache(TestCase):
             tts_name="Test",
             audio_file_type="wav"
         )
+        # Setup content of sentence cache
+        files = {'kermit': tts_cache.define_audio_file('kermit'),
+                 'fozzie': tts_cache.define_audio_file('fozzie'),
+                 'gobo': tts_cache.define_audio_file('gobo')}
+        for sentence_hash, audio_file in files.items():
+            tts_cache.cached_sentences[sentence_hash] = (audio_file, None)
+
+        # Set curate_cache() to report that paths to kermit and gobo
+        # was removed
+        curate_mock.return_value = [files['kermit'].path,
+                                    files['gobo'].path]
         tts_cache.curate()
         curate_mock.assert_called_with(tts_cache.temporary_cache_dir,
                                        min_free_percent=100)
+
+        # Verify that the "hashes" kermit and gobo was removed from the
+        # dict of hashes.
+        self.assertEqual(tts_cache.cached_sentences,
+                         {'fozzie': (files['fozzie'], None)})
