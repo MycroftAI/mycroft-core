@@ -17,7 +17,16 @@ import unittest
 
 from os.path import dirname, join
 
-from mycroft.util.json_helper import load_commented_json
+from mycroft.util.json_helper import delete_key_from_dict, load_commented_json
+
+
+class TestDictUtils(unittest.TestCase):
+
+    def test_delete_key_from_dict(self):
+        dct = {'a': 1, 'b': {'c': 1, 'd': 2}}
+        self.assertEqual(delete_key_from_dict("b", dct), {'a': 1})
+        self.assertEqual(delete_key_from_dict("b.c", dct), {'a': 1, 'b': {'d': 2}})
+        self.assertEqual(delete_key_from_dict("b.c", dct), {'a': 1, 'b': {'d': 2}})
 
 
 class TestFileLoad(unittest.TestCase):

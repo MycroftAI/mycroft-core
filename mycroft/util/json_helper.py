@@ -13,6 +13,7 @@
 # limitations under the License.
 #
 import json
+from copy import copy
 
 
 def merge_dict(base, delta):
@@ -30,6 +31,27 @@ def merge_dict(base, delta):
             merge_dict(bv, dv)
         else:
             base[k] = dv
+
+
+def delete_key_from_dict(key, dictionary):
+    """Recursivily find nested key in a dict and delete it.
+
+    Arguments:
+        key (str): a period separated list of nested keys to remove
+                   eg "nested.dict.keys"
+        dictionary (dict): the dictionary to remove keys from
+    Returns:
+        Dict: original dictionary with specified keys deleted.
+    """
+    modified_dict = copy(dictionary)
+    key_list = key.split('.')
+    if len(key_list) == 1 and modified_dict.get(key) is not None:
+        del modified_dict[key]
+    elif len(key_list) > 1:
+        remaining_keys = '.'.join(key_list[1:])
+        if modified_dict.get(key_list[0]) is not None:
+            modified_dict[key_list[0]] = delete_key_from_dict(remaining_keys, modified_dict[key_list[0]])
+    return modified_dict
 
 
 def load_commented_json(filename):
