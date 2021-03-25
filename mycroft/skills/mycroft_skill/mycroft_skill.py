@@ -483,9 +483,13 @@ class MycroftSkill:
             fail_data = data.copy()
             fail_data['utterance'] = utterance
             if on_fail:
-                return self.dialog_renderer.render(on_fail, fail_data)
+                if self.dialog_renderer:
+                    return self.dialog_renderer.render(on_fail, fail_data)
+                return on_fail
             else:
-                return self.dialog_renderer.render(dialog, data)
+                if self.dialog_renderer:
+                    return self.dialog_renderer.render(dialog, data)
+                return dialog
 
         def is_cancel(utterance):
             return self.voc_match(utterance, 'cancel')
@@ -498,8 +502,7 @@ class MycroftSkill:
         validator = validator or validator_default
 
         # Speak query and wait for user response
-        dialog_exists = self.dialog_renderer.render(dialog, data)
-        if dialog_exists:
+        if dialog:
             self.speak_dialog(dialog, data, expect_response=True, wait=True)
         else:
             self.bus.emit(Message('mycroft.mic.listen'))
@@ -769,6 +772,8 @@ class MycroftSkill:
         Returns:
             str: A randomly chosen string from the file
         """
+        if self.dialog_renderer is None:
+            return ""
         return self.dialog_renderer.render(text, data or {})
 
     def find_resource(self, res_name, res_dirname=None):
