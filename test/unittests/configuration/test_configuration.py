@@ -1,7 +1,8 @@
 from unittest.mock import MagicMock, patch
 from unittest import TestCase
 import mycroft.configuration
-
+from mycroft.configuration.locations import SYSTEM_CONFIG, USER_CONFIG
+from mycroft.util.json_helper import merge_dict
 
 class TestConfiguration(TestCase):
     def setUp(self):
@@ -63,6 +64,21 @@ class TestConfiguration(TestCase):
         mock_exists.return_value = False
         lc = mycroft.configuration.LocalConf('test')
         self.assertEqual(lc, {})
+
+    # # @patch('mycroft.configuration.config.LocalConf')
+    # def test_protected_keys(self):
+    #     system_conf = mycroft.configuration.LocalConf(SYSTEM_CONFIG)
+    #     if system_conf.get("enclosure") is not None:
+    #         existing_conf = system_conf["enclosure"].get("protected_keys")
+    #     system_conf_patch = {"enclosure": {"protected_keys": ['secured', 'so.very.secure']}}
+    #     merge_dict(system_conf, system_conf_patch)
+    #     user_conf = mycroft.configuration.LocalConf(USER_CONFIG)
+    #     user_conf_patch = {"secured": "test1", "so": {"very": {"secure": "test2"}, "test3": "test"}}
+    #     merge_dict(user_conf, user_conf_patch)
+    #     loaded_config = mycroft.configuration.Configuration.load_config_stack([system_conf, user_conf])
+    #     # self.assertDictContainsSubset({"secured": "test1"}, loaded_config)
+    #     self.assertEqual(loaded_config.get("secured"), None)
+
 
     @patch('mycroft.configuration.config.RemoteConf')
     @patch('mycroft.configuration.config.LocalConf')

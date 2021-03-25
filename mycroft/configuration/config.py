@@ -20,7 +20,7 @@ import inflection
 from os.path import exists, isfile
 from requests import RequestException
 
-from mycroft.util.json_helper import load_commented_json, merge_dict
+from mycroft.util.json_helper import delete_key_from_dict, load_commented_json, merge_dict
 from mycroft.util.log import LOG
 
 from .locations import (DEFAULT_CONFIG, SYSTEM_CONFIG, USER_CONFIG,
@@ -203,6 +203,8 @@ class Configuration:
         Returns:
             (dict) merged dict of all configuration files
         """
+        # system administrators can define different constraints in how
+        # configurations are loaded
         if not configs:
             configs = [LocalConf(DEFAULT_CONFIG), LocalConf(SYSTEM_CONFIG),
                        RemoteConf(), LocalConf(USER_CONFIG),
@@ -213,10 +215,25 @@ class Configuration:
                 if isinstance(item, str):
                     configs[index] = LocalConf(item)
 
+        # Build maintainers and system administrators may prevent users from
+        # modifying specific keys within the configuration.
+        enclosure_config = LocalConf(SYSTEM_CONFIG).get('enclosure', {})
+        protected_keys = enclosure_config.get('protected_keys', [])
+        user_config_disabled = enclosure_config.get('disable_user_config', False)
+
         # Merge all configs into one
         base = {}
-        for c in configs:
-            merge_dict(base, c)
+        for config in configs:
+
+            # handle system constraints
+            if isinstance(config, RemoteConf) or \
+               isinstance(config, LocalConf) and config.path == USER_CONFIG:
+                if user_config_disabled:
+                    continue
+                for key in protected_keys:
+                    config = delete_key_from_dict(key, config)
+
+            merge_dict(base, config)
 
         # copy into cache
         if cache:
