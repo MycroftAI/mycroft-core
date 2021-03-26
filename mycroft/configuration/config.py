@@ -230,8 +230,7 @@ class Configuration:
                isinstance(config, LocalConf) and config.path == USER_CONFIG:
                 if user_config_disabled:
                     continue
-                for key in protected_keys:
-                    config = delete_key_from_dict(key, config)
+                prune_config(config, protected_keys)
 
             merge_dict(base, config)
 
@@ -285,3 +284,9 @@ class Configuration:
         """
         Configuration.__patch = {}
         Configuration.load_config_stack(cache=True)
+
+    @staticmethod
+    def prune_config(config, prune_list):
+        for key in prune_list:
+            config = delete_key_from_dict(key, config)
+        return config
