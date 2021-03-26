@@ -20,11 +20,19 @@ import inflection
 from os.path import exists, isfile
 from requests import RequestException
 
-from mycroft.util.json_helper import delete_key_from_dict, load_commented_json, merge_dict
+from mycroft.util.json_helper import (
+    delete_key_from_dict,
+    load_commented_json,
+    merge_dict
+)
 from mycroft.util.log import LOG
 
-from .locations import (DEFAULT_CONFIG, SYSTEM_CONFIG, USER_CONFIG,
-                        WEB_CONFIG_CACHE)
+from .locations import (
+    DEFAULT_CONFIG,
+    SYSTEM_CONFIG,
+    USER_CONFIG,
+    WEB_CONFIG_CACHE
+)
 
 
 def is_remote_list(values):
@@ -83,6 +91,7 @@ def translate_list(config, values):
 
 class LocalConf(dict):
     """Config dictionary from file."""
+
     def __init__(self, path):
         super(LocalConf, self).__init__()
         if path:
@@ -124,6 +133,7 @@ class LocalConf(dict):
 
 class RemoteConf(LocalConf):
     """Config dictionary fetched from mycroft.ai."""
+
     def __init__(self, cache=None):
         super(RemoteConf, self).__init__(None)
 
@@ -219,7 +229,8 @@ class Configuration:
         # modifying specific keys within the configuration.
         enclosure_config = LocalConf(SYSTEM_CONFIG).get('enclosure', {})
         protected_keys = enclosure_config.get('protected_keys', [])
-        user_config_disabled = enclosure_config.get('disable_user_config', False)
+        user_config_disabled = enclosure_config.get(
+            'disable_user_config', False)
 
         # Merge all configs into one
         base = {}
