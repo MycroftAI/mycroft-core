@@ -241,7 +241,7 @@ class Configuration:
                isinstance(config, LocalConf) and config.path == USER_CONFIG:
                 if user_config_disabled:
                     continue
-                prune_config(config, protected_keys)
+                Configuration.prune_config(config, protected_keys)
 
             merge_dict(base, config)
 
