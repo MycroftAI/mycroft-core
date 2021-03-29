@@ -21,6 +21,7 @@ from websocket import WebSocketApp
 
 from pako import PakoManager
 
+from mycroft.api import is_paired
 from mycroft.client.enclosure.base import Enclosure
 from mycroft.messagebus.message import Message
 from mycroft.util import create_daemon, connected
@@ -156,11 +157,17 @@ class EnclosureMark2(Enclosure):
         super().__init__()
         self.display_bus_client = None
         self._define_event_handlers()
+        # Device readiness stages - all must be True to finish loading
+        self.services_are_ready = False
+        self.internet_is_ready = False
+        self.pairing_is_ready = False
         self.finished_loading = False
+        # TODO - are any of these used
         self.active_screen = 'loading'
         self.paused_screen = None
         self.is_pairing = False
         self.active_until_stopped = None
+        # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
         self.reserved_led = 10
         self.mute_led = 11
         self.chaseLedThread = None
@@ -216,17 +223,69 @@ class EnclosureMark2(Enclosure):
         else:
             self.bus.once('mycroft.internet.connected', self.pako_update)
 
-        LOG.info('** EnclosureMark2 initalized **')
         self.bus.once('mycroft.skills.trained', self.is_device_ready)
+        self.bus.once('mycroft.internet.connected', self.is_device_ready)
+        self.bus.on('mycroft.paired', self.is_device_ready)
+        LOG.info('** EnclosureMark2 initalized **')
+        self.is_device_ready()
 
-    def is_device_ready(self, message):
+    def is_device_ready(self, _=None):
+        """Checks if device is ready for user queries.
+
+        Mycroft Services must be loaded.
+        Device must be connected to the internet.
+        Device must be paired with a Mycroft account.
+        """
+        if self.finished_loading:
+            # Device has previously completed full loading cycle.
+            return True
+
+        self.services_are_ready = self.check_services_ready()
+
+        if not self.services_are_ready:
+            return False
+        self.bus.emit(Message('mycroft.services.ready'))
+        LOG.info("All Mycroft Services have reported ready.")
+
+        if not connected():
+            # TODO - Deprecate this message for more descriptive version.
+            self.bus.emit(Message('mycroft.wifi.setup'))
+            self.bus.emit(Message('mycroft.wifi.setup.start'))
+            return False
+        else:
+            self.internet_is_ready = True
+
+        if not is_paired():
+            # TODO - do we need to do anything here?
+            self.bus.emit(Message('mycroft.pairing.start'))
+            return False
+        else:
+            self.pairing_is_ready = True
+
+        self.finished_loading = True
+        self.bus.emit(Message('mycroft.devices.show.homescreen'))
+        self.bus.emit(Message('mycroft.ready'))
+
+        return self.finished_loading
+
+    def check_services_ready(self, services):
+        """Report if all specified services are ready.
+
+        services (iterable): service names to check.
+        """
         is_ready = False
         # Bus service assumed to be alive if messages sent and received
         # Enclosure assumed to be alive if this method is running
         services = {'audio': False, 'speech': False, 'skills': False}
         start = time.monotonic()
         while not is_ready:
-            is_ready = self.check_services_ready(services)
+            for ser in services:
+                services[ser] = False
+                response = self.bus.wait_for_response(Message(
+                    'mycroft.{}.is_ready'.format(ser)))
+                if response and response.data['status']:
+                    services[ser] = True
+            is_ready = all([services[ser] for ser in services])
             if is_ready:
                 break
             elif time.monotonic() - start >= 60:
@@ -234,33 +293,7 @@ class EnclosureMark2(Enclosure):
             else:
                 time.sleep(3)
 
-        if not is_ready:
-            return False
-
-        if not connected():
-            self.bus.emit(Message('mycroft.wifi.setup'))
-            while not connected():
-                time.sleep(3)
-
-        LOG.info("All Mycroft Services have reported ready.")
-        self.finished_loading = True
-        self.bus.emit(Message('mycroft.ready'))
-        self.bus.emit(Message('mycroft.devices.show.homescreen'))
-
         return is_ready
-
-    def check_services_ready(self, services):
-        """Report if all specified services are ready.
-
-        services (iterable): service names to check.
-        """
-        for ser in services:
-            services[ser] = False
-            response = self.bus.wait_for_response(Message(
-                'mycroft.{}.is_ready'.format(ser)))
-            if response and response.data['status']:
-                services[ser] = True
-        return all([services[ser] for ser in services])
 
     def async_volume_handler(self, vol):
         LOG.error("ASYNC SET VOL PASSED IN %s" % (vol,))
