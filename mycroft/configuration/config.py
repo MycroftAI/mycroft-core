@@ -46,6 +46,20 @@ def is_remote_list(values):
     return True
 
 
+def prune_config(config, prune_list):
+    """Delete list of nested keys from the provided config.
+
+    Arguments:
+        config (dict): config to prune
+        prune_list (list(str)): list of keys to delete. Each item may be a
+                                period separated list of nested keys eg
+                                ["nested.dict.key", "listener.sample_rate"]
+    """
+    for key in prune_list:
+        config = delete_key_from_dict(key, config)
+    return config
+
+
 def translate_remote(config, setting):
     """Translate config names from server to equivalents for mycroft-core.
 
@@ -246,7 +260,7 @@ class Configuration:
             elif isinstance(config, LocalConf) and config.path == USER_CONFIG:
                 if user_config_disabled:
                     continue
-                Configuration.prune_config(config, protected_keys)
+                prune_config(config, protected_keys)
 
             merge_dict(base, config)
 
@@ -300,9 +314,3 @@ class Configuration:
         """
         Configuration.__patch = {}
         Configuration.load_config_stack(cache=True)
-
-    @staticmethod
-    def prune_config(config, prune_list):
-        for key in prune_list:
-            config = delete_key_from_dict(key, config)
-        return config

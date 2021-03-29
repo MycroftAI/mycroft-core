@@ -67,7 +67,7 @@ class TestConfiguration(TestCase):
         self.assertEqual(lc, {})
 
     def test_prune_config(self):
-        prune_config = mycroft.configuration.Configuration.prune_config
+        prune_config = mycroft.configuration.config.prune_config
         config = {'a': 1, 'b': {'c': 1, 'd': 2}, 'e': 3}
         self.assertEqual(prune_config(config, ['b']), {'a': 1, 'e': 3})
         self.assertEqual(prune_config(config, ['b.c']), {
