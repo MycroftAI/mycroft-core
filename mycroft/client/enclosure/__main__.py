@@ -17,6 +17,7 @@
 This provides any "enclosure" specific functionality, for example GUI or
 control over the Mark-1 Faceplate.
 """
+from mycroft.configuration import setup_locale
 from mycroft.configuration import Configuration
 from mycroft.util.log import LOG
 from mycroft.util import wait_for_exit_signal, reset_sigint_handler
@@ -78,6 +79,7 @@ def main(ready_hook=on_ready, error_hook=on_error, stopping_hook=on_stopping):
         LOG.debug("Enclosure created")
         try:
             reset_sigint_handler()
+            setup_locale()
             enclosure.run()
             ready_hook()
             wait_for_exit_signal()

@@ -26,24 +26,64 @@ The module uses lingua-franca (https://github.com/mycroftai/lingua-franca) to
 do most of the actual parsing. However methods may be wrapped specifically for
 use in Mycroft Skills.
 """
-
-from difflib import SequenceMatcher
 from warnings import warn
+from difflib import SequenceMatcher
 
-from lingua_franca import get_default_loc
-from lingua_franca.parse import (
-    extract_duration,
-    extract_number,
-    extract_numbers,
-    fuzzy_match,
-    get_gender,
-    match_one,
-    normalize,
-)
-from lingua_franca.parse import extract_datetime as _extract_datetime
+# lingua_franca is optional, individual skills may install it if they need
+# to use it
 
 from mycroft.util.time import now_local
 from mycroft.util.log import LOG
+
+try:
+    from lingua_franca.parse import extract_number, extract_numbers, \
+        extract_duration, get_gender, normalize
+    from lingua_franca.parse import extract_datetime as lf_extract_datetime
+    from lingua_franca.time import now_local
+except ImportError:
+    def lingua_franca_error(*args, **kwargs):
+        raise ImportError("lingua_franca is not installed")
+
+    extract_number = extract_numbers = extract_duration = get_gender = \
+        normalize = lf_extract_datetime = lingua_franca_error
+
+
+def fuzzy_match(x, against):
+    """Perform a 'fuzzy' comparison between two strings.
+    Returns:
+        float: match percentage -- 1.0 for perfect match,
+               down to 0.0 for no match at all.
+    """
+    return SequenceMatcher(None, x, against).ratio()
+
+
+def match_one(query, choices):
+    """
+        Find best match from a list or dictionary given an input
+
+        Arguments:
+            query:   string to test
+            choices: list or dictionary of choices
+
+        Returns: tuple with best match, score
+    """
+    if isinstance(choices, dict):
+        _choices = list(choices.keys())
+    elif isinstance(choices, list):
+        _choices = choices
+    else:
+        raise ValueError('a list or dict of choices must be provided')
+
+    best = (_choices[0], fuzzy_match(query, _choices[0]))
+    for c in _choices[1:]:
+        score = fuzzy_match(query, c)
+        if score > best[1]:
+            best = (c, score)
+
+    if isinstance(choices, dict):
+        return (choices[best[0]], best[1])
+    else:
+        return best
 
 
 def _log_unsupported_language(language, supported_languages):
@@ -116,7 +156,10 @@ def extract_datetime(text, anchorDate="DEFAULT", lang=None,
                                 "deprecated. This parameter can be omitted."))
     if anchorDate is None or anchorDate == "DEFAULT":
         anchorDate = now_local()
-    return _extract_datetime(text,
+    if not lang:
+        from mycroft.configuration.locale import get_default_lang
+        lang = get_default_lang()
+    return lf_extract_datetime(text,
                              anchorDate,
-                             lang or get_default_loc(),
+                             lang,
                              default_time)

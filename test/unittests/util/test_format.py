@@ -21,10 +21,10 @@ import ast
 import pytest
 from pathlib import Path
 
-from lingua_franca import load_language
+from mycroft.configuration.locale import load_language
 from lingua_franca.internal import UnsupportedLanguageError
 
-from mycroft.configuration import Configuration, set_default_lf_lang
+from mycroft.configuration import set_default_lf_lang
 from mycroft.util.format import (
     TimeResolution,
     nice_number,

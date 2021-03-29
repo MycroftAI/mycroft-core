@@ -16,7 +16,7 @@
 from copy import copy
 import time
 
-from mycroft.configuration import Configuration, set_default_lf_lang
+from mycroft.configuration import Configuration, setup_locale
 from mycroft.util.log import LOG
 from mycroft.util.parse import normalize
 from mycroft.metrics import report_timing, Stopwatch
@@ -33,7 +33,7 @@ def _get_message_lang(message):
         message: message to check for language code.
 
     Returns:
-        The languge code from the message or the default language.
+        The language code from the message or the default language.
     """
     default_lang = Configuration.get().get('lang', 'en-us')
     return message.data.get('lang', default_lang).lower()
@@ -152,7 +152,7 @@ class IntentService:
     def reset_converse(self, message):
         """Let skills know there was a problem with speech recognition"""
         lang = _get_message_lang(message)
-        set_default_lf_lang(lang)
+        setup_locale(lang)  # restore default lang
         for skill in copy(self.active_skills):
             self.do_converse(None, skill[0], lang, message)
 
@@ -273,7 +273,7 @@ class IntentService:
         """
         try:
             lang = _get_message_lang(message)
-            set_default_lf_lang(lang)
+            setup_locale(lang)  # set default lang
 
             utterances = message.data.get('utterances', [])
             combined = _normalize_all_utterances(utterances)

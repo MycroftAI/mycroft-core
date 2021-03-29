@@ -16,7 +16,7 @@
 import unittest
 from datetime import datetime, timedelta
 
-from lingua_franca import load_language
+from mycroft.configuration.locale import load_language, get_default_tz
 from lingua_franca.internal import FunctionNotLocalizedError
 
 from mycroft.util.parse import (
@@ -549,31 +549,31 @@ class TestNormalize(unittest.TestCase):
                     "2017-06-27 19:30:00", "set alarm on weekdays")
 
     def test_extract_ambiguous_time_en(self):
-        morning = datetime(2017, 6, 27, 8, 1, 2)
-        evening = datetime(2017, 6, 27, 20, 1, 2)
-        noonish = datetime(2017, 6, 27, 12, 1, 2)
+        morning = datetime(2017, 6, 27, 8, 1, 2, tzinfo=get_default_tz())
+        evening = datetime(2017, 6, 27, 20, 1, 2, tzinfo=get_default_tz())
+        noonish = datetime(2017, 6, 27, 12, 1, 2, tzinfo=get_default_tz())
         self.assertEqual(
             extract_datetime('feed fish at 10 o\'clock', morning)[0],
-            datetime(2017, 6, 27, 10, 0, 0))
+            datetime(2017, 6, 27, 10, 0, 0, tzinfo=get_default_tz()))
         self.assertEqual(
             extract_datetime('feed fish at 10 o\'clock', noonish)[0],
-            datetime(2017, 6, 27, 22, 0, 0))
+            datetime(2017, 6, 27, 22, 0, 0, tzinfo=get_default_tz()))
         self.assertEqual(
             extract_datetime('feed fish at 10 o\'clock', evening)[0],
-            datetime(2017, 6, 27, 22, 0, 0))
+            datetime(2017, 6, 27, 22, 0, 0, tzinfo=get_default_tz()))
 
     def test_extract_date_with_may_I_en(self):
-        now = datetime(2019, 7, 4, 8, 1, 2)
-        may_date = datetime(2019, 5, 2, 10, 11, 20)
+        now = datetime(2019, 7, 4, 8, 1, 2, tzinfo=get_default_tz())
+        may_date = datetime(2019, 5, 2, 10, 11, 20, tzinfo=get_default_tz())
         self.assertEqual(
             extract_datetime('May I know what time it is tomorrow', now)[0],
-            datetime(2019, 7, 5, 0, 0, 0))
+            datetime(2019, 7, 5, 0, 0, 0, tzinfo=get_default_tz()))
         self.assertEqual(
             extract_datetime('May I when 10 o\'clock is', now)[0],
-            datetime(2019, 7, 4, 10, 0, 0))
+            datetime(2019, 7, 4, 10, 0, 0, tzinfo=get_default_tz()))
         self.assertEqual(
             extract_datetime('On 24th of may I want a reminder', may_date)[0],
-            datetime(2019, 5, 24, 0, 0, 0))
+            datetime(2019, 5, 24, 0, 0, 0, tzinfo=get_default_tz()))
 
     def test_extract_relativedatetime_en(self):
         def extractWithFormat(text):

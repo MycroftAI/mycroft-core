@@ -20,14 +20,12 @@ directory.  The executable gets added to the bin directory when installed
 """
 import time
 
-from lingua_franca import load_languages
-
 import mycroft.lock
 from mycroft import dialog
 from mycroft.api import is_paired, BackendDown, DeviceApi
 from mycroft.audio import wait_while_speaking
 from mycroft.enclosure.api import EnclosureAPI
-from mycroft.configuration import Configuration
+from mycroft.configuration import Configuration, setup_locale
 from mycroft.messagebus.message import Message
 from mycroft.util import (
     connected,
@@ -220,8 +218,7 @@ def main(alive_hook=on_alive, started_hook=on_started, ready_hook=on_ready,
     status.set_started()
 
     config = Configuration.get()
-    lang_code = config.get("lang", "en-us")
-    load_languages([lang_code, "en-us"])
+    setup_locale()
 
     # Connect this process to the Mycroft message bus
     bus = start_message_bus_client("SKILLS")

@@ -23,7 +23,7 @@ from mycroft.client.text.text_client import (
         start_log_monitor, start_mic_monitor, connect_to_mycroft,
         ctrl_c_handler
     )
-from mycroft.configuration import Configuration
+from mycroft.configuration import Configuration, setup_locale
 
 sys.stdout = io.StringIO()
 sys.stderr = io.StringIO()
@@ -54,6 +54,7 @@ def main():
     start_mic_monitor(os.path.join(get_ipc_directory(), "mic_level"))
 
     connect_to_mycroft()
+    setup_locale()
     if '--simple' in sys.argv:
         sys.stdout = sys.__stdout__
         sys.stderr = sys.__stderr__

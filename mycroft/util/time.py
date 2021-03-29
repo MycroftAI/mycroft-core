@@ -20,7 +20,19 @@ may not match the system locale.
 from datetime import datetime
 from dateutil.tz import gettz, tzlocal
 
+# LF ais optional and should not be needed because of time utils
+# only parse and format utils require LF
 
+# NOTE: lingua_franca has some bad UTC assumptions in date conversions,
+# for that reason we do not import from there in this case
+
+try:
+    import lingua_franca as LF
+except ImportError:
+    LF = None
+
+
+# backwards compat import, recommend using get_default_tz instead
 def default_timezone():
     """Get the default timezone
 
@@ -30,19 +42,8 @@ def default_timezone():
     Returns:
         (datetime.tzinfo): Definition of the default timezone
     """
-    try:
-        # Obtain from user's configurated settings
-        #   location.timezone.code (e.g. "America/Chicago")
-        #   location.timezone.name (e.g. "Central Standard Time")
-        #   location.timezone.offset (e.g. -21600000)
-        from mycroft.configuration import Configuration
-        config = Configuration.get()
-        code = config["location"]["timezone"]["code"]
-
-        return gettz(code)
-    except Exception:
-        # Just go with system default timezone
-        return tzlocal()
+    from mycroft.configuration.locale import get_default_tz
+    return get_default_tz()
 
 
 def now_utc():
@@ -51,7 +52,7 @@ def now_utc():
     Returns:
         (datetime): The current time in Universal Time, aka GMT
     """
-    return to_utc(datetime.utcnow())
+    return datetime.utcnow().replace(tzinfo=gettz("UTC"))
 
 
 def now_local(tz=None):
@@ -63,8 +64,7 @@ def now_local(tz=None):
     Returns:
         (datetime): The current time
     """
-    if not tz:
-        tz = default_timezone()
+    tz = tz or default_timezone()
     return datetime.now(tz)
 
 
@@ -76,26 +76,24 @@ def to_utc(dt):
     Returns:
         (datetime): time converted to UTC
     """
-    tzUTC = gettz("UTC")
-    if dt.tzinfo:
-        return dt.astimezone(tzUTC)
-    else:
-        return dt.replace(tzinfo=gettz("UTC")).astimezone(tzUTC)
+    tz = gettz("UTC")
+    if not dt.tzinfo:
+        dt = dt.replace(tzinfo=default_timezone())
+    return dt.astimezone(tz)
 
 
 def to_local(dt):
     """Convert a datetime to the user's local timezone
 
-    Args:
-        dt (datetime): A datetime (if no timezone, defaults to UTC)
-    Returns:
-        (datetime): time converted to the local timezone
-    """
+   Args:
+       dt (datetime): A datetime (if no timezone, defaults to UTC)
+   Returns:
+       (datetime): time converted to the local timezone
+   """
     tz = default_timezone()
-    if dt.tzinfo:
-        return dt.astimezone(tz)
-    else:
-        return dt.replace(tzinfo=gettz("UTC")).astimezone(tz)
+    if not dt.tzinfo:
+        dt = dt.replace(tzinfo=default_timezone())
+    return dt.astimezone(tz)
 
 
 def to_system(dt):
@@ -107,7 +105,6 @@ def to_system(dt):
         (datetime): time converted to the operation system's timezone
     """
     tz = tzlocal()
-    if dt.tzinfo:
-        return dt.astimezone(tz)
-    else:
-        return dt.replace(tzinfo=gettz("UTC")).astimezone(tz)
+    if not dt.tzinfo:
+        dt = dt.replace(tzinfo=default_timezone())
+    return dt.astimezone(tz)

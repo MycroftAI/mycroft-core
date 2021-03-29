@@ -17,7 +17,7 @@ from threading import Lock
 from mycroft import dialog
 from mycroft.enclosure.api import EnclosureAPI
 from mycroft.client.speech.listener import RecognizerLoop
-from mycroft.configuration import Configuration
+from mycroft.configuration import Configuration, setup_locale
 from mycroft.identity import IdentityManager
 from mycroft.lock import Lock as PIDLock  # Create/Support PID locking file
 from mycroft.messagebus.message import Message
@@ -231,6 +231,8 @@ def main(ready_hook=on_ready, error_hook=on_error, stopping_hook=on_stopping,
         bus = start_message_bus_client("VOICE")
         connect_bus_events(bus)
         status.bind(bus)
+
+        setup_locale()
 
         # Register handlers on internal RecognizerLoop bus
         loop = RecognizerLoop(watchdog)

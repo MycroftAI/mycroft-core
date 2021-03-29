@@ -1,7 +1,7 @@
 from datetime import datetime
 from dateutil.tz import tzfile, tzlocal, gettz
 from unittest import TestCase, mock
-
+from mycroft.configuration import setup_locale, set_default_tz
 from mycroft.util.time import (default_timezone, now_local, now_utc, to_utc,
                                to_local, to_system)
 
@@ -20,19 +20,29 @@ test_config = {
 @mock.patch('mycroft.configuration.Configuration')
 class TestTimeFuncs(TestCase):
     def test_default_timezone(self, mock_conf):
+        # Test missing tz-info
+        # TODO how to ensure setup_locale() not called by a previous test?
+        # mock_conf.get.return_value = {}
+        # self.assertEqual(default_timezone(), tzlocal())
+
+        # Test tz from config
         mock_conf.get.return_value = test_config
+        setup_locale()  # will load (test) tz from config
         self.assertEqual(default_timezone(),
                          tzfile('/usr/share/zoneinfo/America/Chicago'))
-        # Test missing tz-info
-        mock_conf.get.return_value = {}
+
+        # Test changing tz
+        set_default_tz(tzlocal())
         self.assertEqual(default_timezone(), tzlocal())
 
     @mock.patch('mycroft.util.time.datetime')
     def test_now_local(self, mock_dt, mock_conf):
-        dt_test = datetime(year=1985, month=10, day=25, hour=8, minute=18)
-        mock_dt.now.return_value = dt_test
         mock_conf.get.return_value = test_config
+        setup_locale()
 
+        dt_test = datetime(year=1985, month=10, day=25, hour=8, minute=18,
+                           tzinfo=default_timezone())
+        mock_dt.now.return_value = dt_test
         self.assertEqual(now_local(), dt_test)
 
         expected_timezone = tzfile('/usr/share/zoneinfo/America/Chicago')
@@ -44,11 +54,15 @@ class TestTimeFuncs(TestCase):
 
     @mock.patch('mycroft.util.time.datetime')
     def test_now_utc(self, mock_dt, mock_conf):
+        mock_conf.get.return_value = test_config
+        setup_locale()
+
         dt_test = datetime(year=1985, month=10, day=25, hour=8, minute=18)
         mock_dt.utcnow.return_value = dt_test
-        mock_conf.get.return_value = test_config
 
-        self.assertEqual(now_utc(), dt_test.replace(tzinfo=gettz('UTC')))
+        self.assertEqual(now_utc().tzinfo, gettz('UTC'))
+
+        self.assertEqual(now_utc(), dt_test.astimezone(gettz('UTC')))
         mock_dt.utcnow.assert_called_with()
 
     def test_to_utc(self, mock_conf):
@@ -64,8 +78,9 @@ class TestTimeFuncs(TestCase):
         dt = datetime(year=2000, month=1, day=1,
                       hour=0, minute=0, second=0,
                       tzinfo=gettz('Europe/Stockholm'))
-        self.assertEqual(to_local(dt), dt)
-        self.assertEqual(to_local(dt).tzinfo, gettz('America/Chicago'))
+        self.assertEqual(to_local(dt),
+                         dt.astimezone(default_timezone()))
+        self.assertEqual(to_local(dt).tzinfo, default_timezone())
 
     def test_to_system(self, mock_conf):
         mock_conf.get.return_value = test_config
