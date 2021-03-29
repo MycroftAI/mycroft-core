@@ -234,12 +234,18 @@ class EnclosureMark2(Enclosure):
             else:
                 time.sleep(3)
 
-        if is_ready:
-            LOG.info("All Mycroft Services have reported ready.")
-            if connected():
-                self.bus.emit(Message('mycroft.ready'))
-            else:
-                self.bus.emit(Message('mycroft.wifi.setup'))
+        if not is_ready:
+            return False
+
+        if not connected():
+            self.bus.emit(Message('mycroft.wifi.setup'))
+            while not connected():
+                time.sleep(3)
+
+        LOG.info("All Mycroft Services have reported ready.")
+        self.finished_loading = True
+        self.bus.emit(Message('mycroft.ready'))
+        self.bus.emit(Message('mycroft.devices.show.homescreen'))
 
         return is_ready
 
