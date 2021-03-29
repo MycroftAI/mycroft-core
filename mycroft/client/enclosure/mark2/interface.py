@@ -27,6 +27,7 @@ from mycroft.util.hardware_capabilities import EnclosureCapabilities
 
 import threading
 
+
 class temperatureMonitorThread(threading.Thread):
     def __init__(self, fan_obj, led_obj, pal_obj):
         self.fan_obj = fan_obj
@@ -87,11 +88,11 @@ class pulseLedThread(threading.Thread):
     def run(self):
         LOG.debug("pulse thread started")
         self.tmp_leds = []
-        for x in range(0, 10):
-            self.tmp_leds.append(self.color_tup)
+        for x in range(0,10):
+            self.tmp_leds.append( self.color_tup )
 
         self.led_obj.brightness = self.brightness / 100
-        self.led_obj.set_leds(self.tmp_leds)
+        self.led_obj.set_leds( self.tmp_leds )
 
         while not self.exit_flag:
 
@@ -107,13 +108,13 @@ class pulseLedThread(threading.Thread):
                 self.brightness += self.step_size
 
             self.led_obj.brightness = self.brightness / 100
-            self.led_obj.set_leds(self.tmp_leds)
+            self.led_obj.set_leds( self.tmp_leds )
 
             time.sleep(self.delay)
 
         LOG.debug("pulse thread stopped")
         self.led_obj.brightness = 1.0
-        self.led_obj.fill(self.pal_obj.BLACK)
+        self.led_obj.fill( self.pal_obj.BLACK )
 
 
 class chaseLedThread(threading.Thread):
@@ -125,7 +126,7 @@ class chaseLedThread(threading.Thread):
         self.color_tup = foreground_color
         self.delay = 0.1
         tmp_leds = []
-        for indx in range(0, 10):
+        for indx in range(0,10):
             tmp_leds.append(self.bkgnd_col)
 
         self.led_obj.set_leds(tmp_leds)
@@ -137,7 +138,7 @@ class chaseLedThread(threading.Thread):
         while not self.exit_flag:
             chase_ctr += 1
             LOG.error("chase thread %s" % (chase_ctr,))
-            for x in range(0, 10):
+            for x in range(0,10):
                 self.led_obj.set_led(x, self.fgnd_col)
                 time.sleep(self.delay)
                 self.led_obj.set_led(x, self.bkgnd_col)
@@ -145,7 +146,7 @@ class chaseLedThread(threading.Thread):
                 self.exit_flag = True
 
         LOG.debug("chase thread stopped")
-        self.led_obj.fill((0, 0, 0))
+        self.led_obj.fill( (0,0,0) )
 
 
 class EnclosureMark2(Enclosure):
@@ -209,6 +210,7 @@ class EnclosureMark2(Enclosure):
 
         LOG.info('** EnclosureMark2 initalized **')
         self.bus.once('mycroft.skills.trained', self.is_device_ready)
+
 
     def is_device_ready(self, message):
         is_ready = False
@@ -298,10 +300,12 @@ class EnclosureMark2(Enclosure):
     def on_volume_duck(self, message):
         # TODO duck it anyway using set vol
         LOG.warning("Mark2 volume duck deprecated! use volume set instead.")
+        self.m2enc.hardware_volume.set_volume(float(0.1))  # TODO make configurable 'duck_vol'
 
     def on_volume_unduck(self, message):
         # TODO duck it anyway using set vol
         LOG.warning("Mark2 volume unduck deprecated! use volume set instead.")
+        self.m2enc.hardware_volume.set_volume(float(self.current_volume))
 
     def on_volume_set(self, message):
         self.current_volume = message.data.get("percent", self.current_volume)
@@ -331,7 +335,7 @@ class EnclosureMark2(Enclosure):
         self.bus.emit(
             message.response(
                 data={
-                    'default': self.default_caps.caps,
+                    'default': self.default_caps.caps, 
                     'extra': self.m2enc.capabilities,
                     'board_type': self.m2enc.board_type,
                     'leds': self.m2enc.leds.capabilities,
