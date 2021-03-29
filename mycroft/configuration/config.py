@@ -227,18 +227,23 @@ class Configuration:
 
         # Build maintainers and system administrators may prevent users from
         # modifying specific keys within the configuration.
-        enclosure_config = LocalConf(SYSTEM_CONFIG).get('enclosure', {})
-        protected_keys = enclosure_config.get('protected_keys', [])
-        user_config_disabled = enclosure_config.get(
+        system_config = LocalConf(SYSTEM_CONFIG) or {}
+        remote_config_disabled = system_config.get(
+            'disable_remote_config', False)
+        user_config_disabled = system_config.get(
             'disable_user_config', False)
+        protected_keys = system_config.get('protected_keys', [])
 
         # Merge all configs into one
         base = {}
         for config in configs:
 
             # handle system constraints
-            if isinstance(config, RemoteConf) or \
-               isinstance(config, LocalConf) and config.path == USER_CONFIG:
+            if isinstance(config, RemoteConf):
+                if remote_config_disabled:
+                    continue
+                prune_config(config, protected_keys)
+            elif isinstance(config, LocalConf) and config.path == USER_CONFIG:
                 if user_config_disabled:
                     continue
                 Configuration.prune_config(config, protected_keys)
