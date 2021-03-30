@@ -469,7 +469,7 @@ class SkillGUI:
         if self.is_video_displayed:
             self["playStatus"] = "stop"
             self.skill.bus.emit(Message("mycroft.gui.screen.close",
-                                    {"skill_id": self.skill.skill_id}))
+                                        {"skill_id": self.skill.skill_id}))
         self.video_info = None
 
     def resume_video(self):
