@@ -16,7 +16,7 @@
 
 from unittest import TestCase, mock
 
-from mycroft.enclosure.gui import SkillGUI
+from mycroft.enclosure.gui import SkillGUI, GUIPlaybackStatus
 from mycroft.messagebus import Message
 from mycroft.util.file_utils import resolve_resource_file
 
@@ -105,6 +105,29 @@ class TestSkillGUI(TestCase):
         page_url = 'file://{}'.format(page_path)
         self.assertEqual(sent_message.data['page'], [page_url])
         self.assertEqual(self.gui['html'], html)
+
+    def test_video_playback(self):
+        self.assertEqual(self.gui.playback_status, GUIPlaybackStatus.UNDEFINED)
+        self.assertEqual(self.gui.is_video_displayed, False)
+        video_url = "https://downloads.mycroft.ai/assets/tests/test.mp4"
+        video_title = "Logo animation"
+        self.gui.play_video(video_url, video_title)
+        sent_message = self.mock_skill.bus.emit.call_args_list[-1][0][0]
+        page_path = resolve_resource_file('ui/SYSTEM_VideoPlayer.qml')
+        page_url = 'file://{}'.format(page_path)
+        self.assertEqual(sent_message.data['page'], [page_url])
+        self.assertEqual(self.gui['video'], video_url)
+        self.assertEqual(self.gui['title'], video_title)
+        self.assertEqual(self.gui.get('repeat'), None)
+        self.assertEqual(self.gui.is_video_displayed, True)
+        self.assertEqual(self.gui.playback_status, GUIPlaybackStatus.PLAYING)
+        self.gui.pause_video()
+        self.assertEqual(self.gui.playback_status, GUIPlaybackStatus.PAUSED)
+        self.gui.resume_video()
+        self.assertEqual(self.gui.playback_status, GUIPlaybackStatus.PLAYING)
+        self.gui.stop_video()
+        self.assertEqual(self.gui.playback_status, GUIPlaybackStatus.STOPPED)
+        self.assertEqual(self.gui.is_video_displayed, False)
 
     def test_send_event(self):
         """Check that send_event sends message using the correct format."""
