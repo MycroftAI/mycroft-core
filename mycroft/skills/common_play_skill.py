@@ -248,7 +248,8 @@ class CommonPlaySkill(MycroftSkill, ABC):
 
         Arguments:
             message (Message): Message associated with playback request
-            callback_data (dict): Callback data specified in match_query_phrase()
+            callback_data (dict): Callback data specified in
+                match_query_phrase()
         """
         # Derived classes must implement this, e.g.
         # self.CPS_play("http://zoosh.com/stream_music")
