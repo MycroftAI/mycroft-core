@@ -15,9 +15,12 @@
 import re
 from enum import Enum, IntEnum
 from abc import ABC, abstractmethod
+from inspect import signature
+
 from mycroft.messagebus.message import Message
 from .mycroft_skill import MycroftSkill
 from .audioservice import AudioService
+from mycroft.util import LOG
 
 
 class CPSMatchLevel(Enum):
@@ -93,7 +96,11 @@ class CommonPlaySkill(MycroftSkill, ABC):
                                         "searching": True}))
 
         # Now invoke the CPS handler to let the skill perform its search
-        result = self.CPS_match_query_phrase(search_phrase)
+        if 'phrase' in signature(self.CPS_match_query_phrase).parameters:
+            LOG.warning(f"Depreciated CPS method in {self.skill_id}! Message should be referenced")
+            result = self.CPS_match_query_phrase(search_phrase)
+        else:
+            result = self.CPS_match_query_phrase(message=message)
 
         if result:
             match = result[0]
@@ -166,7 +173,11 @@ class CommonPlaySkill(MycroftSkill, ABC):
         self.play_service_string = phrase
 
         # Invoke derived class to provide playback data
-        self.CPS_start(phrase, data)
+        if 'phrase' in signature(self.CPS_start).parameters:
+            LOG.warning(f"Depreciated CPS method in {self.skill_id}! Message should be referenced")
+            self.CPS_start(phrase, data)
+        else:
+            self.CPS_start(message=message, callback_data=data)
 
     def CPS_play(self, *args, **kwargs):
         """Begin playback of a media file or stream
@@ -200,11 +211,11 @@ class CommonPlaySkill(MycroftSkill, ABC):
     # All of the following must be implemented by a skill that wants to
     # act as a CommonPlay Skill
     @abstractmethod
-    def CPS_match_query_phrase(self, phrase):
+    def CPS_match_query_phrase(self, message):
         """Analyze phrase to see if it is a play-able phrase with this skill.
 
         Arguments:
-            phrase (str): User phrase uttered after "Play", e.g. "some music"
+            message (Message): Message associated with play request
 
         Returns:
             (match, CPSMatchLevel[, callback_data]) or None: Tuple containing
@@ -213,7 +224,7 @@ class CommonPlaySkill(MycroftSkill, ABC):
                  match is selected.
         """
         # Derived classes must implement this, e.g.
-        #
+        # phrase = message.data.get("phrase")
         # if phrase in ["Zoosh"]:
         #     return ("Zoosh", CPSMatchLevel.Generic, {"hint": "music"})
         # or:
@@ -230,12 +241,12 @@ class CommonPlaySkill(MycroftSkill, ABC):
         return None
 
     @abstractmethod
-    def CPS_start(self, phrase, data):
+    def CPS_start(self, message, callback_data):
         """Begin playing whatever is specified in 'phrase'
 
         Arguments:
-            phrase (str): User phrase uttered after "Play", e.g. "some music"
-            data (dict): Callback data specified in match_query_phrase()
+            message (Message): Message associated with playback request
+            callback_data (dict): Callback data specified in match_query_phrase()
         """
         # Derived classes must implement this, e.g.
         # self.CPS_play("http://zoosh.com/stream_music")

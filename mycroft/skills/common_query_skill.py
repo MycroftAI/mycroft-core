@@ -14,7 +14,9 @@
 
 from enum import IntEnum
 from abc import ABC, abstractmethod
+from inspect import signature
 from .mycroft_skill import MycroftSkill
+from mycroft.util import LOG
 
 
 class CQSMatchLevel(IntEnum):
@@ -73,7 +75,11 @@ class CommonQuerySkill(MycroftSkill, ABC):
                                         "searching": True}))
 
         # Now invoke the CQS handler to let the skill perform its search
-        result = self.CQS_match_query_phrase(search_phrase)
+        if 'phrase' in signature(self.CQS_match_query_phrase).parameters:
+            LOG.warning(f"Depreciated CQS method in {self.skill_id}! Message should be referenced")
+            result = self.CQS_match_query_phrase(search_phrase)
+        else:
+            result = self.CQS_match_query_phrase(message=message)
 
         if result:
             match = result[0]
@@ -126,16 +132,20 @@ class CommonQuerySkill(MycroftSkill, ABC):
         phrase = message.data["phrase"]
         data = message.data.get("callback_data")
         # Invoke derived class to provide playback data
-        self.CQS_action(phrase, data)
+        if 'phrase' in signature(self.CQS_action).parameters:
+            LOG.warning(f"Depreciated CQS method in {self.skill_id}! Message should be referenced")
+            self.CQS_action(phrase, data)
+        else:
+            self.CQS_action(message=message, callback_data=data)
 
     @abstractmethod
-    def CQS_match_query_phrase(self, phrase):
+    def CQS_match_query_phrase(self, message):
         """Analyze phrase to see if it is a play-able phrase with this skill.
 
         Needs to be implemented by the skill.
 
         Arguments:
-            phrase (str): User phrase, "What is an aardwark"
+            message (Message): User phrase, "What is an aardwark"
 
         Returns:
             (match, CQSMatchLevel[, callback_data]) or None: Tuple containing
@@ -144,9 +154,22 @@ class CommonQuerySkill(MycroftSkill, ABC):
                  match is selected.
         """
         # Derived classes must implement this, e.g.
+        # query = message.data.get("phrase")
+        # answer = None
+        # for noun in self.question_words:
+        #     for verb in self.question_verbs:
+        #         for article in [i + ' ' for i in self.articles] + ['']:
+        #             test = noun + verb + ' ' + article
+        #             if query[:len(test)] == test:
+        #                 answer = self.respond(message, query[len(test):])
+        #                 break
+        # if answer:
+        #     return query, CQSMatchLevel.CATEGORY, answer
+        # else:
+        #     return None
         return None
 
-    def CQS_action(self, phrase, data):
+    def CQS_action(self, message, callback_data):
         """Take additional action IF the skill is selected.
 
         The speech is handled by the common query but if the chosen skill
@@ -154,8 +177,8 @@ class CommonQuerySkill(MycroftSkill, ABC):
         information info over e-mail this can be implemented here.
 
         Args:
-            phrase (str): User phrase uttered after "Play", e.g. "some music"
-            data (dict): Callback data specified in match_query_phrase()
+            message (Message): Message associated with query
+            callback_data (dict): Callback data specified in match_query_phrase()
         """
         # Derived classes may implement this if they use additional media
         # or wish to set context after being called.
