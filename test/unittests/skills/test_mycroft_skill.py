@@ -552,6 +552,17 @@ class TestMycroftSkill(unittest.TestCase):
         self.assertFalse(s.voc_match("My hovercraft is full of eels",
                                      "turn_off_test"))
 
+    def test_voc_match_exact(self):
+        s = SimpleSkill1()
+        s.root_dir = abspath(dirname(__file__))
+
+        self.assertTrue(s.voc_match("yes", "yes", exact=True))
+        self.assertFalse(s.voc_match("yes please", "yes", exact=True))
+        self.assertTrue(s.voc_match("switch off", "turn_off_test",
+                                    exact=True))
+        self.assertFalse(s.voc_match("would you please turn off the lights",
+                                     "turn_off_test", exact=True))
+
     def test_translate_locations(self):
         """Assert that the a translatable list can be loaded from dialog and
         locale.

@@ -156,17 +156,24 @@ def _delete_oldest(entries, bytes_needed):
     Arguments:
         entries (tuple): file + file stats tuple
         bytes_needed (int): disk space that needs to be freed
+
+    Returns:
+        (list) all removed paths
     """
+    deleted_files = []
     space_freed = 0
     for moddate, fsize, path in sorted(entries):
         try:
             os.remove(path)
             space_freed += fsize
+            deleted_files.append(path)
         except Exception:
             pass
 
         if space_freed > bytes_needed:
             break  # deleted enough!
+
+    return deleted_files
 
 
 def curate_cache(directory, min_free_percent=5.0, min_free_disk=50):
@@ -186,6 +193,7 @@ def curate_cache(directory, min_free_percent=5.0, min_free_disk=50):
     # Simpleminded implementation -- keep a certain percentage of the
     # disk available.
     # TODO: Would be easy to add more options, like whitelisted files, etc.
+    deleted_files = []
     space = psutil.disk_usage(directory)
 
     min_free_disk = mb_to_bytes(min_free_disk)
@@ -199,7 +207,9 @@ def curate_cache(directory, min_free_percent=5.0, min_free_disk=50):
         # get all entries in the directory w/ stats
         entries = _get_cache_entries(directory)
         # delete as many as needed starting with the oldest
-        _delete_oldest(entries, bytes_needed)
+        deleted_files = _delete_oldest(entries, bytes_needed)
+
+    return deleted_files
 
 
 def get_cache_directory(domain=None):
