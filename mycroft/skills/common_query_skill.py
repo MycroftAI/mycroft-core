@@ -76,7 +76,8 @@ class CommonQuerySkill(MycroftSkill, ABC):
 
         # Now invoke the CQS handler to let the skill perform its search
         if 'phrase' in signature(self.CQS_match_query_phrase).parameters:
-            LOG.warning(f"Depreciated CQS method in {self.skill_id}! Message should be referenced")
+            LOG.warning(f"Depreciated CQS method in {self.skill_id}!"
+                        f" Message should be referenced")
             result = self.CQS_match_query_phrase(search_phrase)
         else:
             result = self.CQS_match_query_phrase(message=message)
@@ -133,7 +134,8 @@ class CommonQuerySkill(MycroftSkill, ABC):
         data = message.data.get("callback_data")
         # Invoke derived class to provide playback data
         if 'phrase' in signature(self.CQS_action).parameters:
-            LOG.warning(f"Depreciated CQS method in {self.skill_id}! Message should be referenced")
+            LOG.warning(f"Depreciated CQS method in {self.skill_id}!"
+                        f" Message should be referenced")
             self.CQS_action(phrase, data)
         else:
             self.CQS_action(message=message, callback_data=data)
@@ -178,7 +180,8 @@ class CommonQuerySkill(MycroftSkill, ABC):
 
         Args:
             message (Message): Message associated with query
-            callback_data (dict): Callback data specified in match_query_phrase()
+            callback_data (dict): Callback data specified in
+                match_query_phrase()
         """
         # Derived classes may implement this if they use additional media
         # or wish to set context after being called.

@@ -97,7 +97,8 @@ class CommonPlaySkill(MycroftSkill, ABC):
 
         # Now invoke the CPS handler to let the skill perform its search
         if 'phrase' in signature(self.CPS_match_query_phrase).parameters:
-            LOG.warning(f"Depreciated CPS method in {self.skill_id}! Message should be referenced")
+            LOG.warning(f"Depreciated CPS method in {self.skill_id}!"
+                        f" Message should be referenced")
             result = self.CPS_match_query_phrase(search_phrase)
         else:
             result = self.CPS_match_query_phrase(message=message)
@@ -134,7 +135,7 @@ class CommonPlaySkill(MycroftSkill, ABC):
         """
         consumed_pct = len(match.split()) / len(phrase.split())
         if consumed_pct > 1.0:
-            consumed_pct = 1.0 / consumed_pct  # deal with over/under-matching
+            consumed_pct = 1.0 / consumed_pct  # deal with over/under-match
 
         # We'll use this to modify the level, but don't want it to allow a
         # match to jump to the next match level.  So bonus is 0 - 0.05 (1/20)
@@ -174,7 +175,8 @@ class CommonPlaySkill(MycroftSkill, ABC):
 
         # Invoke derived class to provide playback data
         if 'phrase' in signature(self.CPS_start).parameters:
-            LOG.warning(f"Depreciated CPS method in {self.skill_id}! Message should be referenced")
+            LOG.warning(f"Depreciated CPS method in {self.skill_id}!"
+                        f" Message should be referenced")
             self.CPS_start(phrase, data)
         else:
             self.CPS_start(message=message, callback_data=data)
