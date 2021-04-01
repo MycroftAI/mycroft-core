@@ -13,6 +13,7 @@
 # limitations under the License.
 #
 """An intent parsing service using the Adapt parser."""
+from threading import Lock
 import time
 
 from adapt.context import ContextManagerFrame
@@ -21,6 +22,21 @@ from adapt.intent import IntentBuilder
 
 from mycroft.util.log import LOG
 from .base import IntentMatch
+
+
+def _entity_skill_id(skill_id):
+    """Helper converting a skill id to the format used in entities.
+
+    Arguments:
+        skill_id (str): skill identifier
+
+    Returns:
+        (str) skill id on the format used by skill entities
+    """
+    skill_id = skill_id[:-1]
+    skill_id = skill_id.replace('.', '_')
+    skill_id = skill_id.replace('-', '_')
+    return skill_id
 
 
 class AdaptIntent(IntentBuilder):
@@ -161,6 +177,7 @@ class AdaptService:
         self.context_timeout = self.config.get('timeout', 2)
         self.context_greedy = self.config.get('greedy', False)
         self.context_manager = ContextManager(self.context_timeout)
+        self.lock = Lock()
 
     def update_context(self, intent):
         """Updates context with keyword from the intent.
@@ -227,11 +244,12 @@ class AdaptService:
 
     def register_vocab(self, start_concept, end_concept, alias_of, regex_str):
         """Register vocabulary."""
-        if regex_str:
-            self.engine.register_regex_entity(regex_str)
-        else:
-            self.engine.register_entity(
-                start_concept, end_concept, alias_of=alias_of)
+        with self.lock:
+            if regex_str:
+                self.engine.register_regex_entity(regex_str)
+            else:
+                self.engine.register_entity(
+                    start_concept, end_concept, alias_of=alias_of)
 
     def register_intent(self, intent):
         """Register new intent with adapt engine.
@@ -239,7 +257,8 @@ class AdaptService:
         Arguments:
             intent (IntentParser): IntentParser to register
         """
-        self.engine.register_intent_parser(intent)
+        with self.lock:
+            self.engine.register_intent_parser(intent)
 
     def detach_skill(self, skill_id):
         """Remove all intents for skill.
@@ -247,11 +266,41 @@ class AdaptService:
         Arguments:
             skill_id (str): skill to process
         """
-        new_parsers = [
-            p for p in self.engine.intent_parsers if
-            not p.name.startswith(skill_id)
-        ]
-        self.engine.intent_parsers = new_parsers
+        with self.lock:
+            skill_parsers = [
+                p.name for p in self.engine.intent_parsers if
+                p.name.startswith(skill_id)
+            ]
+            self.engine.drop_intent_parser(skill_parsers)
+            self._detach_skill_keywords(skill_id)
+            self._detach_skill_regexes(skill_id)
+
+    def _detach_skill_keywords(self, skill_id):
+        """Detach all keywords registered with a particular skill.
+
+        Arguments:
+            skill_id (str): skill identifier
+        """
+        skill_id = _entity_skill_id(skill_id)
+
+        def match_skill_entities(data):
+            return data and data[1].startswith(skill_id)
+
+        self.engine.drop_entity(match_func=match_skill_entities)
+
+    def _detach_skill_regexes(self, skill_id):
+        """Detach all regexes registered with a particular skill.
+
+        Arguments:
+            skill_id (str): skill identifier
+        """
+        skill_id = _entity_skill_id(skill_id)
+
+        def match_skill_regexes(regexp):
+            return any([r.startswith(skill_id)
+                        for r in regexp.groupindex.keys()])
+
+        self.engine.drop_regex_entity(match_func=match_skill_regexes)
 
     def detach_intent(self, intent_name):
         """Detatch a single intent
