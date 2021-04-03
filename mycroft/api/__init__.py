@@ -54,6 +54,7 @@ class Api:
         self.url = config_server.get("url")
         self.version = config_server.get("version")
         self.identity = IdentityManager.get()
+        self.disabled = is_backend_disabled()
 
     def request(self, params):
         self.check_token()
@@ -61,7 +62,7 @@ class Api:
             params['path'] = params['path'].replace(UUID, self.identity.uuid)
         self.build_path(params)
         self.old_params = copy(params)
-        return self.send(params)
+        return self.send(params) or {}
 
     def check_token(self):
         # If the identity hasn't been loaded, load it
@@ -115,6 +116,8 @@ class Api:
         Returns:
             Requests response object.
         """
+        if self.disabled:
+            return None
         query_data = frozenset(params.get('query', {}).items())
         params_key = (params.get('path'), query_data)
         etag = self.params_to_etag.get(params_key)
@@ -158,6 +161,8 @@ class Api:
         Returns:
             data fetched from server
         """
+        if self.disabled:
+            return {}
         data = self.get_data(response)
 
         if 200 <= response.status_code < 300:
@@ -338,7 +343,7 @@ class DeviceApi(Api):
         arch = archs.get(get_arch())
         if arch:
             path = '/' + UUID + '/voice?arch=' + arch
-            return self.request({'path': path})['link']
+            return self.request({'path': path}).get('link')
 
     def get_oauth_token(self, dev_cred):
         """
@@ -473,6 +478,8 @@ def has_been_paired():
     Returns:
         bool: True if ever paired with backend (not factory reset)
     """
+    if is_backend_disabled():
+        return True
     # This forces a load from the identity file in case the pairing state
     # has recently changed
     id = IdentityManager.load()
@@ -494,7 +501,8 @@ def is_paired(ignore_errors=True):
         # un-pairing must restart the system (or clear this value).
         # The Mark 1 does perform a restart on RESET.
         return True
-
+    if is_backend_disabled():
+        return True
     api = DeviceApi()
     _paired_cache = api.identity.uuid and check_remote_pairing(ignore_errors)
 
@@ -532,3 +540,11 @@ def check_remote_pairing(ignore_errors):
             raise InternetDown from error
     else:
         raise error
+
+
+def is_backend_disabled():
+    config = Configuration.get(cache=False, remote=False)
+    if not config.get("server"):
+        # missing server block implies disabling backend
+        return True
+    return config["server"].get("disabled") or False

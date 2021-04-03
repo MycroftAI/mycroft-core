@@ -130,8 +130,7 @@ class RemoteConf(LocalConf):
     def __init__(self, cache=None):
         super(RemoteConf, self).__init__(None)
 
-        cache = cache or join(xdg.BaseDirectory.save_cache_path('mycroft'),
-                              'web_cache.json')
+        cache = cache or WEB_CONFIG_CACHE
         from mycroft.api import is_paired
         if not is_paired():
             self.load_local(cache)
@@ -140,26 +139,41 @@ class RemoteConf(LocalConf):
         try:
             # Here to avoid cyclic import
             from mycroft.api import DeviceApi
-            api = DeviceApi()
-            setting = api.get_settings()
+            from mycroft.api import is_backend_disabled
 
-            location = None
-            try:
-                location = api.get_location()
-            except RequestException as e:
-                LOG.error("RequestException fetching remote location: {}"
-                          .format(str(e)))
-                if exists(cache) and isfile(cache):
-                    location = load_commented_json(cache).get('location')
+            if is_backend_disabled():
+                # disable options that require backend
+                config = {
+                    "server": {
+                        "metrics": False,
+                        "sync_skill_settings": False
+                    },
+                    "skills": {"upload_skill_manifest": False},
+                    "opt_in": False
+                }
+                for key in config:
+                    self.__setitem__(key, config[key])
+            else:
+                api = DeviceApi()
+                setting = api.get_settings()
+                location = None
+                try:
+                    location = api.get_location()
+                except RequestException as e:
+                    LOG.error("RequestException fetching remote location: {}"
+                              .format(str(e)))
+                    if exists(cache) and isfile(cache):
+                        location = load_commented_json(cache).get('location')
 
-            if location:
-                setting["location"] = location
-            # Remove server specific entries
-            config = {}
-            translate_remote(config, setting)
-            for key in config:
-                self.__setitem__(key, config[key])
-            self.store(cache)
+                if location:
+                    setting["location"] = location
+                # Remove server specific entries
+                config = {}
+                translate_remote(config, setting)
+
+                for key in config:
+                    self.__setitem__(key, config[key])
+                self.store(cache)
 
         except RequestException as e:
             LOG.error("RequestException fetching remote configuration: {}"

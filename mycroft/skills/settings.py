@@ -65,7 +65,7 @@ from xdg.BaseDirectory import xdg_cache_home
 
 import yaml
 
-from mycroft.api import DeviceApi, is_paired
+from mycroft.api import DeviceApi, is_paired, is_backend_disabled
 from mycroft.configuration import Configuration
 from mycroft.messagebus.message import Message
 from mycroft.util import camel_case_split
@@ -140,8 +140,11 @@ class SettingsMetaUploader:
         self.settings_meta = {}
         self.api = None
         self.upload_timer = None
-        self.sync_enabled = self.config["server"].get("sync_skill_settings",
-                                                      False)
+        if is_backend_disabled():
+            self.sync_enabled = False
+        else:
+            self.sync_enabled = self.config["server"]\
+                .get("sync_skill_settings", False)
         if not self.sync_enabled:
             LOG.info("Skill settings sync is disabled, settingsmeta will "
                      "not be uploaded")
@@ -355,8 +358,13 @@ class SkillSettingsDownloader:
 
         self.api = DeviceApi()
         self.download_timer = None
-        self.sync_enabled = Configuration.get()["server"]\
-            .get("sync_skill_settings", False)
+       
+        if is_backend_disabled():
+            self.sync_enabled = False
+        else:
+            self.sync_enabled = Configuration.get()["server"] \
+                .get("sync_skill_settings", False)
+
         if not self.sync_enabled:
             LOG.info("Skill settings sync is disabled, backend settings will "
                      "not be downloaded")
