@@ -49,7 +49,7 @@ class InterceptAllBusClient(MessageBusClient):
         self.new_message_available = Event()
         self._processed_messages = 0
 
-    def on_message(self, message):
+    def on_message(self, _, message):
         """Extends normal operation by storing the recieved message.
 
         Args:
@@ -58,7 +58,7 @@ class InterceptAllBusClient(MessageBusClient):
         with self.message_lock:
             self.messages.append(Message.deserialize(message))
         self.new_message_available.set()
-        super().on_message(message)
+        super().on_message(_, message)
 
     def get_messages(self, msg_type):
         """Get messages from received list of messages.
