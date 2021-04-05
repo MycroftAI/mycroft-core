@@ -98,5 +98,19 @@ class TestLocalConf(TestCase):
         lc = mycroft.configuration.LocalConf('test')
         self.assertEqual(lc, {})
 
+    @patch('json.dump')
+    def test_store_invalid(self, mock_json_dump, mock_json_loader, mock_isfile,
+                           mock_exists):
+        """Storing shouldn't happen when config content is invalid."""
+        mock_exists.return_value = True
+        mock_isfile.return_value = True
 
+        def raise_error(*arg, **kwarg):
+            raise Exception('Test exception')
 
+        mock_json_loader.side_effect = raise_error
+
+        lc = mycroft.configuration.LocalConf('invalid')
+        self.assertFalse(lc.is_valid)
+        self.assertFalse(lc.store())
+        mock_json_dump.assert_not_called()

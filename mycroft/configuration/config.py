@@ -97,6 +97,7 @@ class LocalConf(dict):
 
     def __init__(self, path):
         super(LocalConf, self).__init__()
+        self.is_valid = True  # is loaded json valid, updated when load occurs
         if path:
             self.path = path
             self.load_local(path)
@@ -117,23 +118,41 @@ class LocalConf(dict):
             except Exception as e:
                 LOG.error("Error loading configuration '{}'".format(path))
                 LOG.error(repr(e))
+                self.is_valid = False
         else:
             LOG.debug("Configuration '{}' not defined, skipping".format(path))
 
-    def store(self, path=None):
-        """Cache the received settings locally.
+    def store(self, path=None, force=False):
+        """Save config to disk.
 
         The cache will be used if the remote is unreachable to load settings
         that are as close to the user's as possible.
+
+        path (str): path to store file to, if missing will use the path from
+                    where the config was loaded.
+        force (bool): Set to True if writing should occur despite the original
+                      was malformed.
+
+        Returns:
+            (bool) True if save was successful, else False.
         """
+        result = False
         with self._lock:
             path = path or self.path
             config_dir = dirname(path)
             if not exists(config_dir):
                 os.makedirs(config_dir)
 
-            with open(path, 'w') as f:
-                json.dump(self, f, indent=2)
+            if self.is_valid or force:
+                with open(path, 'w') as f:
+                    json.dump(self, f, indent=2)
+                result = True
+            else:
+                LOG.warning((f'"{path}" was not a valid config file when '
+                             'loaded, will not save config. Please correct '
+                             'the json or remove it to allow updates.'))
+                result = False
+        return result
 
     def merge(self, conf):
         merge_dict(self, conf)
@@ -175,7 +194,7 @@ class RemoteConf(LocalConf):
             translate_remote(config, setting)
             for key in config:
                 self.__setitem__(key, config[key])
-            self.store(cache)
+            self.store(cache, force=True)
 
         except RequestException as e:
             LOG.error("RequestException fetching remote configuration: {}"
