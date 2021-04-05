@@ -126,11 +126,8 @@ class PhonemeFile:
         Arguments:
             phonemes: instructions for how to make the mouth on a device move
         """
-        if type(phonemes) == str:
-            rec = phonemes
-        else:
-            rec = json.dumps(phonemes)
         try:
+            rec = json.dumps(phonemes)
             with open(self.path, "w") as phoneme_file:
                 phoneme_file.write(rec)
         except Exception:
