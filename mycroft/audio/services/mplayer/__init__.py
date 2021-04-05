@@ -14,12 +14,6 @@
 #
 from mycroft.audio.services import AudioBackend
 from mycroft.util.log import LOG
-try:
-    from py_mplayer import MplayerCtrl
-except ImportError:
-    LOG.error("install py_mplayer with "
-              "pip install git+https://github.com/JarbasAl/py_mplayer")
-    raise
 
 
 class MPlayerService(AudioBackend):
@@ -35,6 +29,12 @@ class MPlayerService(AudioBackend):
         self.index = 0
         self.normal_volume = None
         self.tracks = []
+        try:
+            from py_mplayer import MplayerCtrl
+        except ImportError:
+            LOG.error("install py_mplayer with "
+                      "pip install git+https://github.com/JarbasAl/py_mplayer")
+            raise
         self.mpc = MplayerCtrl()
 
     def supported_uris(self):
@@ -125,6 +125,6 @@ def load_service(base_config, emitter):
     backends = base_config.get('backends', [])
     services = [(b, backends[b]) for b in backends
                 if backends[b]['type'] == 'mplayer' and
-                backends[b].get("active", True)]
+                backends[b].get("active", False)]
     instances = [MPlayerService(s[1], emitter, s[0]) for s in services]
     return instances

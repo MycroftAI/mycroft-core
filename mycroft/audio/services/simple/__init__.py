@@ -243,6 +243,6 @@ def load_service(base_config, bus):
     backends = base_config.get('backends', [])
     services = [(b, backends[b]) for b in backends
                 if backends[b]['type'] == 'simple' and
-                backends[b].get('active', True)]
+                backends[b].get('active', False)]
     instances = [SimpleAudioService(s[1], bus, s[0]) for s in services]
     return instances
