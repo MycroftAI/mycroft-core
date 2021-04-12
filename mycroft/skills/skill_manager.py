@@ -168,6 +168,58 @@ class SkillManager(Thread):
             'mycroft.skills.settings.update',
             self.settings_downloader.download
         )
+        self.bus.on('mycroft.skills.trained',
+                    self.handle_check_device_readiness)
+
+    def is_device_ready(self):
+        is_ready = False
+        # different setups will have different needs
+        # eg, a server does not care about audio
+        # pairing -> device is paired
+        # internet -> device is connected to the internet - NOT IMPLEMENTED
+        # skills -> skills reported ready
+        # speech -> stt reported ready
+        # audio -> audio playback reported ready
+        # gui -> gui websocket reported ready - NOT IMPLEMENTED
+        # enclosure -> enclosure/HAL reported ready - NOT IMPLEMENTED
+        services = {k: False for k in
+                   self.config.get("ready_settings", ["skills"])}
+        start = monotonic()
+        while not is_ready:
+            is_ready = self.check_services_ready(services)
+            if is_ready:
+                break
+            elif monotonic() - start >= 60:
+                raise Exception(
+                    f'Timeout waiting for services start. services={services}')
+            else:
+                sleep(3)
+        return is_ready
+
+    def handle_check_device_readiness(self, message):
+        if self.is_device_ready():
+            LOG.info("Mycroft is all loaded and ready to roll!")
+            self.bus.emit(message.reply('mycroft.ready'))
+
+    def check_services_ready(self, services):
+        """Report if all specified services are ready.
+
+        services (iterable): service names to check.
+        """
+        for ser in services:
+            services[ser] = False
+            if ser == "pairing":
+                services[ser] = is_paired()
+                continue
+            elif ser in ["gui", "enclosure"]:
+                # not implemented
+                services[ser] = True
+                continue
+            response = self.bus.wait_for_response(Message(
+                'mycroft.{}.is_ready'.format(ser)))
+            if response and response.data['status']:
+                services[ser] = True
+        return all([services[ser] for ser in services])
 
     @property
     def skills_config(self):

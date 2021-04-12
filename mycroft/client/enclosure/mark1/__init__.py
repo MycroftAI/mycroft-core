@@ -321,7 +321,6 @@ class EnclosureMark1(Enclosure):
 
         Enclosure._last_internet_notification = time.time()
 
-        # TODO: This should go into EnclosureMark1 subclass of Enclosure.
         if has_been_paired():
             # Handle the translation within that code.
             self.bus.emit(Message("speak", {
@@ -396,7 +395,6 @@ class EnclosureMark1(Enclosure):
         self.bus.emit(Message("mycroft.mic.unmute"))
 
     def _do_net_check(self):
-        # TODO: This should live in the derived Enclosure, e.g. EnclosureMark1
         LOG.info("Checking internet connection")
         if not connected():  # and self.conn_monitor is None:
             if has_been_paired():
@@ -409,7 +407,6 @@ class EnclosureMark1(Enclosure):
                 # Begin the unit startup process, this is the first time it
                 # is being run with factory defaults.
 
-                # TODO: This logic should be in EnclosureMark1
                 # TODO: Enclosure/localization
 
                 # Don't listen to mic during this out-of-box experience

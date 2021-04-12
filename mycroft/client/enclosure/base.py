@@ -13,7 +13,7 @@
 # limitations under the License.
 #
 import asyncio
-
+import time
 from collections import namedtuple
 from threading import Lock
 
@@ -21,6 +21,7 @@ from mycroft.configuration import Configuration
 from mycroft.messagebus.client import MessageBusClient
 from mycroft.util import create_daemon, start_message_bus_client
 from mycroft.util.log import LOG
+from mycroft.api import is_paired
 
 import json
 import tornado.web as web
