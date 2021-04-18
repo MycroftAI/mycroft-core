@@ -25,7 +25,8 @@ from mycroft.configuration import Configuration
 from mycroft.messagebus.message import Message
 from mycroft.util.log import LOG
 from mycroft.util import connected
-from mycroft.skills.msm_wrapper import create_msm as msm_creator, build_msm_config
+from mycroft.skills.msm_wrapper import create_msm as msm_creator, \
+    build_msm_config, get_skills_directory
 from mycroft.skills.settings import SkillSettingsDownloader
 from mycroft.skills.skill_loader import SkillLoader
 from mycroft.skills.skill_updater import SkillUpdater
@@ -269,7 +270,8 @@ class SkillManager(Thread):
 
     def _remove_git_locks(self):
         """If git gets killed from an abrupt shutdown it leaves lock files."""
-        for i in glob(os.path.join(self.msm.skills_dir, '*/.git/index.lock')):
+        lock_path = os.path.join(get_skills_directory(), '*/.git/index.lock')
+        for i in glob(lock_path):
             LOG.warning('Found and removed git lock file: ' + i)
             os.remove(i)
 
@@ -315,8 +317,7 @@ class SkillManager(Thread):
         return skill_loader if load_status else None
 
     def _get_skill_directories(self):
-        skill_glob = glob(os.path.join(self.msm.skills_dir, '*/'))
-
+        skill_glob = glob(os.path.join(get_skills_directory(), '*/'))
         skill_directories = []
         for skill_dir in skill_glob:
             # TODO: all python packages must have __init__.py!  Better way?
@@ -358,7 +359,7 @@ class SkillManager(Thread):
         """Update skills once an hour if update is enabled"""
         do_skill_update = (
             time() >= self.skill_updater.next_download and
-            self.skills_config["auto_update"]
+            self.skills_config.get("auto_update", False)
         )
         if do_skill_update:
             self.skill_updater.update_skills()

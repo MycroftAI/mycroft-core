@@ -19,14 +19,12 @@ from datetime import datetime
 from time import time
 import xdg.BaseDirectory
 
-from msm import MsmException
-
 from mycroft.api import DeviceApi, is_paired
 from mycroft.configuration import Configuration
 from mycroft.util import connected
 from mycroft.util.combo_lock import ComboLock
 from mycroft.util.log import LOG
-from mycroft.skills.msm_wrapper import build_msm_config, create_msm
+from mycroft.skills.msm_wrapper import build_msm_config, create_msm, MsmException
 from mycroft.util.file_utils import get_temp_path
 
 ONE_HOUR = 3600
@@ -53,7 +51,7 @@ class SkillUpdater:
         self.msm_lock = ComboLock(get_temp_path('mycroft-msm.lck'))
         self.install_retries = 0
         self.config = Configuration.get()
-        update_interval = self.config['skills']['update_interval']
+        update_interval = self.config['skills'].get('update_interval', 1.0)
         self.update_interval = int(update_interval) * ONE_HOUR
         self.dot_msm_path = os.path.join(self.msm.skills_dir, '.msm')
         self.next_download = self._determine_next_download_time()
@@ -195,16 +193,18 @@ class SkillUpdater:
             LOG.error('Failed to update skills: {}'.format(repr(e)))
 
     def post_manifest(self, reload_skills_manifest=False):
-        """Post the manifest of the device's skills to the backend."""
+        """Post the manifest of the device's skills to the backend.
+        If msm is disabled nothing is uploaded, skill state is MSM specific"""
         upload_allowed = self.config['skills'].get('upload_skill_manifest')
-        if upload_allowed and is_paired():
+        use_msm = self.config['skills'].get('msm', {}).get("disabled", True)
+        if upload_allowed and use_msm and is_paired():
             if reload_skills_manifest:
                 self.msm.clear_cache()
             try:
                 device_api = DeviceApi()
                 device_api.upload_skills_data(self.msm.device_skill_state)
             except Exception:
-                LOG.exception('Could not upload skill manifest')
+                LOG.error('Could not upload skill manifest')
 
     def install_or_update(self, skill):
         """Install missing defaults and update existing skills"""

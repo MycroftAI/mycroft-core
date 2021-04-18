@@ -89,8 +89,7 @@ def get_local_settings(skill_dir, skill_name) -> dict:
                 skill_settings = json.loads(settings_file_content)
             # TODO change to check for JSONDecodeError in 19.08
             except Exception:
-                log_msg = 'Failed to load {} settings from settings.json'
-                LOG.exception(log_msg.format(skill_name))
+                LOG.error(f'Failed to load {skill_name} settings from settings.json')
 
     return skill_settings
 
@@ -109,8 +108,7 @@ def save_settings(skill_dir, skill_settings):
         try:
             json.dump(skill_settings, settings_file)
         except Exception:
-            LOG.exception('error saving skill settings to '
-                          '{}'.format(settings_path))
+            LOG.error(f'error saving skill settings to {settings_path}')
         else:
             LOG.info('Skill settings successfully saved to '
                      '{}' .format(settings_path))
@@ -271,8 +269,7 @@ class SettingsMetaUploader:
                 else:
                     self.settings_meta = yaml.safe_load(meta_file)
         except Exception:
-            log_msg = "Failed to load settingsmeta file: "
-            LOG.exception(log_msg + str(self.settings_meta_path))
+            LOG.error(f"Failed to load settingsmeta file: {self.settings_meta_path}")
 
     def _update_settings_meta(self):
         """Make sure the skill gid and name are included in settings meta.
@@ -302,14 +299,10 @@ class SettingsMetaUploader:
         """Use the API to send the settings meta to the server."""
         try:
             self.api.upload_skill_metadata(self.settings_meta)
-        except Exception:
-            LOG.exception('Failed to upload skill settings meta '
-                          'for {}'.format(self.skill_gid))
-            success = False
-        else:
-            success = True
-
-        return success
+        except Exception as e:
+            LOG.error(f'Failed to upload skill settings meta for {self.skill_gid}')
+            return False
+        return True
 
 
 # Path to remote cache
@@ -414,7 +407,7 @@ class SkillSettingsDownloader:
         try:
             remote_settings = self.api.get_skill_settings()
         except Exception:
-            LOG.exception('Failed to download remote settings from server.')
+            LOG.error('Failed to download remote settings from server.')
             remote_settings = None
 
         return remote_settings
@@ -426,7 +419,7 @@ class SkillSettingsDownloader:
             try:
                 previous_settings = self.last_download_result.get(skill_gid)
             except Exception:
-                LOG.exception('error occurred handling setting change events')
+                LOG.error('error occurred handling setting change events')
             else:
                 if previous_settings != skill_settings:
                     settings_changed = True

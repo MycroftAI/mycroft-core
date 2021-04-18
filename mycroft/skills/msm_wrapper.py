@@ -23,11 +23,24 @@ from collections import namedtuple
 from functools import lru_cache
 from os import path, makedirs
 
-from msm import MycroftSkillsManager, SkillRepo
-
+from mycroft.configuration import Configuration
 from mycroft.util.combo_lock import ComboLock
 from mycroft.util.log import LOG
 from mycroft.util.file_utils import get_temp_path
+
+from mock_msm import \
+    MycroftSkillsManager as MockMSM, \
+    SkillRepo as MockSkillRepo
+
+try:
+    from msm.exceptions import MsmException
+    from msm import MycroftSkillsManager, SkillRepo
+except ImportError:
+    MycroftSkillsManager = MockMSM
+    SkillRepo = MockSkillRepo
+    from mock_msm.exceptions import MsmException
+
+
 
 MsmConfig = namedtuple(
     'MsmConfig',
@@ -37,9 +50,20 @@ MsmConfig = namedtuple(
         'repo_cache',
         'repo_url',
         'skills_dir',
-        'versioned'
+        'old_skills_dir',
+        'versioned',
+        'disabled'
     ]
 )
+
+
+def get_skills_directory():
+    conf = build_msm_config(Configuration.get())
+    skills_folder = conf.skills_dir
+    # create folder if needed
+    if not path.exists(skills_folder):
+        makedirs(skills_folder)
+    return path.expanduser(skills_folder)
 
 
 def _init_msm_lock():
@@ -63,18 +87,24 @@ def build_msm_config(device_config: dict) -> MsmConfig:
     ensure that changes to configs not related to MSM will not result in new
     instances of MSM being created.
     """
-    msm_config = device_config['skills']['msm']
-    msm_repo_config = msm_config['repo']
-    enclosure_config = device_config['enclosure']
-    data_dir = path.expanduser(device_config['data_dir'])
+    msm_config = device_config['skills'].get('msm', {})
+    msm_repo_config = msm_config.get('repo', {})
+    enclosure_config = device_config.get('enclosure', {})
+    data_dir = path.expanduser(device_config.get('data_dir', "/opt/mycroft"))
+    path_override = device_config['skills'].get("directory_override")
+    skills_dir = path.join(data_dir, msm_config.get('directory', "skills"))
 
     return MsmConfig(
         platform=enclosure_config.get('platform', 'default'),
-        repo_branch=msm_repo_config['branch'],
-        repo_cache=path.join(data_dir, msm_repo_config['cache']),
-        repo_url=msm_repo_config['url'],
-        skills_dir=path.join(data_dir, msm_config['directory']),
-        versioned=msm_config['versioned']
+        repo_branch=msm_repo_config.get('branch', "21.02"),
+        repo_cache=path.join(data_dir, msm_repo_config.get(
+            'cache', ".skills-repo")),
+        repo_url=msm_repo_config.get(
+            'url', "https://github.com/MycroftAI/mycroft-skills"),
+        skills_dir=path_override or skills_dir,
+        old_skills_dir=skills_dir,
+        versioned=msm_config.get('versioned', True),
+        disabled=msm_config.get("disabled", not msm_config)
     )
 
 
@@ -87,28 +117,56 @@ def create_msm(msm_config: MsmConfig) -> MycroftSkillsManager:
     especially during the boot sequence when this function is called multiple
     times.
     """
+    if msm_config.disabled:
+        LOG.debug("MSM is disabled, using mock_msm")
+        repo_clazz = MockSkillRepo
+        msm_clazz = MockMSM
+    else:
+        repo_clazz = SkillRepo
+        msm_clazz = MycroftSkillsManager
+
     if msm_config.repo_url != "https://github.com/MycroftAI/mycroft-skills":
         LOG.warning("You have enabled a third-party skill store.\n"
                     "Unable to guarantee the safety of skills from "
                     "sources other than the Mycroft Marketplace.\n"
                     "Proceed with caution.")
     msm_lock = _init_msm_lock()
-    LOG.info('Acquiring lock to instantiate MSM')
+    LOG.debug('Acquiring lock to instantiate MSM')
     with msm_lock:
         if not path.exists(msm_config.skills_dir):
             makedirs(msm_config.skills_dir)
 
-        msm_skill_repo = SkillRepo(
-            msm_config.repo_cache,
-            msm_config.repo_url,
-            msm_config.repo_branch
-        )
-        msm_instance = MycroftSkillsManager(
-            platform=msm_config.platform,
-            skills_dir=msm_config.skills_dir,
-            repo=msm_skill_repo,
-            versioned=msm_config.versioned
-        )
-    LOG.info('Releasing MSM instantiation lock.')
+        # NOTE newer versions of msm do not have repo_cache param
+        # XDG support is version dependent
+        try:
+            msm_skill_repo = repo_clazz(
+                msm_config.repo_cache,
+                msm_config.repo_url,
+                msm_config.repo_branch
+            )
+        except:
+            msm_skill_repo = repo_clazz(
+                msm_config.repo_url,
+                msm_config.repo_branch
+            )
+
+        # NOTE older versions of msm do not have old_skills_dir param
+        # XDG support is version dependent
+        try:
+            msm_instance = msm_clazz(
+                platform=msm_config.platform,
+                old_skills_dir=msm_config.old_skills_dir,
+                repo=msm_skill_repo,
+                skills_dir=msm_config.skills_dir,
+                versioned=msm_config.versioned
+            )
+        except:
+            msm_instance = msm_clazz(
+                platform=msm_config.platform,
+                skills_dir=msm_config.skills_dir,
+                repo=msm_skill_repo,
+                versioned=msm_config.versioned
+            )
+    LOG.debug('Releasing MSM instantiation lock.')
 
     return msm_instance
