@@ -25,6 +25,8 @@ from mycroft.messagebus.message import Message
 from mycroft.util.log import LOG
 from mycroft.skills.intent_services.base import IntentMatch
 
+from padaos import IntentContainer as PadaosIntentContainer
+
 
 class PadatiousService:
     """Service class for padatious intent matching."""
@@ -32,19 +34,25 @@ class PadatiousService:
         self.padatious_config = config
         self.bus = bus
         intent_cache = expanduser(self.padatious_config['intent_cache'])
+        self._padaos = self.padatious_config.get("padaos_only", False)
 
         try:
-            from padatious import IntentContainer
+            if not self._padaos:
+                from padatious import IntentContainer
+                self.container = IntentContainer(intent_cache)
         except ImportError:
-            LOG.error('Padatious not installed. Please re-run dev_setup.sh')
+            LOG.error('Padatious not installed. Falling back to Padaos, pure regex alternative')
             try:
                 call(['notify-send', 'Padatious not installed',
-                      'Please run build_host_setup and dev_setup again'])
+                      'Falling back to Padaos, pure regex alternative'])
             except OSError:
                 pass
-            return
+            self._padaos = True
 
-        self.container = IntentContainer(intent_cache)
+        if self._padaos:
+            LOG.warning('using padaos instead of padatious. Some intents may '
+                        'be hard to trigger')
+            self.container = PadaosIntentContainer()
 
         self.bus.on('padatious:register_intent', self.register_intent)
         self.bus.on('padatious:register_entity', self.register_entity)
@@ -67,19 +75,18 @@ class PadatiousService:
         Args:
             message (Message): optional triggering message
         """
-        padatious_single_thread = Configuration.get()[
-            'padatious']['single_thread']
-        if message is None:
-            single_thread = padatious_single_thread
-        else:
-            single_thread = message.data.get('single_thread',
-                                             padatious_single_thread)
-
         self.finished_training_event.clear()
-
-        LOG.info('Training... (single_thread={})'.format(single_thread))
-        self.container.train(single_thread=single_thread)
-        LOG.info('Training complete.')
+        if not self._padaos:
+            padatious_single_thread = Configuration.get()[
+                'padatious']['single_thread']
+            if message is None:
+                single_thread = padatious_single_thread
+            else:
+                single_thread = message.data.get('single_thread',
+                                                 padatious_single_thread)
+            LOG.info('Training... (single_thread={})'.format(single_thread))
+            self.container.train(single_thread=single_thread)
+            LOG.info('Training complete.')
 
         self.finished_training_event.set()
         if not self.finished_initial_train:
@@ -144,9 +151,15 @@ class PadatiousService:
             LOG.warning('Could not find file ' + file_name)
             return
 
-        register_func(name, file_name)
-        self.train_time = get_time() + self.train_delay
-        self.wait_and_train()
+        if self._padaos:
+            # padaos does not accept a file path like padatious
+            with open(file_name) as f:
+                samples = [l.strip() for l in f.readlines()]
+            register_func(name, samples)
+        else:
+            register_func(name, file_name)
+            self.train_time = get_time() + self.train_delay
+            self.wait_and_train()
 
     def register_intent(self, message):
         """Messagebus handler for registering intents.
@@ -155,7 +168,10 @@ class PadatiousService:
             message (Message): message triggering action
         """
         self.registered_intents.append(message.data['name'])
-        self._register_object(message, 'intent', self.container.load_intent)
+        if self._padaos:
+            self._register_object(message, 'intent', self.container.add_intent)
+        else:
+            self._register_object(message, 'intent', self.container.load_intent)
 
     def register_entity(self, message):
         """Messagebus handler for registering entities.
@@ -164,7 +180,10 @@ class PadatiousService:
             message (Message): message triggering action
         """
         self.registered_entities.append(message.data)
-        self._register_object(message, 'entity', self.container.load_entity)
+        if self._padaos:
+            self._register_object(message, 'intent', self.container.add_entity)
+        else:
+            self._register_object(message, 'entity', self.container.load_entity)
 
     def _match_level(self, utterances, limit):
         """Match intent and make sure a certain level of confidence is reached.
@@ -179,6 +198,17 @@ class PadatiousService:
         for utt in utterances:
             for variant in utt:
                 intent = self.calc_intent(variant)
+                if self._padaos:
+                    if not intent.get("name"):
+                        continue
+                    # exact matches only
+                    return IntentMatch(
+                        'Padaos',
+                        intent["name"],
+                        intent["entities"],
+                        intent["name"].split(':')[0]
+                    )
+
                 if intent:
                     best = padatious_intent.conf if padatious_intent else 0.0
                     if best < intent.conf:
