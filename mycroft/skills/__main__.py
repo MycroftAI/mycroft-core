@@ -59,6 +59,14 @@ class DevicePrimer(object):
     def __init__(self, message_bus_client, config):
         self.bus = message_bus_client
         self.platform = config['enclosure'].get("platform", "unknown")
+
+        # force flag is for backwards compat with regular mycroft-core
+        # assumptions
+        force = config['enclosure'].get("force_mycroft_ntp") and \
+                self.platform in RASPBERRY_PI_PLATFORMS
+
+        self.do_ntp_sync = config['enclosure'].get("ntp_sync_on_boot") or force
+
         self.enclosure = EnclosureAPI(self.bus)
         self.is_paired = False
         self.backend_down = False
@@ -100,7 +108,7 @@ class DevicePrimer(object):
         because it could have a negative impact on other software running on
         that device.
         """
-        if self.platform in RASPBERRY_PI_PLATFORMS:
+        if self.do_ntp_sync:
             LOG.info('Updating the system clock via NTP...')
             if self.is_paired:
                 # Only display time sync message when paired because the prompt
