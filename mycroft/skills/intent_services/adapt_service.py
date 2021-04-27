@@ -16,7 +16,7 @@
 from threading import Lock
 import time
 
-from adapt.context import ContextManagerFrame
+from adapt.context import ContextManager as AdaptContextManager
 from adapt.engine import IntentDeterminationEngine
 from adapt.intent import IntentBuilder
 
@@ -65,14 +65,24 @@ def _strip_result(context_features):
     return stripped
 
 
-class ContextManager:
+def _frame_timedout(frame, timeout):
+    """Check if a frame has timed out using it's metadata.
+
+    frame (ContextManagerFrame):
+    """
+    current_time = time.monotonic()
+    return current_time > frame.metadata['timestamp'] + timeout
+
+
+class ContextManager(AdaptContextManager):
     """Adapt Context Manager
 
-    Use to track context throughout the course of a conversational session.
-    How to manage a session's lifecycle is not captured here.
+    This class extends the default ContextManager in adapt to "timeout"
+    context frames after a set time. it also limits the context returned
+    to a single entry.
     """
     def __init__(self, timeout):
-        self.frame_stack = []
+        super().__init__()
         self.timeout = timeout * 60  # minutes to seconds
 
     def clear_context(self):
@@ -85,38 +95,17 @@ class ContextManager:
         Args:
             context_id (str): context entry to remove
         """
-        self.frame_stack = [(f, t) for (f, t) in self.frame_stack
-                            if context_id in f.entities[0].get('data', [])]
+        self.frame_stack = [frame for frame in self.frame_stack
+                            if context_id in frame.entities[0].get('data', [])]
 
-    def inject_context(self, entity, metadata=None):
-        """
-        Args:
-            entity(object): Format example...
-                               {'data': 'Entity tag as <str>',
-                                'key': 'entity proper name as <str>',
-                                'confidence': <float>'
-                               }
-            metadata(object): dict, arbitrary metadata about entity injected
-        """
-        metadata = metadata or {}
-        try:
-            if self.frame_stack:
-                top_frame = self.frame_stack[0]
-            else:
-                top_frame = None
-            if top_frame and top_frame[0].metadata_matches(metadata):
-                top_frame[0].merge_context(entity, metadata)
-            else:
-                frame = ContextManagerFrame(entities=[entity],
-                                            metadata=metadata.copy())
-                self.frame_stack.insert(0, (frame, time.time()))
-        except (IndexError, KeyError):
-            pass
+    def get_context(self, max_frames=None, missing_entities=[]):
+        """Extends the get_context from Adapt's ContextManager.
 
-    def get_context(self, max_frames=None, missing_entities=None):
-        """ Constructs a list of entities from the context.
+        Extensions on top of parent class:
+        - Timeout Context frames after a set time
+        - Only return the most recent matching entity
 
-        Args:
+        Arguments:
             max_frames(int): maximum number of frames to look back
             missing_entities(list of str): a list or set of tag names,
             as strings
@@ -124,45 +113,10 @@ class ContextManager:
         Returns:
             list: a list of entities
         """
-        missing_entities = missing_entities or []
-
-        relevant_frames = [frame[0] for frame in self.frame_stack if
-                           time.time() - frame[1] < self.timeout]
-        if not max_frames or max_frames > len(relevant_frames):
-            max_frames = len(relevant_frames)
-
-        missing_entities = list(missing_entities)
-        context = []
-        last = ''
-        depth = 0
-        entity = {}
-        for i in range(max_frames):
-            frame_entities = [entity.copy() for entity in
-                              relevant_frames[i].entities]
-            for entity in frame_entities:
-                entity['confidence'] = entity.get('confidence', 1.0) \
-                                       / (2.0 + depth)
-            context += frame_entities
-
-            # Update depth
-            if entity['origin'] != last or entity['origin'] == '':
-                depth += 1
-            last = entity['origin']
-
-        result = []
-        if missing_entities:
-            for entity in context:
-                if entity.get('data') in missing_entities:
-                    result.append(entity)
-                    # NOTE: this implies that we will only ever get one
-                    # of an entity kind from context, unless specified
-                    # multiple times in missing_entities. Cannot get
-                    # an arbitrary number of an entity kind.
-                    missing_entities.remove(entity.get('data'))
-        else:
-            result = context
-
-        # Only use the latest  keyword
+        self.frame_stack = [frame for frame in self.frame_stack
+                            if not _frame_timedout(frame, self.timeout)]
+        result = super().get_context(max_frames, missing_entities)
+        # Only use the latest keyword
         return _strip_result(result)
 
 
@@ -179,6 +133,13 @@ class AdaptService:
         self.context_manager = ContextManager(self.context_timeout)
         self.lock = Lock()
 
+    def add_context(self, entity):
+        """Add entity to context."""
+        self.context_manager.inject_context(
+            entity,
+            metadata={'timestamp': time.monotonic()}
+        )
+
     def update_context(self, intent):
         """Updates context with keyword from the intent.
 
@@ -194,9 +155,9 @@ class AdaptService:
                 continue
             context_entity = tag['entities'][0]
             if self.context_greedy:
-                self.context_manager.inject_context(context_entity)
+                self.add_context(context_entity)
             elif context_entity['data'][0][1] in self.context_keywords:
-                self.context_manager.inject_context(context_entity)
+                self.add_context(context_entity)
 
     def match_intent(self, utterances, _=None, __=None):
         """Run the Adapt engine to search for an matching intent.
