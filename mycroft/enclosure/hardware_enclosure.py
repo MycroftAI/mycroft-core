@@ -102,7 +102,7 @@ class HardwareEnclosure:
 
     def show_volume(self, vol):
         new_leds = []
-        vol = int(vol * 10)
+        vol = round(vol * 10)
 
         for x in range(vol):
             new_leds.append( self.palette.BLUE )
