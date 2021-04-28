@@ -102,6 +102,9 @@ class AudioFile:
         except Exception:
             LOG.exception("Failed to write {} to cache".format(self.name))
 
+    def exists(self):
+        return self.path.exists()
+
 
 class PhonemeFile:
     def __init__(self, cache_dir: Path, sentence_hash: str):
@@ -133,6 +136,9 @@ class PhonemeFile:
         except Exception:
             LOG.exception("Failed to write {} to cache".format(self.name))
 
+    def exists(self):
+        return self.path.exists()
+
 
 class TextToSpeechCache:
     """Class for all persistent and temporary caching operations."""
@@ -155,6 +161,16 @@ class TextToSpeechCache:
         ensure_directory_exists(
             str(self.temporary_cache_dir), permissions=0o755
         )
+
+    def __contains__(self, sha):
+        """The cache contains a SHA if it knows of it and it exists on disk."""
+        if sha not in self.cached_sentences:
+            return False  # Doesn't know of it
+        else:
+            # Audio file must exist, phonemes are optional.
+            audio, phonemes = self.cached_sentences[sha]
+            return (audio.exists() and
+                    (phonemes is None or phonemes.exists()))
 
     def load_persistent_cache(self):
         """Load the contents of dialog files to the persistent cache directory.
