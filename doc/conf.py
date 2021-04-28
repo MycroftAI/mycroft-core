@@ -66,7 +66,8 @@ autodoc_mock_imports = list(autodoc_mock_imports) + [
     'serial',
     'websocket',
     'speech_recognition',
-    'yaml'
+    'yaml',
+    'mycroft_bus_client'
 ]
 
 templates_path = ['_templates']
