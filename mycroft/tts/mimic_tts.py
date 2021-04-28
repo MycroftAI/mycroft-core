@@ -39,7 +39,7 @@ def get_mimic_binary():
     Returns:
         (str) path of mimic executable
     """
-    config = Configuration.get().get("tts").get("mimic")
+    config = Configuration.get().get("tts", {}).get("mimic")
 
     bin_ = config.get("path",
                       os.path.join(MYCROFT_ROOT_PATH, 'mimic', 'bin', 'mimic'))
