@@ -108,8 +108,8 @@ class TestNiceNumberFormat(unittest.TestCase):
             representation of the input number in the default language.
         """
         self.assertEqual(nice_number(5.5, lang='as-fd'), '5 and a half',
-                            'should format 5.5 as 5 and a half not {}'.format(
-                            nice_number(5.5, lang='as-df')))
+                         'should format 5.5 as 5 and a half not {}'.format(
+                         nice_number(5.5, lang='as-df')))
 
 
 class TestPronounceNumber(unittest.TestCase):
