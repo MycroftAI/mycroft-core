@@ -28,10 +28,13 @@ The module does implement some useful functions like basic fuzzy matchin.
 """
 
 from difflib import SequenceMatcher
+from warnings import warn
 
 import lingua_franca.parse
-from lingua_franca.lang import get_active_lang, get_primary_lang_code
+from lingua_franca import get_primary_lang_code
+from lingua_franca.lang import get_active_lang
 
+from mycroft.util.lang import get_default_lang
 from .time import now_local
 from .log import LOG
 
@@ -104,8 +107,8 @@ def extract_numbers(text, short_scale=True, ordinals=False, lang=None):
     Returns:
         list: list of extracted numbers as floats, or empty list if none found
     """
-    return lingua_franca.parse.extract_numbers(text, short_scale,
-                                               ordinals, lang)
+    return lingua_franca.parse.extract_numbers(text, short_scale, ordinals,
+                                               lang or get_default_lang())
 
 
 def extract_number(text, short_scale=True, ordinals=False, lang=None):
@@ -122,8 +125,8 @@ def extract_number(text, short_scale=True, ordinals=False, lang=None):
         (int, float or False): The number extracted or False if the input
                                text contains no numbers
     """
-    return lingua_franca.parse.extract_number(text, short_scale,
-                                              ordinals, lang)
+    return lingua_franca.parse.extract_number(text, short_scale, ordinals,
+                                              lang or get_default_lang())
 
 
 def normalize(text, lang=None, remove_articles=True):
@@ -138,10 +141,12 @@ def normalize(text, lang=None, remove_articles=True):
     Returns:
         (str): The normalized string.
     """
-    return lingua_franca.parse.normalize(text, lang, remove_articles)
+    return lingua_franca.parse.normalize(
+        text, lang or get_default_lang(), remove_articles)
 
 
-def extract_datetime(text, anchorDate=None, lang=None, default_time=None):
+def extract_datetime(text, anchorDate=now_local(),
+                     lang=None, default_time=None):
     """Extracts date and time information from a sentence.
 
     Parses many of the common ways that humans express dates and times,
@@ -185,13 +190,17 @@ def extract_datetime(text, anchorDate=None, lang=None, default_time=None):
         ... )
         None
     """
-    return lingua_franca.parse.extract_datetime(text,
-                                                anchorDate or now_local(),
-                                                lang, default_time)
+    if anchorDate is None:
+        warn(DeprecationWarning("extract_datetime(anchorDate==None) is "
+                                "deprecated. This parameter can be omitted."))
+        anchorDate = now_local()
+    return lingua_franca.parse.extract_datetime(text, anchorDate,
+                                                lang or get_default_lang(),
+                                                default_time)
 
 
 def extract_duration(text, lang=None):
-    """ Convert an english phrase into a number of seconds
+    """Convert an english phrase into a number of seconds
 
     Convert things like:
         "10 minute"
@@ -216,7 +225,7 @@ def extract_duration(text, lang=None):
                     be None if no duration is found. The text returned
                     will have whitespace stripped from the ends.
     """
-    lang_code = get_primary_lang_code(lang)
+    lang_code = get_primary_lang_code(lang or get_default_lang())
     return lingua_franca.parse.extract_duration(text, lang_code)
 
 
@@ -232,4 +241,5 @@ def get_gender(word, context="", lang=None):
         str: The code "m" (male), "f" (female) or "n" (neutral) for the gender,
              or None if unknown/or unused in the given language.
     """
-    return lingua_franca.parse.get_gender(word, context, lang)
+    return lingua_franca.parse.get_gender(
+        word, context, lang or get_default_lang())

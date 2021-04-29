@@ -5,10 +5,15 @@ from threading import Thread
 import time
 from unittest import TestCase, mock
 
+from lingua_franca import load_language
+
 from mycroft import MycroftSkill
 from mycroft.messagebus import Message
 
 from test.unittests.mocks import base_config, AnyCallable
+
+
+load_language("en-us")
 
 
 def create_converse_responder(response, skill):
