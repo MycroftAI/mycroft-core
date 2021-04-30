@@ -15,7 +15,7 @@ python-dateutil==2.6.0
 fasteners==0.14.1
 PyYAML==5.4
 
-git+git://github.com/mycroftai/lingua-franca@master#egg=lingua-franca
+https://github.com/mycroftai/lingua-franca/tarball/master#egg=lingua-franca
 msm==0.8.8
 msk==0.3.16
 mycroft-messagebus-client==0.9.1
