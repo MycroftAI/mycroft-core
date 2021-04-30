@@ -24,7 +24,7 @@ from pathlib import Path
 from lingua_franca import load_language
 from lingua_franca.internal import UnsupportedLanguageError
 
-from mycroft.configuration import Configuration
+from mycroft.configuration import Configuration, set_default_lf_lang
 from mycroft.util.format import (
     TimeResolution,
     nice_number,
@@ -38,7 +38,6 @@ from mycroft.util.format import (
     date_time_format,
     join_list
 )
-from mycroft.util.lang import set_default_lf_lang
 
 # The majority of these tests are explicitly written for English.
 # Changes to the default language are tested below.

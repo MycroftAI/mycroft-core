@@ -21,19 +21,6 @@ lingua-franca (https://github.com/mycroftai/lingua-franca) selected language
 
 from lingua_franca.lang import set_default_lang as _set_default_lf_lang
 
-import mycroft.configuration
-
-
-def get_default_lang():
-    """Get the default language from the Mycroft configuration.
-
-    Note: Currently STT and TTS engines have their own language configurations
-          which do not operate off this default language.
-    """
-    # return "en-us"
-    config = mycroft.configuration.Configuration.get()
-    return config.get("lang", "en-us")
-
 
 def set_default_lf_lang(lang_code="en-us"):
     """Set the default language of Lingua Franca for parsing and formatting.

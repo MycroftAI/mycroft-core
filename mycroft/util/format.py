@@ -29,14 +29,12 @@ import warnings
 from calendar import leapdays
 from enum import Enum
 
-import lingua_franca
+import lingua_franca.format
 # These are the main functions we are using lingua franca to provide
 from lingua_franca.format import (NUMBER_TUPLE, DateTimeFormat, join_list,
                                   date_time_format, expand_options,
                                   _translate_word)
 from padatious.util import expand_parentheses
-
-from .lang import get_default_lang
 
 
 def nice_number(number, lang=None, speech=True, denominators=None):
@@ -51,9 +49,8 @@ def nice_number(number, lang=None, speech=True, denominators=None):
     Returns:
         (str): The formatted string.
     """
-    return lingua_franca.format.nice_number(number,
-                                            lang or get_default_lang(),
-                                            speech, denominators)
+    return lingua_franca.format.nice_number(number, lang, speech,
+                                            denominators)
 
 
 def nice_time(dt, lang=None, speech=True, use_24hour=False,
@@ -71,8 +68,8 @@ def nice_time(dt, lang=None, speech=True, use_24hour=False,
     Returns:
         (str): The formatted time string
     """
-    return lingua_franca.format.nice_time(dt, lang or get_default_lang(),
-                                          speech, use_24hour, use_ampm)
+    return lingua_franca.format.nice_time(dt, lang, speech, use_24hour,
+                                          use_ampm)
 
 
 def pronounce_number(number, lang=None, places=2, short_scale=True,
@@ -88,10 +85,8 @@ def pronounce_number(number, lang=None, places=2, short_scale=True,
     Returns:
         (str): The pronounced number
     """
-    return lingua_franca.format.pronounce_number(number,
-                                                 lang or get_default_lang(),
-                                                 places, short_scale,
-                                                 scientific)
+    return lingua_franca.format.pronounce_number(number, lang, places,
+                                                 short_scale, scientific)
 
 
 def nice_date(dt, lang=None, now=None):
@@ -109,7 +104,7 @@ def nice_date(dt, lang=None, now=None):
     Returns:
         (str): The formatted date string
     """
-    return lingua_franca.format.nice_date(dt, lang or get_default_lang(), now)
+    return lingua_franca.format.nice_date(dt, lang, now)
 
 
 def nice_date_time(dt, lang=None, now=None, use_24hour=False,
@@ -131,8 +126,8 @@ def nice_date_time(dt, lang=None, now=None, use_24hour=False,
     Returns:
         (str): The formatted date time string
     """
-    return lingua_franca.format.nice_date_time(dt, lang or get_default_lang(),
-                                               now, use_24hour, use_ampm)
+    return lingua_franca.format.nice_date_time(dt, lang, now, use_24hour,
+                                               use_ampm)
 
 
 def nice_year(dt, lang=None, bc=False):
@@ -148,7 +143,7 @@ def nice_year(dt, lang=None, bc=False):
     Returns:
         (str): The formatted year string
     """
-    return lingua_franca.format.nice_year(dt, lang or get_default_lang(), bc)
+    return lingua_franca.format.nice_year(dt, lang, bc)
 
 
 class TimeResolution(Enum):
@@ -435,9 +430,9 @@ def nice_duration(duration, lang=None, speech=True, use_years=True,
     Returns:
         str: timespan as a string
     """
-    return _duration_handler(duration, lang=lang or get_default_lang(),
-                             speech=speech, use_years=use_years,
-                             resolution=resolution, clock=clock)
+    return _duration_handler(duration, lang=lang, speech=speech,
+                             use_years=use_years, resolution=resolution,
+                             clock=clock)
 
 
 def nice_duration_dt(date1, date2, lang=None, speech=True, use_years=True,
@@ -486,6 +481,6 @@ def nice_duration_dt(date1, date2, lang=None, speech=True, use_years=True,
     except(TypeError):
         big = date1
         small = date2
-    return _duration_handler(big, lang=lang or get_default_lang(),
-                             speech=speech, time2=small, use_years=use_years,
-                             resolution=resolution, clock=clock)
+    return _duration_handler(big, lang=lang, speech=speech, time2=small,
+                             use_years=use_years, resolution=resolution,
+                             clock=clock)

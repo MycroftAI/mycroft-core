@@ -16,8 +16,7 @@
 from copy import copy
 import time
 
-from mycroft.configuration import Configuration
-from mycroft.util.lang import set_default_lf_lang
+from mycroft.configuration import Configuration, set_default_lf_lang
 from mycroft.util.log import LOG
 from mycroft.util.parse import normalize
 from mycroft.metrics import report_timing, Stopwatch

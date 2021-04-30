@@ -28,7 +28,7 @@ from mycroft import dialog
 from mycroft.api import is_paired, BackendDown, DeviceApi
 from mycroft.audio import wait_while_speaking
 from mycroft.enclosure.api import EnclosureAPI
-from mycroft.configuration import Configuration
+from mycroft.configuration import Configuration, set_default_lf_lang
 from mycroft.messagebus.message import Message
 from mycroft.util import (
     connected,
@@ -36,7 +36,6 @@ from mycroft.util import (
     start_message_bus_client,
     wait_for_exit_signal
 )
-from mycroft.util.lang import set_default_lf_lang
 from mycroft.util.log import LOG
 from mycroft.util.process_utils import ProcessStatus, StatusCallbackMap
 
