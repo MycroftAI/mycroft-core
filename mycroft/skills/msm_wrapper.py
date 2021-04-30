@@ -27,7 +27,7 @@ from msm import MycroftSkillsManager, SkillRepo
 
 from mycroft.util.combo_lock import ComboLock
 from mycroft.util.log import LOG
-from mycroft.util.file_utils import create_temp_path
+from mycroft.util.file_utils import get_temp_path
 
 MsmConfig = namedtuple(
     'MsmConfig',
@@ -45,7 +45,7 @@ MsmConfig = namedtuple(
 def _init_msm_lock():
     msm_lock = None
     try:
-        msm_lock = ComboLock(create_temp_path('mycroft-msm.lck'))
+        msm_lock = ComboLock(get_temp_path('mycroft-msm.lck'))
         LOG.debug('mycroft-msm combo lock instantiated')
     except Exception:
         LOG.exception('Failed to create msm lock!')

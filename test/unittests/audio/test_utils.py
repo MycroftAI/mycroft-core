@@ -23,7 +23,7 @@ from os.path import exists
 
 import mycroft.audio
 from mycroft.util import create_signal, check_for_signal
-from mycroft.util.file_utils import create_temp_path
+from mycroft.util.file_utils import get_temp_path
 
 """Tests for public audio service utils."""
 
@@ -39,8 +39,8 @@ def wait_while_speaking_thread():
 
 class TestInterface(unittest.TestCase):
     def setUp(self):
-        if exists(create_temp_path('mycroft')):
-            rmtree(create_temp_path('mycroft'))
+        if exists(get_temp_path('mycroft')):
+            rmtree(get_temp_path('mycroft'))
 
     def test_is_speaking(self):
         create_signal('isSpeaking')

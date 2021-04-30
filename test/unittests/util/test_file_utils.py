@@ -10,7 +10,7 @@ from mycroft.util import (
     resolve_resource_file,
     curate_cache,
     create_file,
-    create_temp_path,
+    get_temp_path,
     get_cache_directory,
     read_stripped_lines,
     read_dict)
@@ -201,11 +201,13 @@ class TestCreateFile(TestCase):
         create_file(test_path)
         self.assertTrue(exists(test_path))
 
-    def test_create_temp_path(self):
+    def test_get_temp_path(self):
         temp_dir = tempfile.gettempdir()
-        temp_path = create_temp_path('mycroft', 'example.txt')
-        self.assertEqual(temp_path, f'{temp_dir}/mycroft/example.txt')
-        failed_temp_path = create_temp_path(1)
+        temp_file = get_temp_path('example.txt')
+        self.assertEqual(temp_file, temp_dir + '/example.txt')
+        temp_path = get_temp_path('mycroft', 'audio', 'example.wav')
+        self.assertEqual(temp_path, temp_dir + '/mycroft/audio/example.wav')
+        failed_temp_path = get_temp_path(1)
         self.assertEqual(failed_temp_path, None)
 
     def tearDownClass():

@@ -22,7 +22,7 @@ import os  # Operating System functions
 # Wrapper around chain of handler functions for a specific system level signal.
 # Often used to trap Ctrl-C for specific application purposes.
 from mycroft.util import LOG
-from mycroft.util.file_utils import create_temp_path
+from mycroft.util.file_utils import get_temp_path
 
 
 class Signal:  # python 3+ class Signal
@@ -99,7 +99,7 @@ class Lock:  # python 3+ 'class Lock'
 
     #
     # Class constants
-    DIRECTORY = create_temp_path('mycroft') 
+    DIRECTORY = get_temp_path('mycroft')
     FILE = '/{}.pid'
 
     #

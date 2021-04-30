@@ -4,10 +4,10 @@ from unittest import TestCase, mock
 
 from mycroft.util.download import (download, _running_downloads,
                                    _get_download_tmp)
-from mycroft.util.file_utils import create_temp_path
+from mycroft.util.file_utils import get_temp_path
 
 TEST_URL = 'http://example.com/mycroft-test.tar.gz'
-TEST_DEST = create_temp_path('file.tar.gz')
+TEST_DEST = get_temp_path('file.tar.gz')
 
 
 @mock.patch('mycroft.util.download.subprocess')
@@ -92,18 +92,18 @@ class TestDownload(TestCase):
 class TestGetTemp(TestCase):
     def test_no_existing(self, mock_glob):
         mock_glob.return_value = []
-        dest = create_temp_path('test')
+        dest = get_temp_path('test')
         self.assertEqual(_get_download_tmp(dest), dest + '.part')
 
     def test_existing(self, mock_glob):
-        mock_glob.return_value = [create_temp_path('test.part')]
-        dest = create_temp_path('test')
+        mock_glob.return_value = [get_temp_path('test.part')]
+        dest = get_temp_path('test')
         self.assertEqual(_get_download_tmp(dest), dest + '.part.1')
 
     def test_multiple_existing(self, mock_glob):
-        mock_glob.return_value = [create_temp_path('test.part'),
-                                  create_temp_path('test.part.1'),
-                                  create_temp_path('test.part.2')]
+        mock_glob.return_value = [get_temp_path('test.part'),
+                                  get_temp_path('test.part.1'),
+                                  get_temp_path('test.part.2')]
 
-        dest = create_temp_path('test')
+        dest = get_temp_path('test')
         self.assertEqual(_get_download_tmp(dest), dest + '.part.3')

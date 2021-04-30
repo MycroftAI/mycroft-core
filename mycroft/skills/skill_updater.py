@@ -26,7 +26,7 @@ from mycroft.util import connected
 from mycroft.util.combo_lock import ComboLock
 from mycroft.util.log import LOG
 from .msm_wrapper import build_msm_config, create_msm
-from mycroft.util.file_utils import create_temp_path
+from mycroft.util.file_utils import get_temp_path
 
 ONE_HOUR = 3600
 FIVE_MINUTES = 300  # number of seconds in a minute
@@ -49,7 +49,7 @@ class SkillUpdater:
     _msm = None
 
     def __init__(self, bus=None):
-        self.msm_lock = ComboLock(create_temp_path('mycroft-msm.lck'))
+        self.msm_lock = ComboLock(get_temp_path('mycroft-msm.lck'))
         self.install_retries = 0
         self.config = Configuration.get()
         update_interval = self.config['skills']['update_interval']
