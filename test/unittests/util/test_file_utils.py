@@ -6,8 +6,14 @@ import tempfile
 from unittest import TestCase, mock
 
 from mycroft import MYCROFT_ROOT_PATH
-from mycroft.util import (resolve_resource_file, curate_cache, create_file,
-                          get_cache_directory, read_stripped_lines, read_dict)
+from mycroft.util import (
+    resolve_resource_file,
+    curate_cache,
+    create_file,
+    create_temp_path,
+    get_cache_directory,
+    read_stripped_lines,
+    read_dict)
 
 
 test_config = {
@@ -194,6 +200,13 @@ class TestCreateFile(TestCase):
         test_path = join(TEST_CREATE_FILE_DIR, 'test_file')
         create_file(test_path)
         self.assertTrue(exists(test_path))
+
+    def test_create_temp_path(self):
+        temp_dir = tempfile.gettempdir()
+        temp_path = create_temp_path('mycroft', 'example.txt')
+        self.assertEqual(temp_path, f'{temp_dir}/mycroft/example.txt')
+        failed_temp_path = create_temp_path(1)
+        self.assertEqual(failed_temp_path, None)
 
     def tearDownClass():
         shutil.rmtree(TEST_CREATE_FILE_DIR, ignore_errors=True)
