@@ -204,9 +204,7 @@ class MockSkillsLoader(object):
         self.skills_root = skills_root
         self.emitter = InterceptEmitter()
         from mycroft.skills.intent_service import IntentService
-        from mycroft.skills.padatious_service import PadatiousService
         self.ih = IntentService(self.emitter)
-        self.ps = PadatiousService(self.emitter, self.ih)
         self.skills = None
         self.emitter.on(
             'intent_failure',
@@ -221,7 +219,8 @@ class MockSkillsLoader(object):
     def load_skills(self):
         skills, self.load_log = load_skills(self.emitter, self.skills_root)
         self.skills = [s for s in skills if s]
-        self.ps.train(Message('', data=dict(single_thread=True)))
+        self.ih.padatious_service.train(
+            Message('', data=dict(single_thread=True)))
         return self.emitter.emitter  # kick out the underlying emitter
 
     def unload_skills(self):
