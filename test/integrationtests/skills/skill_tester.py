@@ -181,8 +181,18 @@ class InterceptEmitter(object):
             self.q.put(event)
         self.emitter.emit(event_name, event, *args, **kwargs)
 
-    def wait_for_response(self, event, *args, **kwargs):
-        return None
+    def wait_for_response(self, event, reply_type=None, *args, **kwargs):
+        """Simple single thread implementation of wait_for_response."""
+        message_type = reply_type or event.msg_type + '.response'
+        response = None
+
+        def response_handler(msg):
+            nonlocal response
+            response = msg
+
+        self.emitter.once(message_type, response_handler)
+        self.emitter.emit(event.msg_type, event)
+        return response
 
     def once(self, event, f):
         self.emitter.once(event, f)
