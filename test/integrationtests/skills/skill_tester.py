@@ -264,6 +264,7 @@ class SkillTest(object):
         self.returned_intent = False
         self.test_status = test_status
         self.failure_msg = None
+        self.end_of_skill = False
 
     def run(self, loader):
         """ Execute the test
@@ -277,6 +278,8 @@ class SkillTest(object):
         Args:
             bool: Test results -- only True if all passed
         """
+        self.end_of_skill = False  # Reset to false at beginning of test
+
         s = [s for s in loader.skills if s and s.root_dir == self.skill]
         if s:
             s = s[0]
@@ -465,10 +468,14 @@ class SkillTest(object):
 
             evaluation_rule.evaluate(event.data)
             if event.msg_type == 'mycroft.skill.handler.complete':
-                return True
+                self.end_of_skill = True
         except Empty:
             pass
-        return False
+
+        if q.empty() and self.end_of_skill:
+            return True
+        else:
+            return False
 
     def shutdown_emitter(self, s):
         """Shutdown the skill connection to the bus."""
