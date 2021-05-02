@@ -144,8 +144,7 @@ class DevicePrimer:
         """
         if not self.is_paired and not self.backend_down:
             LOG.info('Device not paired, invoking the pairing skill')
-            payload = dict(utterances=["pair my device"], lang="en-us")
-            self.bus.emit(Message("recognizer_loop:utterance", payload))
+            self.bus.emit(Message("mycroft.not.paired"))
 
     def _update_device_attributes_on_backend(self):
         """Communicate version information to the backend.
