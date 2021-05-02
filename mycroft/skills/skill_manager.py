@@ -24,6 +24,7 @@ from mycroft.enclosure.api import EnclosureAPI
 from mycroft.configuration import Configuration
 from mycroft.messagebus.message import Message
 from mycroft.util.log import LOG
+from mycroft.util import connected
 from mycroft.skills.msm_wrapper import create_msm as msm_creator, build_msm_config
 from mycroft.skills.settings import SkillSettingsDownloader
 from mycroft.skills.skill_loader import SkillLoader
@@ -228,7 +229,11 @@ class SkillManager(Thread):
     def run(self):
         """Load skills and update periodically from disk and internet."""
         self._remove_git_locks()
-        self._connected_event.wait()
+        if self.skills_config.get("wait_for_internet", True):
+            while not connected() and not self._connected_event.is_set():
+                sleep(1)
+            self._connected_event.set()
+
         if (not self.skill_updater.defaults_installed() and
                 self.skills_config["auto_update"]):
             LOG.info('Not all default skills are installed, '

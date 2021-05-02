@@ -48,7 +48,7 @@ from mycroft.skills.skill_manager import SkillManager
 RASPBERRY_PI_PLATFORMS = ('mycroft_mark_1', 'picroft', 'mycroft_mark_2pi')
 
 
-class DevicePrimer(object):
+class DevicePrimer:
     """Container handling the device preparation.
 
     Args:
@@ -73,19 +73,25 @@ class DevicePrimer(object):
 
     def prepare_device(self):
         """Internet dependent updates of various aspects of the device."""
-        self._get_pairing_status()
-        self._update_system_clock()
-        self._update_system()
-        # Above will block during update process and kill this instance if
-        # new software is installed
+        if connected():
+            self._get_pairing_status()
+            self._update_system_clock()
+            self._update_system()
+            # Above will block during update process and kill this instance if
+            # new software is installed
 
-        if self.backend_down:
-            self._notify_backend_down()
+            if self.backend_down:
+                self._notify_backend_down()
+            else:
+                self._display_skill_loading_notification()
+                self.bus.emit(Message('mycroft.internet.connected'))
+                self._ensure_device_is_paired()
+                self._update_device_attributes_on_backend()
         else:
-            self._display_skill_loading_notification()
-            self.bus.emit(Message('mycroft.internet.connected'))
-            self._ensure_device_is_paired()
-            self._update_device_attributes_on_backend()
+            LOG.warning('Cannot prime device because there is no '
+                        'internet connection, this is OK 99% of the time, '
+                        'but it might affect integration with mycroft '
+                        'backend')
 
     def _get_pairing_status(self):
         """Set an instance attribute indicating the device's pairing status"""
@@ -229,7 +235,8 @@ def main(alive_hook=on_alive, started_hook=on_started, ready_hook=on_ready,
     status.bind(bus)
     status.set_alive()
 
-    _wait_for_internet_connection()
+    if config["skills"].get("wait_for_internet", True):
+        _wait_for_internet_connection()
 
     if skill_manager is None:
         skill_manager = _initialize_skill_manager(bus, watchdog)
