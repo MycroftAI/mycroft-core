@@ -217,7 +217,7 @@ class MockSkillsLoader(object):
         self.ih = IntentService(self.emitter)
         self.skills = None
         self.emitter.on(
-            'intent_failure',
+            'mycroft.skills.fallback',
             FallbackSkill.make_intent_failure_handler(self.emitter))
 
         def make_response(message):
