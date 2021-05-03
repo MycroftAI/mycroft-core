@@ -34,6 +34,8 @@ import lingua_franca.format
 from lingua_franca.format import (NUMBER_TUPLE, DateTimeFormat, join_list,
                                   date_time_format, expand_options,
                                   _translate_word)
+# TODO 21.08 - move nice_duration methods to Lingua Franca.
+# TODO 21.08 - remove import of private method _translate_word
 from padatious.util import expand_parentheses
 
 
