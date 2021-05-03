@@ -296,7 +296,6 @@ def get_temp_path(*args):
     try:
         path = os.path.join(tempfile.gettempdir(), *args)
     except TypeError:
-        path = None
-        LOG.error('Could not create a temp path, '
-                  'get_temp_path() only accepts Strings')
+        raise TypeError("Could not create a temp path, get_temp_path() only "
+                        "accepts Strings")
     return path
