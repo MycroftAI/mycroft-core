@@ -18,9 +18,6 @@ A collections of utils and tools for making skill development easier.
 """
 from __future__ import absolute_import
 
-import os
-
-import mycroft.audio
 from mycroft.util.format import nice_number
 from .string_utils import camel_case_split
 from .audio_utils import (play_audio_file, play_wav, play_ogg, play_mp3,

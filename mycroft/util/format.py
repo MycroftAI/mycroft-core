@@ -35,8 +35,6 @@ from lingua_franca.format import (NUMBER_TUPLE, DateTimeFormat, join_list,
                                   date_time_format, expand_options,
                                   _translate_word)
 
-from padatious.util import expand_parentheses
-
 
 def nice_number(number, lang=None, speech=True, denominators=None):
     """Format a float to human readable functions

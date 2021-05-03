@@ -537,6 +537,7 @@ class TTSFactory:
     from mycroft.tts.espeak_tts import ESpeak
     from mycroft.tts.fa_tts import FATTS
     from mycroft.tts.google_tts import GoogleTTS
+    from mycroft.tts.google_cloud_tts import GoogleCloudTTS
     from mycroft.tts.mary_tts import MaryTTS
     from mycroft.tts.mimic_tts import Mimic
     from mycroft.tts.spdsay_tts import SpdSay
@@ -553,6 +554,7 @@ class TTSFactory:
         "mimic": Mimic,
         "mimic2": Mimic2,
         "google": GoogleTTS,
+        "google_cloud": GoogleCloudTTS,
         "marytts": MaryTTS,
         "fatts": FATTS,
         "festival": Festival,
