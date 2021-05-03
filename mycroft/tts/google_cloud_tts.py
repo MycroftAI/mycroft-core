@@ -33,10 +33,12 @@ OUTPUT_FILE_FORMAT = {
 class GoogleCloudTTS(TTS):
 
     def __init__(self, lang, config):
-        self.config = Configuration.get().get("tts", {}).get("google_cloud", {})
+        self.config = (Configuration.get().get("tts", {})
+                       .get("google_cloud", {}))
 
         self.type = self.config.get("file_format", "wav").lower()
-        super(GoogleCloudTTS, self).__init__(lang, config, GoogleCloudTTSValidator(self),
+        super(GoogleCloudTTS, self).__init__(lang, config,
+                                             GoogleCloudTTSValidator(self),
                                              audio_ext=self.type)
         self.lang = self.config.get("lang", lang)
 
@@ -44,7 +46,8 @@ class GoogleCloudTTS(TTS):
 
         service_account_info = self.config.get("service_account_info", {})
 
-        credentials = service_account.Credentials.from_service_account_info(service_account_info)
+        credentials = (service_account.Credentials
+                       .from_service_account_info(service_account_info))
 
         # Instantiates a client
         self.client = texttospeech.TextToSpeechClient(credentials=credentials)
@@ -55,17 +58,20 @@ class GoogleCloudTTS(TTS):
         )
 
         # Select the type of audio file you want returned
-        self.audio_config = texttospeech.AudioConfig(audio_encoding=OUTPUT_FILE_FORMAT.get(self.type))
+        self.audio_config = texttospeech.AudioConfig(
+            audio_encoding=OUTPUT_FILE_FORMAT.get(self.type)
+        )
 
     def get_tts(self, sentence, audio_file):
         with open(audio_file, "wb") as out:
             # Set the text input to be synthesized
             synthesis_input = texttospeech.SynthesisInput(text=sentence)
 
-            # Perform the text-to-speech request on the text input with the selected
-            # voice parameters and audio file type
+            # Perform the text-to-speech request on the text input
+            # with the selected voice parameters and audio file type
             response = self.client.synthesize_speech(
-                input=synthesis_input, voice=self.voice, audio_config=self.audio_config
+                input=synthesis_input, voice=self.voice,
+                audio_config=self.audio_config
             )
 
             out.write(response.audio_content)
@@ -84,12 +90,14 @@ class GoogleCloudTTSValidator(TTSValidator):
             synthesis_input = texttospeech.SynthesisInput(text="Test")
 
             self.tts.client.synthesize_speech(
-                input=synthesis_input, voice=self.tts.voice, audio_config=self.tts.audio_config
+                input=synthesis_input, voice=self.tts.voice,
+                audio_config=self.tts.audio_config
             )
         except Exception as ex:
             raise Exception(
-                'Error connecting to Google Cloud TTS server. Please check your '
-                'internet connection and configuration', ex)
+                'Error connecting to Google Cloud TTS server. '
+                'Please check your internet connection '
+                'and configuration settings', ex)
 
     def get_tts_class(self):
         return GoogleCloudTTS
