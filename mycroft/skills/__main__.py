@@ -21,14 +21,15 @@ directory.  The executable gets added to the bin directory when installed
 import time
 from threading import Event
 
-import mycroft.lock
 from msm.exceptions import MsmException
+from lingua_franca import load_languages
 
+import mycroft.lock
 from mycroft import dialog
 from mycroft.api import is_paired, BackendDown, DeviceApi
 from mycroft.audio import wait_while_speaking
 from mycroft.enclosure.api import EnclosureAPI
-from mycroft.configuration import Configuration, set_default_lf_lang
+from mycroft.configuration import Configuration
 from mycroft.messagebus.message import Message
 from mycroft.util import (
     connected,
@@ -198,8 +199,8 @@ def main(alive_hook=on_alive, started_hook=on_started, ready_hook=on_ready,
     # Create PID file, prevent multiple instances of this service
     mycroft.lock.Lock('skills')
     config = Configuration.get()
-    # Set the active lang to match the configured one
-    set_default_lf_lang(config.get('lang', 'en-us'))
+    lang_code = config.get("lang", "en-us")
+    load_languages([lang_code, "en-us"])
 
     # Connect this process to the Mycroft message bus
     bus = start_message_bus_client("SKILLS")
