@@ -9,7 +9,7 @@ from ..skill_data import to_alnum
 
 def unmunge_message(message, skill_id):
     """Restore message keywords by removing the Letterified skill ID.
-    Arguments:
+    Args:
         message (Message): Intent result message
         skill_id (str): skill identifier
     Returns:
@@ -29,7 +29,7 @@ def unmunge_message(message, skill_id):
 def get_handler_name(handler):
     """Name (including class if available) of handler function.
 
-    Arguments:
+    Args:
         handler (function): Function to be named
 
     Returns:
@@ -94,7 +94,7 @@ def create_basic_wrapper(handler, on_error=None):
     This wrapper handles things like metrics, reporting handler start/stop
     and errors.
 
-    Arguments:
+    Args:
         handler (callable): method/function to call
         on_error (function): function to call to report error.
 
@@ -130,7 +130,7 @@ class EventContainer:
     def add(self, name, handler, once=False):
         """Create event handler for executing intent or other event.
 
-        Arguments:
+        Args:
             name (string): IntentParser name
             handler (func): Method to call
             once (bool, optional): Event handler will be removed after it has

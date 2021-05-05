@@ -79,7 +79,7 @@ class MutableStream:
     def read(self, size, of_exc=False):
         """Read data from stream.
 
-        Arguments:
+        Args:
             size (int): Number of bytes to read
             of_exc (bool): flag determining if the audio producer thread
                            should throw IOError at overflows.
@@ -189,7 +189,7 @@ class MutableMicrophone(Microphone):
     def duration_to_bytes(self, sec):
         """Converts a duration in seconds to number of recorded bytes.
 
-        Arguments:
+        Args:
             sec: number of seconds
 
         Returns:
@@ -209,7 +209,7 @@ class NoiseTracker:
     in one continous sequence) followed by a short period of continous quiet
     audio data to be considered complete.
 
-    Arguments:
+    Args:
         minimum (int): lower noise level will be threshold for "quiet" level
         maximum (int): ceiling of noise level
         sec_per_buffer (float): the length of each buffer used when updating
@@ -262,7 +262,7 @@ class NoiseTracker:
     def update(self, is_loud):
         """Update the tracking. with either a loud chunk or a quiet chunk.
 
-        Arguments:
+        Args:
             is_loud: True if a loud chunk should be registered
                      False if a quiet chunk should be registered
         """
@@ -543,7 +543,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
     def _send_wakeword_info(self, emitter):
         """Send messagebus message indicating that a wakeword was received.
 
-        Arguments:
+        Args:
             emitter: bus emitter to send information on.
         """
         SessionManager.touch()
@@ -554,7 +554,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
     def _write_wakeword_to_disk(self, audio, metadata):
         """Write wakeword to disk.
 
-        Arguments:
+        Args:
             audio: Audio data to write
             metadata: List of metadata about the captured wakeword
         """
@@ -586,7 +586,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
     def _wait_until_wake_word(self, source, sec_per_buffer):
         """Listen continuously on source until a wake word is spoken
 
-        Arguments:
+        Args:
             source (AudioSource):  Source producing the audio chunks
             sec_per_buffer (float):  Fractional number of seconds in each chunk
         """

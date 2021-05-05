@@ -31,7 +31,7 @@ _running_downloads = {}  # Cache of running downloads
 def _get_download_tmp(dest):
     """Get temporary file for download.
 
-    Arguments:
+    Args:
         dest (str): path to download location
 
     Returns:
@@ -55,7 +55,7 @@ class Downloader(Thread):
     be set to true and the `.status` will indicate the HTTP status code.
     200 = Success.
 
-    Arguments:
+    Args:
         url (str): Url to download
         dest (str): Path to save data to
         complete_action (callable): Function to run when download is complete
@@ -83,7 +83,7 @@ class Downloader(Thread):
     def perform_download(self, dest):
         """Handle the download through wget.
 
-        Arguments:
+        Args:
             dest (str): Save location
         """
         cmd = ['wget', '-c', self.url, '-O', dest,
@@ -113,7 +113,7 @@ class Downloader(Thread):
         Move the .part file to the final destination and perform any
         actions that should be performed at completion.
 
-        Arguments:
+        Args:
             tmp(str): temporary file path
         """
         os.rename(tmp, self.dest)
@@ -135,7 +135,7 @@ class Downloader(Thread):
 def download(url, dest, complete_action=None, header=None):
     """Start a download or fetch an already running.
 
-    Arguments:
+    Args:
         url (str): url to download
         dest (str): path to save download to
         complete_action (callable): Optional function to call on completion

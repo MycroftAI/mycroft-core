@@ -20,7 +20,7 @@ from mycroft.messagebus.message import Message
 def ensure_uri(s):
     """Interprete paths as file:// uri's.
 
-    Arguments:
+    Args:
         s: string to be checked
 
     Returns:
@@ -43,7 +43,7 @@ def ensure_uri(s):
 class AudioService:
     """AudioService class for interacting with the audio subsystem
 
-    Arguments:
+    Args:
         bus: Mycroft messagebus connection
     """
 
@@ -53,7 +53,7 @@ class AudioService:
     def queue(self, tracks=None):
         """Queue up a track to playing playlist.
 
-        Arguments:
+        Args:
             tracks: track uri or list of track uri's
                     Each track can be added as a tuple with (uri, mime)
                     to give a hint of the mime type to the system
@@ -70,7 +70,7 @@ class AudioService:
     def play(self, tracks=None, utterance=None, repeat=None):
         """Start playback.
 
-        Arguments:
+        Args:
             tracks: track uri or list of track uri's
                     Each track can be added as a tuple with (uri, mime)
                     to give a hint of the mime type to the system
@@ -114,7 +114,7 @@ class AudioService:
     def seek(self, seconds=1):
         """Seek X seconds.
 
-        Arguments:
+        Args:
             seconds (int): number of seconds to seek, if negative rewind
         """
         if seconds < 0:
@@ -125,7 +125,7 @@ class AudioService:
     def seek_forward(self, seconds=1):
         """Skip ahead X seconds.
 
-        Arguments:
+        Args:
             seconds (int): number of seconds to skip
         """
         self.bus.emit(Message('mycroft.audio.service.seek_forward',
@@ -134,7 +134,7 @@ class AudioService:
     def seek_backward(self, seconds=1):
         """Rewind X seconds
 
-         Arguments:
+         Args:
             seconds (int): number of seconds to rewind
         """
         self.bus.emit(Message('mycroft.audio.service.seek_backward',

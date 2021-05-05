@@ -41,7 +41,7 @@ def is_remote_list(values):
 def translate_remote(config, setting):
     """Translate config names from server to equivalents for mycroft-core.
 
-    Arguments:
+    Args:
         config:     base config to populate
         settings:   remote settings to be translated
     """
@@ -69,7 +69,7 @@ def translate_remote(config, setting):
 def translate_list(config, values):
     """Translate list formated by mycroft server.
 
-    Arguments:
+    Args:
         config (dict): target config
         values (list): list from mycroft server config
     """
@@ -92,7 +92,7 @@ class LocalConf(dict):
     def load_local(self, path):
         """Load local json file into self.
 
-        Arguments:
+        Args:
             path (str): file to load
         """
         if exists(path) and isfile(path):
@@ -180,7 +180,7 @@ class Configuration:
         Returns cached instance if available otherwise builds a new
         configuration dict.
 
-        Arguments:
+        Args:
             configs (list): List of configuration dicts
             cache (boolean): True if the result should be cached
 
@@ -196,7 +196,7 @@ class Configuration:
     def load_config_stack(configs=None, cache=False):
         """Load a stack of config dicts into a single dict
 
-        Arguments:
+        Args:
             configs (list): list of dicts to load
             cache (boolean): True if result should be cached
 
@@ -231,7 +231,7 @@ class Configuration:
     def set_config_update_handlers(bus):
         """Setup websocket handlers to update config.
 
-        Arguments:
+        Args:
             bus: Message bus client instance
         """
         bus.on("configuration.updated", Configuration.updated)
@@ -250,7 +250,7 @@ class Configuration:
     def patch(message):
         """Patch the volatile dict usable by skills
 
-        Arguments:
+        Args:
             message: Messagebus message should contain a config
                      in the data payload.
         """
@@ -262,7 +262,7 @@ class Configuration:
     def patch_clear(message):
         """Clear the config patch space.
 
-        Arguments:
+        Args:
             message: Messagebus message should contain a config
                      in the data payload.
         """

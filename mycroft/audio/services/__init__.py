@@ -23,7 +23,7 @@ from abc import ABCMeta, abstractmethod
 class AudioBackend(metaclass=ABCMeta):
     """Base class for all audio backend implementations.
 
-    Arguments:
+    Args:
         config (dict): configuration dict for the instance
         bus (MessageBusClient): Mycroft messagebus emitter
     """
@@ -50,7 +50,7 @@ class AudioBackend(metaclass=ABCMeta):
     def add_list(self, tracks):
         """Add tracks to backend's playlist.
 
-        Arguments:
+        Args:
             tracks (list): list of tracks.
         """
 
@@ -61,7 +61,7 @@ class AudioBackend(metaclass=ABCMeta):
         Starts playing the first track in the playlist and will contiune
         until all tracks have been played.
 
-        Arguments:
+        Args:
             repeat (bool): Repeat playlist, defaults to False
         """
 
@@ -119,14 +119,14 @@ class AudioBackend(metaclass=ABCMeta):
     def seek_forward(self, seconds=1):
         """Skip X seconds.
 
-        Arguments:
+        Args:
             seconds (int): number of seconds to seek, if negative rewind
         """
 
     def seek_backward(self, seconds=1):
         """Rewind X seconds.
 
-        Arguments:
+        Args:
             seconds (int): number of seconds to seek, if negative jump forward.
         """
 

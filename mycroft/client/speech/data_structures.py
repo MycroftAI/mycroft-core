@@ -21,7 +21,7 @@ class RollingMean:
     The optimization is made for cases where value retrieval is made at a
     comparative rate to the sample additions.
 
-    Arguments:
+    Args:
         mean_samples: Number of samples to use for mean value
     """
     def __init__(self, mean_samples):
@@ -66,7 +66,7 @@ class CyclicAudioBuffer:
     TODO: The class is still unoptimized and performance can probably be
     enhanced.
 
-    Arguments:
+    Args:
         size (int): size in bytes
         initial_data (bytes): initial buffer data
     """
@@ -78,7 +78,7 @@ class CyclicAudioBuffer:
     def append(self, data):
         """Add new data to the buffer, and slide out data if the buffer is full
 
-        Arguments:
+        Args:
             data (bytes): binary data to append to the buffer. If buffer size
                           is exceeded the oldest data will be dropped.
         """

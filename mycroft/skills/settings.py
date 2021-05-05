@@ -335,7 +335,7 @@ def load_remote_settings_cache():
 def save_remote_settings_cache(remote_settings):
     """Save updated remote settings to cache file.
 
-    Arguments:
+    Args:
         remote_settings (dict): downloaded remote settings.
     """
     try:

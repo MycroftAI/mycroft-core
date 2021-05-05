@@ -37,7 +37,7 @@ def on_error(e='Unknown'):
 def create_enclosure(platform):
     """Create an enclosure based on the provided platform string.
 
-    Arguments:
+    Args:
         platform (str): platform name string
 
     Returns:

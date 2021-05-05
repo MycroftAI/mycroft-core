@@ -113,7 +113,7 @@ class Api:
         The method handles Etags and will return a cached response value
         if nothing has changed on the remote.
 
-        Arguments:
+        Args:
             params (dict): request parameters
             no_refresh (bool): optional parameter to disable refreshs of token
 
@@ -156,9 +156,10 @@ class Api:
 
         Will try to refresh the access token if it's expired.
 
-        Arguments:
+        Args:
             response (requests Response object): Response to parse
             no_refresh (bool): Disable refreshing of the token
+
         Returns:
             data fetched from server
         """
@@ -373,7 +374,7 @@ class DeviceApi(Api):
     def upload_skill_metadata(self, settings_meta):
         """Upload skill metadata.
 
-        Arguments:
+        Args:
             settings_meta (dict): skill info and settings in JSON format
         """
         return self.request({
@@ -386,7 +387,7 @@ class DeviceApi(Api):
         """ Upload skills.json file. This file contains a manifest of installed
         and failed installations for use with the Marketplace.
 
-        Arguments:
+        Args:
              data: dictionary with skills data from msm
         """
         if not isinstance(data, dict):
@@ -512,7 +513,7 @@ def is_paired(ignore_errors=True):
 def check_remote_pairing(ignore_errors):
     """Check that a basic backend endpoint accepts our pairing.
 
-    Arguments:
+    Args:
         ignore_errors (bool): True if errors should be ignored when
 
     Returns:

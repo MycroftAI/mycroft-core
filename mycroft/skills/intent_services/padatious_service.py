@@ -65,7 +65,7 @@ class PadatiousService:
     def train(self, message=None):
         """Perform padatious training.
 
-        Arguments:
+        Args:
             message (Message): optional triggering message
         """
         padatious_single_thread = Configuration.get()[
@@ -102,7 +102,7 @@ class PadatiousService:
     def __detach_intent(self, intent_name):
         """ Remove an intent if it has been registered.
 
-        Arguments:
+        Args:
             intent_name (str): intent identifier
         """
         if intent_name in self.registered_intents:
@@ -112,7 +112,7 @@ class PadatiousService:
     def handle_detach_intent(self, message):
         """Messagebus handler for detaching padatious intent.
 
-        Arguments:
+        Args:
             message (Message): message triggering action
         """
         self.__detach_intent(message.data.get('intent_name'))
@@ -120,7 +120,7 @@ class PadatiousService:
     def handle_detach_skill(self, message):
         """Messagebus handler for detaching all intents for skill.
 
-        Arguments:
+        Args:
             message (Message): message triggering action
         """
         skill_id = message.data['skill_id']
@@ -131,7 +131,7 @@ class PadatiousService:
     def _register_object(self, message, object_name, register_func):
         """Generic method for registering a padatious object.
 
-        Arguments:
+        Args:
             message (Message): trigger for action
             object_name (str): type of entry to register
             register_func (callable): function to call for registration
@@ -152,7 +152,7 @@ class PadatiousService:
     def register_intent(self, message):
         """Messagebus handler for registering intents.
 
-        Arguments:
+        Args:
             message (Message): message triggering action
         """
         self.registered_intents.append(message.data['name'])
@@ -161,7 +161,7 @@ class PadatiousService:
     def register_entity(self, message):
         """Messagebus handler for registering entities.
 
-        Arguments:
+        Args:
             message (Message): message triggering action
         """
         self.registered_entities.append(message.data)
@@ -170,7 +170,7 @@ class PadatiousService:
     def _match_level(self, utterances, limit):
         """Match intent and make sure a certain level of confidence is reached.
 
-        Arguments:
+        Args:
             utterances (list of tuples): Utterances to parse, originals paired
                                          with optional normalized version.
             limit (float): required confidence level.
@@ -199,7 +199,7 @@ class PadatiousService:
     def match_high(self, utterances, _=None, __=None):
         """Intent matcher for high confidence.
 
-        Arguments:
+        Args:
             utterances (list of tuples): Utterances to parse, originals paired
                                          with optional normalized version.
         """
@@ -208,7 +208,7 @@ class PadatiousService:
     def match_medium(self, utterances, _=None, __=None):
         """Intent matcher for medium confidence.
 
-        Arguments:
+        Args:
             utterances (list of tuples): Utterances to parse, originals paired
                                          with optional normalized version.
         """
@@ -217,7 +217,7 @@ class PadatiousService:
     def match_low(self, utterances, _=None, __=None):
         """Intent matcher for low confidence.
 
-        Arguments:
+        Args:
             utterances (list of tuples): Utterances to parse, originals paired
                                          with optional normalized version.
         """
@@ -234,7 +234,7 @@ class PadatiousService:
         (PadatiousService), but we can live with that since it is used as a
         singleton.
 
-        Arguments:
+        Args:
             utt (str): utterance to calculate best intent for
         """
         return self.container.calc_intent(utt)

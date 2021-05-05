@@ -46,7 +46,7 @@ def load_test_skill():
 def create_skill_api_from_skill(skill):
     """Helper creating an api from a skill.
 
-    Arguments:
+    Args:
         skill (MycroftSkill): Skill to create api from.
 
     Returns:

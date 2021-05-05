@@ -85,7 +85,7 @@ class GoogleTTS(TTS):
     def get_tts(self, sentence, wav_file):
         """Fetch tts audio using gTTS.
 
-        Arguments:
+        Args:
             sentence (str): Sentence to generate audio for
             wav_file (str): output file path
         Returns:

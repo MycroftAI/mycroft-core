@@ -27,7 +27,7 @@ class FallbackService:
     def _fallback_range(self, utterances, lang, message, fb_range):
         """Send fallback request for a specified priority range.
 
-        Arguments:
+        Args:
             utterances (list): List of tuples,
                                utterances and normalized version
             lang (str): Langauge code

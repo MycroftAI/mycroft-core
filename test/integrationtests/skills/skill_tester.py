@@ -387,7 +387,7 @@ class SkillTest(object):
     def execute_test(self, s):
         """ Execute test case.
 
-        Arguments:
+        Args:
             s (MycroftSkill): mycroft skill to test
 
         Returns:

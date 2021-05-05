@@ -50,7 +50,7 @@ class NoModelAvailable(Exception):
 def msec_to_sec(msecs):
     """Convert milliseconds to seconds.
 
-    Arguments:
+    Args:
         msecs: milliseconds
 
     Returns:
@@ -62,7 +62,7 @@ def msec_to_sec(msecs):
 class HotWordEngine:
     """Hotword/Wakeword base class to be implemented by all wake word plugins.
 
-    Arguments:
+    Args:
         key_phrase (str): string representation of the wake word
         config (dict): Configuration block for the specific wake word
         lang (str): language code (BCP-47)
@@ -89,7 +89,7 @@ class HotWordEngine:
         Checks if the wake word has been found. Should reset any internal
         tracking of the wake word state.
 
-        Arguments:
+        Args:
             frame_data (binary data): Deprecated. Audio data for large chunk
                                       of audio to be processed. This should not
                                       be used to detect audio data instead
@@ -104,7 +104,7 @@ class HotWordEngine:
 
         The engine should process the data and update internal trigger state.
 
-        Arguments:
+        Args:
             chunk (bytes): Chunk of audio data to process
         """
 
@@ -403,7 +403,7 @@ class PorcupineHotWord(HotWordEngine):
     def update(self, chunk):
         """Update detection state from a chunk of audio data.
 
-        Arguments:
+        Args:
             chunk (bytes): Audio data to parse
         """
         pcm = struct.unpack_from("h" * (len(chunk)//2), chunk)
@@ -443,7 +443,7 @@ class PorcupineHotWord(HotWordEngine):
 def load_wake_word_plugin(module_name):
     """Wrapper function for loading wake word plugin.
 
-    Arguments:
+    Args:
         (str) Mycroft wake word module name from config
     """
     return load_plugin('mycroft.plugin.wake_word', module_name)

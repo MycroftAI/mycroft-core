@@ -29,7 +29,7 @@ def wait_for_config_change(context, key, expected_value):
     Waits until the specified key has changed into the expected value, if
     the change delays for too long a TimeoutError will be raised.
 
-    Arguments:
+    Args:
         context (Context): Behave context of current scenario
         key (str): key to verify
         expected_value (Object): The expected value indicating that the change
@@ -45,7 +45,7 @@ def wait_for_config_change(context, key, expected_value):
 def reset_config(context):
     """Cleanup callback to reset patched configuration
 
-    Arguments:
+    Args:
         context (Context): Behave context of current scenario
     """
     context.log.info('Resetting patched configuration...')
@@ -57,7 +57,7 @@ def reset_config(context):
 def patch_config(context, patch):
     """Apply patch to config and wait for it to take effect.
 
-    Arguments:
+    Args:
         context: Behave context for test
         patch: patch to apply
     """
@@ -86,7 +86,7 @@ def patch_config(context, patch):
 def get_config_file_definition(configs_path, config, value):
     """Read config definition file and return the matching patch dict.
 
-    Arguments:
+    Args:
         configs_path: path to the configuration patch json file
         config: config value to fetch from the file
         value: predefined value to fetch
@@ -102,7 +102,7 @@ def get_config_file_definition(configs_path, config, value):
 def get_global_config_definition(context, config, value):
     """Get config definitions included with Mycroft.
 
-    Arguments:
+    Args:
         context: behave test context
         config: config value to fetch from the file
         value: predefined value to fetch
@@ -118,7 +118,7 @@ def get_global_config_definition(context, config, value):
 def get_feature_config_definition(context, config, value):
     """Get config feature specific config defintion
 
-    Arguments:
+    Args:
         context: behave test context
         config: config value to fetch from the file
         value: predefined value to fetch

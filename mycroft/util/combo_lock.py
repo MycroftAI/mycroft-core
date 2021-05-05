@@ -21,7 +21,7 @@ from os import chmod
 class ComboLock:
     """ A combined process and thread lock.
 
-    Arguments:
+    Args:
         path (str): path to the lockfile for the lock
     """
     def __init__(self, path):
@@ -37,7 +37,7 @@ class ComboLock:
     def acquire(self, blocking=True):
         """ Acquire lock, locks thread and process lock.
 
-        Arguments:
+        Args:
             blocking(bool): Set's blocking mode of acquire operation.
                             Default True.
 

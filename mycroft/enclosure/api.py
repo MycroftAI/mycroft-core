@@ -224,7 +224,7 @@ class EnclosureAPI:
     def mouth_viseme(self, start, viseme_pairs):
         """ Send mouth visemes as a list in a single message.
 
-            Arguments:
+            Args:
                 start (int):    Timestamp for start of speech
                 viseme_pairs:   Pairs of viseme id and cumulative end times
                                 (code, end time)
