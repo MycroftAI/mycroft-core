@@ -17,11 +17,12 @@
 The mycroft.util.format module provides various formatting functions for
 things like numbers, times, etc.
 
-The module uses lingua-franca (https://github.com/mycroftai/lingua-franca) to
-do most of the actual parsing.
+The focus of these formatting functions is to create human digestible content
+either as speech or in display form. It is also enables localization.
 
-The focus of these formatting functions is to create natural sounding speech
-and allow localization.
+The module uses lingua-franca (https://github.com/mycroftai/lingua-franca) to
+do most of the actual parsing. However methods may be wrapped specifically for
+use in Mycroft Skills.
 """
 import datetime
 import warnings

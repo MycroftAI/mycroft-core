@@ -15,16 +15,16 @@
 #
 
 """
-The mycroft.util.parse module provides various parsing functions for
-things like numbers, times, durations etc.
+The mycroft.util.parse module provides various parsing functions for things
+like numbers, times, durations etc. It's intention is to convert naturally
+expressed concepts into standard computer readable formats. Doing this also
+enables localization.
+
+It also provides some useful associated functions like basic fuzzy matching.
 
 The module uses lingua-franca (https://github.com/mycroftai/lingua-franca) to
-do most of the actual parsing.
-
-This module provides the Mycroft localization for time and so forth as well
-as provide a convenience.
-
-The module does implement some useful functions like basic fuzzy matchin.
+do most of the actual parsing. However methods may be wrapped specifically for
+use in Mycroft Skills.
 """
 
 from difflib import SequenceMatcher
@@ -60,8 +60,8 @@ def _log_unsupported_language(language, supported_languages):
                 .format(language=language, supported=supported))
 
 
-def extract_datetime(text, anchorDate=now_local(),
-                     lang=None, default_time=None):
+def extract_datetime(text, anchorDate="DEFAULT", lang=None,
+                     default_time=None):
     """Extracts date and time information from a sentence.
 
     Parses many of the common ways that humans express dates and times,
@@ -106,8 +106,9 @@ def extract_datetime(text, anchorDate=now_local(),
         None
     """
     if anchorDate is None:
-        warn(DeprecationWarning("extract_datetime(anchorDate==None) is "
+        warn(DeprecationWarning("extract_datetime(anchorDate=None) is "
                                 "deprecated. This parameter can be omitted."))
+    if anchorDate is None or anchorDate == "DEFAULT":
         anchorDate = now_local()
     return lingua_franca.parse.extract_datetime(text, anchorDate, lang,
                                                 default_time)
