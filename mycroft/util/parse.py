@@ -24,7 +24,7 @@ do most of the actual parsing.
 This module provides the Mycroft localization for time and so forth as well
 as provide a convenience.
 
-The module does implement some useful functions like basic fuzzy matchin.
+The module does implement some useful functions like basic fuzzy matching.
 """
 
 from difflib import SequenceMatcher
@@ -54,6 +54,7 @@ def _log_unsupported_language(language, supported_languages):
 
 def fuzzy_match(x, against):
     """Perform a 'fuzzy' comparison between two strings.
+
     Returns:
         float: match percentage -- 1.0 for perfect match,
                down to 0.0 for no match at all.
@@ -93,6 +94,7 @@ def match_one(query, choices):
 def extract_numbers(text, short_scale=True, ordinals=False, lang=None):
     """
         Takes in a string and extracts a list of numbers.
+
     Args:
         text (str): the string to extract a number from
         short_scale (bool): Use "short scale" or "long scale" for large
@@ -101,6 +103,7 @@ def extract_numbers(text, short_scale=True, ordinals=False, lang=None):
             See https://en.wikipedia.org/wiki/Names_of_large_numbers
         ordinals (bool): consider ordinal numbers, e.g. third=3 instead of 1/3
         lang (str): the BCP-47 code for the language to use, None uses default
+
     Returns:
         list: list of extracted numbers as floats, or empty list if none found
     """
@@ -110,6 +113,7 @@ def extract_numbers(text, short_scale=True, ordinals=False, lang=None):
 
 def extract_number(text, short_scale=True, ordinals=False, lang=None):
     """Takes in a string and extracts a number.
+
     Args:
         text (str): the string to extract a number from
         short_scale (bool): Use "short scale" or "long scale" for large
@@ -118,6 +122,7 @@ def extract_number(text, short_scale=True, ordinals=False, lang=None):
             See https://en.wikipedia.org/wiki/Names_of_large_numbers
         ordinals (bool): consider ordinal numbers, e.g. third=3 instead of 1/3
         lang (str): the BCP-47 code for the language to use, None uses default
+
     Returns:
         (int, float or False): The number extracted or False if the input
                                text contains no numbers
@@ -128,13 +133,16 @@ def extract_number(text, short_scale=True, ordinals=False, lang=None):
 
 def normalize(text, lang=None, remove_articles=True):
     """Prepare a string for parsing
+
     This function prepares the given text for parsing by making
     numbers consistent, getting rid of contractions, etc.
+
     Args:
         text (str): the string to normalize
         lang (str): the BCP-47 code for the language to use, None uses default
         remove_articles (bool): whether to remove articles (like 'a', or
                                 'the'). True by default.
+
     Returns:
         (str): The normalized string.
     """
@@ -201,6 +209,7 @@ def extract_duration(text, lang=None):
         "10 minute"
         "2 and a half hours"
         "3 days 8 hours 10 minutes and 49 seconds"
+
     into an int, representing the total number of seconds.
 
     The words used in the duration will be consumed, and
@@ -214,11 +223,11 @@ def extract_duration(text, lang=None):
         lang (str): the BCP-47 code for the language to use, None uses default
 
     Returns:
-        (timedelta, str):
-                    A tuple containing the duration and the remaining text
-                    not consumed in the parsing. The first value will
-                    be None if no duration is found. The text returned
-                    will have whitespace stripped from the ends.
+        (timedelta, str): A tuple containing the duration and the remaining
+                          text not consumed in the parsing. The first value
+                          will be None if no duration is found. The text
+                          returned will have whitespace stripped from the
+                          ends.
     """
     lang_code = get_primary_lang_code(lang)
     return lingua_franca.parse.extract_duration(text, lang_code)

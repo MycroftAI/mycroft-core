@@ -39,14 +39,17 @@ from padatious.util import expand_parentheses
 
 
 def nice_number(number, lang=None, speech=True, denominators=None):
-    """Format a float to human readable functions
+    """Format a float to human readable functions.
+
     This function formats a float to human understandable functions. Like
     4.5 becomes 4 and a half for speech and 4 1/2 for text
+
     Args:
         number (int or float): the float to format
         lang (str): code for the language to use
         speech (bool): format for speech (True) or display (False)
         denominators (iter of ints): denominators to use, default [1 .. 20]
+
     Returns:
         (str): The formatted string.
     """
@@ -56,16 +59,18 @@ def nice_number(number, lang=None, speech=True, denominators=None):
 
 def nice_time(dt, lang=None, speech=True, use_24hour=False,
               use_ampm=False):
-    """
-    Format a time to a comfortable human format
+    """Format a time to a comfortable human format.
+
     For example, generate 'five thirty' for speech or '5:30' for
     text display.
+
     Args:
         dt (datetime): date to format (assumes already in local timezone)
         lang (str): code for the language to use
         speech (bool): format for speech (default/True) or display (False)
         use_24hour (bool): output in 24-hour/military or 12-hour format
         use_ampm (bool): include the am/pm for 12-hour format
+
     Returns:
         (str): The formatted time string
     """
@@ -75,14 +80,16 @@ def nice_time(dt, lang=None, speech=True, use_24hour=False,
 
 def pronounce_number(number, lang=None, places=2, short_scale=True,
                      scientific=False):
-    """
-    Convert a number to it's spoken equivalent
+    """Convert a number to it's spoken equivalent
+
     For example, '5' would be 'five'
+
     Args:
         number: the number to pronounce
         short_scale (bool) : use short (True) or long scale (False)
             https://en.wikipedia.org/wiki/Names_of_large_numbers
         scientific (bool) : convert and pronounce in scientific notation
+
     Returns:
         (str): The pronounced number
     """
@@ -91,9 +98,10 @@ def pronounce_number(number, lang=None, places=2, short_scale=True,
 
 
 def nice_date(dt, lang=None, now=None):
-    """
-    Format a datetime to a pronounceable date
-    For example, generates 'tuesday, june the fifth, 2018'
+    """Format a datetime to a pronounceable date.
+
+    For example, generates 'tuesday, june the fifth, 2018'.
+
     Args:
         dt (datetime): date to format (assumes already in local timezone)
         lang (string): the language to use, use Mycroft default language if not
@@ -102,6 +110,7 @@ def nice_date(dt, lang=None, now=None):
             will be shortened accordingly: No year is returned if now is in the
             same year as td, no month is returned if now is in the same month
             as td. If now and td is the same day, 'today' is returned.
+
     Returns:
         (str): The formatted date string
     """
@@ -112,7 +121,8 @@ def nice_date_time(dt, lang=None, now=None, use_24hour=False,
                    use_ampm=False):
     """Format a datetime to a pronounceable date and time.
 
-    For example, generate 'tuesday, june the fifth, 2018 at five thirty'
+    For example, generate 'tuesday, june the fifth, 2018 at five thirty'.
+
     Args:
         dt (datetime): date to format (assumes already in local timezone)
         lang (string): the language to use, use Mycroft default language if
@@ -124,6 +134,7 @@ def nice_date_time(dt, lang=None, now=None, use_24hour=False,
             is returned.
         use_24hour (bool): output in 24-hour/military or 12-hour format
         use_ampm (bool): include the am/pm for 12-hour format
+
     Returns:
         (str): The formatted date time string
     """
@@ -134,13 +145,15 @@ def nice_date_time(dt, lang=None, now=None, use_24hour=False,
 def nice_year(dt, lang=None, bc=False):
     """Format a datetime to a pronounceable year.
 
-    For example, generate 'nineteen-hundred and eighty-four' for year 1984
+    For example, generate 'nineteen-hundred and eighty-four' for year 1984.
+
     Args:
         dt (datetime): date to format (assumes already in local timezone)
         lang (string): the language to use, use Mycroft default language if
         not provided
         bc (bool) pust B.C. after the year (python does not support dates
             B.C. in datetime)
+
     Returns:
         (str): The formatted year string
     """
@@ -159,8 +172,9 @@ class TimeResolution(Enum):
 def _duration_handler(time1, lang=None, speech=True, *, time2=None,
                       use_years=True, clock=False,
                       resolution=TimeResolution.SECONDS):
-    """ Convert duration in seconds to a nice spoken timespan
-        Used as a handler by nice_duration and nice_duration_dt
+    """Convert duration in seconds to a nice spoken timespan.
+
+    Used as a handler by nice_duration and nice_duration_dt.
 
     Accepts:
         datetime.timedelta, or
@@ -421,6 +435,7 @@ def nice_duration(duration, lang=None, speech=True, use_years=True,
                 TimeResolution.MINUTES
                 TimeResolution.SECONDS
                 TimeResolution.MILLISECONDS
+
             NOTE: nice_duration will not produce milliseconds
             unless that resolution is passed.
 
