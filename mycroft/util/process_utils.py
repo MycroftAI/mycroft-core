@@ -209,14 +209,18 @@ class ProcessStatus:
                                           various status changes.
     """
 
-    def __init__(self, name, bus, callback_map=None):
-
-        # Messagebus connection
-        self.bus = bus
+    def __init__(self, name, bus=None, callback_map=None):
         self.name = name
-
         self.callbacks = callback_map or StatusCallbackMap()
         self.state = ProcessState.NOT_STARTED
+
+        # Messagebus connection
+        self.bus = None
+        if bus:
+            self.bind(bus)
+
+    def bind(self, bus):
+        self.bus = bus
         self._register_handlers()
 
     def _register_handlers(self):
