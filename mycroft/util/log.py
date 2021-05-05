@@ -88,6 +88,7 @@ class LOG:
         for dir in BaseDirectory.load_config_paths('mycroft'):
             confs.append(join(dir, 'mycroft.conf'))
         confs.append('/etc/mycroft/mycroft.conf')
+        confs = reversed(confs)
         config = {}
         for conf in confs:
             try:
