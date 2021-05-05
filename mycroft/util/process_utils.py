@@ -47,7 +47,7 @@ def bus_logging_status():
 def _update_log_level(msg, name):
     """Update log level for process.
 
-    Arguments:
+    Args:
         msg (Message): Message sent to trigger the log level change
         name (str): Name of the current process
     """
@@ -80,7 +80,7 @@ def create_echo_function(name, whitelist=None):
     messagebus-based processes.
     TODO 20.08: extract log level setting thing completely from this function
 
-    Arguments:
+    Args:
         name (str): Reference name of the process
         whitelist (list, optional): List of "type" strings. If defined, only
                                     messages in this list will be logged.
@@ -129,7 +129,7 @@ def create_echo_function(name, whitelist=None):
 def start_message_bus_client(service, bus=None, whitelist=None):
     """Start the bus client daemon and wait for connection.
 
-    Arguments:
+    Args:
         service (str): name of the service starting the connection
         bus (MessageBusClient): an instance of the Mycroft MessageBusClient
         whitelist (list, optional): List of "type" strings. If defined, only
@@ -201,7 +201,7 @@ class ProcessStatus:
     state changes as well as replies to messagebus queries of the
     process status.
 
-    Arguments:
+    Args:
         name (str): process name, will be used to create the messagebus
                     messagetype "mycroft.{name}...".
         bus (MessageBusClient): Connection to the Mycroft messagebus.
@@ -233,7 +233,7 @@ class ProcessStatus:
     def check_alive(self, message=None):
         """Respond to is_alive status request.
 
-        Arguments:
+        Args:
             message: Optional message to respond to, if omitted no message
                      is sent.
 
@@ -251,7 +251,7 @@ class ProcessStatus:
     def check_ready(self, message=None):
         """Respond to all_loaded status request.
 
-        Arguments:
+        Args:
             message: Optional message to respond to, if omitted no message
                      is sent.
 

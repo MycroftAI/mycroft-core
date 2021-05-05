@@ -120,7 +120,7 @@ def get_random_skills(msm, num_random_skills):
 def install_or_upgrade_skills(msm, skills):
     """Install needed skills if uninstalled, otherwise try to update.
 
-    Arguments:
+    Args:
         msm: msm instance to use for the operations
         skills: list of skills
     """
@@ -139,7 +139,7 @@ def install_or_upgrade_skills(msm, skills):
 def collect_test_cases(msm, skills):
     """Collect feature files and step files for each skill.
 
-    Arguments:
+    Args:
         msm: msm instance to use for the operations
         skills: list of skills
     """
@@ -180,7 +180,7 @@ def get_arguments(cmdline_args):
 
     Parses the commandline and if specified applies configuration file.
 
-    Arguments:
+    Args:
         cmdline_args (list): argv like list of arguments
 
     Returns:
@@ -194,7 +194,7 @@ def get_arguments(cmdline_args):
 def create_skills_manager(platform, skills_dir, url, branch):
     """Create mycroft skills manager for the given url / branch.
 
-    Arguments:
+    Args:
         platform (str): platform to use
         skills_dir (str): skill directory to use
         url (str): skills repo url

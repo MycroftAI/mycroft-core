@@ -58,7 +58,7 @@ class FileSystemAccess:
     def exists(self, filename):
         """Check if file exists in the namespace.
 
-        Arguments:
+        Args:
             filename (str): a path relative to the namespace.
                       subdirs not currently supported.
         Returns:

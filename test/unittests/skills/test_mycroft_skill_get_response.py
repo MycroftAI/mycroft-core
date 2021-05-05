@@ -22,7 +22,7 @@ def create_converse_responder(response, skill):
     The function waits for the converse method to be replaced by the
     _wait_response logic and afterwards injects the provided response.
 
-    Arguments:
+    Args:
         response (str): Sentence to inject.
         skill (MycroftSkill): skill to monitor.
     """

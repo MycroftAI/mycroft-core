@@ -120,7 +120,7 @@ class CommonPlaySkill(MycroftSkill, ABC):
 
         Assume the more of the words that get consumed, the better the match
 
-        Arguments:
+        Args:
             match (str): Matching string
             phrase (str): original input phrase
             level (CPSMatchLevel): match level
@@ -203,7 +203,7 @@ class CommonPlaySkill(MycroftSkill, ABC):
     def CPS_match_query_phrase(self, phrase):
         """Analyze phrase to see if it is a play-able phrase with this skill.
 
-        Arguments:
+        Args:
             phrase (str): User phrase uttered after "Play", e.g. "some music"
 
         Returns:
@@ -233,7 +233,7 @@ class CommonPlaySkill(MycroftSkill, ABC):
     def CPS_start(self, phrase, data):
         """Begin playing whatever is specified in 'phrase'
 
-        Arguments:
+        Args:
             phrase (str): User phrase uttered after "Play", e.g. "some music"
             data (dict): Callback data specified in match_query_phrase()
         """
@@ -245,7 +245,7 @@ class CommonPlaySkill(MycroftSkill, ABC):
         """Request Common Play Framework to wait another {timeout} seconds
         for an answer from this skill.
 
-        Arguments:
+        Args:
             timeout (int): Number of seconds
         """
         self.bus.emit(Message('play:query.response',
@@ -268,7 +268,7 @@ class CommonPlaySkill(MycroftSkill, ABC):
         non-standard parameters are added, they too will be sent in the message
         data.
 
-        Arguments:
+        Args:
             artist (str): Current track artist
             track (str): Track name
             album (str): Album title
@@ -297,7 +297,7 @@ class CommonPlaySkill(MycroftSkill, ABC):
 
         Provides track data for playlist
 
-        Arguments:
+        Args:
             tracklist (list/dict): Tracklist data
         """
         tracklist = tracklist or []

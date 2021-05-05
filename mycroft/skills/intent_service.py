@@ -29,7 +29,7 @@ from .intent_service_interface import open_intent_envelope
 def _get_message_lang(message):
     """Get the language from the message or the default language.
 
-    Arguments:
+    Args:
         message: message to check for language code.
 
     Returns:
@@ -47,7 +47,7 @@ def _normalize_all_utterances(utterances):
     will be set as the second item in the tuple, if normalization doesn't
     change anything the tuple will only have the "raw" original utterance.
 
-    Arguments:
+    Args:
         utterances (list): list of utterances to normalize
 
     Returns:
@@ -159,7 +159,7 @@ class IntentService:
     def do_converse(self, utterances, skill_id, lang, message):
         """Call skill and ask if they want to process the utterance.
 
-        Arguments:
+        Args:
             utterances (list of tuples): utterances paired with normalized
                                          versions.
             skill_id: skill to query.
@@ -182,7 +182,7 @@ class IntentService:
     def handle_converse_error(self, message):
         """Handle error in converse system.
 
-        Arguments:
+        Args:
             message (Message): info about the error.
         """
         skill_id = message.data["skill_id"]
@@ -194,7 +194,7 @@ class IntentService:
     def remove_active_skill(self, skill_id):
         """Remove a skill from being targetable by converse.
 
-        Arguments:
+        Args:
             skill_id (str): skill to remove
         """
         for skill in self.active_skills:
@@ -207,7 +207,7 @@ class IntentService:
         The skill is added to the front of the list, if it's already in the
         list it's removed so there is only a single entry of it.
 
-        Arguments:
+        Args:
             skill_id (str): identifier of skill to be added.
         """
         # search the list for an existing entry that already contains it
@@ -225,7 +225,7 @@ class IntentService:
 
         NOTE: This only applies to those with Opt In.
 
-        Arguments:
+        Args:
             intent (IntentMatch or None): intet match info
             context (dict): context info about the interaction
             stopwatch (StopWatch): Timing info about the skill parsing.
@@ -268,7 +268,7 @@ class IntentService:
         If all these fail the complete_intent_failure message will be sent
         and a generic info of the failure will be spoken.
 
-        Arguments:
+        Args:
             message (Message): The messagebus data
         """
         try:
@@ -318,7 +318,7 @@ class IntentService:
     def _converse(self, utterances, lang, message):
         """Give active skills a chance at the utterance
 
-        Arguments:
+        Args:
             utterances (list):  list of utterances
             lang (string):      4 letter ISO language code
             message (Message):  message to use to generate reply
@@ -343,7 +343,7 @@ class IntentService:
     def send_complete_intent_failure(self, message):
         """Send a message that no skill could handle the utterance.
 
-        Arguments:
+        Args:
             message (Message): original message to forward from
         """
         self.bus.emit(message.forward('complete_intent_failure'))
@@ -351,7 +351,7 @@ class IntentService:
     def handle_register_vocab(self, message):
         """Register adapt vocabulary.
 
-        Arguments:
+        Args:
             message (Message): message containing vocab info
         """
         start_concept = message.data.get('start')
@@ -365,7 +365,7 @@ class IntentService:
     def handle_register_intent(self, message):
         """Register adapt intent.
 
-        Arguments:
+        Args:
             message (Message): message containing intent info
         """
         intent = open_intent_envelope(message)
@@ -374,7 +374,7 @@ class IntentService:
     def handle_detach_intent(self, message):
         """Remover adapt intent.
 
-        Arguments:
+        Args:
             message (Message): message containing intent info
         """
         intent_name = message.data.get('intent_name')
@@ -383,7 +383,7 @@ class IntentService:
     def handle_detach_skill(self, message):
         """Remove all intents registered for a specific skill.
 
-        Arguments:
+        Args:
             message (Message): message containing intent info
         """
         skill_id = message.data.get('skill_id')
@@ -427,7 +427,7 @@ class IntentService:
     def handle_get_intent(self, message):
         """Get intent from either adapt or padatious.
 
-        Arguments:
+        Args:
             message (Message): message containing utterance
         """
         utterance = message.data["utterance"]
@@ -486,7 +486,7 @@ class IntentService:
     def handle_get_adapt(self, message):
         """handler getting the adapt response for an utterance.
 
-        Arguments:
+        Args:
             message (Message): message containing utterance
         """
         utterance = message.data["utterance"]
@@ -518,7 +518,7 @@ class IntentService:
     def handle_get_padatious(self, message):
         """messagebus handler for perfoming padatious parsing.
 
-        Arguments:
+        Args:
             message (Message): message triggering the method
         """
         utterance = message.data["utterance"]
@@ -534,7 +534,7 @@ class IntentService:
     def handle_padatious_manifest(self, message):
         """Messagebus handler returning the registered padatious intents.
 
-        Arguments:
+        Args:
             message (Message): message triggering the method
         """
         self.bus.emit(message.reply(
@@ -544,7 +544,7 @@ class IntentService:
     def handle_entity_manifest(self, message):
         """Messagebus handler returning the registered padatious entities.
 
-        Arguments:
+        Args:
             message (Message): message triggering the method
         """
         self.bus.emit(message.reply(

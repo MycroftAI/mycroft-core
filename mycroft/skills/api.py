@@ -53,7 +53,7 @@ class SkillApi():
     @staticmethod
     def get(skill):
         """Generate api object from skill id.
-        Arguments:
+        Args:
             skill (str): skill id for target skill
 
         Returns:

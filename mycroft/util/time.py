@@ -57,7 +57,7 @@ def now_utc():
 def now_local(tz=None):
     """Retrieve the current time
 
-    Arguments:
+    Args:
         tz (datetime.tzinfo, optional): Timezone, default to user's settings
 
     Returns:
@@ -71,7 +71,7 @@ def now_local(tz=None):
 def to_utc(dt):
     """Convert a datetime with timezone info to a UTC datetime
 
-    Arguments:
+    Args:
         dt (datetime): A datetime (presumably in some local zone)
     Returns:
         (datetime): time converted to UTC
@@ -86,7 +86,7 @@ def to_utc(dt):
 def to_local(dt):
     """Convert a datetime to the user's local timezone
 
-    Arguments:
+    Args:
         dt (datetime): A datetime (if no timezone, defaults to UTC)
     Returns:
         (datetime): time converted to the local timezone
@@ -101,7 +101,7 @@ def to_local(dt):
 def to_system(dt):
     """Convert a datetime to the system's local timezone
 
-    Arguments:
+    Args:
         dt (datetime): A datetime (if no timezone, assumed to be UTC)
     Returns:
         (datetime): time converted to the operation system's timezone

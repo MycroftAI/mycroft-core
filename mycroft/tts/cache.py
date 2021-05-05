@@ -46,7 +46,7 @@ from mycroft.util.log import LOG
 def _get_mimic2_audio(sentence: str, url: str) -> Tuple[bytes, str]:
     """Use the Mimic2 API to retrieve the audio for a sentence.
 
-    Arguments:
+    Args:
         sentence: The sentence to be cached
     """
     LOG.debug("Retrieving Mimic2 audio for sentence \"{}\'".format(sentence))
@@ -62,7 +62,7 @@ def _get_mimic2_audio(sentence: str, url: str) -> Tuple[bytes, str]:
 def hash_sentence(sentence: str):
     """Convert the sentence into a hash value used for the file name
 
-    Arguments:
+    Args:
         sentence: The sentence to be cached
     """
     encoded_sentence = sentence.encode("utf-8", "ignore")
@@ -76,7 +76,7 @@ def hash_from_path(path: Path) -> str:
 
     Simply removes extension and folder structure leaving the hash.
 
-    Arguments:
+    Args:
         path: path to get hash from
 
     Returns:
@@ -93,7 +93,7 @@ class AudioFile:
     def save(self, audio: bytes):
         """Write a TTS cache file containing the audio to be spoken.
 
-        Arguments:
+        Args:
             audio: TTS inference of a sentence
         """
         try:
@@ -123,7 +123,7 @@ class PhonemeFile:
     def save(self, phonemes):
         """Write a TTS cache file containing the phoneme to be displayed.
 
-        Arguments:
+        Args:
             phonemes: instructions for how to make the mouth on a device move
         """
         try:
@@ -228,7 +228,7 @@ class TextToSpeechCache:
         punctuation
             example : <<< LOADING <<<
 
-        Arguments:
+        Args:
             dialogs: a list of the records in the dialog resource files
         """
         sentences = set()
