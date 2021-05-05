@@ -39,6 +39,7 @@ from lingua_franca.parse import (
     match_one,
     normalize,
 )
+from lingua_franca.parse import extract_datetime as _extract_datetime
 
 from .time import now_local
 from .log import LOG
@@ -110,5 +111,4 @@ def extract_datetime(text, anchorDate="DEFAULT", lang=None,
                                 "deprecated. This parameter can be omitted."))
     if anchorDate is None or anchorDate == "DEFAULT":
         anchorDate = now_local()
-    return lingua_franca.parse.extract_datetime(text, anchorDate, lang,
-                                                default_time)
+    return _extract_datetime(text, anchorDate, lang, default_time)
