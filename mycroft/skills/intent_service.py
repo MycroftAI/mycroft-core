@@ -25,6 +25,8 @@ from .intent_services import (
     AdaptService, AdaptIntent, FallbackService, PadatiousService, IntentMatch
 )
 from .intent_service_interface import open_intent_envelope
+from mycroft.messagebus.message import Message
+import json
 
 
 def _get_message_lang(message):
@@ -82,6 +84,7 @@ class IntentService:
         self.bus = bus
 
         self.skill_names = {}
+        self.skill_categories = {}
         config = Configuration.get()
         self.adapt_service = AdaptService(config.get('context', {}))
         try:
@@ -104,12 +107,24 @@ class IntentService:
         # Converse method
         self.bus.on('mycroft.speech.recognition.unknown', self.reset_converse)
         self.bus.on('mycroft.skills.loaded', self.update_skill_name_dict)
+        self.bus.on('mycroft.skills.list', self.update_skill_list)
+
 
         def add_active_skill_handler(message):
-            self.add_active_skill(message.data['skill_id'])
+            category = 'undefined'
+            if message.data.get("skill_cat", None) is not None:
+                category = message.data['skill_cat']
+
+            self.add_active_skill(message.data['skill_id'], category)
+
+        def remove_active_skill_handler(message):
+            self.remove_active_skill(message.data['skill_id'])
 
         self.bus.on('active_skill_request', add_active_skill_handler)
+        self.bus.on('deactivate_skill_request', remove_active_skill_handler)
         self.active_skills = []  # [skill_id , timestamp]
+
+        # BUG fix this!
         self.converse_timeout = 5  # minutes to prune active_skills
 
         # Intents API
@@ -138,6 +153,11 @@ class IntentService:
     def update_skill_name_dict(self, message):
         """Messagebus handler, updates dict of id to skill name conversions."""
         self.skill_names[message.data['id']] = message.data['name']
+        self.bus.emit(Message('skillmanager.list'))
+
+    def update_skill_list(self, message):
+        for skill in message.data:
+            self.skill_categories[message.data[skill]['id']] = message.data[skill]['cat']
 
     def get_skill_name(self, skill_id):
         """Get skill name from skill ID.
@@ -167,6 +187,7 @@ class IntentService:
             lang (str): current language
             message (Message): message containing interaction info.
         """
+        LOG.debug("do_converse()-utterances:%s, active_skills=%s" % (utterances, self.active_skills))
         converse_msg = (message.reply("skill.converse.request", {
             "skill_id": skill_id, "utterances": utterances, "lang": lang}))
         result = self.bus.wait_for_response(converse_msg,
@@ -198,11 +219,11 @@ class IntentService:
         Arguments:
             skill_id (str): skill to remove
         """
-        for skill in self.active_skills:
+        for skill in copy(self.active_skills):
             if skill[0] == skill_id:
                 self.active_skills.remove(skill)
 
-    def add_active_skill(self, skill_id):
+    def add_active_skill(self, skill_id, category='undefined'):
         """Add a skill or update the position of an active skill.
 
         The skill is added to the front of the list, if it's already in the
@@ -216,10 +237,12 @@ class IntentService:
         if skill_id != '':
             self.remove_active_skill(skill_id)
             # add skill with timestamp to start of skill_list
-            self.active_skills.insert(0, [skill_id, time.time()])
+            self.active_skills.insert(0, [skill_id, time.time(), category])
         else:
             LOG.warning('Skill ID was empty, won\'t add to list of '
                         'active skills.')
+
+        LOG.debug("Exit add active skill_id:%s, active_skills=%s" % (skill_id, self.active_skills))
 
     def send_metrics(self, intent, context, stopwatch):
         """Send timing metrics to the backend.
@@ -272,6 +295,7 @@ class IntentService:
         Arguments:
             message (Message): The messagebus data
         """
+        LOG.debug("Enter handle utterance: message.data:%s, active_skills:%s" % (message.data, self.active_skills))
         try:
             lang = _get_message_lang(message)
             set_active_lang(lang)
@@ -297,9 +321,13 @@ class IntentService:
                     match = match_func(combined, lang, message)
                     if match:
                         break
+
             if match:
                 if match.skill_id:
-                    self.add_active_skill(match.skill_id)
+                    if self.skill_categories[match.skill_id] == 'undefined':
+                        # note - new style will activate themselves
+                        LOG.warning("adding old style skill to active_skills array")
+                        self.add_active_skill(match.skill_id, self.skill_categories[match.skill_id])
                     # If the service didn't report back the skill_id it
                     # takes on the responsibility of making the skill "active"
 
@@ -333,12 +361,23 @@ class IntentService:
                               if time.time() - skill[
                                   1] <= self.converse_timeout * 60]
 
+
+        # first check for system levl skills
+        tmp_active_skills = copy(self.active_skills)
+        for skill in tmp_active_skills:
+            if skill[2] == 'system':
+                if self.do_converse(utterances, skill[0], lang, message):
+                    # update timestamp, or there will be a timeout where
+                    # intent stops conversing whether its being used or not
+                    return IntentMatch('Converse', None, None, skill[0])
+
         # check if any skill wants to handle utterance
-        for skill in copy(self.active_skills):
+        for skill in tmp_active_skills:
             if self.do_converse(utterances, skill[0], lang, message):
                 # update timestamp, or there will be a timeout where
                 # intent stops conversing whether its being used or not
                 return IntentMatch('Converse', None, None, skill[0])
+
         return None
 
     def send_complete_intent_failure(self, message):

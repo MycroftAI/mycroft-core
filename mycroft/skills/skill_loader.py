@@ -126,6 +126,7 @@ def _get_last_modified_time(path):
 class SkillLoader:
     def __init__(self, bus, skill_directory):
         self.bus = bus
+        self.category = 'undefined'
         self.skill_directory = skill_directory
         self.skill_id = os.path.basename(skill_directory)
         self.load_attempted = False
@@ -305,6 +306,7 @@ class SkillLoader:
                 self.instance._register_decorated()
                 self.instance.register_resting_screen()
                 self.instance.initialize()
+                self.category = self.instance.category
             except Exception as e:
                 # If an exception occurs, make sure to clean up the skill
                 self.instance.default_shutdown()

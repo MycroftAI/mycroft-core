@@ -165,6 +165,43 @@ class MycroftSkill:
         # Skill Public API
         self.public_api = {}
 
+        # added for backward compatability
+        # skills that are not state aware
+        # now magically have these attributes
+        self.state = 'inactive'
+        self.states = None
+        self.category = 'undefined'
+
+    def change_state(self, new_state):
+        self.log.debug("skill:%s - changing state from %s to %s" % (self.skill_id, self.state, new_state))
+
+        if self.states is None:
+            return
+
+        if new_state not in self.states:
+            self.log.warning("invalid state change, from %s to %s" % (self.state, new_state))
+            return
+
+        if new_state != self.state:
+
+            for intent in self.states[self.state]:
+                self.disable_intent(intent)
+
+            self.state = new_state
+
+            for intent in self.states[self.state]:
+                self.enable_intent(intent)
+
+        if new_state == "inactive":
+            self.log.debug("send msg: deactivate %s" % (self.skill_id,))
+            self.bus.emit(Message('deactivate_skill_request',
+                {'skill_id': self.skill_id}))
+
+        if new_state == "active":
+            self.log.debug("send msg: activate %s" % (self.skill_id,))
+            self.bus.emit(Message('active_skill_request',
+                {'skill_id': self.skill_id, 'skill_cat':self.category}))
+
     def _init_settings(self):
         """Setup skill settings."""
 
@@ -678,8 +715,9 @@ class MycroftSkill:
         This enables converse method to be called even without skill being
         used in last 5 minutes.
         """
-        self.bus.emit(Message('active_skill_request',
-                              {'skill_id': self.skill_id}))
+        if self.category == 'undefined':
+            self.bus.emit(Message('active_skill_request',
+                                  {'skill_id': self.skill_id}))
 
     def _handle_collect_resting(self, _=None):
         """Handler for collect resting screen messages.

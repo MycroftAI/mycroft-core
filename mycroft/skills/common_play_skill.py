@@ -165,7 +165,8 @@ class CommonPlaySkill(MycroftSkill, ABC):
         # "... on the chromecast"
         self.play_service_string = phrase
 
-        self.bus.emit(Message('active_skill_request',  {'skill_id': self.skill_id}))
+        self.bus.emit(Message('active_skill_request',  
+            {'skill_id': self.skill_id, 'skill_cat':self.category}))
 
         # Invoke derived class to provide playback data
         self.CPS_start(phrase, data)

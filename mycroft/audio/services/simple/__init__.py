@@ -165,6 +165,7 @@ class SimpleAudioService(AudioBackend):
 
     def stop(self):
         LOG.info('SimpleAudioServiceStop')
+        self.bus.emit(Message('SimpleAudioServiceStop', {'data': None}))
         self._stop_signal = True
         while self._is_playing:
             sleep(0.1)
