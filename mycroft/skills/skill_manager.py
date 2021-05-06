@@ -81,7 +81,7 @@ class UploadQueue:
             LOG.info('Updating settings meta during runtime...')
         with self.lock:
             # Remove existing loader
-            self._queue == [e for e in self._queue if e != loader]
+            self._queue = [e for e in self._queue if e != loader]
             self._queue.append(loader)
 
 
