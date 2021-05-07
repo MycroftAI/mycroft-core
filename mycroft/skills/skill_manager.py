@@ -42,6 +42,7 @@ class UploadQueue:
     After all queued settingsmeta has been processed and the queue is empty
     the queue will set the self.started flag.
     """
+
     def __init__(self):
         self._queue = []
         self.started = False

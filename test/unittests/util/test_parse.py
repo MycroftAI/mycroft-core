@@ -16,14 +16,23 @@
 import unittest
 from datetime import datetime, timedelta
 
-from mycroft.util.parse import extract_datetime
-from mycroft.util.parse import extract_duration
-from mycroft.util.parse import extract_number, extract_numbers
-from mycroft.util.parse import fuzzy_match
-from mycroft.util.parse import get_gender
-from mycroft.util.parse import match_one
-from mycroft.util.parse import normalize
+from lingua_franca import load_language
+from lingua_franca.internal import FunctionNotLocalizedError
+
+from mycroft.util.parse import (
+    extract_datetime,
+    extract_duration,
+    extract_number,
+    extract_numbers,
+    fuzzy_match,
+    get_gender,
+    match_one,
+    normalize
+)
 from mycroft.util.time import default_timezone
+
+
+load_language("en-us")
 
 
 class TestFuzzyMatch(unittest.TestCase):
@@ -68,10 +77,10 @@ class TestNormalize(unittest.TestCase):
                                         ordinals=True), 2)
         self.assertEqual(extract_number("this is the third test"), 1.0 / 3.0)
         self.assertEqual(extract_number("this is the third test",
-                                        ordinals=True), 3.0)
-        self.assertEqual(extract_number("the fourth one", ordinals=True), 4.0)
+                                        ordinals=True), 3)
+        self.assertEqual(extract_number("the fourth one", ordinals=True), 4)
         self.assertEqual(extract_number("the thirty sixth one",
-                                        ordinals=True), 36.0)
+                                        ordinals=True), 36)
         self.assertEqual(extract_number("this is test number 4"), 4)
         self.assertEqual(extract_number("one third of a cup"), 1.0 / 3.0)
         self.assertEqual(extract_number("three cups"), 3)
@@ -142,11 +151,13 @@ class TestNormalize(unittest.TestCase):
         self.assertEqual(extract_number("a couple thousand beers"), 2000)
         self.assertEqual(extract_number("100%"), 100)
 
-    def test_extract_datetime(self):
+    def test_extract_timezone(self):
         """Check that extract_datetime returns the expected timezone."""
-        tz = default_timezone()
+        default_tz = default_timezone()
         dt, _ = extract_datetime("today")
-        self.assertEqual(tz, dt.tzinfo)
+        # As default_timezone() returns tzlocal() and extract_datetime() may
+        # return a tzfile we cannot directly compare dt.tzinfo to default_tz.
+        self.assertEqual(dt, dt.astimezone(default_tz))
 
     def test_extract_duration_en(self):
         self.assertEqual(extract_duration("10 seconds"),
@@ -167,7 +178,7 @@ class TestNormalize(unittest.TestCase):
                                           " nine seconds"),
                          (timedelta(days=8.5, seconds=39), ""))
         self.assertEqual(extract_duration("Set a timer for 30 minutes"),
-                         (timedelta(minutes=30), "set a timer for"))
+                         (timedelta(minutes=30), "Set a timer for"))
         self.assertEqual(extract_duration("Four and a half minutes until"
                                           " sunset"),
                          (timedelta(minutes=4.5), "until sunset"))
@@ -181,7 +192,7 @@ class TestNormalize(unittest.TestCase):
         self.assertEqual(extract_duration("The movie is one hour, fifty seven"
                                           " and a half minutes long"),
                          (timedelta(hours=1, minutes=57.5),
-                             "the movie is ,  long"))
+                             "The movie is ,  long"))
         self.assertEqual(extract_duration(""), None)
 
     def test_extractdatetime_en(self):
@@ -621,11 +632,11 @@ class TestNormalize(unittest.TestCase):
         self.assertEqual(normalize("that's eighteen nineteen twenty"),
                          "that is 18 19 20")
         self.assertEqual(normalize("that's one nineteen twenty two"),
-                         "that is 1 19 20 2")
+                         "that is 1 19 22")
         self.assertEqual(normalize("that's one hundred"),
-                         "that is 1 hundred")
+                         "that is 100")
         self.assertEqual(normalize("that's one two twenty two"),
-                         "that is 1 2 20 2")
+                         "that is 1 2 22")
         self.assertEqual(normalize("that's one and a half"),
                          "that is 1 and half")
         self.assertEqual(normalize("that's one and a half and five six"),
@@ -826,8 +837,13 @@ class TestNormalize(unittest.TestCase):
         self.assertEqual(normalize("whats 8 + 4"), "what is 8 + 4")
 
     def test_gender(self):
-        self.assertEqual(get_gender("person"),
-                         None)
+        with self.assertRaises(FunctionNotLocalizedError):
+            get_gender("person")  # lang="en-us"
+        load_language("pt")
+        self.assertEqual(get_gender("person", lang="pt"), None)
+        self.assertEqual(get_gender("vaca", lang="pt"), "f")
+        load_language("it")
+        self.assertEqual(get_gender('cavallo', lang='it'), 'm')
 
 
 if __name__ == "__main__":

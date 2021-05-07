@@ -15,7 +15,7 @@ python-dateutil==2.6.0
 fasteners==0.14.1
 PyYAML==5.4
 
-lingua-franca==0.2.2
+lingua-franca==0.4.1
 msm==0.8.8
 msk==0.3.16
 mycroft-messagebus-client==0.9.1
