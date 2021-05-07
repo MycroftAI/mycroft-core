@@ -207,8 +207,8 @@ class TestCreateFile(TestCase):
         self.assertEqual(temp_file, temp_dir + '/example.txt')
         temp_path = get_temp_path('mycroft', 'audio', 'example.wav')
         self.assertEqual(temp_path, temp_dir + '/mycroft/audio/example.wav')
-        failed_temp_path = get_temp_path(1)
-        self.assertEqual(failed_temp_path, None)
+        with self.assertRaises(TypeError):
+            failed_temp_path = get_temp_path(1)
 
     def tearDownClass():
         shutil.rmtree(TEST_CREATE_FILE_DIR, ignore_errors=True)
