@@ -756,10 +756,10 @@ def do_draw_main(scr):
     if len(log_files) > 0:
         scr.addstr(y_log_legend + 2, curses.COLS // 2 + 2,
                    os.path.basename(log_files[0]) + ", other",
-                   CLR_LOG1)
+                   CLR_LOG2)
     if len(log_files) > 1:
         scr.addstr(y_log_legend + 3, curses.COLS // 2 + 2,
-                   os.path.basename(log_files[1]), CLR_LOG2)
+                   os.path.basename(log_files[1]), CLR_LOG1)
 
     # Meter
     y_meter = y_log_legend
@@ -848,9 +848,9 @@ help_struct = [('Log Scrolling shortcuts',
                  ("Home / End",
                   "scroll to start/end of long lines")]),
                ("Query History shortcuts",
-                [("Ctrl+N / Ctrl+Right",
+                [("Ctrl+N / Ctrl+Left",
                   "previous query"),
-                 ("Ctrl+P / Ctrl+Left",
+                 ("Ctrl+P / Ctrl+Right",
                     "next query")]),
                ("General Commands (type ':' to enter command mode)",
                 [(":quit or :exit",
