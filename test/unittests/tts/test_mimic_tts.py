@@ -21,22 +21,27 @@ class TestMimic(unittest.TestCase):
     @mock.patch('mycroft.tts.mimic_tts.subprocess')
     def test_get_tts(self, mock_subprocess, _, mock_device_api):
         mock_device_api.return_value = device_instance_mock
+        mock_subprocess.check_output().decode.return_value = 's:1 pau:2'
+        mock_subprocess.check_output.reset_mock()
         m = Mimic('en-US', {})
         wav, phonemes = m.get_tts('hello', 'abc.wav')
         mock_subprocess.check_output.assert_called_once_with(
             m.args + ['-o', 'abc.wav', '-t', 'hello'])
-        self.assertEqual(phonemes, mock_subprocess.check_output().decode())
+        self.assertEqual(phonemes, [['s', '1'], ['pau', '2']])
 
     def test_viseme(self, _, mock_device_api):
         mock_device_api.return_value = device_instance_mock
         m = Mimic('en-US', {})
-        viseme_string = ('pau:0.206 m:0.287 ah:0.401 ch:0.513 dh:0.578 '
-                         'iy:0.699 s:0.835 ey:1.013 m:1.118 w:1.213 ey:1.345 '
-                         'dh:1.415 ae:1.491 t:1.539 b:1.616 r:1.671 ih:1.744 '
-                         'k:1.819 s:1.923 d:1.978 ow:2.118 n:2.206 t:2.301 '
-                         'pau:2.408')
+        phoneme_list = (['pau', 0.206], ['m', 0.287], ['ah', 0.401],
+                        ['ch', 0.513], ['dh', 0.578], ['iy', 0.699],
+                        ['s', 0.835], ['ey', 1.013], ['m', 1.118],
+                        ['w', 1.213], ['ey', 1.345], ['dh', 1.415],
+                        ['ae', 1.491], ['t', 1.539], ['b', 1.616],
+                        ['r', 1.671], ['ih', 1.744], ['k', 1.819],
+                        ['s', 1.923], ['d', 1.978], ['ow', 2.118],
+                        ['n', 2.206], ['t', 2.301], ['pau', 2.408])
 
-        vis = m.viseme(viseme_string)
+        vis = m.viseme(phoneme_list)
         self.assertEqual(vis,
                          [('4', 0.206), ('4', 0.287), ('0', 0.401),
                           ('3', 0.513), ('3', 0.578), ('0', 0.699),
