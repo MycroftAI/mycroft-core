@@ -137,7 +137,7 @@ class chaseLedThread(threading.Thread):
         chase_ctr = 0
         while not self.exit_flag:
             chase_ctr += 1
-            LOG.error("chase thread %s" % (chase_ctr,))
+            LOG.info("chase thread %s" % (chase_ctr,))
             for x in range(0,10):
                 self.led_obj.set_led(x, self.fgnd_col)
                 time.sleep(self.delay)
@@ -250,11 +250,10 @@ class EnclosureMark2(Enclosure):
         return all([services[ser] for ser in services])
 
     def async_volume_handler(self, vol):
-        LOG.error("ASYNC SET VOL PASSED IN %s" % (vol,))
         if vol > 1.0:
             vol = vol / 10
         self.current_volume = vol
-        LOG.error("ASYNC SET VOL TO %s" % (self.current_volume,))
+        LOG.info("Async set volume to %s" % (self.current_volume))
         # notify anybody listening on the bus who cares
         self.bus.emit(Message("hardware.volume", {
             "volume": self.current_volume}, context={"source": ["enclosure"]}))
