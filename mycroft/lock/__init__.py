@@ -14,7 +14,7 @@
 #
 from signal import getsignal, signal, SIGKILL, SIGINT, SIGTERM, \
     SIG_DFL, default_int_handler, SIG_IGN  # signals
-
+from mycroft.configuration import BASE_FOLDER
 import os  # Operating System functions
 
 
@@ -99,7 +99,7 @@ class Lock:  # python 3+ 'class Lock'
 
     #
     # Class constants
-    DIRECTORY = get_temp_path('mycroft')
+    DIRECTORY = get_temp_path(BASE_FOLDER)
     FILE = '/{}.pid'
 
     #

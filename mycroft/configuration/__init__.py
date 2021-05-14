@@ -16,4 +16,6 @@ from mycroft.configuration.config import Configuration, LocalConf, RemoteConf
 from mycroft.configuration.locale import set_default_lf_lang, setup_locale, \
     set_default_tz, set_default_lang, get_default_tz, get_default_lang, \
     get_config_tz, get_primary_lang_code, load_languages, load_language
-from mycroft.configuration.locations import SYSTEM_CONFIG, USER_CONFIG
+from mycroft.configuration.locations import SYSTEM_CONFIG, USER_CONFIG, \
+    get_xdg_config_locations, BASE_FOLDER, DEFAULT_CONFIG
+from mycroft.configuration.ovos import is_using_xdg, get_ovos_config

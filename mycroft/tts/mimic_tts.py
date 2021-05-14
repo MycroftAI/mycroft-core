@@ -23,10 +23,11 @@ import stat
 import subprocess
 from threading import Thread
 from time import sleep
+import xdg.BaseDirectory
 
 from mycroft import MYCROFT_ROOT_PATH
 from mycroft.api import DeviceApi
-from mycroft.configuration import Configuration
+from mycroft.configuration import Configuration, BASE_FOLDER
 from mycroft.util.download import download
 from mycroft.util.log import LOG
 
@@ -60,7 +61,11 @@ def get_subscriber_voices():
         (dict) map of voices to custom Mimic executables.
     """
     data_dir = expanduser(Configuration.get()['data_dir'])
-    return {'trinity': join(data_dir, 'voices/mimic_tn')}
+    old_path = join(data_dir, 'voices/mimic_tn')
+    if exists(old_path):
+        return {'trinity': old_path}
+    path = join(xdg.BaseDirectory.xdg_config_home, BASE_FOLDER, 'voices', 'mimic_tn')
+    return {'trinity': path}
 
 
 def download_subscriber_voices(selected_voice):
@@ -92,7 +97,7 @@ def download_subscriber_voices(selected_voice):
             LOG.debug('{} is not available for this architecture'
                       .format(selected_voice))
 
-    # Download the rest of the subsciber voices as needed
+    # Download the rest of the subscriber voices as needed
     for voice in subscriber_voices:
         voice_file = subscriber_voices[voice]
         if not exists(voice_file):

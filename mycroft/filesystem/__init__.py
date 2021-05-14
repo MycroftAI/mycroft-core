@@ -15,6 +15,7 @@
 import os
 import shutil
 from os.path import join, expanduser, isdir
+import mycroft.configuration
 import xdg.BaseDirectory
 
 
@@ -34,15 +35,14 @@ class FileSystemAccess:
         if not isinstance(path, str) or len(path) == 0:
             raise ValueError("path must be initialized as a non empty string")
 
-        old_path = join(expanduser('~'), '.mycroft', path)
-        path = join(xdg.BaseDirectory.save_config_path('mycroft'), path)
+        path = expanduser(f'~/.{mycroft.configuration.BASE_FOLDER}/{path}')
 
-        # Migrate from the old location if it still exists
-        # TODO: remove in 22.02
-        if isdir(old_path):
-            if isdir(path):
-                shutil.rmtree(path)
-            shutil.move(old_path, path)
+        if mycroft.configuration.is_using_xdg():
+            xdg_path = expanduser(
+                f'{xdg.BaseDirectory.xdg_config_home}/{mycroft.configuration.BASE_FOLDER}/{path}')
+            # Migrate from the old location if it still exists
+            if isdir(path) and not isdir(xdg_path):
+                shutil.move(path, xdg_path)
 
         if not isdir(path):
             os.makedirs(path)

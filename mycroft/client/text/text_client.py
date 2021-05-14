@@ -32,7 +32,8 @@ from threading import Thread, Lock
 from mycroft.messagebus.client import MessageBusClient
 from mycroft.messagebus.message import Message
 from mycroft.util.log import LOG
-from mycroft.configuration import Configuration
+from mycroft.configuration import Configuration, BASE_FOLDER
+from mycroft.configuration.ovos import is_using_xdg
 
 import locale
 # Curses uses LC_ALL to determine how to display chars set it to system
@@ -176,22 +177,17 @@ def load_settings():
 
     # Old location
     path = os.path.join(os.path.expanduser("~"), ".mycroft_cli.conf")
-    if os.path.isfile(path):
-        LOG.warning(" ===============================================")
-        LOG.warning(" ==             DEPRECATION WARNING           ==")
-        LOG.warning(" ===============================================")
-        LOG.warning(" You still have a config file at " +
-                    path)
-        LOG.warning(" Note that this location is deprecated and will" +
-                    " not be used in the future")
-        LOG.warning(" Please move it to " +
-                    os.path.join(xdg.BaseDirectory.save_config_path('mycroft'),
-                                 filename))
+
+    if not is_using_xdg():
+        config_file = path
+    elif os.path.isfile(path):
+        from mycroft.configuration.config import _log_old_location_deprecation
+        _log_old_location_deprecation(path)
         config_file = path
 
     # Check XDG_CONFIG_DIR
     if config_file is None:
-        for conf_dir in xdg.BaseDirectory.load_config_paths('mycroft'):
+        for conf_dir in xdg.BaseDirectory.load_config_paths(BASE_FOLDER):
             xdg_file = os.path.join(conf_dir, filename)
             if os.path.isfile(xdg_file):
                 config_file = xdg_file
@@ -227,8 +223,14 @@ def save_settings():
     config["max_log_lines"] = max_log_lines
     config["show_meter"] = show_meter
 
-    config_file = os.path.join(
-        xdg.BaseDirectory.save_config_path("mycroft"), filename)
+    # Old location
+    path = os.path.join(os.path.expanduser("~"), ".mycroft_cli.conf")
+
+    if not is_using_xdg():
+        config_file = path
+    else:
+        config_file = os.path.join(xdg.BaseDirectory.xdg_config_home,
+                                   BASE_FOLDER, filename)
 
     with io.open(config_file, 'w') as f:
         f.write(str(json.dumps(config, ensure_ascii=False)))

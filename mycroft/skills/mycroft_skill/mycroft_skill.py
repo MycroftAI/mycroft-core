@@ -24,7 +24,7 @@ from os.path import join, abspath, dirname, basename, exists
 from pathlib import Path
 from threading import Event, Timer
 
-from xdg import BaseDirectory
+import xdg.BaseDirectory
 
 from adapt.intent import Intent, IntentBuilder
 
@@ -33,7 +33,7 @@ from mycroft.api import DeviceApi
 from mycroft.audio import wait_while_speaking
 from mycroft.enclosure.api import EnclosureAPI
 from mycroft.enclosure.gui import SkillGUI
-from mycroft.configuration import Configuration
+from mycroft.configuration import Configuration, BASE_FOLDER
 from mycroft.dialog import load_dialogs
 from mycroft.filesystem import FileSystemAccess
 from mycroft.messagebus.message import Message, dig_for_message
@@ -125,7 +125,7 @@ class MycroftSkill:
 
         # Get directory of skill
         #: Member variable containing the absolute path of the skill's root
-        #: directory. E.g. /opt/mycroft/skills/my-skill.me/
+        #: directory. E.g. $XDG_DATA_HOME/mycroft/skills/my-skill.me/
         self.root_dir = dirname(abspath(sys.modules[self.__module__].__file__))
 
         self.gui = SkillGUI(self)
@@ -169,14 +169,15 @@ class MycroftSkill:
     def _init_settings(self):
         """Setup skill settings."""
 
+        # TODO remove this ugly ugly kludge
         # To not break existing setups,
         # save to skill directory if the file exists already
         self.settings_write_path = Path(self.root_dir)
 
         # Otherwise save to XDG_CONFIG_DIR
         if not self.settings_write_path.joinpath('settings.json').exists():
-            self.settings_write_path = Path(BaseDirectory.save_config_path(
-                'mycroft', 'skills', basename(self.root_dir)))
+            self.settings_write_path = Path(xdg.BaseDirectory.save_config_path(
+                BASE_FOLDER, 'skills', basename(self.root_dir)))
 
         # To not break existing setups,
         # read from skill directory if the settings file exists there
@@ -184,11 +185,9 @@ class MycroftSkill:
 
         # Then, check XDG_CONFIG_DIR
         if not settings_read_path.joinpath('settings.json').exists():
-            for dir in BaseDirectory.load_config_paths('mycroft',
-                                                       'skills',
-                                                       basename(
-                                                           self.root_dir)):
-                path = Path(dir)
+            for path in xdg.BaseDirectory.load_config_paths(BASE_FOLDER, 'skills',
+                                              basename(self.root_dir)):
+                path = Path(path)
                 # If there is a settings file here, use it
                 if path.joinpath('settings.json').exists():
                     settings_read_path = path

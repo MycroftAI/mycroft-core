@@ -63,13 +63,15 @@ def resolve_resource_file(res_name):
         return res_name
 
     # Now look for XDG_DATA_DIRS
-    for conf_dir in xdg.BaseDirectory.load_data_paths('mycroft'):
-        filename = os.path.join(conf_dir, res_name)
+    for path in xdg.BaseDirectory.load_data_paths(mycroft.configuration.BASE_FOLDER):
+        filename = os.path.join(path, res_name)
         if os.path.isfile(filename):
             return filename
 
     # Now look in the old user location
-    filename = os.path.join(os.path.expanduser('~'), '.mycroft', res_name)
+    filename = os.path.join(os.path.expanduser('~'),
+                            f'.{mycroft.configuration.BASE_FOLDER}',
+                            res_name)
     if os.path.isfile(filename):
         return filename
 
@@ -238,11 +240,16 @@ def get_cache_directory(domain=None):
     Returns:
         (str) a path to the directory where you can cache data
     """
-    config = mycroft.configuration.Configuration.get()
+    config = mycroft.configuration.Configuration.get(remote=False)
     directory = config.get("cache_path")
     if not directory:
-        # If not defined, use /tmp/mycroft/cache
-        directory = get_temp_path('mycroft', 'cache')
+        if not mycroft.configuration.is_using_xdg():
+            # If not defined, use /tmp/mycroft/cache
+            directory = get_temp_path(
+                mycroft.configuration.BASE_FOLDER, 'cache')
+        else:
+            directory = os.path.join(xdg.BaseDirectory.xdg_data_home,
+                                     mycroft.configuration.BASE_FOLDER, "cache")
     return ensure_directory_exists(directory, domain)
 
 

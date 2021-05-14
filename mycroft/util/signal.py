@@ -12,14 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-import tempfile
 import time
 
 import os
 import os.path
 
 import mycroft
-from mycroft.util.file_utils import ensure_directory_exists, create_file
+from mycroft.util.file_utils import ensure_directory_exists, create_file, \
+    get_temp_path
 
 
 def get_ipc_directory(domain=None):
@@ -39,7 +39,7 @@ def get_ipc_directory(domain=None):
     path = config.get("ipc_path")
     if not path:
         # If not defined, use /tmp/mycroft/ipc
-        path = os.path.join(tempfile.gettempdir(), "mycroft", "ipc")
+        path = get_temp_path(mycroft.configuration.BASE_FOLDER, "ipc")
     return ensure_directory_exists(path, domain)
 
 

@@ -22,11 +22,14 @@ frequently.  To improve performance, the MSM instance is cached.
 from collections import namedtuple
 from functools import lru_cache
 from os import path, makedirs
+import xdg.BaseDirectory
 
 from mycroft.configuration import Configuration
+from mycroft.configuration.ovos import is_using_xdg
 from mycroft.util.combo_lock import ComboLock
 from mycroft.util.log import LOG
 from mycroft.util.file_utils import get_temp_path
+from mycroft.configuration import BASE_FOLDER
 
 from mock_msm import \
     MycroftSkillsManager as MockMSM, \
@@ -57,9 +60,20 @@ MsmConfig = namedtuple(
 )
 
 
-def get_skills_directory():
-    conf = build_msm_config(Configuration.get())
-    skills_folder = conf.skills_dir
+def get_skills_directory(conf=None):
+    conf = conf or Configuration.get(remote=False)
+    path_override = conf["skills"].get("directory_override")
+    # if .conf wants to use a specific path, use it!
+    if path_override:
+        skills_folder = path_override
+    # if xdg is disabled, ignore it!
+    elif not is_using_xdg():
+        # old style mycroft-core skills path definition
+        data_dir = conf.get("data_dir") or "/opt/" + BASE_FOLDER
+        folder = conf["skills"].get("msm", {}).get("directory", "skills")
+        skills_folder = path.join(data_dir, folder)
+    else:
+        skills_folder = xdg.BaseDirectory.save_data_path(BASE_FOLDER + '/skills')
     # create folder if needed
     if not path.exists(skills_folder):
         makedirs(skills_folder)
@@ -91,8 +105,8 @@ def build_msm_config(device_config: dict) -> MsmConfig:
     msm_repo_config = msm_config.get('repo', {})
     enclosure_config = device_config.get('enclosure', {})
     data_dir = path.expanduser(device_config.get('data_dir', "/opt/mycroft"))
-    path_override = device_config['skills'].get("directory_override")
-    skills_dir = path.join(data_dir, msm_config.get('directory', "skills"))
+    skills_dir = get_skills_directory(device_config)
+    old_skills_dir = path.join(data_dir, msm_config.get('directory', "skills"))
 
     return MsmConfig(
         platform=enclosure_config.get('platform', 'default'),
@@ -101,8 +115,8 @@ def build_msm_config(device_config: dict) -> MsmConfig:
             'cache', ".skills-repo")),
         repo_url=msm_repo_config.get(
             'url', "https://github.com/MycroftAI/mycroft-skills"),
-        skills_dir=path_override or skills_dir,
-        old_skills_dir=skills_dir,
+        skills_dir=skills_dir,
+        old_skills_dir=old_skills_dir,
         versioned=msm_config.get('versioned', True),
         disabled=msm_config.get("disabled", not msm_config)
     )

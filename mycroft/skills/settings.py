@@ -66,7 +66,7 @@ from xdg.BaseDirectory import xdg_cache_home
 import yaml
 
 from mycroft.api import DeviceApi, is_paired, is_backend_disabled
-from mycroft.configuration import Configuration
+from mycroft.configuration import Configuration, BASE_FOLDER
 from mycroft.messagebus.message import Message
 from mycroft.util import camel_case_split
 from mycroft.util.log import LOG
@@ -98,7 +98,7 @@ def save_settings(skill_dir, skill_settings):
     """Save skill settings to file."""
     settings_path = Path(skill_dir).joinpath('settings.json')
 
-    # Either the file already exists in /opt, or we are writing
+    # Either the file already exists or we are writing
     # to XDG_CONFIG_DIR and always have the permission to make
     # sure the file always exists
     if not Path(settings_path).exists():
@@ -309,7 +309,7 @@ class SettingsMetaUploader:
 
 
 # Path to remote cache
-REMOTE_CACHE = Path(xdg_cache_home, 'mycroft', 'remote_skill_settings.json')
+REMOTE_CACHE = Path(xdg_cache_home, BASE_FOLDER, 'remote_skill_settings.json')
 
 
 def load_remote_settings_cache():
