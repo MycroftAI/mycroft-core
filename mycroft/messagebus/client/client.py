@@ -21,9 +21,17 @@ from mycroft.util.process_utils import create_echo_function
 
 
 class MessageBusClient(_MessageBusClient):
-    def __init__(self, host=None, port=None, route=None, ssl=None):
+    # minimize reading of the .conf
+    _config_cache = None
+
+    def __init__(self, host=None, port=None, route=None, ssl=None, cache=False):
         config_overrides = dict(host=host, port=port, route=route, ssl=ssl)
-        config = load_message_bus_config(**config_overrides)
+        if cache and self._config_cache:
+            config = self._config_cache
+        else:
+            config = load_message_bus_config(**config_overrides)
+            if cache:
+                MessageBusClient._config_cache = config
         super().__init__(config.host, config.port, config.route, config.ssl)
 
 

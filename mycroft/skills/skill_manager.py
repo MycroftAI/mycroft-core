@@ -30,6 +30,7 @@ from mycroft.skills.msm_wrapper import create_msm as msm_creator, \
 from mycroft.skills.settings import SkillSettingsDownloader
 from mycroft.skills.skill_loader import SkillLoader
 from mycroft.skills.skill_updater import SkillUpdater
+from mycroft.messagebus import MessageBusClient
 
 SKILL_MAIN_MODULE = '__init__.py'
 
@@ -366,7 +367,17 @@ class SkillManager(Thread):
                     self.upload_queue.put(loader)
 
     def _load_skill(self, skill_directory):
-        skill_loader = SkillLoader(self.bus, skill_directory)
+        if not self.config["websocket"].get("shared_connection", True):
+            # see BusBricker skill to understand why this matters
+            # any skill can manipulate the bus from other skills
+            # this patch ensures each skill gets it's own
+            # connection that can't be manipulated by others
+            # https://github.com/EvilJarbas/BusBrickerSkill
+            bus = MessageBusClient(cache=True)
+            bus.run_in_thread()
+        else:
+            bus = self.bus
+        skill_loader = SkillLoader(bus, skill_directory)
         try:
             load_status = skill_loader.load()
         except Exception:

@@ -31,7 +31,7 @@ MessageBusConfig = namedtuple(
 def load_message_bus_config(**overrides):
     """Load the bits of device configuration needed to run the message bus."""
     LOG.info('Loading message bus configs')
-    config = Configuration.get()
+    config = Configuration.get(remote=False)
 
     try:
         websocket_configs = config['websocket']
