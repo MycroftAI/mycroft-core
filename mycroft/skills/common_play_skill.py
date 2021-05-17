@@ -19,6 +19,7 @@ from mycroft.messagebus.message import Message
 from .mycroft_skill import MycroftSkill
 from .audioservice import AudioService
 
+from mycroft.util.log import LOG
 
 class CPSMatchLevel(Enum):
     EXACT = 1
@@ -81,6 +82,10 @@ class CommonPlaySkill(MycroftSkill, ABC):
             self.audioservice = AudioService(self.bus)
             self.add_event('play:query', self.__handle_play_query)
             self.add_event('play:start', self.__handle_play_start)
+            self.add_event('play:stop', self.__handle_play_stop)
+
+    def __handle_play_stop(self, message):
+        self.stop()
 
     def __handle_play_query(self, message):
         """Query skill if it can start playback from given phrase."""
@@ -165,7 +170,8 @@ class CommonPlaySkill(MycroftSkill, ABC):
         # "... on the chromecast"
         self.play_service_string = phrase
 
-        self.bus.emit(Message('active_skill_request',  {'skill_id': self.skill_id}))
+        self.bus.emit(Message('active_skill_request',  
+            {'skill_id': self.skill_id, 'skill_cat':self.skill_control.category}))
 
         # Invoke derived class to provide playback data
         self.CPS_start(phrase, data)

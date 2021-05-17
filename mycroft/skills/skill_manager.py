@@ -373,6 +373,7 @@ class SkillManager(Thread):
             for skill_dir, skill_loader in self.skill_loaders.items():
                 message_data[skill_loader.skill_id] = dict(
                     active=skill_loader.active and skill_loader.loaded,
+                    cat=skill_loader.skill_control.category,
                     id=skill_loader.skill_id
                 )
             self.bus.emit(Message('mycroft.skills.list', data=message_data))

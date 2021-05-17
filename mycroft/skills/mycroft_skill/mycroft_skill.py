@@ -61,6 +61,7 @@ from ..skill_data import (
     read_value_file,
     read_translated_file
 )
+from .skill_control import SkillControl
 
 
 def simple_trace(stack_trace):
@@ -164,6 +165,38 @@ class MycroftSkill:
 
         # Skill Public API
         self.public_api = {}
+
+        self.skill_control = SkillControl()
+
+    def change_state(self, new_state):
+        self.log.debug("change_state() skill:%s - changing state from %s to %s" % (self.skill_id, self.skill_control.state, new_state))
+
+        if self.skill_control.states is None:
+            return
+
+        if new_state not in self.skill_control.states:
+            self.log.warning("invalid state change, from %s to %s" % (self.skill_control.state, new_state))
+            return
+
+        if new_state != self.skill_control.state:
+
+            for intent in self.skill_control.states[self.skill_control.state]:
+                self.disable_intent(intent)
+
+            self.skill_control.state = new_state
+
+            for intent in self.skill_control.states[self.skill_control.state]:
+                self.enable_intent(intent)
+
+            if new_state == "inactive":
+                self.log.debug("send msg: deactivate %s" % (self.skill_id,))
+                self.bus.emit(Message('deactivate_skill_request',
+                    {'skill_id': self.skill_id}))
+
+            if new_state == "active":
+                self.log.debug("send msg: activate %s" % (self.skill_id,))
+                self.bus.emit(Message('active_skill_request',
+                    {'skill_id': self.skill_id, 'skill_cat':self.skill_control.category}))
 
     def _init_settings(self):
         """Setup skill settings."""
@@ -673,13 +706,9 @@ class MycroftSkill:
         DeviceApi().send_email(title, body, basename(self.root_dir))
 
     def make_active(self):
-        """Bump skill to active_skill list in intent_service.
-
-        This enables converse method to be called even without skill being
-        used in last 5 minutes.
-        """
-        self.bus.emit(Message('active_skill_request',
-                              {'skill_id': self.skill_id}))
+        if self.skill_control.category == 'undefined':
+            self.bus.emit(Message('active_skill_request',
+                                  {'skill_id': self.skill_id}))
 
     def _handle_collect_resting(self, _=None):
         """Handler for collect resting screen messages.

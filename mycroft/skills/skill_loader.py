@@ -26,6 +26,7 @@ from mycroft.skills.settings import save_settings
 from mycroft.util.log import LOG
 
 from .settings import SettingsMetaUploader
+from mycroft.skills.mycroft_skill.skill_control import SkillControl
 
 SKILL_MAIN_MODULE = '__init__.py'
 
@@ -126,6 +127,7 @@ def _get_last_modified_time(path):
 class SkillLoader:
     def __init__(self, bus, skill_directory):
         self.bus = bus
+        self.skill_control = SkillControl()
         self.skill_directory = skill_directory
         self.skill_id = os.path.basename(skill_directory)
         self.load_attempted = False
@@ -305,6 +307,7 @@ class SkillLoader:
                 self.instance._register_decorated()
                 self.instance.register_resting_screen()
                 self.instance.initialize()
+                self.skill_control = self.instance.skill_control
             except Exception as e:
                 # If an exception occurs, make sure to clean up the skill
                 self.instance.default_shutdown()
