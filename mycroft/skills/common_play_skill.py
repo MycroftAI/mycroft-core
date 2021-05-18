@@ -16,10 +16,10 @@ import re
 from enum import Enum, IntEnum
 from abc import ABC, abstractmethod
 from mycroft.messagebus.message import Message
+from mycroft.util.log import LOG
 from .mycroft_skill import MycroftSkill
 from .audioservice import AudioService
 
-from mycroft.util.log import LOG
 
 class CPSMatchLevel(Enum):
     EXACT = 1

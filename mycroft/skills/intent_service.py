@@ -17,7 +17,7 @@ from copy import copy
 import time
 
 from mycroft.configuration import Configuration, set_default_lf_lang
-from mycroft.util.lang import set_active_lang
+from mycroft.messagebus.message import Message
 from mycroft.util.log import LOG
 from mycroft.util.parse import normalize
 from mycroft.metrics import report_timing, Stopwatch
@@ -25,7 +25,6 @@ from .intent_services import (
     AdaptService, AdaptIntent, FallbackService, PadatiousService, IntentMatch
 )
 from .intent_service_interface import open_intent_envelope
-from mycroft.messagebus.message import Message
 
 
 def _get_message_lang(message):
@@ -111,20 +110,19 @@ class IntentService:
 
         def add_active_skill_handler(message):
             category = 'undefined'
-            if message.data.get("skill_cat", None) is not None:
+            if message.data.get("skill_cat") is not None:
                 category = message.data['skill_cat']
 
             self.add_active_skill(message.data['skill_id'], category)
 
         def remove_active_skill_handler(message):
             self.remove_active_skill(message.data['skill_id'])
-            LOG.error("IntentSvc:After remove_skill %s, active_skills=%s" % (message.data['skill_id'], self.active_skills))
+            LOG.debug("IntentSvc:After remove_skill %s, active_skills=%s" % (message.data['skill_id'], self.active_skills))
 
         self.bus.on('active_skill_request', add_active_skill_handler)
         self.bus.on('deactivate_skill_request', remove_active_skill_handler)
-        self.active_skills = []  # [skill_id , timestamp]
+        self.active_skills = []  # [skill_id , timestamp, category]
 
-        # BUG fix this!
         self.converse_timeout = 5  # minutes to prune active_skills
 
         # Intents API
@@ -337,14 +335,12 @@ class IntentService:
 
                         self.add_active_skill(match.skill_id, 
                                 self.skill_categories[match.skill_id])
-                        LOG.error("IntentService:handle_utterance() - Stop Msg Sent, Adding old style skill (id=%s) to active_skills array=%s" % (match.skill_id, self.active_skills))
                         # If the service didn't report back the skill_id it
                         # takes on the responsibility of making the skill "active"
                         # new style skills handle this, old style do not
 
                 # Launch skill if not handled by the match function
                 if match.intent_type:
-                    LOG.error("IntentService:handle_utterance() - Matched intent type! type:%s, \ndata:%s" % (match.intent_type, match.intent_data))
                     reply = message.reply(match.intent_type, match.intent_data)
                     self.bus.emit(reply)
 

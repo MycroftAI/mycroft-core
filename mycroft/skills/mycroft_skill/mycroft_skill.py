@@ -169,6 +169,9 @@ class MycroftSkill:
         self.skill_control = SkillControl()
 
     def change_state(self, new_state):
+        """change skill state to new value. 
+           does nothing except log a warning 
+           if the new state is invalid"""
         self.log.debug("change_state() skill:%s - changing state from %s to %s" % (self.skill_id, self.skill_control.state, new_state))
 
         if self.skill_control.states is None:
@@ -706,6 +709,11 @@ class MycroftSkill:
         DeviceApi().send_email(title, body, basename(self.root_dir))
 
     def make_active(self):
+       """Bump skill to active_skill list in intent_service.
+
+        This enables converse method to be called even without skill being
+        used in last 5 minutes.
+        """
         if self.skill_control.category == 'undefined':
             self.bus.emit(Message('active_skill_request',
                                   {'skill_id': self.skill_id}))
