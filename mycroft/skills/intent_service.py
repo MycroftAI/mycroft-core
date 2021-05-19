@@ -328,11 +328,10 @@ class IntentService:
                         what we want. this will cause all old style skills 
                         to send out a common play stop message. this is not
                         current behavior. 
-                        """
                         # stop last active common play skill
                         msg_data = {"stop_type":"latest"}
                         self.bus.emit(message.forward('play:stop', msg_data))
-
+                        """
                         self.add_active_skill(match.skill_id, 
                                 self.skill_categories[match.skill_id])
                         # If the service didn't report back the skill_id it
