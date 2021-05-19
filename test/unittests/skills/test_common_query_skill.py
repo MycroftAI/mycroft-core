@@ -34,11 +34,11 @@ class TestCommonQuerySkill(TestCase):
         query_action(Message('query:action', data={
             'phrase': 'What\'s the meaning of life',
             'skill_id': 'asdf'}))
-        self.skill.CQS_action.assert_not_called()
+        self.skill.CQS_action_mock.assert_not_called()
         query_action(Message('query:action', data={
             'phrase': 'What\'s the meaning of life',
             'skill_id': 'CQSTest'}))
-        self.skill.CQS_action.assert_called_once_with(
+        self.skill.CQS_action_mock.assert_called_once_with(
             'What\'s the meaning of life', None)
 
 
@@ -53,7 +53,7 @@ class TestCommonQueryMatching(TestCase):
         self.query_phrase = self.bus.on.call_args_list[-2][0][1]
 
     def test_failing_match_query_phrase(self):
-        self.skill.CQS_match_query_phrase.return_value = None
+        self.skill.CQS_match_mock.return_value = None
         self.query_phrase(Message('question:query',
                                   data={
                                       'phrase': 'What\'s the meaning of life'
@@ -75,7 +75,7 @@ class TestCommonQueryMatching(TestCase):
         self.assertEqual(response.data['searching'], False)
 
     def test_successful_match_query_phrase(self):
-        self.skill.CQS_match_query_phrase.return_value = (
+        self.skill.CQS_match_mock.return_value = (
             'What\'s the meaning of life', CQSMatchLevel.EXACT, '42')
 
         self.query_phrase(Message('question:query',
@@ -101,7 +101,7 @@ class TestCommonQueryMatching(TestCase):
     def test_successful_visual_match_query_phrase(self):
         self.skill.config_core['enclosure']['platform'] = 'mycroft_mark_2'
         query_phrase = self.bus.on.call_args_list[-2][0][1]
-        self.skill.CQS_match_query_phrase.return_value = (
+        self.skill.CQS_match_mock.return_value = (
             'What\'s the meaning of life', CQSVisualMatchLevel.EXACT, '42')
 
         query_phrase(Message('question:query',
@@ -127,12 +127,12 @@ class CQSTest(CommonQuerySkill):
     """Simple skill for testing the CommonQuerySkill"""
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.CQS_match_query_phrase = mock.Mock(name='match_phrase')
-        self.CQS_action = mock.Mock(name='selected_action')
+        self.CQS_match_mock = mock.Mock(name='match_phrase')
+        self.CQS_action_mock = mock.Mock(name='selected_action')
         self.skill_id = 'CQSTest'
 
     def CQS_match_query_phrase(self, phrase):
-        pass
+        return self.CQS_match_mock(phrase)
 
     def CQS_action(self, phrase, data):
-        pass
+        return self.CQS_action_mock(phrase, data)
