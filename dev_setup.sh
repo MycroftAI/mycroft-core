@@ -185,16 +185,18 @@ in mycroft.conf.
   N)o, stop the installation."
       if get_YN ; then
         if [[ ! -f /etc/mycroft/mycroft.conf ]]; then
-          if [[ ! -e /etc/mycroft/ ]]; then
-            $SUDO mkdir /etc/mycroft
-          fi
-          $SUDO cp $TOP/mycroft/configuration/mycroft.conf /etc/mycroft/
+          $SUDO mkdir -p /etc/mycroft
+          $SUDO touch /etc/mycroft/mycroft.conf
+          $SUDO bash -c 'echo "{ \"use_precise\": true }" > /etc/mycroft/mycroft.conf'
+        else
+          $SUDO bash -c 'jq ". + { \"use_precise\": true }" /etc/mycroft/mycroft.conf > tmp.mycroft.conf' 
+          $SUDO mv -f tmp.mycroft.conf /etc/mycroft/mycroft.conf
         fi
-        $SUDO sed -i "s/\"use_precise\": true/\"use_precise\": false/" /etc/mycroft/mycroft.conf
       else
         echo -e "$HIGHLIGHT N - quit the installation $RESET"
         exit 1
       fi
+      echo
     fi
     echo "
 Do you want to run on 'master' or against a dev branch?  Unless you are
