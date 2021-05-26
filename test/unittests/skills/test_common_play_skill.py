@@ -3,15 +3,7 @@ from unittest import TestCase, mock
 from mycroft.messagebus import Message
 from mycroft.skills.common_play_skill import CommonPlaySkill, CPSMatchLevel
 from mycroft.skills.audioservice import AudioService
-
-
-class AnyCallable:
-    """Class matching any callable.
-
-    Useful for assert_called_with arguments.
-    """
-    def __eq__(self, other):
-        return callable(other)
+from test.unittests.mocks import AnyCallable
 
 
 class TestCommonPlay(TestCase):

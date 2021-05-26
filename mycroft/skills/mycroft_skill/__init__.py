@@ -15,4 +15,4 @@
 from .mycroft_skill import MycroftSkill
 from .event_container import get_handler_name
 from .decorators import (intent_handler, intent_file_handler,
-                         resting_screen_handler)
+                         resting_screen_handler, skill_api_method)

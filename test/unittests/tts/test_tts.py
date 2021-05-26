@@ -1,3 +1,4 @@
+from pathlib import Path
 from queue import Queue
 import time
 
@@ -16,7 +17,7 @@ class MockTTS(mycroft.tts.TTS):
                  phonetic_spelling=True, ssml_tags=None):
         super().__init__(lang, config, validator, audio_ext)
         self.get_tts = mock.Mock()
-        self.get_tts.return_value = (mock_audio, mock_phoneme)
+        self.get_tts.return_value = (mock_audio, "this is a phoneme")
         self.viseme = mock.Mock()
         self.viseme.return_value = mock_viseme
 
@@ -93,10 +94,18 @@ class TestTTS(unittest.TestCase):
 
         tts.queue = mock.Mock()
         with mock.patch('mycroft.tts.tts.open') as mock_open:
+            tts.cache.temporary_cache_dir = Path('/tmp/dummy')
             tts.execute('Oh no, not again', 42)
         self.assertTrue(tts.get_tts.called)
-        tts.queue.put.assert_called_with(('wav', mock_audio, mock_viseme,
-                                         42, False))
+        tts.queue.put.assert_called_with(
+            (
+                'wav',
+                '/tmp/dummy/8da7f22aeb16bc3846ad07b644d59359.wav',
+                mock_viseme,
+                42,
+                False
+            )
+        )
 
     @mock.patch('mycroft.tts.tts.open')
     def test_phoneme_cache(self, mock_open, _):

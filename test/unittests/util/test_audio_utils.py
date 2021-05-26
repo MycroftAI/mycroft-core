@@ -1,8 +1,10 @@
+
 from unittest import TestCase, mock
 
 from test.util import Anything
 from mycroft.util import (play_ogg, play_mp3, play_wav, play_audio_file,
                           record)
+from mycroft.util.file_utils import get_temp_path
 
 test_config = {
     'play_wav_cmdline': 'mock_wav %1',
@@ -137,7 +139,7 @@ class TestRecordSounds(TestCase):
         mock_subprocess.Popen.return_value = mock_proc
         rate = 16000
         channels = 1
-        filename = '/tmp/test.wav'
+        filename = get_temp_path('test.wav')
         duration = 42
         res = record(filename, duration, rate, channels)
         mock_subprocess.Popen.assert_called_once_with(['arecord',
@@ -152,7 +154,7 @@ class TestRecordSounds(TestCase):
         mock_subprocess.Popen.return_value = mock_proc
         rate = 16000
         channels = 1
-        filename = '/tmp/test.wav'
+        filename = get_temp_path('test.wav')
         duration = 0
         res = record(filename, duration, rate, channels)
         mock_subprocess.Popen.assert_called_once_with(['arecord',
