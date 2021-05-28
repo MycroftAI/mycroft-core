@@ -91,6 +91,19 @@ def download_subscriber_voices(selected_voice):
                           .format(voice))
 
 
+def parse_phonemes(phonemes):
+    """Parse mimic phoneme string into a list of phone, duration pairs.
+
+    Arguments
+        phonemes (bytes): phoneme output from mimic
+    Returns:
+        (list) list of phoneme duration pairs
+    """
+    phon_str = phonemes.decode()
+    pairs = phon_str.split(' ')
+    return [pair.split(':') for pair in pairs if ':' in pair]
+
+
 class Mimic(TTS):
     """TTS interface for local mimic v1."""
     def __init__(self, lang, config):
@@ -157,24 +170,20 @@ class Mimic(TTS):
         """
         phonemes = subprocess.check_output(self.args + ['-o', wav_file,
                                                         '-t', sentence])
-        return wav_file, phonemes.decode()
+        return wav_file, parse_phonemes(phonemes)
 
-    def viseme(self, output):
+    def viseme(self, phoneme_pairs):
         """Convert phoneme string to visemes.
 
         Arguments:
-            output (str): Phoneme output from mimic
+            phoneme_pairs (list): Phoneme output from mimic
 
         Returns:
             (list) list of tuples of viseme and duration
         """
         visemes = []
-        pairs = str(output).split(" ")
-        for pair in pairs:
-            pho_dur = pair.split(":")  # phoneme:duration
-            if len(pho_dur) == 2:
-                visemes.append((VISIMES.get(pho_dur[0], '4'),
-                                float(pho_dur[1])))
+        for phon, dur in phoneme_pairs:
+            visemes.append((VISIMES.get(phon, '4'), float(dur)))
         return visemes
 
 

@@ -156,17 +156,24 @@ def _delete_oldest(entries, bytes_needed):
     Arguments:
         entries (tuple): file + file stats tuple
         bytes_needed (int): disk space that needs to be freed
+
+    Returns:
+        (list) all removed paths
     """
+    deleted_files = []
     space_freed = 0
     for moddate, fsize, path in sorted(entries):
         try:
             os.remove(path)
             space_freed += fsize
+            deleted_files.append(path)
         except Exception:
             pass
 
         if space_freed > bytes_needed:
             break  # deleted enough!
+
+    return deleted_files
 
 
 def curate_cache(directory, min_free_percent=5.0, min_free_disk=50):
@@ -186,6 +193,7 @@ def curate_cache(directory, min_free_percent=5.0, min_free_disk=50):
     # Simpleminded implementation -- keep a certain percentage of the
     # disk available.
     # TODO: Would be easy to add more options, like whitelisted files, etc.
+    deleted_files = []
     space = psutil.disk_usage(directory)
 
     min_free_disk = mb_to_bytes(min_free_disk)
@@ -199,7 +207,9 @@ def curate_cache(directory, min_free_percent=5.0, min_free_disk=50):
         # get all entries in the directory w/ stats
         entries = _get_cache_entries(directory)
         # delete as many as needed starting with the oldest
-        _delete_oldest(entries, bytes_needed)
+        deleted_files = _delete_oldest(entries, bytes_needed)
+
+    return deleted_files
 
 
 def get_cache_directory(domain=None):
@@ -221,7 +231,7 @@ def get_cache_directory(domain=None):
     directory = config.get("cache_path")
     if not directory:
         # If not defined, use /tmp/mycroft/cache
-        directory = os.path.join(tempfile.gettempdir(), "mycroft", "cache")
+        directory = get_temp_path('mycroft', 'cache')
     return ensure_directory_exists(directory, domain)
 
 
@@ -265,3 +275,27 @@ def create_file(filename):
     ensure_directory_exists(os.path.dirname(filename), permissions=0o775)
     with open(filename, 'w') as f:
         f.write('')
+
+
+def get_temp_path(*args):
+    """Generate a valid path in the system temp directory.
+
+    This method accepts one or more strings as arguments. The arguments are
+    joined and returned as a complete path inside the systems temp directory.
+    Importantly, this will not create any directories or files.
+
+    Example usage: get_temp_path('mycroft', 'audio', 'example.wav')
+    Will return the equivalent of: '/tmp/mycroft/audio/example.wav'
+
+    Args:
+        path_element (str): directories and/or filename
+
+    Returns:
+        (str) a valid path in the systems temp directory
+    """
+    try:
+        path = os.path.join(tempfile.gettempdir(), *args)
+    except TypeError:
+        raise TypeError("Could not create a temp path, get_temp_path() only "
+                        "accepts Strings")
+    return path

@@ -1,6 +1,6 @@
 from inspect import signature
 
-from mycroft.messagebus.message import Message
+from mycroft.messagebus import Message
 from mycroft.metrics import Stopwatch, report_timing
 from mycroft.util.log import LOG
 
@@ -55,6 +55,13 @@ def create_wrapper(handler, skill_id, on_start, on_end, on_error):
     def wrapper(message):
         stopwatch = Stopwatch()
         try:
+            # TODO: Fix for real in mycroft-messagebus-client
+            # Makes sure the message type is consistent with the type declared
+            # in mycroft.messagebus and isinstance will work.
+            message = Message(message.msg_type,
+                              data=message.data,
+                              context=message.context)
+
             message = unmunge_message(message, skill_id)
             if on_start:
                 on_start(message)
@@ -153,7 +160,7 @@ class EventContainer:
         Returns:
             bool: True if found and removed, False if not found
         """
-        print("Removing event {}".format(name))
+        LOG.debug("Removing event {}".format(name))
         removed = False
         for _name, _handler in list(self.events):
             if name == _name:

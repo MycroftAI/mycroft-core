@@ -13,7 +13,6 @@
 # limitations under the License.
 #
 from copy import deepcopy
-import hashlib
 import os
 import random
 import re
@@ -32,9 +31,11 @@ from mycroft.metrics import report_timing, Stopwatch
 from mycroft.util import (
     play_wav, play_mp3, check_for_signal, create_signal, resolve_resource_file
 )
+from mycroft.util.file_utils import get_temp_path
 from mycroft.util.log import LOG
 from mycroft.util.plugins import load_plugin
 from queue import Queue, Empty
+from .cache import hash_sentence, TextToSpeechCache
 
 
 _TTS_ENV = deepcopy(os.environ)
@@ -164,6 +165,7 @@ class TTS(metaclass=ABCMeta):
         phonetic_spelling (bool): Whether to spell certain words phonetically
         ssml_tags (list): Supported ssml properties. Ex. ['speak', 'prosody']
     """
+
     def __init__(self, lang, config, validator, audio_ext='wav',
                  phonetic_spelling=True, ssml_tags=None):
         super(TTS, self).__init__()
@@ -176,15 +178,18 @@ class TTS(metaclass=ABCMeta):
         self.ssml_tags = ssml_tags or []
 
         self.voice = config.get("voice")
-        self.filename = '/tmp/tts.wav'
+        self.filename = get_temp_path('tts.wav')
         self.enclosure = None
         random.seed()
         self.queue = Queue()
         self.playback = PlaybackThread(self.queue)
         self.playback.start()
-        self.clear_cache()
         self.spellings = self.load_spellings()
         self.tts_name = type(self).__name__
+        self.cache = TextToSpeechCache(
+            self.config, self.tts_name, self.audio_ext
+        )
+        self.cache.clear()
 
     def load_spellings(self):
         """Load phonetic spellings of words as dictionary."""
@@ -221,10 +226,8 @@ class TTS(metaclass=ABCMeta):
         self.bus.emit(Message("recognizer_loop:audio_output_end"))
         if listen:
             self.bus.emit(Message('mycroft.mic.listen'))
-        # Clean the cache as needed
-        cache_dir = mycroft.util.get_cache_directory("tts/" + self.tts_name)
-        mycroft.util.curate_cache(cache_dir, min_free_percent=100)
 
+        self.cache.curate()
         # This check will clear the "signal"
         check_for_signal("isSpeaking")
 
@@ -351,22 +354,44 @@ class TTS(metaclass=ABCMeta):
                   for i in range(len(chunks))]
 
         for sentence, l in chunks:
-            key = str(hashlib.md5(
-                sentence.encode('utf-8', 'ignore')).hexdigest())
-            wav_file = os.path.join(
-                mycroft.util.get_cache_directory("tts/" + self.tts_name),
-                key + '.' + self.audio_ext)
+            sentence_hash = hash_sentence(sentence)
+            if sentence_hash in self.cache.cached_sentences:
+                audio_file, phoneme_file = self._get_sentence_from_cache(
+                    sentence_hash
+                )
+                if phoneme_file is None:
+                    phonemes = None
+                else:
+                    phonemes = phoneme_file.load()
 
-            if os.path.exists(wav_file):
-                LOG.debug("TTS cache hit")
-                phonemes = self.load_phonemes(key)
             else:
-                wav_file, phonemes = self.get_tts(sentence, wav_file)
+                # TODO: this should be changed return the audio data from
+                #  the API call and then to call the add_to_cache method
+                #  of the TTS cache.  But this requires changing the public
+                #  API of the get_tts method in each engine.
+                audio_file = self.cache.define_audio_file(sentence_hash)
+                _, phonemes = self.get_tts(sentence, str(audio_file.path))
                 if phonemes:
-                    self.save_phonemes(key, phonemes)
+                    phoneme_file = self.cache.define_phoneme_file(
+                        sentence_hash
+                    )
+                    phoneme_file.save(phonemes)
+                else:
+                    phoneme_file = None
+                self.cache.cached_sentences[sentence_hash] = (
+                    audio_file, phoneme_file
+                )
+            viseme = self.viseme(phonemes) if phonemes else None
+            self.queue.put(
+                (self.audio_ext, str(audio_file.path), viseme, ident, l)
+            )
 
-            vis = self.viseme(phonemes) if phonemes else None
-            self.queue.put((self.audio_ext, wav_file, vis, ident, l))
+    def _get_sentence_from_cache(self, sentence_hash):
+        cached_sentence = self.cache.cached_sentences[sentence_hash]
+        audio_file, phoneme_file = cached_sentence
+        LOG.info("Found {} in TTS cache".format(audio_file.name))
+
+        return audio_file, phoneme_file
 
     def viseme(self, phonemes):
         """Create visemes from phonemes.
@@ -384,6 +409,8 @@ class TTS(metaclass=ABCMeta):
 
     def clear_cache(self):
         """Remove all cached files."""
+        # TODO: remove in 21.08
+        LOG.warning("This method is deprecated, use TextToSpeechCache.clear")
         if not os.path.exists(mycroft.util.get_cache_directory('tts')):
             return
         for d in os.listdir(mycroft.util.get_cache_directory("tts")):
@@ -404,6 +431,8 @@ class TTS(metaclass=ABCMeta):
             key (str):        Hash key for the sentence
             phonemes (str):   phoneme string to save
         """
+        # TODO: remove in 21.08
+        LOG.warning("This method is deprecated, use PhonemeFile.save")
         cache_dir = mycroft.util.get_cache_directory("tts/" + self.tts_name)
         pho_file = os.path.join(cache_dir, key + ".pho")
         try:
@@ -419,6 +448,8 @@ class TTS(metaclass=ABCMeta):
         Arguments:
             key (str): Key identifying phoneme cache
         """
+        # TODO: remove in 21.08
+        LOG.warning("This method is deprecated, use PhonemeFile.load")
         pho_file = os.path.join(
             mycroft.util.get_cache_directory("tts/" + self.tts_name),
             key + ".pho")
@@ -442,6 +473,7 @@ class TTSValidator(metaclass=ABCMeta):
     It exposes and implements ``validate(tts)`` function as a template to
     validate the TTS engines.
     """
+
     def __init__(self, tts):
         self.tts = tts
 
