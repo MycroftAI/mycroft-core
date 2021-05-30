@@ -174,6 +174,8 @@ This script is designed to make working with Mycroft easy.  During this
 first run of dev_setup we will ask you a few questions to help setup
 your environment.'
     sleep 0.5
+    # The AVX instruction set is an x86 construct
+    # ARM has a range of equivalents, unsure which are (un)supported by TF.
     if ! grep -q avx /proc/cpuinfo && [[ ! $(uname -m) == 'arm'* ]]; then
       echo "
 The Precise Wake Word Engine requires the AVX instruction set, which is
