@@ -5,25 +5,25 @@ mycroft.skills
 ==============
 
 MycroftSkill class - Base class for all Mycroft skills
-------------------
+------------------------------------------------------
 
 .. autoclass:: mycroft.MycroftSkill
     :members:
 
 CommonIoTSkill class
--------------------
+--------------------
 .. autoclass:: mycroft.skills.common_iot_skill.CommonIoTSkill
     :show-inheritance:
     :members:
 
 CommonPlaySkill class
--------------------
+---------------------
 .. autoclass:: mycroft.skills.common_play_skill.CommonPlaySkill
     :show-inheritance:
     :members:
 
 CommonQuerySkill class
--------------------
+----------------------
 .. autoclass:: mycroft.skills.common_query_skill.CommonQuerySkill
     :show-inheritance:
     :members:
@@ -56,6 +56,12 @@ removes_context decorator
 -------------------------
 .. autofunction:: mycroft.removes_context
 
+mycroft.audio
+==================
+
+.. toctree::
+    mycroft.audio
+
 mycroft.filesystem
 ==================
 
@@ -73,16 +79,15 @@ mycroft.util
 
 .. toctree::
     mycroft.util.parse
+
 Parsing functions for extracting data from natural speech.
 
 .. toctree::
     mycroft.util.format
+
 Formatting functions for producing natural speech from common datatypes such as numbers, dates and times.
 
 .. toctree::
     mycroft.util.time
-A collection of functions for handling local, system and global times.
 
------------------
-.. automodule::
-    mycroft.util.time
+A collection of functions for handling local, system and global times.

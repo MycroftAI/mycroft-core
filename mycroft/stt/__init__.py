@@ -56,7 +56,7 @@ class STT(metaclass=ABCMeta):
         The method gets passed audio and optionally a language code and is
         expected to return a text string.
 
-        Arguments:
+        Args:
             audio (AudioData): audio recorded by mycroft.
             language (str): optional language code
 
@@ -342,7 +342,7 @@ class StreamThread(Thread, metaclass=ABCMeta):
     This class reads audio chunks from a queue and sends it to a parsing
     STT engine.
 
-    Arguments:
+    Args:
         queue (Queue): Input Queue
         language (str): language code for the current language.
     """
@@ -392,7 +392,7 @@ class StreamingSTT(STT, metaclass=ABCMeta):
         This creates a new thread for handling the incomming audio stream as
         it's collected by Mycroft.
 
-        Arguments:
+        Args:
             language (str): optional language code for the new stream.
         """
         self.stream_stop()
@@ -404,7 +404,7 @@ class StreamingSTT(STT, metaclass=ABCMeta):
     def stream_data(self, data):
         """Receiver of audio data.
 
-        Arguments:
+        Args:
             data (bytes): raw audio data.
         """
         self.queue.put(data)
@@ -607,7 +607,7 @@ class GoVivaceSTT(TokenSTT):
 def load_stt_plugin(module_name):
     """Wrapper function for loading stt plugin.
 
-    Arguments:
+    Args:
         module_name (str): Mycroft stt module name from config
     Returns:
         class: STT plugin class

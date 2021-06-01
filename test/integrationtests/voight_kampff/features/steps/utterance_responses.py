@@ -56,7 +56,7 @@ def load_dialog_file(dialog_path):
 def load_dialog_list(skill_path, dialog):
     """Load dialog from files into a single list.
 
-    Arguments:
+    Args:
         skill (MycroftSkill): skill to load dialog from
         dialog (list): Dialog names (str) to load
 
@@ -72,7 +72,7 @@ def load_dialog_list(skill_path, dialog):
 def dialog_from_sentence(sentence, skill_path, lang):
     """Find dialog file from example sentence.
 
-    Arguments:
+    Args:
         sentence (str): Text to match
         skill_path (str): path to skill directory
         lang (str): language code to use

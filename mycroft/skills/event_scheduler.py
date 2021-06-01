@@ -48,7 +48,7 @@ class EventScheduler(Thread):
     """Create an event scheduler thread. Will send messages at a
      predetermined time to the registered targets.
 
-    Arguments:
+    Args:
         bus:            Mycroft messagebus (mycroft.messagebus)
         schedule_file:  File to store pending events to on shutdown
     """
@@ -132,7 +132,7 @@ class EventScheduler(Thread):
                        data=None, context=None):
         """Add event to pending event schedule.
 
-        Arguments:
+        Args:
             event (str): Handler for the event
             sched_time ([type]): [description]
             repeat ([type], optional): Defaults to None. [description]
@@ -180,7 +180,7 @@ class EventScheduler(Thread):
     def remove_event(self, event):
         """Remove an event from the list of scheduled events.
 
-        Arguments:
+        Args:
             event (str): event identifier
         """
         with self.event_lock:
@@ -198,7 +198,7 @@ class EventScheduler(Thread):
         This will only update the first call if multiple calls are registered
         to the same event identifier.
 
-        Arguments:
+        Args:
             event (str): event identifier
             data (dict): new data
         """
@@ -282,7 +282,7 @@ class EventSchedulerInterface:
         """Return a name unique to this skill using the format
         [skill_id]:[name].
 
-        Arguments:
+        Args:
             name:   Name to use internally
 
         Returns:
@@ -296,7 +296,7 @@ class EventSchedulerInterface:
 
         Takes scheduling information and sends it off on the message bus.
 
-        Arguments:
+        Args:
             handler:                method to be called
             when (datetime):        time (in system timezone) for first
                                     calling the handler, or None to
@@ -335,7 +335,7 @@ class EventSchedulerInterface:
                        context=None):
         """Schedule a single-shot event.
 
-        Arguments:
+        Args:
             handler:               method to be called
             when (datetime/int/float):   datetime (in system timezone) or
                                    number of seconds in the future when the
@@ -354,7 +354,7 @@ class EventSchedulerInterface:
                                  data=None, name=None, context=None):
         """Schedule a repeating event.
 
-        Arguments:
+        Args:
             handler:                method to be called
             when (datetime):        time (in system timezone) for first
                                     calling the handler, or None to
@@ -381,7 +381,7 @@ class EventSchedulerInterface:
     def update_scheduled_event(self, name, data=None):
         """Change data of event.
 
-        Arguments:
+        Args:
             name (str): reference name of event (from original scheduling)
         """
         data = data or {}
@@ -396,7 +396,7 @@ class EventSchedulerInterface:
         """Cancel a pending event. The event will no longer be scheduled
         to be executed
 
-        Arguments:
+        Args:
             name (str): reference name of event (from original scheduling)
         """
         unique_name = self._create_unique_name(name)
@@ -410,7 +410,7 @@ class EventSchedulerInterface:
     def get_scheduled_event_status(self, name):
         """Get scheduled event data and return the amount of time left
 
-        Arguments:
+        Args:
             name (str): reference name of event (from original scheduling)
 
         Returns:

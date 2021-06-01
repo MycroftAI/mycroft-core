@@ -26,7 +26,7 @@ WEB_CONFIG_CACHE = os.environ.get('MYCROFT_WEB_CACHE',
 def __ensure_folder_exists(path):
     """ Make sure the directory for the specified path exists.
 
-        Arguments:
+        Args:
             path (str): path to config file
      """
     directory = dirname(path)

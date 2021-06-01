@@ -42,7 +42,7 @@ def _entity_skill_id(skill_id):
 class AdaptIntent(IntentBuilder):
     """Wrapper for IntentBuilder setting a blank name.
 
-    Arguments:
+    Args:
         name (str): Optional name of intent
     """
     def __init__(self, name=''):
@@ -82,7 +82,7 @@ class ContextManager:
     def remove_context(self, context_id):
         """Remove a specific context entry.
 
-        Arguments:
+        Args:
             context_id (str): context entry to remove
         """
         self.frame_stack = [(f, t) for (f, t) in self.frame_stack
@@ -201,7 +201,7 @@ class AdaptService:
     def match_intent(self, utterances, _=None, __=None):
         """Run the Adapt engine to search for an matching intent.
 
-        Arguments:
+        Args:
             utterances (iterable): iterable of utterances, expected order
                                    [raw, normalized, other]
 
@@ -254,7 +254,7 @@ class AdaptService:
     def register_intent(self, intent):
         """Register new intent with adapt engine.
 
-        Arguments:
+        Args:
             intent (IntentParser): IntentParser to register
         """
         with self.lock:
@@ -263,7 +263,7 @@ class AdaptService:
     def detach_skill(self, skill_id):
         """Remove all intents for skill.
 
-        Arguments:
+        Args:
             skill_id (str): skill to process
         """
         with self.lock:
@@ -305,7 +305,7 @@ class AdaptService:
     def detach_intent(self, intent_name):
         """Detatch a single intent
 
-        Arguments:
+        Args:
             intent_name (str): Identifier for intent to remove.
         """
         new_parsers = [

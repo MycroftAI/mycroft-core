@@ -61,8 +61,9 @@ class TimeResolution(Enum):
 def _duration_handler(time1, lang=None, speech=True, *, time2=None,
                       use_years=True, clock=False,
                       resolution=TimeResolution.SECONDS):
-    """ Convert duration in seconds to a nice spoken timespan
-        Used as a handler by nice_duration and nice_duration_dt
+    """Convert duration in seconds to a nice spoken timespan.
+
+    Used as a handler by nice_duration and nice_duration_dt.
 
     Accepts:
         datetime.timedelta, or
@@ -323,6 +324,7 @@ def nice_duration(duration, lang=None, speech=True, use_years=True,
                 TimeResolution.MINUTES
                 TimeResolution.SECONDS
                 TimeResolution.MILLISECONDS
+
             NOTE: nice_duration will not produce milliseconds
             unless that resolution is passed.
 

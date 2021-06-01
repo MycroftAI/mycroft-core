@@ -37,7 +37,7 @@ class MonotonicEvent(Event):
         Repeatingly wait as long the event hasn't been set and the
         monotonic time doesn't indicate a timeout.
 
-        Arguments:
+        Args:
             timeout: timeout of wait in seconds
 
         Returns:

@@ -50,7 +50,7 @@ sys.argv = sys.argv[:1]
 def load_test_environment(skill):
     """Load skill's test environment if present
 
-    Arguments:
+    Args:
         skill (str): path to skill root folder
 
     Returns:

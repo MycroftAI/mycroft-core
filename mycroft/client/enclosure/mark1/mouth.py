@@ -93,7 +93,7 @@ class EnclosureMouth:
     def __display(self, code, clear_previous, x_offset, y_offset):
         """ Write the encoded image to enclosure screen.
 
-        Arguments:
+        Args:
             code (str):           encoded image to display
             clean_previous (str): if "True" will clear the screen before
                                   drawing.
@@ -119,7 +119,7 @@ class EnclosureMouth:
 
     def display(self, event=None):
         """ Display a Mark-1 specific code.
-        Arguments:
+        Args:
             event (Message): messagebus message with data to display
         """
         code = ""
@@ -139,7 +139,7 @@ class EnclosureMouth:
         The method uses PIL to convert the image supplied into a code
         suitable for the Mark-1 display.
 
-        Arguments:
+        Args:
             event (Message): messagebus message with data to display
         """
         if not event:

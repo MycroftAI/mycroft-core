@@ -32,7 +32,7 @@ def play_audio_file(uri: str, environment=None):
     the file extension. The function will return directly and play the file
     in the background.
 
-    Arguments:
+    Args:
         uri:    uri to play
         environment (dict): optional environment for the subprocess call
 
@@ -75,7 +75,7 @@ def _get_pulse_environment(config):
 def _play_cmd(cmd, uri, config, environment):
     """Generic function for starting playback from a commandline and uri.
 
-    Arguments:
+    Args:
         cmd (str): commandline to execute %1 in the command line will be
                    replaced with the provided uri.
         uri (str): uri to play
@@ -96,7 +96,7 @@ def play_wav(uri, environment=None):
     and play the uri passed as argument. The function will return directly
     and play the file in the background.
 
-    Arguments:
+    Args:
         uri:    uri to play
         environment (dict): optional environment for the subprocess call
 
@@ -121,7 +121,7 @@ def play_mp3(uri, environment=None):
     and play the uri passed as argument. The function will return directly
     and play the file in the background.
 
-    Arguments:
+    Args:
         uri:    uri to play
         environment (dict): optional environment for the subprocess call
 
@@ -146,7 +146,7 @@ def play_ogg(uri, environment=None):
     and play the uri passed as argument. The function will return directly
     and play the file in the background.
 
-    Arguments:
+    Args:
         uri:    uri to play
         environment (dict): optional environment for the subprocess call
 
@@ -170,7 +170,7 @@ def record(file_path, duration, rate, channels):
     The recording is done in the background by the arecord commandline
     application.
 
-    Arguments:
+    Args:
         file_path: where to store the recorded data
         duration: how long to record
         rate: sample rate
@@ -188,7 +188,7 @@ def record(file_path, duration, rate, channels):
 def find_input_device(device_name):
     """Find audio input device by name.
 
-    Arguments:
+    Args:
         device_name: device name or regex pattern to match
 
     Returns: device_index (int) or None if device wasn't found

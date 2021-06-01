@@ -182,7 +182,7 @@ class Mimic(TTS):
     def get_tts(self, sentence, wav_file):
         """Generate WAV and phonemes.
 
-        Arguments:
+        Args:
             sentence (str): sentence to generate audio for
             wav_file (str): output file
 
@@ -196,7 +196,7 @@ class Mimic(TTS):
     def viseme(self, phoneme_pairs):
         """Convert phoneme string to visemes.
 
-        Arguments:
+        Args:
             phoneme_pairs (list): Phoneme output from mimic
 
         Returns:
