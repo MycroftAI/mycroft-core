@@ -62,6 +62,8 @@ class SkillGUI:
         """Sets the handlers for the default messages."""
         msg_type = self.build_message_type('set')
         self.skill.add_event(msg_type, self.gui_set)
+        self.skill.gui.register_handler('video.media.playback.ended',
+                                        self.stop_video)
 
     def register_handler(self, event, handler):
         """Register a handler for GUI events.
@@ -357,6 +359,40 @@ class SkillGUI:
         self["url"] = url
         self.show_page("SYSTEM_UrlFrame.qml", override_idle,
                        override_animations)
+
+    def play_video(self, url, title="", repeat=None, override_idle=True,
+                   override_animations=None):
+        """ Play video stream
+
+        Arguments:
+            url (str): URL of video source
+            title (str): Title of media to be displayed
+            repeat (boolean, int):
+                True: Infinitly loops the current video track
+                (int): Loops the video track for specified number of
+                times.
+            override_idle (boolean, int):
+                True: Takes over the resting page indefinitely
+                (int): Delays resting page for the specified number of
+                       seconds.
+            override_animations (boolean):
+                True: Disables showing all platform skill animations.
+                False: 'Default' always show animations.
+        """
+        self["playStatus"] = "play"
+        self["video"] = url
+        self["title"] = title
+        self["playerRepeat"] = repeat
+        self.video_info = {"title": title, "url": url}
+        self.show_page("SYSTEM_VideoPlayer.qml",
+                       override_idle=override_idle,
+                       override_animations=override_animations)
+
+    def stop_video(self):
+        """Stop video playback."""
+        self["playStatus"] = "stop"
+        self.skill.bus.emit(Message("mycroft.gui.screen.close",
+                                    {"skill_id": self.skill.skill_id}))
 
     def release(self):
         """Signal that this skill is no longer using the GUI,
