@@ -19,7 +19,7 @@ from time import sleep
 from mycroft.audio.services import AudioBackend
 from mycroft.messagebus.message import Message
 from mycroft.util.log import LOG
-from mycroft.util import play_mp3, play_ogg, play_wav
+from mycroft.util import play_mp3, play_ogg, play_wav, play_video
 import mimetypes
 import re
 from requests import Session
@@ -116,6 +116,8 @@ class SimpleAudioService(AudioBackend):
 
         # Replace file:// uri's with normal paths
         track = track.replace('file://', '')
+        LOG.error("ZZZZZZZ mime[1]=%s" % (mime[1],))
+        LOG.error("ZZZZZZZ mime=%s" % (mime,))
         try:
             if 'mpeg' in mime[1]:
                 self.process = play_mp3(track)
@@ -123,6 +125,8 @@ class SimpleAudioService(AudioBackend):
                 self.process = play_ogg(track)
             elif 'wav' in mime[1]:
                 self.process = play_wav(track)
+            elif 'video' in mime[0]:
+                self.process = play_video(track)
             else:
                 # If no mime info could be determined guess mp3
                 self.process = play_mp3(track)

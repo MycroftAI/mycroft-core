@@ -40,6 +40,7 @@ def play_audio_file(uri: str, environment=None):
              an error occurs playing the file.
     """
     extension_to_function = {
+        '.wav': play_video,
         '.wav': play_wav,
         '.mp3': play_mp3,
         '.ogg': play_ogg
@@ -83,6 +84,7 @@ def _play_cmd(cmd, uri, config, environment):
         environment: environment to execute in, can be used to supply specific
                      pulseaudio settings.
     """
+    LOG.error("ZZZZZZZ cmd:%s, uri:%s, cofig:%s, environment:%s" % (cmd, uri, config, environment))
     environment = environment or _get_pulse_environment(config)
     cmd_elements = str(cmd).split(" ")
     cmdline = [e if e != '%1' else uri for e in cmd_elements]
@@ -138,6 +140,18 @@ def play_mp3(uri, environment=None):
         LOG.exception("Failed to launch MP3: {}".format(play_mp3_cmd))
     return None
 
+def play_video(uri, environment=None):
+    config = mycroft.configuration.Configuration.get()
+    # uri = /home/mycroft/Videos/ccrv144p.mp4
+    play_video_cmd = "qvlc --fullscreen --play-and-stop --play-and-exit %1 "  # get from config file 
+    try:
+        return _play_cmd(play_video_cmd, uri, config, environment)
+    except FileNotFoundError as e:
+        LOG.error("Failed to launch QVLC: {} ({})".format(play_video_cmd,
+                                                         repr(e)))
+    except Exception:
+        LOG.exception("Failed to launch QVLC: {}".format(play_video_cmd))
+    return None
 
 def play_ogg(uri, environment=None):
     """Play an ogg-file.
