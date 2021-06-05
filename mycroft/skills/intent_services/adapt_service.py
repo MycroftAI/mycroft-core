@@ -227,7 +227,8 @@ class AdaptService:
                         include_tags=True,
                         context_manager=self.context_manager)]
                     if intents:
-                        take_best(intents[0], utt_tup[0])
+                        utt_best = max(intents, key=lambda x: x.get('confidence', 0.0))
+                        take_best(utt_best, utt_tup[0])
 
                 except Exception as err:
                     LOG.exception(err)
