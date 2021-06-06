@@ -1326,21 +1326,14 @@ class MycroftSkill:
         """Handler for the "mycroft.stop" signal. Runs the user defined
         `stop()` method.
         """
-        def __stop_timeout():
-            # The self.stop() call took more than 100ms, assume it handled Stop
-            self.bus.emit(Message('mycroft.stop.handled',
-                                  {'skill_id': str(self.skill_id) + ':'}))
-
-        timer = Timer(0.1, __stop_timeout)  # set timer for 100ms
         try:
             if self.stop():
                 self.bus.emit(Message("mycroft.stop.handled",
-                                      {"by": "skill:" + self.skill_id}))
-            timer.cancel()
-        except Exception:
-            timer.cancel()
-            LOG.error('Failed to stop skill: {}'.format(self.name),
-                      exc_info=True)
+                                      {"by": "skill:" + self.skill_id},
+                                      {"skill_id": self.skill_id}))
+        except Exception as e:
+            LOG.exception(e)
+            LOG.error(f'Failed to stop skill: {self.name}')
 
     def stop(self):
         """Optional method implemented by subclass."""

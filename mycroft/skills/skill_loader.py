@@ -306,11 +306,16 @@ class SkillLoader:
                 self.instance.register_resting_screen()
                 self.instance.initialize()
             except Exception as e:
-                # If an exception occurs, make sure to clean up the skill
-                self.instance.default_shutdown()
+                LOG.exception(f'Skill initialization failed: {e}')
+                # If an exception occurs, attempt to clean up the skill
+                try:
+                    self.instance.default_shutdown()
+                except Exception as e2:
+                    # if initialize failed then it's likely
+                    # default_shutdown will fail
+                    LOG.debug(f'Skill cleanup failed: {e2}')
+                    LOG.debug(f'this is usually fine and often expected')
                 self.instance = None
-                log_msg = 'Skill initialization failed with {}'
-                LOG.exception(log_msg.format(repr(e)))
 
         return self.instance is not None
 
