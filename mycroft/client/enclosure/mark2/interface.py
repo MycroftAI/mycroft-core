@@ -298,12 +298,12 @@ class EnclosureMark2(Enclosure):
 
     def on_volume_duck(self, message):
         # TODO duck it anyway using set vol
-        LOG.warning("Mark2 volume duck deprecated! use volume set instead.")
+        # LOG.warning("Mark2 volume duck deprecated! use volume set instead.")
         self.m2enc.hardware_volume.set_volume(float(0.1))  # TODO make configurable 'duck_vol'
 
     def on_volume_unduck(self, message):
         # TODO duck it anyway using set vol
-        LOG.warning("Mark2 volume unduck deprecated! use volume set instead.")
+        # LOG.warning("Mark2 volume unduck deprecated! use volume set instead.")
         self.m2enc.hardware_volume.set_volume(float(self.current_volume))
 
     def on_volume_set(self, message):
