@@ -355,7 +355,7 @@ class TTS(metaclass=ABCMeta):
 
         for sentence, l in chunks:
             sentence_hash = hash_sentence(sentence)
-            if sentence_hash in self.cache.cached_sentences:
+            if sentence_hash in self.cache:
                 audio_file, phoneme_file = self._get_sentence_from_cache(
                     sentence_hash
                 )
