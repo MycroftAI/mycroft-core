@@ -26,7 +26,7 @@ TIMEOUT = 10
 def then_wait(msg_type, criteria_func, context, timeout=None):
     """Wait for a specified time for criteria to be fulfilled.
 
-    Arguments:
+    Args:
         msg_type: message type to watch
         criteria_func: Function to determine if a message fulfilling the
                        test case has been found.
@@ -56,7 +56,7 @@ def then_wait(msg_type, criteria_func, context, timeout=None):
 def then_wait_fail(msg_type, criteria_func, context, timeout=None):
     """Wait for a specified time, failing if criteria is fulfilled.
 
-    Arguments:
+    Args:
         msg_type: message type to watch
         criteria_func: Function to determine if a message fulfilling the
                        test case has been found.
@@ -73,7 +73,7 @@ def then_wait_fail(msg_type, criteria_func, context, timeout=None):
 def mycroft_responses(context):
     """Collect and format mycroft responses from context.
 
-    Arguments:
+    Args:
         context: behave context to extract messages from.
 
     Returns: (str) Mycroft responses including skill and dialog file
@@ -98,7 +98,7 @@ def print_mycroft_responses(context):
 def emit_utterance(bus, utt):
     """Emit an utterance on the bus.
 
-    Arguments:
+    Args:
         bus (InterceptAllBusClient): Bus instance to listen on
         dialogs (list): list of acceptable dialogs
     """
@@ -113,7 +113,7 @@ def emit_utterance(bus, utt):
 def wait_for_dialog(bus, dialogs, context=None, timeout=None):
     """Wait for one of the dialogs given as argument.
 
-    Arguments:
+    Args:
         bus (InterceptAllBusClient): Bus instance to listen on
         dialogs (list): list of acceptable dialogs
         context (behave Context): optional context providing scenario timeout
@@ -140,7 +140,7 @@ def wait_for_audio_service(context, message_type):
 
     May be play, stop, or pause messages
 
-    Arguments:
+    Args:
         context (behave Context): optional context providing scenario timeout
         message_type (string): final component of bus message in form
                                `mycroft.audio.service.{type}

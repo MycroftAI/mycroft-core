@@ -49,7 +49,7 @@ def _log_unsupported_language(language, supported_languages):
     """
     Log a warning when a language is unsupported
 
-    Arguments:
+    Args:
         language: str
             The language that was supplied.
         supported_languages: [str]
@@ -70,10 +70,13 @@ def extract_datetime(text, anchorDate="DEFAULT", lang=None,
     "Tuesday".
 
     Vague terminology are given arbitrary values, like:
-        - morning = 8 AM
-        - afternoon = 3 PM
-        - evening = 7 PM
+
+    * morning = 8 AM
+    * afternoon = 3 PM
+    * evening = 7 PM
+
     If a time isn't supplied or implied, the function defaults to 12 AM
+
     Args:
         text (str): the text to be interpreted
         anchorDate (:obj:`datetime`, optional): the date to be used for
@@ -82,6 +85,7 @@ def extract_datetime(text, anchorDate="DEFAULT", lang=None,
         lang (str): the BCP-47 code for the language to use, None uses default
         default_time (datetime.time): time to use if none was found in
             the input string.
+
     Returns:
         [:obj:`datetime`, :obj:`str`]: 'datetime' is the extracted date
             as a datetime object in the user's local timezone.

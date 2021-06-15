@@ -128,7 +128,7 @@ class PlaybackThread(Thread):
     def show_visemes(self, pairs):
         """Send viseme data to enclosure
 
-        Arguments:
+        Args:
             pairs (list): Visime and timing pair
 
         Returns:
@@ -158,7 +158,7 @@ class TTS(metaclass=ABCMeta):
     It aggregates the minimum required parameters and exposes
     ``execute(sentence)`` and ``validate_ssml(sentence)`` functions.
 
-    Arguments:
+    Args:
         lang (str):
         config (dict): Configuration for this specific tts engine
         validator (TTSValidator): Used to verify proper installation
@@ -219,7 +219,7 @@ class TTS(metaclass=ABCMeta):
         if it has been requested. It also checks if cache directory needs
         cleaning to free up disk space.
 
-        Arguments:
+        Args:
             listen (bool): indication if listening trigger should be sent.
         """
 
@@ -234,7 +234,7 @@ class TTS(metaclass=ABCMeta):
     def init(self, bus):
         """Performs intial setup of TTS object.
 
-        Arguments:
+        Args:
             bus:    Mycroft messagebus connection
         """
         self.bus = bus
@@ -247,7 +247,7 @@ class TTS(metaclass=ABCMeta):
 
         Should get data from tts.
 
-        Arguments:
+        Args:
             sentence(str): Sentence to synthesize
             wav_file(str): output file
 
@@ -259,7 +259,7 @@ class TTS(metaclass=ABCMeta):
     def modify_tag(self, tag):
         """Override to modify each supported ssml tag.
 
-        Arguments:
+        Args:
             tag (str): SSML tag to check and possibly transform.
         """
         return tag
@@ -268,7 +268,7 @@ class TTS(metaclass=ABCMeta):
     def remove_ssml(text):
         """Removes SSML tags from a string.
 
-        Arguments:
+        Args:
             text (str): input string
 
         Returns:
@@ -281,7 +281,7 @@ class TTS(metaclass=ABCMeta):
 
         Remove unsupported / invalid tags
 
-        Arguments:
+        Args:
             utterance (str): Sentence to validate
 
         Returns:
@@ -310,7 +310,7 @@ class TTS(metaclass=ABCMeta):
         This method can be overridden to create chunks suitable to the
         TTS engine in question.
 
-        Arguments:
+        Args:
             sentence (str): sentence to preprocess
 
         Returns:
@@ -324,7 +324,7 @@ class TTS(metaclass=ABCMeta):
         The method caches results if possible using the hash of the
         sentence.
 
-        Arguments:
+        Args:
             sentence: (str) Sentence to be spoken
             ident: (str) Id reference to current interaction
             listen: (bool) True if listen should be triggered at the end
@@ -355,7 +355,7 @@ class TTS(metaclass=ABCMeta):
 
         for sentence, l in chunks:
             sentence_hash = hash_sentence(sentence)
-            if sentence_hash in self.cache.cached_sentences:
+            if sentence_hash in self.cache:
                 audio_file, phoneme_file = self._get_sentence_from_cache(
                     sentence_hash
                 )
@@ -399,7 +399,7 @@ class TTS(metaclass=ABCMeta):
         May be implemented to convert TTS phonemes into Mycroft mouth
         visuals.
 
-        Arguments:
+        Args:
             phonemes (str): String with phoneme data
 
         Returns:
@@ -427,7 +427,7 @@ class TTS(metaclass=ABCMeta):
     def save_phonemes(self, key, phonemes):
         """Cache phonemes
 
-        Arguments:
+        Args:
             key (str):        Hash key for the sentence
             phonemes (str):   phoneme string to save
         """
@@ -445,7 +445,7 @@ class TTS(metaclass=ABCMeta):
     def load_phonemes(self, key):
         """Load phonemes from cache file.
 
-        Arguments:
+        Args:
             key (str): Key identifying phoneme cache
         """
         # TODO: remove in 21.08
@@ -522,7 +522,7 @@ class TTSValidator(metaclass=ABCMeta):
 def load_tts_plugin(module_name):
     """Wrapper function for loading tts plugin.
 
-    Arguments:
+    Args:
         (str) Mycroft tts module name from config
     Returns:
         class: found tts plugin class

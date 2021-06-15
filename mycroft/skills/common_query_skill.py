@@ -134,7 +134,7 @@ class CommonQuerySkill(MycroftSkill, ABC):
 
         Needs to be implemented by the skill.
 
-        Arguments:
+        Args:
             phrase (str): User phrase, "What is an aardwark"
 
         Returns:

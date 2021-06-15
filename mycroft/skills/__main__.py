@@ -51,7 +51,7 @@ RASPBERRY_PI_PLATFORMS = ('mycroft_mark_1', 'picroft', 'mycroft_mark_2')
 class DevicePrimer(object):
     """Container handling the device preparation.
 
-    Arguments:
+    Args:
         message_bus_client: Bus client used to interact with the system
         config (dict): Mycroft configuration
     """
@@ -240,7 +240,7 @@ def main(alive_hook=on_alive, started_hook=on_started, ready_hook=on_ready,
 def _register_intent_services(bus):
     """Start up the all intent services and connect them as needed.
 
-    Arguments:
+    Args:
         bus: messagebus client to register the services on
     """
     service = IntentService(bus)

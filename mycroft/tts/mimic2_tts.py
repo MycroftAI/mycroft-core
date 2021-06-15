@@ -38,7 +38,7 @@ _max_sentence_size = 170
 def _break_chunks(l, n):
     """Yield successive n-sized chunks
 
-    Arguments:
+    Args:
         l (list): text (str) to split
         chunk_size (int): chunk size
     """
@@ -49,7 +49,7 @@ def _break_chunks(l, n):
 def _split_by_chunk_size(text, chunk_size):
     """Split text into word chunks by chunk_size size
 
-    Arguments:
+    Args:
         text (str): text to split
         chunk_size (int): chunk size
 
@@ -87,7 +87,7 @@ def _split_by_punctuation(chunks, puncs):
     """Splits text by various punctionations
     e.g. hello, world => [hello, world]
 
-    Arguments:
+    Args:
         chunks (list or str): text (str) to split
         puncs (list): list of punctuations used to split text
 
@@ -128,7 +128,7 @@ def _sentence_chunker(text):
     NOTE: The smaller chunks are needed due to current Mimic2 TTS limitations.
     This stage can be removed once Mimic2 can generate longer sentences.
 
-    Arguments:
+    Args:
         text (str): text to split
         chunk_size (int): size of each chunk
         split_by_punc (bool, optional): Defaults to True.
@@ -176,7 +176,7 @@ class Mimic2(TTS):
     def _requests(self, sentence):
         """Create asynchronous request list
 
-        Arguments:
+        Args:
             chunks (list): list of text to synthesize
 
         Returns:
@@ -189,7 +189,7 @@ class Mimic2(TTS):
     def viseme(self, phonemes):
         """Maps phonemes to appropriate viseme encoding
 
-        Arguments:
+        Args:
             phonemes (list): list of tuples (phoneme, time_start)
 
         Returns:
@@ -216,7 +216,7 @@ class Mimic2(TTS):
     def get_tts(self, sentence, wav_file):
         """Generate (remotely) and play mimic2 WAV audio
 
-        Arguments:
+        Args:
             sentence (str): Phrase to synthesize to audio with mimic2
             wav_file (str): Location to write audio output
         """
@@ -240,7 +240,7 @@ class Mimic2(TTS):
     def save_phonemes(self, key, phonemes):
         """Cache phonemes
 
-        Arguments:
+        Args:
             key:        Hash key for the sentence
             phonemes:   phoneme string to save
         """
@@ -255,7 +255,7 @@ class Mimic2(TTS):
     def load_phonemes(self, key):
         """Load phonemes from cache file.
 
-        Arguments:
+        Args:
             Key:    Key identifying phoneme cache
         """
         pho_file = os.path.join(get_cache_directory("tts/" + self.tts_name),

@@ -69,7 +69,7 @@ class SkillGUI:
         When using the triggerEvent method from Qt
         triggerEvent("event", {"data": "cool"})
 
-        Arguments:
+        Args:
             event (str):    event to catch
             handler:        function to handle the event
         """
@@ -80,7 +80,7 @@ class SkillGUI:
         """Registers a callback function to run when a value is
         changed from the GUI.
 
-        Arguments:
+        Args:
             callback:   Function to call when a value is changed
         """
         self.on_gui_changed_callback = callback
@@ -88,7 +88,7 @@ class SkillGUI:
     def gui_set(self, message):
         """Handler catching variable changes from the GUI.
 
-        Arguments:
+        Args:
             message: Messagebus message
         """
         for key in message.data:
@@ -132,7 +132,7 @@ class SkillGUI:
     def send_event(self, event_name, params=None):
         """Trigger a gui event.
 
-        Arguments:
+        Args:
             event_name (str): name of event to be triggered
             params: json serializable object containing any parameters that
                     should be sent along with the request.
@@ -147,7 +147,7 @@ class SkillGUI:
                   override_animations=False):
         """Begin showing the page in the GUI
 
-        Arguments:
+        Args:
             name (str): Name of page (e.g "mypage.qml") to display
             override_idle (boolean, int):
                 True: Takes over the resting page indefinitely
@@ -163,7 +163,7 @@ class SkillGUI:
                    override_animations=False):
         """Begin showing the list of pages in the GUI.
 
-        Arguments:
+        Args:
             page_names (list): List of page names (str) to display, such as
                                ["Weather.qml", "Forecast.qml", "Details.qml"]
             index (int): Page number (0-based) to show initially.  For the
@@ -214,7 +214,7 @@ class SkillGUI:
     def remove_page(self, page):
         """Remove a single page from the GUI.
 
-        Arguments:
+        Args:
             page (str): Page to remove from the GUI
         """
         return self.remove_pages([page])
@@ -222,7 +222,7 @@ class SkillGUI:
     def remove_pages(self, page_names):
         """Remove a list of pages in the GUI.
 
-        Arguments:
+        Args:
             page_names (list): List of page names (str) to display, such as
                                ["Weather.qml", "Forecast.qml", "Other.qml"]
         """
@@ -252,7 +252,7 @@ class SkillGUI:
                   override_animations=False):
         """Display a GUI page for viewing simple text.
 
-        Arguments:
+        Args:
             text (str): Main text content.  It will auto-paginate
             title (str): A title to display above the text content.
             override_idle (boolean, int):
@@ -273,7 +273,7 @@ class SkillGUI:
                    override_idle=None, override_animations=False):
         """Display a GUI page for viewing an image.
 
-        Arguments:
+        Args:
             url (str): Pointer to the image
             caption (str): A caption to show under the image
             title (str): A title to display above the image content
@@ -299,7 +299,7 @@ class SkillGUI:
                             override_idle=None, override_animations=False):
         """Display a GUI page for viewing an image.
 
-        Arguments:
+        Args:
             url (str): Pointer to the .gif image
             caption (str): A caption to show under the image
             title (str): A title to display above the image content
@@ -324,7 +324,7 @@ class SkillGUI:
                   override_animations=False):
         """Display an HTML page in the GUI.
 
-        Arguments:
+        Args:
             html (str): HTML text to display
             resource_url (str): Pointer to HTML resources
             override_idle (boolean, int):
@@ -344,7 +344,7 @@ class SkillGUI:
                  override_animations=False):
         """Display an HTML page in the GUI.
 
-        Arguments:
+        Args:
             url (str): URL to render
             override_idle (boolean, int):
                 True: Takes over the resting page indefinitely

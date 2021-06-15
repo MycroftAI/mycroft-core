@@ -92,7 +92,7 @@ def _shutdown_skill(instance):
     Call the default_shutdown method of the skill, will produce a warning if
     the shutdown process takes longer than 1 second.
 
-    Arguments:
+    Args:
         instance (MycroftSkill): Skill instance to shutdown
     """
     try:
@@ -115,7 +115,7 @@ class SkillManager(Thread):
     def __init__(self, bus, watchdog=None):
         """Constructor
 
-        Arguments:
+        Args:
             bus (event emitter): Mycroft messagebus connection
             watchdog (callable): optional watchdog function
         """

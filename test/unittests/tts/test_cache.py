@@ -2,7 +2,7 @@
 from pathlib import Path
 from tempfile import mkdtemp
 from unittest import TestCase
-from unittest.mock import MagicMock, patch
+from unittest.mock import Mock, MagicMock, patch
 
 from mycroft.tts.cache import hash_sentence, TextToSpeechCache
 
@@ -121,3 +121,51 @@ class TestCache(TestCase):
         # dict of hashes.
         self.assertEqual(tts_cache.cached_sentences,
                          {'fozzie': (files['fozzie'], None)})
+
+
+class MockFile(Mock):
+    def __init__(self, exists, *args, **kwargs):
+        super().__init__(args, kwargs)
+        self._exists = exists
+
+    def exists(self):
+        return self._exists
+
+
+class TestCacheContains(TestCase):
+    """Verify the `"X" in tts_cache` functionality."""
+    def setUp(self):
+        self.cache_dir = Path(mkdtemp())
+        self.tts_cache = TextToSpeechCache(
+            tts_config=dict(preloaded_cache=self.cache_dir),
+            tts_name="Test",
+            audio_file_type="wav"
+        )
+        files = {
+            'kermit': (MockFile(exists=True), MockFile(exists=True)),
+            'fozzie': (MockFile(exists=True), None),
+            'gobo': (MockFile(exists=False), None),
+            'piggy': (MockFile(exists=True), MockFile(exists=False))
+        }
+        for sentence_hash, (audio_file, phoneme_file) in files.items():
+            self.tts_cache.cached_sentences[sentence_hash] = (
+                audio_file, phoneme_file
+            )
+
+    def tearDown(self):
+        for file_path in self.cache_dir.iterdir():
+            file_path.unlink()
+        self.cache_dir.rmdir()
+
+    def test_hash_not_listed(self):
+        self.assertFalse('animal' in self.tts_cache)
+
+    def test_hash_exists_and_files_ok(self):
+        self.assertTrue('kermit' in self.tts_cache)
+
+    def test_only_audio_hash_exists_and_files_ok(self):
+        self.assertTrue('fozzie' in self.tts_cache)
+
+    def test_hash_exists_and_files_bad(self):
+        self.assertFalse('piggy' in self.tts_cache)
+        self.assertFalse('gobo' in self.tts_cache)

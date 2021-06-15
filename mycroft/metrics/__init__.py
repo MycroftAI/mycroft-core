@@ -71,7 +71,7 @@ def report_metric(name, data):
 def report_timing(ident, system, timing, additional_data=None):
     """Create standardized message for reporting timing.
 
-    Arguments:
+    Args:
         ident (str):            identifier of user interaction
         system (str):           system the that's generated the report
         timing (stopwatch):     Stopwatch object with recorded timing

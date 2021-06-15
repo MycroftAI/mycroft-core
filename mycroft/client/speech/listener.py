@@ -280,7 +280,7 @@ class RecognizerLoop(EventEmitter):
 
     Local wake word recognizer and remote general speech recognition.
 
-    Arguments:
+    Args:
         watchdog: (callable) function to call periodically indicating
                   operational status.
     """

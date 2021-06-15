@@ -19,6 +19,7 @@
 import sys
 import re
 import os
+from os.path import dirname, join
 
 import sphinx_rtd_theme
 from sphinx.ext.autodoc import (
@@ -74,13 +75,33 @@ templates_path = ['_templates']
 source_suffix = '.rst'
 master_doc = 'index'
 
+
+def get_version():
+    version_file = join(dirname(__file__),
+                        '..', 'mycroft', 'version', '__init__.py')
+    with open(version_file) as f:
+        while 'START_VERSION_BLOCK' not in f.readline():
+            pass
+
+        def safe_read_version_line():
+            try:
+                return f.readline().split('=')[1].strip()
+            except Exception:
+                return '0'
+
+        major = safe_read_version_line()
+        minor = safe_read_version_line()
+        build = safe_read_version_line()
+        return 'v' + '.'.join((major, minor, build))
+
+
 # General Info
 project = 'Mycroft'
 copyright = '2017, Mycroft AI Inc.'
 author = 'Mycroft AI Inc.'
 
-version = '0.1.0'
-release = '0.1.0'  # Includes alpha/beta/rc tags.
+version = get_version()
+release = version
 
 language = None
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
