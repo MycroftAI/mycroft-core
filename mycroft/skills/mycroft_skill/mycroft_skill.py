@@ -1066,7 +1066,7 @@ class MycroftSkill:
         """Listener to enable a registered intent if it belongs to this skill.
         """
         intent_name = message.data['intent_name']
-        for (name, _) in self.intent_service:
+        for (name, _) in self.intent_service.detached_intents:
             if name == intent_name:
                 return self.enable_intent(intent_name)
 
@@ -1088,7 +1088,7 @@ class MycroftSkill:
                 bool: True if disabled, False if it wasn't registered
         """
         if intent_name in self.intent_service:
-            LOG.debug('Disabling intent ' + intent_name)
+            LOG.info('Disabling intent ' + intent_name)
             name = '{}:{}'.format(self.skill_id, intent_name)
             self.intent_service.detach_intent(name)
             return True

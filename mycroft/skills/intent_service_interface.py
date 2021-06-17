@@ -35,6 +35,7 @@ class IntentServiceInterface:
     def __init__(self, bus=None):
         self.bus = bus
         self.registered_intents = []
+        self.detached_intents = []
 
     def set_bus(self, bus):
         self.bus = bus
@@ -83,14 +84,25 @@ class IntentServiceInterface:
         """
         self.bus.emit(Message("register_intent", intent_parser.__dict__))
         self.registered_intents.append((name, intent_parser))
+        self.detached_intents = [detached for detached in self.detached_intents
+                                 if detached[0] != name]
 
     def detach_intent(self, intent_name):
         """Remove an intent from the intent service.
 
+        The intent is saved in the list of detached intents for use when
+        re-enabling an intent.
+
         Args:
             intent_name(str): Intent reference
         """
-        self.bus.emit(Message("detach_intent", {"intent_name": intent_name}))
+        name = intent_name.split(':')[1]
+        if name in self:
+            self.bus.emit(Message("detach_intent",
+                                  {"intent_name": intent_name}))
+            self.detached_intents.append((name, self.get_intent(name)))
+            self.registered_intents = [pair for pair in self.registered_intents
+                                       if pair[0] != name]
 
     def set_adapt_context(self, context, word, origin):
         """Set an Adapt context.
@@ -161,6 +173,8 @@ class IntentServiceInterface:
     def get_intent(self, intent_name):
         """Get intent from intent_name.
 
+        This will find both enabled and disabled intents.
+
         Args:
             intent_name (str): name to find.
 
@@ -170,8 +184,10 @@ class IntentServiceInterface:
         for name, intent in self:
             if name == intent_name:
                 return intent
-        else:
-            return None
+        for name, intent in self.detached_intents:
+            if name == intent_name:
+                return intent
+        return None
 
 
 class IntentQueryApi:
