@@ -205,10 +205,19 @@ class SkillManager(Thread):
         self._start_settings_update()
 
     def load_priority(self):
+        # NOTE: mycroft uses the skill name, this is not deterministic! msm
+        # decides what the name is based on the meta info from selene,
+        # if missing it uses folder name (skill_id), for backwards compat
+        # name is still support but skill_id is recommended! the name can be
+        # changed at any time and mess up the .conf, if the skill_id changes
+        # lots of other stuff will break so you are assured to notice
+        # TODO deprecate usage of skill_name once mycroft catches up
         skills = {skill.name: skill for skill in self.msm.all_skills}
+        skill_ids = {os.path.basename(skill.path): skill
+                     for skill in self.msm.all_skills}
         priority_skills = self.skills_config.get("priority_skills", [])
         for skill_name in priority_skills:
-            skill = skills.get(skill_name)
+            skill = skill_ids.get(skill_name) or skills.get(skill_name)
             if skill is not None:
                 if not skill.is_local:
                     try:
