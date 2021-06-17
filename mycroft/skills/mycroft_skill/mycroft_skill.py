@@ -958,12 +958,25 @@ class MycroftSkill:
     def _register_adapt_intent(self, intent_parser, handler):
         """Register an adapt intent.
 
+        Will handle registration of anonymous
         Args:
             intent_parser: Intent object to parse utterance for the handler.
             handler (func): function to register with intent
         """
         # Default to the handler's function name if none given
+        is_anonymous = not intent_parser.name
         name = intent_parser.name or handler.__name__
+        if is_anonymous:
+            # Find a good name
+            original_name = name
+            nbr = 0
+            while name in self.intent_service:
+                nbr += 1
+                name = f'{original_name}{nbr}'
+        else:
+            if name in self.intent_service:
+                raise ValueError(f'The intent name {name} is already taken')
+
         munge_intent_parser(intent_parser, name, self.skill_id)
         self.intent_service.register_adapt_intent(name, intent_parser)
         if handler:
