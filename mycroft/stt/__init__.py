@@ -68,7 +68,7 @@ class STT(metaclass=ABCMeta):
 class TokenSTT(STT, metaclass=ABCMeta):
     def __init__(self):
         super(TokenSTT, self).__init__()
-        self.token = str(self.credential.get("token"))
+        self.token = self.credential.get("token")
 
 
 class GoogleJsonSTT(STT, metaclass=ABCMeta):
@@ -81,16 +81,16 @@ class BasicSTT(STT, metaclass=ABCMeta):
 
     def __init__(self):
         super(BasicSTT, self).__init__()
-        self.username = str(self.credential.get("username"))
-        self.password = str(self.credential.get("password"))
+        self.username = self.credential.get("username")
+        self.password = self.credential.get("password")
 
 
 class KeySTT(STT, metaclass=ABCMeta):
 
     def __init__(self):
         super(KeySTT, self).__init__()
-        self.id = str(self.credential.get("client_id"))
-        self.key = str(self.credential.get("client_key"))
+        self.id = self.credential.get("client_id")
+        self.key = self.credential.get("client_key")
 
 
 class GoogleSTT(TokenSTT):
