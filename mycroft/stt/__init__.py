@@ -513,7 +513,6 @@ class GoogleCloudStreamingSTT(StreamingSTT):
     """
 
     def __init__(self):
-        global SpeechClient, types, enums, Credentials
         from google.cloud.speech import SpeechClient, types, enums
         from google.oauth2.service_account import Credentials
 
