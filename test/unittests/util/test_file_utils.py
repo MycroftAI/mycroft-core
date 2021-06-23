@@ -96,7 +96,7 @@ class TestReadFiles(TestCase):
 
 @mock.patch('mycroft.configuration.Configuration')
 class TestCache(TestCase):
-    def tearDownClass():
+    def tearDownClass(self):
         shutil.rmtree(test_config['cache_dir'], ignore_errors=True)
 
     def test_get_cache_directory(self, mock_conf):
@@ -210,5 +210,5 @@ class TestCreateFile(TestCase):
         with self.assertRaises(TypeError):
             failed_temp_path = get_temp_path(1)
 
-    def tearDownClass():
+    def tearDownClass(self):
         shutil.rmtree(TEST_CREATE_FILE_DIR, ignore_errors=True)
