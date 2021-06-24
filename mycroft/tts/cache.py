@@ -161,6 +161,8 @@ class TextToSpeechCache:
         self.audio_file_type = audio_file_type
         self.resource_dir = Path(__file__).parent.parent.joinpath("res")
         self.cached_sentences = dict()
+        # curate cache if disk usage is above min %
+        self.min_free_percent = self.config.get("min_free_percent", 75)
 
     def __contains__(self, sha):
         """The cache contains a SHA if it knows of it and it exists on disk."""
@@ -312,7 +314,7 @@ class TextToSpeechCache:
     def curate(self):
         """Remove cache data if disk space is running low."""
         files_removed = curate_cache(self.temporary_cache_dir,
-                                     min_free_percent=100)
+                                     min_free_percent=self.min_free_percent)
 
         hashes = set([hash_from_path(Path(path)) for path in files_removed])
         for sentence_hash in hashes:

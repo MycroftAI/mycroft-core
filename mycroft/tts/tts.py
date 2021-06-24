@@ -180,7 +180,7 @@ class TTS(metaclass=ABCMeta):
         self.ssml_tags = ssml_tags or []
 
         self.voice = config.get("voice")
-        self.filename = get_temp_path('tts.wav')
+        self.filename = get_temp_path('tts.' + audio_ext)
         self.enclosure = None
         random.seed()
         self.queue = Queue()
@@ -399,8 +399,16 @@ class TTS(metaclass=ABCMeta):
                     audio_file, phoneme_file
                 )
             viseme = self.viseme(phonemes) if phonemes else None
+
+            # tts engine has a default audio extension, but we can not be
+            # sure that the file actually uses the same extension,
+            # for instance a mp3 engine might include some cache in wav format
+            # cached utterances might also be saved by the user in the
+            # resources directory
+            _, audio_ext = os.path.splitext(str(audio_file.path))
+            audio_ext = audio_ext[1:]
             self.queue.put(
-                (self.audio_ext, str(audio_file.path), viseme, ident, l)
+                (audio_ext, str(audio_file.path), viseme, ident, l)
             )
 
     def _get_sentence_from_cache(self, sentence_hash):
@@ -512,7 +520,7 @@ class TTSValidator(metaclass=ABCMeta):
 
     def validate_filename(self):
         filename = self.tts.filename
-        if not (filename and filename.endswith('.wav')):
+        if not (filename and filename.endswith(self.tts.audio_ext)):
             raise AttributeError('file: %s must be in .wav format!' % filename)
 
         dir_path = dirname(filename)

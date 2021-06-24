@@ -115,7 +115,7 @@ class TestCache(TestCase):
                                     files['gobo'].path]
         tts_cache.curate()
         curate_mock.assert_called_with(tts_cache.temporary_cache_dir,
-                                       min_free_percent=100)
+                                       min_free_percent=75)
 
         # Verify that the "hashes" kermit and gobo was removed from the
         # dict of hashes.
