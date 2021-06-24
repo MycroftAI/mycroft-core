@@ -30,6 +30,7 @@ use in Mycroft Skills.
 from difflib import SequenceMatcher
 from warnings import warn
 
+from lingua_franca import get_default_loc
 from lingua_franca.parse import (
     extract_duration,
     extract_number,
@@ -115,4 +116,7 @@ def extract_datetime(text, anchorDate="DEFAULT", lang=None,
                                 "deprecated. This parameter can be omitted."))
     if anchorDate is None or anchorDate == "DEFAULT":
         anchorDate = now_local()
-    return _extract_datetime(text, anchorDate, lang, default_time)
+    return _extract_datetime(text,
+                             anchorDate,
+                             lang or get_default_loc(),
+                             default_time)
