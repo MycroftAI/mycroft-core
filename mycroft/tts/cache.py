@@ -147,20 +147,20 @@ class TextToSpeechCache:
         self.tts_name = tts_name
         if "preloaded_cache" in self.config:
             self.persistent_cache_dir = Path(self.config["preloaded_cache"])
+            ensure_directory_exists(
+                str(self.persistent_cache_dir), permissions=0o755
+            )
         else:
             self.persistent_cache_dir = None
         self.temporary_cache_dir = Path(
             get_cache_directory("tts/" + tts_name)
         )
-        self.audio_file_type = audio_file_type
-        self.resource_dir = Path(__file__).parent.parent.joinpath("res")
-        self.cached_sentences = dict()
-        ensure_directory_exists(
-            str(self.persistent_cache_dir), permissions=0o755
-        )
         ensure_directory_exists(
             str(self.temporary_cache_dir), permissions=0o755
         )
+        self.audio_file_type = audio_file_type
+        self.resource_dir = Path(__file__).parent.parent.joinpath("res")
+        self.cached_sentences = dict()
 
     def __contains__(self, sha):
         """The cache contains a SHA if it knows of it and it exists on disk."""
