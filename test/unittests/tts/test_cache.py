@@ -97,8 +97,12 @@ class TestCache(TestCase):
 
     @patch('mycroft.tts.cache.curate_cache')
     def test_curate_cache(self, curate_mock):
+        min_free_disk_percent = 20
+        min_free_disk_space = 1024
         tts_cache = TextToSpeechCache(
-            tts_config=dict(preloaded_cache=self.cache_dir),
+            tts_config=dict(preloaded_cache=self.cache_dir,
+                            min_free_disk_percent=min_free_disk_percent,
+                            min_free_disk_space=min_free_disk_space),
             tts_name="Test",
             audio_file_type="wav"
         )
@@ -114,13 +118,52 @@ class TestCache(TestCase):
         curate_mock.return_value = [files['kermit'].path,
                                     files['gobo'].path]
         tts_cache.curate()
-        curate_mock.assert_called_with(tts_cache.temporary_cache_dir,
-                                       min_free_percent=100)
+        curate_mock.assert_called_with(
+            tts_cache.temporary_cache_dir,
+            min_free_percent=min_free_disk_percent,
+            min_free_disk=min_free_disk_space)
 
         # Verify that the "hashes" kermit and gobo was removed from the
         # dict of hashes.
         self.assertEqual(tts_cache.cached_sentences,
                          {'fozzie': (files['fozzie'], None)})
+
+    def create_cache_file(self, file_path):
+        """Create a file of more than 0 bytes in the cache directory."""
+        with open(file_path, 'w+') as cache_file:
+            cache_file.write("Cached file contents")
+
+    @patch('mycroft.tts.cache.curate_cache')
+    def test_curate_cache_low_disk_space(self, curate_mock):
+        min_free_disk_percent = 100
+        min_free_disk_space = 100000000000000000
+        tts_cache = TextToSpeechCache(
+            tts_config=dict(
+                preloaded_cache=self.cache_dir,
+                min_free_disk_percent=min_free_disk_percent,
+                min_free_disk_space=min_free_disk_space),
+            tts_name="Test",
+            audio_file_type="wav")
+        # Setup content of sentence cache
+        files = {'kermit': tts_cache.define_audio_file('kermit'),
+                 'fozzie': tts_cache.define_audio_file('fozzie'),
+                 'gobo': tts_cache.define_audio_file('gobo')}
+        for sentence_hash, audio_file in files.items():
+            self.create_cache_file(audio_file.path)
+            tts_cache.cached_sentences[sentence_hash] = (audio_file, None)
+
+        # Verify that curating the cache with insufficient disk space
+        # removes all cached_sentences
+        tts_cache.curate()
+        curate_mock.assert_called_with(
+            tts_cache.temporary_cache_dir,
+            min_free_percent=min_free_disk_percent,
+            min_free_disk=min_free_disk_space)
+        self.assertEqual(tts_cache.cached_sentences, {})
+        #     'fozzie': (files['fozzie'], None),
+        #     'kermit': (files['kermit'], None),
+        #     'gobo': (files['gobo'], None),
+        # })
 
 
 class MockFile(Mock):
@@ -134,6 +177,7 @@ class MockFile(Mock):
 
 class TestCacheContains(TestCase):
     """Verify the `"X" in tts_cache` functionality."""
+
     def setUp(self):
         self.cache_dir = Path(mkdtemp())
         self.tts_cache = TextToSpeechCache(

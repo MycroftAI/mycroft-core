@@ -142,6 +142,7 @@ class PhonemeFile:
 
 class TextToSpeechCache:
     """Class for all persistent and temporary caching operations."""
+
     def __init__(self, tts_config, tts_name, audio_file_type):
         self.config = tts_config
         self.tts_name = tts_name
@@ -161,6 +162,10 @@ class TextToSpeechCache:
         ensure_directory_exists(
             str(self.temporary_cache_dir), permissions=0o755
         )
+        self.min_free_disk_percent = self.config.get(
+            "min_free_disk_percent", 20)
+        self.min_free_disk_space = self.config.get(
+            "min_free_disk_space", 1024)
 
     def __contains__(self, sha):
         """The cache contains a SHA if it knows of it and it exists on disk."""
@@ -311,8 +316,10 @@ class TextToSpeechCache:
 
     def curate(self):
         """Remove cache data if disk space is running low."""
-        files_removed = curate_cache(self.temporary_cache_dir,
-                                     min_free_percent=100)
+        files_removed = curate_cache(
+            self.temporary_cache_dir,
+            min_free_percent=self.min_free_disk_percent,
+            min_free_disk=self.min_free_disk_space)
 
         hashes = set([hash_from_path(Path(path)) for path in files_removed])
         for sentence_hash in hashes:
