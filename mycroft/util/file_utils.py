@@ -20,8 +20,10 @@ accessing and curating mycroft's cache.
 
 import os
 import psutil
-from stat import S_ISREG, ST_MTIME, ST_MODE, ST_SIZE
 import tempfile
+from pathlib import Path
+from stat import S_ISREG, ST_MTIME, ST_MODE, ST_SIZE
+from typing import List
 
 import mycroft.configuration
 from .log import LOG
@@ -179,6 +181,73 @@ def _delete_oldest(entries, bytes_needed):
     return deleted_files
 
 
+def reduce_cache_to_limits(directory: str, limits: dict) -> List[str]:
+    """Reduce cache size if any cache limits are exceeded.
+
+    Args:
+        directory: directory path that holds cached files
+        limits: set of limitations for the cache size.
+                May include one or more of the following values as floats:
+                - min_free_disk_percent
+                - min_free_disk_space
+                - max_usage_disk_percent
+                - max_usage_disk_space
+
+    Returns:
+        List of deleted file paths
+    """
+    # TODO: Consider adding more options, like whitelisted files, etc.
+    deleted_files = []
+    bytes_needed = 0
+
+    def update_bytes_needed(new_bytes_needed):
+        if new_bytes_needed > bytes_needed:
+            bytes_needed = new_bytes_needed
+
+    # Get disk and directory usage
+    space = psutil.disk_usage(directory)
+    percent_free = 100.0 - space.percent
+    cache_usage_disk_space = get_directory_size(directory)
+    cache_usage_disk_percent = cache_usage_disk_space / space.total
+
+    # Check each limit if it exists and update bytes needed
+    min_free_disk_percent = limits.get("min_free_disk_percent")
+    if (min_free_disk_percent is not None and
+            percent_free < min_free_disk_percent):
+        percent_needed = min_free_disk_percent - percent_free
+        update_bytes_needed(percent_needed / 100.0 * space.total)
+
+    min_free_disk_space = limits.get("min_free_disk_space")
+    if (min_free_disk_space is not None and
+            space.free < min_free_disk_space):
+        min_free_disk_space = mb_to_bytes(min_free_disk_space)
+        update_bytes_needed(min_free_disk_space - space.free)
+
+    max_usage_disk_percent = limits.get("max_usage_disk_percent")
+    if (max_usage_disk_percent is not None and
+            cache_usage_disk_percent > max_usage_disk_percent):
+        percent_needed = cache_usage_disk_percent - max_usage_disk_percent
+        update_bytes_needed(percent_needed / 100.0 * space.total)
+
+    max_usage_disk_space = limits.get("max_usage_disk_space")
+    if (max_usage_disk_space is not None and
+            cache_usage_disk_space > max_usage_disk_space):
+        max_usage_disk_space = mb_to_bytes(max_usage_disk_space)
+        update_bytes_needed(cache_usage_disk_space - max_usage_disk_space)
+
+    # Finally, delete files to free up any bytes_needed
+    if bytes_needed > 0:
+        update_bytes_needed(int(bytes_needed + 1.0))
+        LOG.info(f"Cache exceeded limits: removing {bytes_needed} bytes")
+
+        # get all entries in the directory w/ stats
+        entries = _get_cache_entries(directory)
+        # delete as many as needed starting with the oldest
+        deleted_files = _delete_oldest(entries, bytes_needed)
+
+    return deleted_files
+
+
 def curate_cache(directory, min_free_percent=5.0, min_free_disk=50):
     """Clear out the directory if needed.
 
@@ -236,6 +305,21 @@ def get_cache_directory(domain=None):
         # If not defined, use /tmp/mycroft/cache
         directory = get_temp_path('mycroft', 'cache')
     return ensure_directory_exists(directory, domain)
+
+
+def get_directory_size(directory):
+    """Get the size of a directory in bytes.
+
+    Args:
+        directory (str): path of the directory
+
+    Returns:
+        (int) size in bytes or None if directory does not exist
+    """
+    path = Path(directory)
+    if not path.exists():
+        return None
+    return sum(f.stat().st_size for f in path.glob('**/*') if f.is_file())
 
 
 def ensure_directory_exists(directory, domain=None, permissions=0o777):
