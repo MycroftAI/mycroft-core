@@ -115,7 +115,6 @@ case ${OPT} in
     "enclosure")
         end-process enclosure
         ;;
-
     *)
         help
         ;;

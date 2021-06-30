@@ -3,7 +3,7 @@ import socket
 from urllib.request import urlopen
 from urllib.error import URLError
 
-from .log import LOG
+from mycroft.util.log import LOG
 
 
 def _get_network_tests_config():

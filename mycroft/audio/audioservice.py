@@ -25,7 +25,7 @@ from mycroft.util.log import LOG
 from mycroft.util.monotonic_event import MonotonicEvent
 from mycroft.util.plugins import find_plugins
 
-from .services import RemoteAudioBackend
+from mycroft.audio.services import RemoteAudioBackend
 
 MINUTES = 60  # Seconds in a minute
 

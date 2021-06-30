@@ -15,7 +15,7 @@ import time
 
 from enum import IntEnum
 from abc import ABC, abstractmethod
-from .mycroft_skill import MycroftSkill
+from mycroft.skills.mycroft_skill import MycroftSkill
 
 from mycroft.configuration import Configuration
 from mycroft.util.file_utils import resolve_resource_file

@@ -15,7 +15,7 @@
 import sys
 import json
 
-from .send_func import send
+from mycroft.messagebus.send_func import send
 
 
 def main():

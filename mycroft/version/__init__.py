@@ -26,26 +26,32 @@ from mycroft.util.log import LOG
 CORE_VERSION_MAJOR = 21
 CORE_VERSION_MINOR = 2
 CORE_VERSION_BUILD = 1
+
+OVOS_VERSION_MAJOR = 0
+OVOS_VERSION_MINOR = 0
+OVOS_VERSION_BUILD = 1
 # END_VERSION_BLOCK
+
 
 CORE_VERSION_TUPLE = (CORE_VERSION_MAJOR,
                       CORE_VERSION_MINOR,
                       CORE_VERSION_BUILD)
 CORE_VERSION_STR = '.'.join(map(str, CORE_VERSION_TUPLE))
 
+OVOS_VERSION_TUPLE = (OVOS_VERSION_MAJOR,
+                      OVOS_VERSION_MINOR,
+                      OVOS_VERSION_BUILD)
+OVOS_VERSION_STR = '.'.join(map(str, OVOS_VERSION_TUPLE))
+
 
 class VersionManager:
     @staticmethod
     def get():
-        data_dir = expanduser(Configuration.get()['data_dir'])
-        version_file = join(data_dir, 'version.json')
-        if exists(version_file) and isfile(version_file):
-            try:
-                with open(version_file) as f:
-                    return json.load(f)
-            except Exception:
-                LOG.error("Failed to load version from '%s'" % version_file)
-        return {"coreVersion": CORE_VERSION_STR, "enclosureVersion": None}
+        data_dir = expanduser(Configuration.get().get('data_dir',
+                                                      "/opt/mycroft"))
+        return {"coreVersion": CORE_VERSION_STR,
+                "OpenVoiceOSVersion": OVOS_VERSION_STR,
+                "enclosureVersion": None}
 
 
 def check_version(version_string):

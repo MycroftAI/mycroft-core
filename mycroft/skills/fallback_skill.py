@@ -20,7 +20,7 @@ from mycroft.metrics import report_timing, Stopwatch
 from mycroft.util.log import LOG
 
 
-from .mycroft_skill import MycroftSkill, get_handler_name
+from mycroft.skills.mycroft_skill import MycroftSkill, get_handler_name
 
 
 class FallbackSkill(MycroftSkill):

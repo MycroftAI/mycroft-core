@@ -18,7 +18,7 @@ import io
 import os.path
 import curses
 from mycroft.util import get_ipc_directory
-from .text_client import (
+from mycroft.client.text.text_client import (
         load_settings, save_settings, simple_cli, gui_main,
         start_log_monitor, start_mic_monitor, connect_to_mycroft,
         ctrl_c_handler

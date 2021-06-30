@@ -1,0 +1,16 @@
+wolframalpha
+num2words
+ddg3
+pyaudio
+pytz
+holidays
+wikipedia
+pyjokes
+ifaddr
+multi_key_dict
+arrow
+timezonefinder
+mtranslate
+pyowm==2.6.1
+geocoder
+astral

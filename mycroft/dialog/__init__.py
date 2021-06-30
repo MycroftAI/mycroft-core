@@ -14,4 +14,4 @@
 #
 """Provides utilities for rendering dialogs and populating with custom data."""
 
-from .dialog import (MustacheDialogRenderer, load_dialogs, get)
+from mycroft.dialog.dialog import (MustacheDialogRenderer, load_dialogs, get)

@@ -22,7 +22,7 @@ mycroft.skills.
 # would break most of the skills out there.
 import mycroft.skills.mycroft_skill as mycroft_skill
 import mycroft.skills.fallback_skill as fallback_skill
-from .mycroft_skill import *  # noqa
+from mycroft.skills.mycroft_skill import *  # noqa
 
 
 class MycroftSkill(mycroft_skill.MycroftSkill):

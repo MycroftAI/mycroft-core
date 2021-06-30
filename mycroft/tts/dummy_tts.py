@@ -17,7 +17,7 @@
 
 from mycroft.util.log import LOG
 
-from .tts import TTS, TTSValidator
+from mycroft.tts.tts import TTS, TTSValidator
 
 
 class DummyTTS(TTS):

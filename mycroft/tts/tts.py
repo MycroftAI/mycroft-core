@@ -37,7 +37,7 @@ from mycroft.util.file_utils import get_temp_path
 from mycroft.util.log import LOG
 from mycroft.util.plugins import load_plugin
 from queue import Queue, Empty
-from .cache import hash_sentence, TextToSpeechCache
+from mycroft.tts.cache import hash_sentence, TextToSpeechCache
 
 
 _TTS_ENV = deepcopy(os.environ)
@@ -357,15 +357,17 @@ class TTS(metaclass=ABCMeta):
 
         for sentence, l in chunks:
             sentence_hash = hash_sentence(sentence)
+            phonemes = None
             if sentence_hash in self.cache:
                 audio_file, phoneme_file = self._get_sentence_from_cache(
                     sentence_hash
                 )
-                if phoneme_file is None:
-                    phonemes = None
-                else:
-                    phonemes = phoneme_file.load()
-
+                if phoneme_file:
+                    try:
+                        phonemes = phoneme_file.load()
+                    except:
+                        # TODO upstream bug, remove try block in next sync
+                        pass
             else:
                 # TODO: this should be changed return the audio data from
                 #  the API call and then to call the add_to_cache method

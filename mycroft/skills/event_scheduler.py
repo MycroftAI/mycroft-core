@@ -26,7 +26,8 @@ import xdg.BaseDirectory
 from mycroft.configuration import Configuration
 from mycroft.messagebus.message import Message
 from mycroft.util.log import LOG
-from .mycroft_skill.event_container import EventContainer, create_basic_wrapper
+from mycroft.skills.mycroft_skill.event_container import EventContainer, \
+    create_basic_wrapper
 
 
 def repeat_time(sched_time, repeat):

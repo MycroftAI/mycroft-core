@@ -13,7 +13,7 @@
 # limitations under the License.
 #
 
-from .tts import TTS, TTSValidator
+from mycroft.tts.tts import TTS, TTSValidator
 from mycroft.configuration import Configuration
 
 import requests

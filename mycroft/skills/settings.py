@@ -71,7 +71,7 @@ from mycroft.messagebus.message import Message
 from mycroft.util import camel_case_split
 from mycroft.util.log import LOG
 from mycroft.util.file_utils import ensure_directory_exists
-from .msm_wrapper import build_msm_config, create_msm
+from mycroft.skills.msm_wrapper import build_msm_config, create_msm
 
 ONE_MINUTE = 60
 

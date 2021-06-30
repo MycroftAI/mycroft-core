@@ -17,12 +17,16 @@ of audio, recording and listing devices.
 """
 from copy import deepcopy
 import os
-import pyaudio
 import re
 import subprocess
 
 import mycroft.configuration
-from .log import LOG
+from mycroft.util.log import LOG
+
+try:
+    import pyaudio
+except ImportError:
+    pyaudio = None
 
 
 def play_audio_file(uri: str, environment=None):
@@ -193,6 +197,8 @@ def find_input_device(device_name):
 
     Returns: device_index (int) or None if device wasn't found
     """
+    if pyaudio is None:
+        raise ImportError("pyaudio not installed")
     LOG.info('Searching for input device: {}'.format(device_name))
     LOG.debug('Devices: ')
     pa = pyaudio.PyAudio()

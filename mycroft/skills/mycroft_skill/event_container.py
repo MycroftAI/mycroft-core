@@ -4,7 +4,7 @@ from mycroft.messagebus import Message
 from mycroft.metrics import Stopwatch, report_timing
 from mycroft.util.log import LOG
 
-from ..skill_data import to_alnum
+from mycroft.skills.skill_data import to_alnum
 
 
 def unmunge_message(message, skill_id):
@@ -55,13 +55,6 @@ def create_wrapper(handler, skill_id, on_start, on_end, on_error):
     def wrapper(message):
         stopwatch = Stopwatch()
         try:
-            # TODO: Fix for real in mycroft-messagebus-client
-            # Makes sure the message type is consistent with the type declared
-            # in mycroft.messagebus and isinstance will work.
-            message = Message(message.msg_type,
-                              data=message.data,
-                              context=message.context)
-
             message = unmunge_message(message, skill_id)
             if on_start:
                 on_start(message)

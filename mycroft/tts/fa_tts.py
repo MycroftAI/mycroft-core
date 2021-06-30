@@ -14,8 +14,8 @@
 #
 import requests
 
-from .tts import TTSValidator
-from .remote_tts import RemoteTTS
+from mycroft.tts.tts import TTSValidator
+from mycroft.tts.remote_tts import RemoteTTS
 
 
 class FATTS(RemoteTTS):

@@ -23,7 +23,7 @@ from os.path import exists, dirname
 import subprocess
 from threading import Thread
 
-from .file_utils import ensure_directory_exists
+from mycroft.util.file_utils import ensure_directory_exists
 
 _running_downloads = {}  # Cache of running downloads
 

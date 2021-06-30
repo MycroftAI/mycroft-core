@@ -14,7 +14,7 @@
 #
 """Intent service for Mycroft's fallback system."""
 from collections import namedtuple
-from .base import IntentMatch
+from mycroft.skills.intent_services.base import IntentMatch
 
 FallbackRange = namedtuple('FallbackRange', ['start', 'stop'])
 

@@ -126,8 +126,9 @@ class SkillGUI:
         """
         self.__session_data = {}
         self.page = None
-        self.skill.bus.emit(Message("gui.clear.namespace",
-                                    {"__from": self.skill.skill_id}))
+        if self.skill.bus:
+            self.skill.bus.emit(Message("gui.clear.namespace",
+                                        {"__from": self.skill.skill_id}))
 
     def send_event(self, event_name, params=None):
         """Trigger a gui event.

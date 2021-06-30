@@ -14,7 +14,7 @@
 #
 import subprocess
 
-from .tts import TTS, TTSValidator
+from mycroft.tts.tts import TTS, TTSValidator
 
 
 class SpdSay(TTS):

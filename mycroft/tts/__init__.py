@@ -17,4 +17,4 @@ services. This includes both local and remote services. The module also
 declares a "factory" for spawning a TTS service based on configuration.
 """
 
-from .tts import TTSFactory, TTS, TTSValidator, PlaybackThread
+from mycroft.tts.tts import TTSFactory, TTS, TTSValidator, PlaybackThread

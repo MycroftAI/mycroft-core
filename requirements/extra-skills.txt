@@ -1,0 +1,6 @@
+msm==0.8.9
+msk==0.3.16
+adapt-parser>=0.4.1
+padatious>=0.4.8
+fann2==1.0.7
+padaos>=0.1.9

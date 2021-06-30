@@ -1,5 +1,3 @@
-# Copyright 2017 Mycroft AI Inc.
-#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -12,32 +10,32 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-from setuptools import setup, find_packages
 import os
 import os.path
+
+from setuptools import setup, find_packages
 
 BASEDIR = os.path.abspath(os.path.dirname(__file__))
 
 
 def get_version():
-    """ Find the version of mycroft-core"""
+    """ Find the version of ovos-core"""
     version = None
     version_file = os.path.join(BASEDIR, 'mycroft', 'version', '__init__.py')
     major, minor, build = (None, None, None)
     with open(version_file) as f:
         for line in f:
-            if 'CORE_VERSION_MAJOR' in line:
+            if 'OVOS_VERSION_MAJOR' in line:
                 major = line.split('=')[1].strip()
-            elif 'CORE_VERSION_MINOR' in line:
+            elif 'OVOS_VERSION_MINOR' in line:
                 minor = line.split('=')[1].strip()
-            elif 'CORE_VERSION_BUILD' in line:
+            elif 'OVOS_VERSION_BUILD' in line:
                 build = line.split('=')[1].strip()
 
             if ((major and minor and build) or
                     '# END_VERSION_BLOCK' in line):
                 break
     version = '.'.join([major, minor, build])
-
     return version
 
 
@@ -53,22 +51,27 @@ def required(requirements_file):
 
 
 setup(
-    name='mycroft-core',
+    name='ovos-core',
     version=get_version(),
     license='Apache-2.0',
-    author='Mycroft A.I.',
-    author_email='devs@mycroft.ai',
-    url='https://github.com/MycroftAI/mycroft-core',
-    description='Mycroft Core',
-    install_requires=required('requirements/requirements.txt'),
+    url='https://github.com/OpenVoiceOS/ovos-core',
+    description='mycroft-core packaged as a library',
+    install_requires=required('requirements/minimal.txt'),
     extras_require={
         'audio-backend': required('requirements/extra-audiobackend.txt'),
         'mark1': required('requirements/extra-mark1.txt'),
-        'stt': required('requirements/extra-stt.txt')
+        'stt': required('requirements/extra-stt.txt'),
+        'tts': required('requirements/extra-tts.txt'),
+        "skills_minimal": required('requirements/extra-skills-minimal.txt'),
+        'skills': required('requirements/extra-skills.txt'),
+        'default_skills': required('requirements/extra-default-skills.txt'),
+        'enclosure': required('requirements/extra-enclosure.txt'),
+        'bus': required('requirements/extra-bus.txt'),
+        'all': required('requirements/requirements.txt'),
+        'mycroft': required('requirements/extra-mycroft.txt')
     },
     packages=find_packages(include=['mycroft*']),
     include_package_data=True,
-
     entry_points={
         'console_scripts': [
             'mycroft-speech-client=mycroft.client.speech.__main__:main',

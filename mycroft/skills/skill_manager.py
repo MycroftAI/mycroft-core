@@ -24,10 +24,10 @@ from mycroft.enclosure.api import EnclosureAPI
 from mycroft.configuration import Configuration
 from mycroft.messagebus.message import Message
 from mycroft.util.log import LOG
-from .msm_wrapper import create_msm as msm_creator, build_msm_config
-from .settings import SkillSettingsDownloader
-from .skill_loader import SkillLoader
-from .skill_updater import SkillUpdater
+from mycroft.skills.msm_wrapper import create_msm as msm_creator, build_msm_config
+from mycroft.skills.settings import SkillSettingsDownloader
+from mycroft.skills.skill_loader import SkillLoader
+from mycroft.skills.skill_updater import SkillUpdater
 
 SKILL_MAIN_MODULE = '__init__.py'
 

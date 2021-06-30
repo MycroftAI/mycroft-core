@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-from .display_manager import DisplayManager
+from mycroft.enclosure.display_manager import DisplayManager
 from mycroft.messagebus.message import Message
 
 

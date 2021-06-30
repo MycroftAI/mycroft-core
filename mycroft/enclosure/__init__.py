@@ -12,5 +12,5 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .api import EnclosureAPI
-from .display_manager import DisplayManager
+from mycroft.enclosure.api import EnclosureAPI
+from mycroft.enclosure.display_manager import DisplayManager

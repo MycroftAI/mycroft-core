@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os
+from time import sleep
 from os.path import join, dirname, expanduser, exists
 
 import xdg.BaseDirectory
@@ -39,7 +40,16 @@ def __ensure_folder_exists(path):
      """
     directory = dirname(path)
     if not exists(directory):
-        os.makedirs(directory)
+        try:
+            os.makedirs(directory)
+        except:
+            sleep(0.2)
+            if not exists(directory):
+                try:
+                    os.makedirs(directory)
+                except Exception as e:
+                    from mycroft.util.log import LOG
+                    LOG.exception(e)
 
 
 __ensure_folder_exists(WEB_CONFIG_CACHE)

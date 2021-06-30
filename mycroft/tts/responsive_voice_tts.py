@@ -13,7 +13,7 @@
 # limitations under the License.
 #
 import requests
-from .tts import TTS, TTSValidator
+from mycroft.tts.tts import TTS, TTSValidator
 
 
 class ResponsiveVoice(TTS):

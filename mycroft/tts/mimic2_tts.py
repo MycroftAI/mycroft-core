@@ -26,9 +26,10 @@ from requests.exceptions import (
 
 from mycroft.util.file_utils import get_cache_directory
 from mycroft.util.log import LOG
-from .mimic_tts import VISIMES
-from .tts import TTS, TTSValidator
-from .remote_tts import RemoteTTSException, RemoteTTSTimeoutException
+from mycroft.tts.mimic_tts import VISIMES
+from mycroft.tts.tts import TTS, TTSValidator
+from mycroft.tts.remote_tts import RemoteTTSException,\
+    RemoteTTSTimeoutException
 
 # Heuristic value, caps character length of a chunk of text to be spoken as a
 # work around for current Mimic2 implementation limits.

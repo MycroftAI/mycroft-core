@@ -66,7 +66,7 @@ class PocketSphinxRecognizerTest(unittest.TestCase):
 
         expected = 'en-us'
         res = ps_hotword.decoder.get_config().get_string('-hmm')
-        self.assertEqual(expected, res.split('/')[-2])
+        self.assertEqual(expected, res.split('/')[-2].lower())
         self.assertEqual('does not exist', ps_hotword.lang)
 
 

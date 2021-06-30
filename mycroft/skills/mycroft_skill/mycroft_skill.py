@@ -47,11 +47,12 @@ from mycroft.util.log import LOG
 from mycroft.util.format import pronounce_number, join_list
 from mycroft.util.parse import match_one, extract_number
 
-from .event_container import EventContainer, create_wrapper, get_handler_name
-from ..event_scheduler import EventSchedulerInterface
-from ..intent_service_interface import IntentServiceInterface
-from ..settings import get_local_settings, save_settings
-from ..skill_data import (
+from mycroft.skills.mycroft_skill.event_container import EventContainer, \
+    create_wrapper, get_handler_name
+from mycroft.skills.event_scheduler import EventSchedulerInterface
+from mycroft.skills.intent_service_interface import IntentServiceInterface
+from mycroft.skills.settings import get_local_settings, save_settings
+from mycroft.skills.skill_data import (
     load_vocabulary,
     load_regex,
     to_alnum,

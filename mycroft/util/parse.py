@@ -42,8 +42,8 @@ from lingua_franca.parse import (
 )
 from lingua_franca.parse import extract_datetime as _extract_datetime
 
-from .time import now_local
-from .log import LOG
+from mycroft.util.time import now_local
+from mycroft.util.log import LOG
 
 
 def _log_unsupported_language(language, supported_languages):

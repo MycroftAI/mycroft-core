@@ -40,11 +40,11 @@ from mycroft.util import (
 from mycroft.util.log import LOG
 from mycroft.util.process_utils import ProcessStatus, StatusCallbackMap
 
-from .api import SkillApi
-from .core import FallbackSkill
-from .event_scheduler import EventScheduler
-from .intent_service import IntentService
-from .skill_manager import SkillManager
+from mycroft.skills.api import SkillApi
+from mycroft.skills.core import FallbackSkill
+from mycroft.skills.event_scheduler import EventScheduler
+from mycroft.skills.intent_service import IntentService
+from mycroft.skills.skill_manager import SkillManager
 
 RASPBERRY_PI_PLATFORMS = ('mycroft_mark_1', 'picroft', 'mycroft_mark_2pi')
 

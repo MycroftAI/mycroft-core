@@ -24,7 +24,7 @@ from enum import Enum, unique
 from functools import total_ordering, wraps
 from itertools import count
 
-from .mycroft_skill import MycroftSkill
+from mycroft.skills.mycroft_skill import MycroftSkill
 from mycroft.messagebus.message import Message, dig_for_message
 
 ENTITY = "ENTITY"

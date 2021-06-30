@@ -134,7 +134,7 @@ class PhonemeFile:
             with open(self.path, "w") as phoneme_file:
                 phoneme_file.write(rec)
         except Exception:
-            LOG.exception("Failed to write {} to cache".format(self.name))
+            LOG.error(f"Failed to write {self.name} to cache")
 
     def exists(self):
         return self.path.exists()

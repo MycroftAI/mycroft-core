@@ -16,23 +16,23 @@ from os.path import abspath, dirname, join
 
 from mycroft.api import Api
 from mycroft.messagebus.message import Message
-from mycroft.skills.context import adds_context, removes_context
-from mycroft.skills import (MycroftSkill, FallbackSkill,
-                            intent_handler, intent_file_handler)
-from mycroft.skills.intent_service import AdaptIntent
+# don't require adapt to be installed to import non-skill stuff
+try:
+    from mycroft.skills.context import adds_context, removes_context
+    from mycroft.skills import (MycroftSkill, FallbackSkill,
+                                intent_handler, intent_file_handler)
+    from mycroft.skills.intent_service import AdaptIntent
+except ImportError:
+    # skills requirements not installed
+    # i would remove this completely, but some skills in the wild import
+    # from the top level module instead of mycroft.skills
+    pass
 from mycroft.util.log import LOG
 
 MYCROFT_ROOT_PATH = abspath(join(dirname(__file__), '..'))
 
 __all__ = ['MYCROFT_ROOT_PATH',
            'Api',
-           'Message',
-           'adds_context',
-           'removes_context',
-           'MycroftSkill',
-           'FallbackSkill',
-           'intent_handler',
-           'intent_file_handler',
-           'AdaptIntent']
+           'Message']
 
 LOG.init()  # read log level from config

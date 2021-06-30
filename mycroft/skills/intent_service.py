@@ -20,10 +20,10 @@ from mycroft.configuration import Configuration, set_default_lf_lang
 from mycroft.util.log import LOG
 from mycroft.util.parse import normalize
 from mycroft.metrics import report_timing, Stopwatch
-from .intent_services import (
+from mycroft.skills.intent_services import (
     AdaptService, AdaptIntent, FallbackService, PadatiousService, IntentMatch
 )
-from .intent_service_interface import open_intent_envelope
+from mycroft.skills.intent_service_interface import open_intent_envelope
 
 
 def _get_message_lang(message):

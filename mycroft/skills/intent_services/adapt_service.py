@@ -21,7 +21,7 @@ from adapt.engine import IntentDeterminationEngine
 from adapt.intent import IntentBuilder
 
 from mycroft.util.log import LOG
-from .base import IntentMatch
+from mycroft.skills.intent_services.base import IntentMatch
 
 
 def _entity_skill_id(skill_id):

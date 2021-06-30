@@ -25,8 +25,9 @@ import xdg.BaseDirectory
 from mycroft.util.json_helper import load_commented_json, merge_dict
 from mycroft.util.log import LOG
 
-from .locations import DEFAULT_CONFIG, USER_CONFIG, OLD_USER_CONFIG
-from .locations import SYSTEM_CONFIG
+from mycroft.configuration.locations import (DEFAULT_CONFIG, SYSTEM_CONFIG,
+                                             USER_CONFIG, OLD_USER_CONFIG,
+                                             WEB_CONFIG_CACHE)
 
 
 def is_remote_list(values):

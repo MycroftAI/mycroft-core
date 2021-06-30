@@ -1,0 +1,4 @@
+adapt-parser>=0.4.1
+padaos>=0.1.9
+lingua-nostra>=0.4.4
+mock_msm>=0.9.2

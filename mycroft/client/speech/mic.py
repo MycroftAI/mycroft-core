@@ -44,7 +44,8 @@ from mycroft.util import (
 )
 from mycroft.util.log import LOG
 
-from .data_structures import RollingMean, CyclicAudioBuffer
+from mycroft.client.speech.data_structures import RollingMean, \
+    CyclicAudioBuffer
 
 
 WakeWordData = namedtuple('WakeWordData',

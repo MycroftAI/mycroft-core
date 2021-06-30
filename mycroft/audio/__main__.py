@@ -26,7 +26,7 @@ from mycroft.util.log import LOG
 from mycroft.util.process_utils import ProcessStatus, StatusCallbackMap
 
 import mycroft.audio.speech as speech
-from .audioservice import AudioService
+from mycroft.audio.audioservice import AudioService
 
 
 def on_ready():

@@ -23,7 +23,7 @@ from os.path import expanduser, isfile
 from mycroft.configuration import Configuration
 from mycroft.messagebus.message import Message
 from mycroft.util.log import LOG
-from .base import IntentMatch
+from mycroft.skills.intent_services.base import IntentMatch
 
 
 class PadatiousService:
@@ -46,7 +46,6 @@ class PadatiousService:
 
         self.container = IntentContainer(intent_cache)
 
-        self._bus = bus
         self.bus.on('padatious:register_intent', self.register_intent)
         self.bus.on('padatious:register_entity', self.register_entity)
         self.bus.on('detach_intent', self.handle_detach_intent)

@@ -1,2 +1,3 @@
 pychromecast==3.2.2
-python-vlc==1.1.2
+python-vlc>=1.1.2
+#git+https://github.com/JarbasAl/py_mplayer

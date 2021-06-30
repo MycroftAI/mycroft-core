@@ -16,8 +16,8 @@ import re
 from enum import Enum, IntEnum
 from abc import ABC, abstractmethod
 from mycroft.messagebus.message import Message
-from .mycroft_skill import MycroftSkill
-from .audioservice import AudioService
+from mycroft.skills.mycroft_skill import MycroftSkill
+from mycroft.skills.audioservice import AudioService
 
 
 class CPSMatchLevel(Enum):

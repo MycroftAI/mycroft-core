@@ -25,7 +25,7 @@ from mycroft.messagebus import Message
 from mycroft.skills.settings import save_settings
 from mycroft.util.log import LOG
 
-from .settings import SettingsMetaUploader
+from mycroft.skills.settings import SettingsMetaUploader
 
 SKILL_MAIN_MODULE = '__init__.py'
 

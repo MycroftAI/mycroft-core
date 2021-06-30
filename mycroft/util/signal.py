@@ -19,7 +19,7 @@ import os
 import os.path
 
 import mycroft
-from .file_utils import ensure_directory_exists, create_file
+from mycroft.util.file_utils import ensure_directory_exists, create_file
 
 
 def get_ipc_directory(domain=None):
@@ -36,11 +36,11 @@ def get_ipc_directory(domain=None):
         str: a path to the IPC directory
     """
     config = mycroft.configuration.Configuration.get()
-    dir = config.get("ipc_path")
-    if not dir:
+    path = config.get("ipc_path")
+    if not path:
         # If not defined, use /tmp/mycroft/ipc
-        dir = os.path.join(tempfile.gettempdir(), "mycroft", "ipc")
-    return ensure_directory_exists(dir, domain)
+        path = os.path.join(tempfile.gettempdir(), "mycroft", "ipc")
+    return ensure_directory_exists(path, domain)
 
 
 def create_signal(signal_name):
@@ -75,14 +75,33 @@ def check_for_signal(signal_name, sec_lifetime=0):
     if os.path.isfile(path):
         if sec_lifetime == 0:
             # consume this single-use signal
-            os.remove(path)
+            _remove_signal(path)
         elif sec_lifetime == -1:
             return True
         elif int(os.path.getctime(path) + sec_lifetime) < int(time.time()):
             # remove once expired
-            os.remove(path)
+            _remove_signal(path)
             return False
         return True
 
     # No such signal exists
     return False
+
+
+def _remove_signal(signal_name):
+    # this method is private because nothing should import it, if something
+    # does that it wont work with regular mycroft-core, plus there is no
+    # good reason to call this from elsewhere
+    if os.path.isfile(signal_name):
+        path = signal_name
+    else:
+        path = os.path.join(get_ipc_directory(), "signal", signal_name)
+    # consume this signal
+    try:
+        os.remove(path)
+    except:
+        # some other process might have removed it meanwhile!
+        if os.path.isfile(path):
+            # what now? probably a file permission error,
+            # this signal will keep triggering if file is not removed
+            raise

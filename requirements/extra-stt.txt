@@ -1,1 +1,6 @@
 google-api-python-client==1.6.4
+SpeechRecognition==3.8.1
+PyAudio>=0.2.11
+pocketsphinx==0.1.0
+precise-runner>=0.2.1
+petact>=0.1.2
