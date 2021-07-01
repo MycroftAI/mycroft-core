@@ -372,9 +372,9 @@ class TTS(metaclass=ABCMeta):
                 #  API of the get_tts method in each engine.
                 audio_file = self.cache.define_audio_file(sentence_hash)
                 # TODO 21.08: remove mutation of audio_file.path.
-                returned_file, phonemes = self.get_tts(
+                returned_path, phonemes = self.get_tts(
                     sentence, str(audio_file.path))
-                if returned_file.path != audio_file.path:
+                if returned_path != audio_file.path:
                     warn(
                         DeprecationWarning(
                             f"{self.tts_name} is saving files "
@@ -382,7 +382,7 @@ class TTS(metaclass=ABCMeta):
                             "the maintainer of this plugin, please adhere to "
                             "the file path argument provided. Modified paths "
                             "will be ignored in a future release."))
-                    audio_file = returned_file
+                    audio_file = returned_path
                 if phonemes:
                     phoneme_file = self.cache.define_phoneme_file(
                         sentence_hash
