@@ -286,6 +286,7 @@ def create_file(filename):
     ensure_directory_exists(os.path.dirname(filename), permissions=0o775)
     with open(filename, 'w') as f:
         f.write('')
+    os.chmod(filename, 0o777)
 
 
 def get_temp_path(*args):
