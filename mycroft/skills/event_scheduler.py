@@ -55,7 +55,7 @@ class EventScheduler(Thread):
         bus:            Mycroft messagebus (mycroft.messagebus)
         schedule_file:  File to store pending events to on shutdown
     """
-    def __init__(self, bus, schedule_file='schedule.json'):
+    def __init__(self, bus, schedule_file='schedule.json', autostart=True):
         super().__init__()
 
         self.events = {}
@@ -82,7 +82,8 @@ class EventScheduler(Thread):
                     self.update_event_handler)
         self.bus.on('mycroft.scheduler.get_event',
                     self.get_event_handler)
-        self.start()
+        if autostart:
+            self.start()
 
     def load(self):
         """Load json data with active events from json file."""

@@ -226,8 +226,9 @@ def main(alive_hook=on_alive, started_hook=on_started, ready_hook=on_ready,
     # Connect this process to the Mycroft message bus
     bus = start_message_bus_client("SKILLS")
     _register_intent_services(bus)
-    event_scheduler = EventScheduler(bus)
-
+    event_scheduler = EventScheduler(bus, autostart=False)
+    event_scheduler.setDaemon(True)
+    event_scheduler.start()
     SkillApi.connect_bus(bus)
     skill_manager = _initialize_skill_manager(bus, watchdog)
 
