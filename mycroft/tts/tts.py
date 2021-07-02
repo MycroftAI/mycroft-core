@@ -18,7 +18,7 @@ import random
 import re
 from abc import ABCMeta, abstractmethod
 from threading import Thread
-from time import time
+from time import time, sleep
 
 import os.path
 from os.path import dirname, exists, isdir, join
@@ -53,6 +53,7 @@ class PlaybackThread(Thread):
     def __init__(self, queue):
         super(PlaybackThread, self).__init__()
         self.queue = queue
+        self._paused = False
         self._terminated = False
         self._processing_queue = False
         self.enclosure = None
@@ -92,6 +93,8 @@ class PlaybackThread(Thread):
         listening.
         """
         while not self._terminated:
+            while self._paused:
+                sleep(0.2)
             try:
                 (snd_type, data,
                  visemes, ident, listen) = self.queue.get(timeout=2)
@@ -106,11 +109,17 @@ class PlaybackThread(Thread):
                         self.p = play_wav(data, environment=self.pulse_env)
                     elif snd_type == 'mp3':
                         self.p = play_mp3(data, environment=self.pulse_env)
+
                     if visemes:
                         self.show_visemes(visemes)
+
                     if self.p:
-                        self.p.communicate()
-                        self.p.wait()
+                        while self.p.poll() is None:
+                            if self._paused:
+                                self.p.terminate()
+                                break
+                            sleep(0.1)
+
                 report_timing(ident, 'speech_playback', stopwatch)
 
                 if self.queue.empty():
@@ -145,6 +154,14 @@ class PlaybackThread(Thread):
         """Blink mycroft's eyes"""
         if self.enclosure and random.random() < rate:
             self.enclosure.eyes_blink("b")
+
+    def pause(self):
+        """pause thread"""
+        self._paused = True
+
+    def resume(self):
+        """resume thread"""
+        self._paused = False
 
     def stop(self):
         """Stop thread"""

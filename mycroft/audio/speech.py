@@ -124,7 +124,7 @@ def mute_and_speak(utterance, ident, listen=False):
         tts.init(bus)
         tts_hash = hash(str(config.get('tts', '')))
 
-    LOG.info("Speak: " + utterance)
+    LOG.debug("Listen=%s, Speak:%s" % (listen, utterance))
     try:
         tts.execute(utterance, ident, listen)
     except RemoteTTSException as e:
@@ -173,6 +173,11 @@ def handle_stop(event):
         tts.playback.clear()  # Clear here to get instant stop
         bus.emit(Message("mycroft.stop.handled", {"by": "TTS"}))
 
+def handle_pause(event):
+    tts.playback.pause()
+
+def handle_resume(event):
+    tts.playback.resume()
 
 def init(messagebus):
     """Start speech related handlers.
@@ -191,6 +196,8 @@ def init(messagebus):
     config = Configuration.get()
     bus.on('mycroft.stop', handle_stop)
     bus.on('mycroft.audio.speech.stop', handle_stop)
+    bus.on('mycroft.audio.speech.pause', handle_pause)
+    bus.on('mycroft.audio.speech.resume', handle_resume)
     bus.on('speak', handle_speak)
 
     tts = TTSFactory.create()
