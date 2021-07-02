@@ -36,7 +36,7 @@ from mycroft.util.log import LOG
 from mycroft.util.plugins import load_plugin
 
 RECOGNIZER_DIR = join(abspath(dirname(__file__)), "recognizer")
-INIT_TIMEOUT = 10  # In seconds
+INIT_TIMEOUT = 30  # In seconds
 
 
 class TriggerReload(Exception):
@@ -236,6 +236,8 @@ class PreciseHotword(HotWordEngine):
     def update_precise(self, precise_config):
         """Continously try to download precise until successful"""
         precise_exe = None
+        if exists(self.install_destination):
+            precise_exe = self.install_destination
         while not precise_exe:
             try:
                 precise_exe = self.install_exe(precise_config['dist_url'])
@@ -244,11 +246,8 @@ class PreciseHotword(HotWordEngine):
             except Exception as e:
                 LOG.error(
                     'Precise could not be downloaded({})'.format(repr(e)))
-                if exists(self.install_destination):
-                    precise_exe = self.install_destination
-                else:
-                    # Wait one minute before retrying
-                    sleep(60)
+                # Wait one minute before retrying
+                sleep(60)
         return precise_exe
 
     @property

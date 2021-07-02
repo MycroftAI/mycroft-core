@@ -15,6 +15,7 @@
 import os
 import time
 from copy import copy, deepcopy
+from subprocess import run
 
 import requests
 from requests import HTTPError, RequestException
@@ -41,6 +42,16 @@ class InternetDown(RequestException):
 UUID = '{MYCROFT_UUID}'
 
 
+def _get_pantacor_device_id():
+    """Quick hack to read a file owned by root on a pantacor device."""
+    # TODO: replace this with reading a file accessible by the mycroft user
+    cmd = ['sudo', 'cat', '/pantavisor/device-id']
+    result = run(cmd, capture_output=True)
+    pantacor_device_id = result.stdout.decode().strip()
+
+    return pantacor_device_id
+
+
 class Api:
     """ Generic class to wrap web APIs """
     params_to_etag = {}
@@ -51,13 +62,13 @@ class Api:
 
         # Load the config, skipping the REMOTE_CONFIG since we are
         # getting the info needed to get to it!
-        config = Configuration.get([DEFAULT_CONFIG,
+        self.config = Configuration.get([DEFAULT_CONFIG,
                                     SYSTEM_CONFIG,
                                     USER_CONFIG],
                                    cache=False)
-        config_server = config.get("server")
-        self.url = config_server.get("url")
-        self.version = config_server.get("version")
+        server_config = self.config.get("server")
+        self.url = server_config.get("url")
+        self.version = server_config.get("version")
         self.identity = IdentityManager.get()
 
     def request(self, params):
@@ -225,36 +236,43 @@ class DeviceApi(Api):
     """ Web API wrapper for obtaining device-level information """
 
     def __init__(self):
-        super(DeviceApi, self).__init__("device")
+        super().__init__("device")
+        self.enclosure_config = self.config.get("enclosure")
 
     def get_code(self, state):
         IdentityManager.update()
-        return self.request({
-            "path": "/code?state=" + state
-        })
+        request_data = dict(path="/code?state=" + state)
+
+        return self.request(request_data)
 
     def activate(self, state, token):
         version = VersionManager.get()
         platform = "unknown"
         platform_build = ""
+        pantacor_device_id = None
 
-        # load just the local configs to get platform info
-        config = Configuration.get([SYSTEM_CONFIG,
-                                    USER_CONFIG],
-                                   cache=False)
-        if "enclosure" in config:
-            platform = config.get("enclosure").get("platform", "unknown")
-            platform_build = config.get("enclosure").get("platform_build", "")
+        if self.enclosure_config is not None:
+            platform = self.enclosure_config.get("platform", "unknown")
+            platform_build = self.enclosure_config.get("platform_build", "")
+            packaging_type = self.enclosure_config.get("packaging_type")
+            if packaging_type is not None and packaging_type == "pantacor":
+                pantacor_device_id = _get_pantacor_device_id()
+
+        request_data = dict(
+            state=state,
+            token=token,
+            core_version=version.get("coreVersion"),
+            platform=platform,
+            platform_build=platform_build,
+            enclosure_version=version.get("enclosureVersion")
+        )
+        if pantacor_device_id:
+            request_data.update(pantacor_device_id=pantacor_device_id)
 
         return self.request({
             "method": "POST",
             "path": "/activate",
-            "json": {"state": state,
-                     "token": token,
-                     "coreVersion": version.get("coreVersion"),
-                     "platform": platform,
-                     "platform_build": platform_build,
-                     "enclosureVersion": version.get("enclosureVersion")}
+            "json": request_data
         })
 
     def update_version(self):

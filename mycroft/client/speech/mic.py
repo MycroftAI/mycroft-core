@@ -89,6 +89,7 @@ class MutableStream:
         """
         frames = deque()
         remaining = size
+        to_ctr = 0
         with self.read_lock:
             while remaining > 0:
                 # If muted during read return empty buffer. This ensures no
@@ -96,13 +97,28 @@ class MutableStream:
                 if self.muted:
                     return self.muted_buffer
 
+                """
                 to_read = min(self.wrapped_stream.get_read_available(),
                               remaining)
+                """
+                x = self.wrapped_stream.get_read_available()
+                to_read = min(x, remaining)
+                # LOG.info("size:%s, read_avail:%s, remain:%s" % (size, x, remaining))
                 if to_read <= 0:
-                    sleep(.01)
+                    to_ctr += 1
+                    if to_ctr > 5:
+                        # this signals to the user they must restart the mic
+                        raise Exception
+
+                    sleep(0.0625)   # default latency
                     continue
-                result = self.wrapped_stream.read(to_read,
-                                                  exception_on_overflow=of_exc)
+                try:
+                    result = self.wrapped_stream.read(to_read,
+                                                      exception_on_overflow=True)
+                except:
+                    LOG.warning("Overflow exception caught")
+                    return self.muted_buffer
+
                 frames.append(result)
                 remaining -= to_read
 
@@ -130,6 +146,7 @@ class MutableStream:
 class MutableMicrophone(Microphone):
     def __init__(self, device_index=None, sample_rate=16000, chunk_size=1024,
                  mute=False):
+        chunk_size = 4000
         Microphone.__init__(self, device_index=device_index,
                             sample_rate=sample_rate, chunk_size=chunk_size)
         self.muted = False
@@ -137,7 +154,14 @@ class MutableMicrophone(Microphone):
             self.mute()
 
     def __enter__(self):
-        return self._start()
+        exit_flag = False
+        while not exit_flag:
+            try:
+                return self._start()
+            except Exception:
+                LOG.error("Can't start mic!")
+            sleep(1)
+
 
     def _start(self):
         """Open the selected device and setup the stream."""
@@ -220,6 +244,7 @@ class NoiseTracker:
         silence_after_loud (float): time of silence to finalize the sentence.
                                     default 0.25 seconds.
     """
+
     def __init__(self, minimum, maximum, sec_per_buffer, loud_time_limit,
                  silence_time_limit, silence_after_loud_time=0.25):
         self.min_level = minimum
@@ -385,7 +410,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
             except (requests.RequestException, AttributeError):
                 pass  # These are expected and won't be reported
             except Exception as e:
-                LOG.debug('Unhandled exception while determining device_id, '
+                LOG.error('Unhandled exception while determining device_id, '
                           'Error: {}'.format(repr(e)))
 
         return self._account_id or '0'
@@ -475,7 +500,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
                 energy,
                 self.energy_threshold,
                 int(source.muted)
-                )
+            )
             )
 
     def _skip_wake_word(self):
@@ -495,7 +520,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
             if check_for_signal('buttonPress'):
                 # Signal is still here, assume it was intended to
                 # begin recording
-                LOG.debug("Button Pressed, wakeword not needed")
+                LOG.info("Button Pressed, wakeword not needed")
                 return True
 
         return False
@@ -708,7 +733,6 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         #       speech is detected, but there is no code to actually do that.
         self.adjust_for_ambient_noise(source, 1.0)
 
-        LOG.debug("Waiting for wake word...")
         ww_data = self._wait_until_wake_word(source, sec_per_buffer)
 
         ww_frames = None
@@ -721,7 +745,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
             # If the waiting returned from a stop signal
             return
 
-        LOG.debug("Recording...")
+        LOG.info("Recording...")
         # If enabled, play a wave file with a short sound to audibly
         # indicate recording has begun.
         if self.config.get('confirm_listening'):
