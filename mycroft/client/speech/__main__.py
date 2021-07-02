@@ -41,6 +41,7 @@ def handle_record_begin():
     LOG.info("Begin Recording...")
     context = {'client_name': 'mycroft_listener',
                'source': 'audio'}
+    bus.emit(Message('mycroft.audio.speech.pause'))
     bus.emit(Message('recognizer_loop:record_begin', context=context))
 
 
@@ -50,6 +51,7 @@ def handle_record_end():
     context = {'client_name': 'mycroft_listener',
                'source': 'audio'}
     bus.emit(Message('recognizer_loop:record_end', context=context))
+    bus.emit(Message('mycroft.audio.speech.resume'))
 
 
 def handle_no_internet():
