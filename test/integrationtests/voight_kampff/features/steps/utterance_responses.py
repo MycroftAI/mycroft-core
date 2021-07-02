@@ -235,8 +235,8 @@ def then_contains(context, text):
 @then('the user replies "{text}"')
 @then('the user says "{text}"')
 def then_user_follow_up(context, text):
-    time.sleep(2)
     wait_while_speaking()
+    time.sleep(2)
     context.bus.emit(Message('recognizer_loop:utterance',
                              data={'utterances': [text],
                                    'lang': context.lang,
