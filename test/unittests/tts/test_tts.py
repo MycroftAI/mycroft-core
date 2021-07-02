@@ -8,7 +8,7 @@ from unittest import mock
 import mycroft.tts
 
 mock_phoneme = mock.Mock(name='phoneme')
-mock_audio = mock.Mock(name='audio')
+mock_audio = "/tmp/mock_path"
 mock_viseme = mock.Mock(name='viseme')
 
 
@@ -103,7 +103,32 @@ class TestTTS(unittest.TestCase):
         tts.queue.put.assert_called_with(
             (
                 'wav',
-                str(mock_audio.path),
+                mock_audio,
+                mock_viseme,
+                42,
+                False
+            )
+        )
+
+    def test_execute_path_returned(self, mock_playback_thread):
+        tts = MockTTS("en-US", {}, MockTTSValidator(None))
+        tts.get_tts.return_value = (Path(mock_audio), mock_viseme)
+        bus_mock = mock.Mock()
+        tts.init(bus_mock)
+        self.assertTrue(tts.bus is bus_mock)
+
+        tts.queue = mock.Mock()
+        with mock.patch('mycroft.tts.tts.open') as mock_open:
+            tts.cache.temporary_cache_dir = Path('/tmp/dummy')
+            tts.execute('Oh no, not again', 42)
+        tts.get_tts.assert_called_with(
+            'Oh no, not again',
+            '/tmp/dummy/8da7f22aeb16bc3846ad07b644d59359.wav'
+        )
+        tts.queue.put.assert_called_with(
+            (
+                'wav',
+                mock_audio,
                 mock_viseme,
                 42,
                 False
