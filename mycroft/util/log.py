@@ -32,7 +32,7 @@ import logging
 import sys
 
 from os.path import isfile, join
-from xdg import BaseDirectory
+import xdg.BaseDirectory
 
 from mycroft.util.json_helper import load_commented_json, merge_dict
 
@@ -85,8 +85,8 @@ class LOG:
         # used since it uses the LOG system and would cause horrible cyclic
         # dependencies.
         confs = []
-        for dir in BaseDirectory.load_config_paths('mycroft'):
-            confs.append(join(dir, 'mycroft.conf'))
+        for conf_dir in xdg.BaseDirectory.load_config_paths('mycroft'):
+            confs.append(join(conf_dir, 'mycroft.conf'))
         confs.append('/etc/mycroft/mycroft.conf')
         confs = reversed(confs)
         config = {}

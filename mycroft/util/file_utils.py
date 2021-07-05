@@ -22,7 +22,7 @@ import os
 import psutil
 from stat import S_ISREG, ST_MTIME, ST_MODE, ST_SIZE
 import tempfile
-from xdg import BaseDirectory
+import xdg.BaseDirectory
 
 import mycroft.configuration
 from .log import LOG
@@ -43,6 +43,7 @@ def resolve_resource_file(res_name):
         With mycroft running as the user 'bob', if you called
         ``resolve_resource_file('snd/beep.wav')``
         it would return either:
+        '$XDG_DATA_DIRS/mycroft/beep.wav',
         '/home/bob/.mycroft/snd/beep.wav' or
         '/opt/mycroft/snd/beep.wav' or
         '.../mycroft/res/snd/beep.wav'
@@ -62,8 +63,8 @@ def resolve_resource_file(res_name):
         return res_name
 
     # Now look for XDG_DATA_DIRS
-    for dir in BaseDirectory.load_data_paths('mycroft'):
-        filename = os.path.join(dir, res_name)
+    for conf_dir in xdg.BaseDirectory.load_data_paths('mycroft'):
+        filename = os.path.join(conf_dir, res_name)
         if os.path.isfile(filename):
             return filename
 

@@ -15,7 +15,7 @@
 import sys
 import io
 from math import ceil
-from xdg import BaseDirectory
+import xdg.BaseDirectory
 
 from .gui_server import start_qml_gui
 
@@ -185,16 +185,16 @@ def load_settings():
         LOG.warning(" Note that this location is deprecated and will" +
                     " not be used in the future")
         LOG.warning(" Please move it to " +
-                    os.path.join(BaseDirectory.save_config_path('mycroft'),
+                    os.path.join(xdg.BaseDirectory.save_config_path('mycroft'),
                                  filename))
         config_file = path
 
     # Check XDG_CONFIG_DIR
     if config_file is None:
-        for dir in BaseDirectory.load_config_paths('mycroft'):
-            file = os.path.join(dir, filename)
-            if os.path.isfile(file):
-                config_file = file
+        for conf_dir in xdg.BaseDirectory.load_config_paths('mycroft'):
+            xdg_file = os.path.join(conf_dir, filename)
+            if os.path.isfile(xdg_file):
+                config_file = xdg_file
                 break
 
     # Check /etc/mycroft
@@ -228,7 +228,7 @@ def save_settings():
     config["show_meter"] = show_meter
 
     config_file = os.path.join(
-        BaseDirectory.save_config_path("mycroft"), filename)
+        xdg.BaseDirectory.save_config_path("mycroft"), filename)
 
     with io.open(config_file, 'w') as f:
         f.write(str(json.dumps(config, ensure_ascii=False)))

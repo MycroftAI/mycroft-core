@@ -21,7 +21,7 @@ import time
 from datetime import datetime, timedelta
 from threading import Thread, Lock
 from os.path import isfile, join, expanduser
-from xdg import BaseDirectory
+import xdg.BaseDirectory
 
 from mycroft.configuration import Configuration
 from mycroft.messagebus.message import Message
@@ -65,7 +65,8 @@ class EventScheduler(Thread):
         old_schedule_path = join(expanduser(Configuration.get()['data_dir']),
                                  schedule_file)
         new_schedule_path = join(
-                BaseDirectory.load_first_config('mycroft'), schedule_file)
+            xdg.BaseDirectory.load_first_config('mycroft'), schedule_file
+        )
         if isfile(old_schedule_path):
             shutil.move(old_schedule_path, new_schedule_path)
         self.schedule_file = new_schedule_path

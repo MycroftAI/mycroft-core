@@ -15,7 +15,7 @@
 import os
 import shutil
 from os.path import join, expanduser, isdir
-from xdg import BaseDirectory
+import xdg.BaseDirectory
 
 
 class FileSystemAccess:
@@ -35,7 +35,7 @@ class FileSystemAccess:
             raise ValueError("path must be initialized as a non empty string")
 
         old_path = join(expanduser('~'), '.mycroft', path)
-        path = join(BaseDirectory.save_config_path('mycroft'), path)
+        path = join(xdg.BaseDirectory.save_config_path('mycroft'), path)
 
         # Migrate from the old location if it still exists
         if isdir(old_path):

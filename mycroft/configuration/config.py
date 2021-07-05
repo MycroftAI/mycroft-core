@@ -17,9 +17,9 @@
 import re
 import json
 import inflection
-from os.path import exists, isfile, join, expanduser, dirname
+from os.path import exists, isfile, join
 from requests import RequestException
-from xdg import BaseDirectory
+import xdg.BaseDirectory
 
 from mycroft.util.json_helper import load_commented_json, merge_dict
 from mycroft.util.log import LOG
@@ -128,7 +128,7 @@ class RemoteConf(LocalConf):
     def __init__(self, cache=None):
         super(RemoteConf, self).__init__(None)
 
-        cache = cache or join(BaseDirectory.save_cache_path('mycroft'),
+        cache = cache or join(xdg.BaseDirectory.save_cache_path('mycroft'),
                               'web_cache.json')
         from mycroft.api import is_paired
         if not is_paired():
@@ -218,8 +218,8 @@ class Configuration:
             # Then use XDG config
             # This includes both the user config and
             # /etc/xdg/mycroft/mycroft.conf
-            for dir in BaseDirectory.load_config_paths('mycroft'):
-                configs.append(LocalConf(join(dir, 'mycroft.conf')))
+            for conf_dir in xdg.BaseDirectory.load_config_paths('mycroft'):
+                configs.append(LocalConf(join(conf_dir, 'mycroft.conf')))
 
             # Then check the old user config
             if isfile(OLD_USER_CONFIG):
@@ -231,7 +231,7 @@ class Configuration:
                 LOG.warning(" Note that this location is deprecated and will" +
                             " not be used in the future")
                 LOG.warning(" Please move it to " +
-                            BaseDirectory.save_config_path('mycroft'))
+                            xdg.BaseDirectory.save_config_path('mycroft'))
                 configs.append(LocalConf(OLD_USER_CONFIG))
 
             # Then check the XDG user config

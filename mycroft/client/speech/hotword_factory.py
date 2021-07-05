@@ -26,7 +26,7 @@ import tempfile
 from threading import Timer, Thread
 from time import time, sleep
 from urllib.error import HTTPError
-from xdg import BaseDirectory
+import xdg.BaseDirectory
 
 from petact import install_package
 import requests
@@ -200,11 +200,12 @@ class PreciseHotword(HotWordEngine):
         # might be stored in a different, unwriteable, location
         # Make sure we pick the key we need from wherever it's located,
         # but save to a writeable location only
-        local_conf = LocalConf(join(BaseDirectory.save_config_path('mycroft'),
-                                    'mycroft.conf'))
+        local_conf = LocalConf(
+            join(xdg.BaseDirectory.save_config_path('mycroft'), 'mycroft.conf')
+        )
 
-        for dir in BaseDirectory.load_config_paths('mycroft'):
-            conf = LocalConf(join(dir, 'mycroft.conf'))
+        for conf_dir in xdg.BaseDirectory.load_config_paths('mycroft'):
+            conf = LocalConf(join(conf_dir, 'mycroft.conf'))
             # If the current config contains the precise key use it,
             # otherwise continue to the next file
             if conf.get('precise', None) is not None:
@@ -279,7 +280,7 @@ class PreciseHotword(HotWordEngine):
         old_path = join(expanduser('~'), '.mycroft', 'precise')
         if os.path.isdir(old_path):
             return old_path
-        return join(BaseDirectory.save_data_path('mycroft', 'precise'))
+        return join(xdg.BaseDirectory.save_data_path('mycroft', 'precise'))
 
     @property
     def install_destination(self):
