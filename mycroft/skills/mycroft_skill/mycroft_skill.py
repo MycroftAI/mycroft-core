@@ -411,7 +411,16 @@ class MycroftSkill:
         return False
 
     def __get_response(self):
-        """Helper to get a reponse from the user
+        """Helper to get a response from the user
+
+        NOTE:  There is a race condition here.  There is a small amount of
+        time between the end of the device speaking and the converse method
+        being overridden in this method.  If an utterance is injected during
+        this time, the wrong converse method is executed.  The condition is
+        hidden during normal use due to the amount of time it takes a user
+        to speak a response. The condition is revealed when an automated
+        process injects an utterance quicker than this method can flip the
+        converse methods.
 
         Returns:
             str: user's response or None on a timeout
