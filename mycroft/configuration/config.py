@@ -287,6 +287,7 @@ class Configuration:
         bus.on("configuration.updated", Configuration.updated)
         bus.on("configuration.patch", Configuration.patch)
         bus.on("configuration.patch.clear", Configuration.patch_clear)
+        bus.on("configuration.cache.clear", Configuration.clear_cache)
 
     @staticmethod
     def updated(message):
@@ -318,3 +319,11 @@ class Configuration:
         """
         Configuration.__patch = {}
         Configuration.load_config_stack(cache=True)
+
+    @staticmethod
+    def clear_cache(message=None):
+        """ Clear the cached configuration
+
+        force a reload on Configuration.get()
+        """
+        Configuration.__config = {}
