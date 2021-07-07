@@ -31,10 +31,7 @@ import inspect
 import logging
 import sys
 
-from os.path import isfile, join
-import xdg.BaseDirectory
-
-from mycroft.util.json_helper import load_commented_json, merge_dict
+import mycroft
 
 
 def getLogger(name="MYCROFT"):
@@ -65,7 +62,7 @@ class LOG:
 
     _custom_name = None
     handler = None
-    level = None
+    level = logging.getLevelName('INFO')
 
     # Copy actual logging methods from logging.Logger
     # Usage: LOG.debug(message)
@@ -80,24 +77,6 @@ class LOG:
         """ Initializes the class, sets the default log level and creates
         the required handlers.
         """
-
-        # Check configs manually, the Mycroft configuration system can't be
-        # used since it uses the LOG system and would cause horrible cyclic
-        # dependencies.
-        confs = []
-        for conf_dir in xdg.BaseDirectory.load_config_paths('mycroft'):
-            confs.append(join(conf_dir, 'mycroft.conf'))
-        confs.append('/etc/mycroft/mycroft.conf')
-        confs = reversed(confs)
-        config = {}
-        for conf in confs:
-            try:
-                merge_dict(config,
-                           load_commented_json(conf) if isfile(conf) else {})
-            except Exception as e:
-                print('couldn\'t load {}: {}'.format(conf, str(e)))
-
-        cls.level = logging.getLevelName(config.get('log_level', 'INFO'))
         log_message_format = (
             '{asctime} | {levelname:8} | {process:5} | {name} | {message}'
         )
@@ -106,6 +85,9 @@ class LOG:
         formatter.default_msec_format = '%s.%03d'
         cls.handler = logging.StreamHandler(sys.stdout)
         cls.handler.setFormatter(formatter)
+
+        config = mycroft.configuration.Configuration.get(remote=False)
+        cls.level = logging.getLevelName(config.get('log_level', 'INFO'))
 
         # Enable logging in external modules
         cls.create_logger('').setLevel(cls.level)
@@ -148,6 +130,3 @@ class LOG:
                 name = 'Mycroft'
 
         func(cls.create_logger(name), *args, **kwargs)
-
-
-LOG.init()
