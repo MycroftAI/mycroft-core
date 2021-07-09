@@ -38,6 +38,10 @@ def create_voight_kampff_logger():
 
 
 class InterceptAllBusClient(MessageBusClient):
+    """Bus Client storing all messages recieved.
+
+    This allows readback of older messages and non-event-driven operation.
+    """
     def __init__(self):
         super().__init__()
         self.messages = []
@@ -46,12 +50,23 @@ class InterceptAllBusClient(MessageBusClient):
         self._processed_messages = 0
 
     def on_message(self, message):
+        """Extends normal operation by storing the recieved message.
+
+        Args:
+            message (Message): message from the Mycroft bus
+        """
         with self.message_lock:
             self.messages.append(Message.deserialize(message))
         self.new_message_available.set()
         super().on_message(message)
 
     def get_messages(self, msg_type):
+        """Get messages from received list of messages.
+
+        Args:
+            msg_type (None,str): string filter for messagetype to extract.
+                                 if None all messages will be returned.
+        """
         with self.message_lock:
             self._processed_messages = len(self.messages)
             if msg_type is None:
@@ -60,6 +75,11 @@ class InterceptAllBusClient(MessageBusClient):
                 return [m for m in self.messages if m.msg_type == msg_type]
 
     def remove_message(self, msg):
+        """Remove a specific message from the list of messages.
+
+        Args:
+            msg (Message): message to remove from the list
+        """
         with self.message_lock:
             if msg not in self.messages:
                 raise ValueError(f'{msg} was not found in '
@@ -71,11 +91,13 @@ class InterceptAllBusClient(MessageBusClient):
             self.messages.remove(msg)
 
     def clear_messages(self):
+        """Clear all messages that has been fetched atleast once."""
         with self.message_lock:
             self.messages = self.messages[:self._processed_messages]
             self._processed_messages = 0
 
     def clear_all_messages(self):
+        """Clear all messages."""
         with self.message_lock:
             self.messages = []
             self._processed_messages = 0
