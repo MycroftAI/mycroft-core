@@ -43,6 +43,7 @@ class InterceptAllBusClient(MessageBusClient):
         self.messages = []
         self.message_lock = Lock()
         self.new_message_available = Event()
+        self._processed_messages = 0
 
     def on_message(self, message):
         with self.message_lock:
@@ -52,6 +53,7 @@ class InterceptAllBusClient(MessageBusClient):
 
     def get_messages(self, msg_type):
         with self.message_lock:
+            self._processed_messages = len(self.messages)
             if msg_type is None:
                 return [m for m in self.messages]
             else:
@@ -59,11 +61,24 @@ class InterceptAllBusClient(MessageBusClient):
 
     def remove_message(self, msg):
         with self.message_lock:
+            if msg not in self.messages:
+                raise ValueError(f'{msg} was not found in '
+                                 'the list of messages.')
+            # Update processed message count if a read message was removed
+            if self.messages.index(msg) < self._processed_messages:
+                self._processed_messages -= 1
+
             self.messages.remove(msg)
 
     def clear_messages(self):
         with self.message_lock:
+            self.messages = self.messages[:self._processed_messages]
+            self._processed_messages = 0
+
+    def clear_all_messages(self):
+        with self.message_lock:
             self.messages = []
+            self._processed_messages = 0
 
 
 def before_all(context):
@@ -119,6 +134,6 @@ def after_scenario(context, scenario):
     # TODO wait for skill handler complete
     sleep(0.5)
     wait_while_speaking()
-    context.bus.clear_messages()
+    context.bus.clear_all_messages()
     context.matched_message = None
     context.step_timeout = 10  # Reset the step_timeout to 10 seconds
