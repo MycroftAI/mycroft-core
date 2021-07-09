@@ -19,6 +19,7 @@ import re
 from abc import ABCMeta, abstractmethod
 from threading import Thread
 from time import time
+from warnings import warn
 
 import os.path
 from os.path import dirname, exists, isdir, join
@@ -355,7 +356,7 @@ class TTS(metaclass=ABCMeta):
 
         for sentence, l in chunks:
             sentence_hash = hash_sentence(sentence)
-            if sentence_hash in self.cache.cached_sentences:
+            if sentence_hash in self.cache:
                 audio_file, phoneme_file = self._get_sentence_from_cache(
                     sentence_hash
                 )
@@ -370,7 +371,18 @@ class TTS(metaclass=ABCMeta):
                 #  of the TTS cache.  But this requires changing the public
                 #  API of the get_tts method in each engine.
                 audio_file = self.cache.define_audio_file(sentence_hash)
-                _, phonemes = self.get_tts(sentence, str(audio_file.path))
+                # TODO 21.08: remove mutation of audio_file.path.
+                returned_file, phonemes = self.get_tts(
+                    sentence, str(audio_file.path))
+                if returned_file.path != audio_file.path:
+                    warn(
+                        DeprecationWarning(
+                            f"{self.tts_name} is saving files "
+                            "to a different path than requested. If you are "
+                            "the maintainer of this plugin, please adhere to "
+                            "the file path argument provided. Modified paths "
+                            "will be ignored in a future release."))
+                    audio_file = returned_file
                 if phonemes:
                     phoneme_file = self.cache.define_phoneme_file(
                         sentence_hash

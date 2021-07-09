@@ -190,7 +190,9 @@ if [[ "${1}" == "restart" ]] || [[ "${_opt}" == "restart" ]] ; then
 fi
 _params=$@
 
-check-dependencies
+if [[ ! "${_opt}" == "cli" ]] ; then
+    check-dependencies
+fi
 
 case ${_opt} in
     "all")
