@@ -185,8 +185,6 @@ def wait_for_dialog_match(bus, dialogs, timeout=DEFAULT_TIMEOUT):
         for message in bus.get_messages('speak'):
             speak_messages.append(message)
             dialog = message.data.get('meta', {}).get('dialog')
-            print('dialog: ', dialog,
-                  '\tutterance: ', message.data['utterance'])
             if dialog in dialogs:
                 wait_while_speaking()
                 match_found = True
