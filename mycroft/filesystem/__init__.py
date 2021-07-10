@@ -38,7 +38,10 @@ class FileSystemAccess:
         path = join(xdg.BaseDirectory.save_config_path('mycroft'), path)
 
         # Migrate from the old location if it still exists
+        # TODO: remove in 22.02
         if isdir(old_path):
+            if isdir(path):
+                shutil.rmtree(path)
             shutil.move(old_path, path)
 
         if not isdir(path):

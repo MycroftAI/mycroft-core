@@ -19,6 +19,8 @@ from threading import Thread, Timer
 
 import serial
 
+import xdg.BaseDirectory
+
 import mycroft.dialog
 from mycroft.client.enclosure.base import Enclosure
 from mycroft.api import has_been_paired
@@ -164,7 +166,8 @@ class EnclosureReader(Thread):
             self.bus.emit(Message("speak", {
                 'utterance': mycroft.dialog.get("reset to factory defaults")}))
             subprocess.call(
-                'rm ~/.config/mycroft/identity/identity2.json',
+                (f'rm {xdg.BaseDirectory.save_config_path("mycroft")}'
+                 '/mycroft/identity/identity2.json'),
                 shell=True)
             subprocess.call(
                 'rm ~/.mycroft/identity/identity2.json',

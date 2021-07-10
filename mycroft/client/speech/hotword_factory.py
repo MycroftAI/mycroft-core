@@ -280,7 +280,7 @@ class PreciseHotword(HotWordEngine):
         old_path = join(expanduser('~'), '.mycroft', 'precise')
         if os.path.isdir(old_path):
             return old_path
-        return join(xdg.BaseDirectory.save_data_path('mycroft', 'precise'))
+        return xdg.BaseDirectory.save_data_path('mycroft', 'precise')
 
     @property
     def install_destination(self):

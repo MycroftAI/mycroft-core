@@ -24,7 +24,7 @@ import xdg.BaseDirectory
 from mycroft.util.json_helper import load_commented_json, merge_dict
 from mycroft.util.log import LOG
 
-from .locations import DEFAULT_CONFIG, OLD_USER_CONFIG, USER_CONFIG
+from .locations import DEFAULT_CONFIG, USER_CONFIG, OLD_USER_CONFIG
 from .locations import SYSTEM_CONFIG
 
 
@@ -170,6 +170,17 @@ class RemoteConf(LocalConf):
             self.load_local(cache)
 
 
+def _log_old_location_deprecation():
+    LOG.warning("\n ===============================================\n"
+                " ==             DEPRECATION WARNING           ==\n"
+                " ===============================================\n"
+                f" You still have a config file at {OLD_USER_CONFIG}\n"
+                " Note that this location is deprecated and will"
+                " not be used in the future\n"
+                " Please move it to "
+                f"{xdg.BaseDirectory.save_config_path('mycroft')}")
+
+
 class Configuration:
     """Namespace for operations on the configuration singleton."""
     __config = {}  # Cached config
@@ -185,9 +196,7 @@ class Configuration:
         Args:
             configs (list): List of configuration dicts
             cache (boolean): True if the result should be cached
-            remote (boolean): False if the Mycroft Home settings shouldn't
-                              be loaded
-
+            remote (boolean): False if the Remote settings shouldn't be loaded
 
         Returns:
             (dict) configuration dictionary.
@@ -210,7 +219,7 @@ class Configuration:
             (dict) merged dict of all configuration files
         """
         if not configs:
-            configs = configs or []
+            configs = []
 
             # First use the patched config
             configs.append(Configuration.__patch)
@@ -223,20 +232,8 @@ class Configuration:
 
             # Then check the old user config
             if isfile(OLD_USER_CONFIG):
-                LOG.warning(" ===============================================")
-                LOG.warning(" ==             DEPRECATION WARNING           ==")
-                LOG.warning(" ===============================================")
-                LOG.warning(" You still have a config file at " +
-                            OLD_USER_CONFIG)
-                LOG.warning(" Note that this location is deprecated and will" +
-                            " not be used in the future")
-                LOG.warning(" Please move it to " +
-                            xdg.BaseDirectory.save_config_path('mycroft'))
+                _log_old_location_deprecation()
                 configs.append(LocalConf(OLD_USER_CONFIG))
-
-            # Then check the XDG user config
-            if isfile(USER_CONFIG):
-                configs.append(LocalConf(USER_CONFIG))
 
             # Then use remote config
             if remote:
