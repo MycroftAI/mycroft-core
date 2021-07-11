@@ -26,6 +26,7 @@ pipeline {
         stage('Run Integration Tests') {
             when {
                 anyOf {
+                    branch 'test-xdg-rebase'
                     branch 'dev'
                     branch 'master'
                     changeRequest target: 'dev'
