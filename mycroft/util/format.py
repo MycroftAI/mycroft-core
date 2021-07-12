@@ -31,6 +31,7 @@ from calendar import leapdays
 from enum import Enum
 
 # These are the main functions we are using lingua franca to provide
+from lingua_franca import get_default_loc
 # TODO 21.08 - move nice_duration methods to Lingua Franca.
 from lingua_franca.format import (
     join_list,
@@ -104,6 +105,7 @@ def _duration_handler(time1, lang=None, speech=True, *, time2=None,
     Returns:
         str: timespan as a string
     """
+    lang = lang or get_default_loc()
     _leapdays = 0
     _input_resolution = resolution
     milliseconds = 0
