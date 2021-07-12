@@ -24,102 +24,123 @@ from mycroft.messagebus import Message
 TIMEOUT = 10
 
 
-def then_wait_unspecific(criteria_func, context, timeout=None):
-    """Wait for a specified time for criteria to be fulfilled from any message.
+class CriteriaWaiter:
+    """Wait for a message to meet a certain criteria.
 
     Args:
+        msg_type: message type to watch
         criteria_func: Function to determine if a message fulfilling the
-                       test case has been found.
+                    test case has been found.
         context: behave context
-        timeout: Time allowance for a message fulfilling the criteria, if
-                 provided will override the normal normal step timeout.
-
-    Returns:
-        tuple (bool, str) test status and debug output
     """
-    timeout = timeout or context.step_timeout
-    start_time = time.monotonic()
-    debug = ''
-    while time.monotonic() < start_time + timeout:
-        for message in context.bus.get_messages(None):
-            status, test_dbg = criteria_func(message)
+    def __init__(self, msg_type, criteria_func, context):
+        self.msg_type = msg_type
+        self.criteria_func = criteria_func
+        self.context = context
+        self.result = Event()
+
+    def reset(self):
+        """Reset the wait state."""
+        self.result.clear()
+
+    # TODO: Remove in 21.08
+    def wait_unspecific(self, timeout):
+        """
+        Wait for a specified time for criteria to be fulfilled by any message.
+
+        This use case is deprecated and only for backward compatibility
+
+        Args:
+            timeout: Time allowance for a message fulfilling the criteria, if
+                    provided will override the normal normal step timeout.
+
+        Returns:
+            tuple (bool, str) test status and debug output
+        """
+        timeout = timeout or self.context.step_timeout
+        start_time = time.monotonic()
+        debug = ''
+        while time.monotonic() < start_time + timeout:
+            for message in self.context.bus.get_messages(None):
+                status, test_dbg = self.criteria_func(message)
+                debug += test_dbg
+                if status:
+                    self.context.matched_message = message
+                    self.context.bus.remove_message(message)
+                    return True, debug
+            self.context.bus.new_message_available.wait(0.5)
+        # Timed out return debug from test
+        return False, debug
+
+    def _check_historical_messages(self):
+        """Search through the already received messages for a match.
+
+        Returns:
+            tuple (bool, str) test status and debug output
+
+        """
+        debug = ''
+        for message in self.context.bus.get_messages(self.msg_type):
+            status, test_dbg = self.criteria_func(message)
             debug += test_dbg
             if status:
-                context.matched_message = message
-                context.bus.remove_message(message)
-                return True, debug
-        context.bus.new_message_available.wait(0.5)
-    # Timed out return debug from test
-    return False, debug
+                self.context.matched_message = message
+                self.context.bus.remove_message(message)
+                self.result.set()
+                break
+        return debug
 
+    def wait_specific(self, timeout=None):
+        """Wait for a specific message type to fullfil a criteria.
 
-def _check_historical_messages(msg_type, criteria_func, context):
-    """Search through the already received messages for a match.
-    Args:
-        msg_type: message type to watch
-        criteria_func: Function to determine if a message fulfilling the
-                       test case has been found.
-        context: behave context
+        Uses an event-handler to not repeatedly loop.
 
-    Returns:
-        tuple (bool, str) test status and debug output
+        Args:
+            timeout: Time allowance for a message fulfilling the criteria, if
+                    provided will override the normal normal step timeout.
 
-    """
-    status = False
-    debug = ''
-    for message in context.bus.get_messages(msg_type):
-        status, test_dbg = criteria_func(message)
-        debug += test_dbg
-        if status:
-            context.matched_message = message
-            context.bus.remove_message(message)
-            break
-    return status, debug
+        Returns:
+            tuple (bool, str) test status and debug output
+        """
+        timeout = timeout or self.context.step_timeout
 
+        debug = ''
 
-def then_wait_specific(msg_type, criteria_func, context, timeout=None):
-    """Wait for a specific message type to fullfil a criteria.
+        def on_message(message):
+            nonlocal debug
+            status, test_dbg = self.criteria_func(message)
+            debug += test_dbg
+            if status:
+                self.context.matched_message = message
+                self.result.set()
 
-    Uses an event-handler to not repeatedly loop.
+        self.context.bus.on(self.msg_type, on_message)
+        # Check historical messages
+        historical_debug = self._check_historical_messages()
 
-    Args:
-        msg_type: message type to watch
-        criteria_func: Function to determine if a message fulfilling the
-                       test case has been found.
-        context: behave context
-        timeout: Time allowance for a message fulfilling the criteria, if
-                 provided will override the normal normal step timeout.
+        # If no matching message was already caught, wait for it
+        if not self.result.is_set():
+            self.result.wait(timeout=timeout)
+        self.context.bus.remove(self.msg_type, on_message)
+        return self.result.is_set(), historical_debug + debug
 
-    Returns:
-        tuple (bool, str) test status and debug output
-    """
-    timeout = timeout or context.step_timeout
+    def wait(self, timeout=None):
+        """Wait for a specific message type to fullfil a criteria.
 
-    result = Event()
-    debug = ''
+        Uses an event-handler to not repeatedly loop.
 
-    def on_message(message):
-        nonlocal result
-        nonlocal debug
-        status, test_dbg = criteria_func(message)
-        debug += test_dbg
-        if status:
-            context.matched_message = message
-            result.set()
+        Args:
+            timeout: Time allowance for a message fulfilling the criteria, if
+                    provided will override the normal normal step timeout.
 
-    context.bus.on(msg_type, on_message)
-    # Check historical messages
-    status, debug = _check_historical_messages(msg_type,
-                                               criteria_func,
-                                               context)
-    if status:
-        result.set()
-
-    # If no matching message was already caught, wait for it
-    if not result.is_set():
-        result.wait(timeout=timeout)
-    context.bus.remove(msg_type, on_message)
-    return result.is_set(), debug
+        Returns:
+            (result (bool), debug (str)) Result containing status and debug
+            message.
+        """
+        if self.msg_type is None:
+            return self.wait_unspecific(timeout)
+        else:
+            return self.wait_specific(timeout)
 
 
 def then_wait(msg_type, criteria_func, context, timeout=None):
@@ -139,10 +160,8 @@ def then_wait(msg_type, criteria_func, context, timeout=None):
         (result (bool), debug (str)) Result containing status and debug
         message.
     """
-    if msg_type is None:
-        return then_wait_unspecific(criteria_func, context, timeout)
-    else:
-        return then_wait_specific(msg_type, criteria_func, context, timeout)
+    waiter = CriteriaWaiter(msg_type, criteria_func, context)
+    return waiter.wait(timeout)
 
 
 def then_wait_fail(msg_type, criteria_func, context, timeout=None):
