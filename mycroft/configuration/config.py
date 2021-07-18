@@ -14,10 +14,11 @@
 # limitations under the License.
 #
 
-import re
-import json
 import inflection
+import json
 from os.path import exists, isfile, join
+import re
+
 from requests import RequestException
 import xdg.BaseDirectory
 

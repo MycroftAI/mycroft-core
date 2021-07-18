@@ -13,6 +13,7 @@
 # limitations under the License.
 import os
 from os.path import join, dirname, expanduser, exists
+
 import xdg.BaseDirectory
 
 DEFAULT_CONFIG = join(dirname(__file__), 'mycroft.conf')
