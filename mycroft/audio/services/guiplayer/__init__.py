@@ -93,7 +93,7 @@ class GuiPlayerService(AudioBackend):
             LOG.debug("Cannot Determine Mime Type Falling Back To List Check")
             mediatype = self.fallback_type_check(track)
             if mediatype == "video":
-                LOG.debug("Falling Back To Audio Type")
+                LOG.debug("Falling Back To Video Type")
                 self.bus.emit(Message("playback.display.video.type"))
             else:
                 LOG.debug("Falling Back To Audio Type")
