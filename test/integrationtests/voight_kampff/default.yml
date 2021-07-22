@@ -12,7 +12,6 @@ test_skills:
 - mycroft-npr-news
 - mycroft-installer
 - mycroft-singing
-- mycroft-stock
 - mycroft-mark-1
 - fallback-unknown
 - fallback-query
