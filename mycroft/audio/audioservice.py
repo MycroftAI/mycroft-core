@@ -111,6 +111,7 @@ def setup_service(service_module, config, bus):
         except Exception as e:
             LOG.error('Failed to load service. ' + repr(e))
     else:
+        LOG.error('Failed to load service. loading function not found')
         return None
 
 
@@ -160,9 +161,10 @@ def load_plugins(config, bus):
         List of started services
     """
     plugin_services = []
-    plugins = find_plugins('mycroft.plugin.audioservice')
-    for plug in plugins:
-        service = setup_service(plug, config, bus)
+    found_plugins = find_plugins('mycroft.plugin.audioservice')
+    for plugin_name, plugin_module in found_plugins.items():
+        LOG.info(f'Loading audio service plugin: {plugin_name}')
+        service = setup_service(plugin_module, config, bus)
         if service:
             plugin_services += service
     return plugin_services
