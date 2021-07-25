@@ -20,10 +20,13 @@ from speech_recognition import Recognizer
 from queue import Queue
 from threading import Thread
 
+import http.client
+
 from mycroft.api import STTApi, HTTPError
 from mycroft.configuration import Configuration
 from mycroft.util.log import LOG
 from mycroft.util.plugins import load_plugin
+from http.client import HTTPException
 
 
 class STT(metaclass=ABCMeta):
@@ -604,6 +607,60 @@ class GoVivaceSTT(TokenSTT):
         return response.json()["result"]["hypotheses"][0]["transcript"]
 
 
+class ElhuyarSTT(KeySTT):
+
+    """
+    Configuration:
+        `$ mycroft-config edit user`
+        {
+            ...
+            "stt": {
+                "module": "elhuyar_stt",
+                "elhuyar_stt": {
+                    "lang": "eu",
+                    "api_key": "xxxxx",
+                    "api_id": "xxxxx"
+                }
+            }
+        }
+    """
+    def __init__(self):
+        super(ElhuyarSTT, self).__init__()
+        self.lang = self.config.get('lang')
+        self.api_key = self.config.get("api_key")
+        self.api_id = self.config.get("api_id")
+
+    def execute(self, audio, language=None):
+
+        self.lang = language or self.lang
+        if self.lang not in ["es", "eu"]:
+            raise ValueError(
+                "Unsupported language '{}' for Elhuyar STT".format(self.lang))
+        uri = "live.aditu.eus"
+        conn = http.client.HTTPSConnection(uri)
+        conn.connect()
+        url = "/"+self.lang+"/client/http/recognize"
+        conn.putrequest('POST', url)
+        conn.putheader('Transfer-Encoding', 'chunked')
+        conn.putheader('Content-Type', "audio/x-raw-int; rate=16000")
+        conn.putheader('save', 'true')
+        conn.endheaders()
+        auth_message = "api_id=%s api_key=%s" % (self.api_id, self.api_key)
+        conn.send(("%s" % (hex(len(auth_message))[2:])).encode() + b"\r\n")
+        conn.send(auth_message.encode()+b"\r\n")
+        chunk_size = int(1e10)
+        audioData = audio.get_raw_data(convert_rate=16000, convert_width=2)
+        if len(audioData) % chunk_size != 0:
+            conn.send(("%s" % (hex(len(audioData) % chunk_size)[2:])).encode()+b"\r\n")
+            conn.send(audioData[-(len(audioData) % chunk_size):]+b"\r\n")
+        conn.send(b"0\r\n\r\n")
+        resp = conn.getresponse()
+        hypothese = json.loads(resp.read())
+        transcript = hypothese['hypotheses'][0]['transcript']
+        conn.close()
+        return transcript
+
+
 def load_stt_plugin(module_name):
     """Wrapper function for loading stt plugin.
 
@@ -630,7 +687,8 @@ class STTFactory:
         "deepspeech_server": DeepSpeechServerSTT,
         "deepspeech_stream_server": DeepSpeechStreamServerSTT,
         "mycroft_deepspeech": MycroftDeepSpeechSTT,
-        "yandex": YandexSTT
+        "yandex": YandexSTT,
+        "elhuyar_stt": ElhuyarSTT
     }
 
     @staticmethod
