@@ -1,6 +1,8 @@
 from unittest.mock import MagicMock, patch
 from unittest import TestCase
 import mycroft.configuration
+from mycroft.configuration.locations import SYSTEM_CONFIG, USER_CONFIG
+from mycroft.util.json_helper import merge_dict
 
 
 class TestConfiguration(TestCase):
@@ -64,10 +66,18 @@ class TestConfiguration(TestCase):
         lc = mycroft.configuration.LocalConf('test')
         self.assertEqual(lc, {})
 
-    @patch('mycroft.configuration.config.RemoteConf')
-    @patch('mycroft.configuration.config.LocalConf')
+    def test_prune_config(self):
+        prune_config = mycroft.configuration.config.prune_config
+        config = {'a': 1, 'b': {'c': 1, 'd': 2}, 'e': 3}
+        self.assertEqual(prune_config(config, ['b']), {'a': 1, 'e': 3})
+        self.assertEqual(prune_config(config, ['b.c']), {
+                         'a': 1, 'b': {'d': 2}, 'e': 3})
+        self.assertEqual(prune_config(config, ['b', 'e']), {'a': 1})
+        self.assertEqual(prune_config(config, ['b', 'b.c']), {'a': 1, 'e': 3})
+
+    @patch('mycroft.configuration.config.RemoteConf.__new__')
+    @patch('mycroft.configuration.config.LocalConf.__new__')
     def test_update(self, mock_remote, mock_local):
-        mock_remote.return_value = {}
         mock_local.return_value = {'a': 1}
         c = mycroft.configuration.Configuration.get()
         self.assertEqual(c, {'a': 1})

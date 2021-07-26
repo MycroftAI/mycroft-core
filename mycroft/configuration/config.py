@@ -20,11 +20,19 @@ import inflection
 from os.path import exists, isfile
 from requests import RequestException
 
-from mycroft.util.json_helper import load_commented_json, merge_dict
+from mycroft.util.json_helper import (
+    delete_key_from_dict,
+    load_commented_json,
+    merge_dict
+)
 from mycroft.util.log import LOG
 
-from .locations import (DEFAULT_CONFIG, SYSTEM_CONFIG, USER_CONFIG,
-                        WEB_CONFIG_CACHE)
+from .locations import (
+    DEFAULT_CONFIG,
+    SYSTEM_CONFIG,
+    USER_CONFIG,
+    WEB_CONFIG_CACHE
+)
 
 
 def is_remote_list(values):
@@ -36,6 +44,20 @@ def is_remote_list(values):
         if "@type" not in v.keys():
             return False
     return True
+
+
+def prune_config(config, prune_list):
+    """Delete list of nested keys from the provided config.
+
+    Arguments:
+        config (dict): config to prune
+        prune_list (list(str)): list of keys to delete. Each item may be a
+                                period separated list of nested keys eg
+                                ["nested.dict.key", "listener.sample_rate"]
+    """
+    for key in prune_list:
+        config = delete_key_from_dict(key, config)
+    return config
 
 
 def translate_remote(config, setting):
@@ -83,6 +105,7 @@ def translate_list(config, values):
 
 class LocalConf(dict):
     """Config dictionary from file."""
+
     def __init__(self, path):
         super(LocalConf, self).__init__()
         if path:
@@ -124,6 +147,7 @@ class LocalConf(dict):
 
 class RemoteConf(LocalConf):
     """Config dictionary fetched from mycroft.ai."""
+
     def __init__(self, cache=None):
         super(RemoteConf, self).__init__(None)
 
@@ -203,9 +227,11 @@ class Configuration:
         Returns:
             (dict) merged dict of all configuration files
         """
+        # system administrators can define different constraints in how
+        # configurations are loaded
         if not configs:
-            configs = [LocalConf(DEFAULT_CONFIG), RemoteConf(),
-                       LocalConf(SYSTEM_CONFIG), LocalConf(USER_CONFIG),
+            configs = [LocalConf(DEFAULT_CONFIG), LocalConf(SYSTEM_CONFIG),
+                       RemoteConf(), LocalConf(USER_CONFIG),
                        Configuration.__patch]
         else:
             # Handle strings in stack
@@ -213,10 +239,30 @@ class Configuration:
                 if isinstance(item, str):
                     configs[index] = LocalConf(item)
 
+        # Build maintainers and system administrators may prevent users from
+        # modifying specific keys within the configuration.
+        system_config = LocalConf(SYSTEM_CONFIG) or {}
+        remote_config_disabled = system_config.get(
+            'disable_remote_config', False)
+        user_config_disabled = system_config.get(
+            'disable_user_config', False)
+        protected_keys = system_config.get('protected_keys', [])
+
         # Merge all configs into one
         base = {}
-        for c in configs:
-            merge_dict(base, c)
+        for config in configs:
+
+            # handle system constraints
+            if isinstance(config, RemoteConf):
+                if remote_config_disabled:
+                    continue
+                prune_config(config, protected_keys)
+            elif isinstance(config, LocalConf) and config.path == USER_CONFIG:
+                if user_config_disabled:
+                    continue
+                prune_config(config, protected_keys)
+
+            merge_dict(base, config)
 
         # copy into cache
         if cache:
