@@ -25,13 +25,15 @@ class MockEmitter:
         self.results = []
 
 
-class FunctionTest(unittest.TestCase):
-    def check_emitter(self, result_list):
-        for type in self.emitter.get_types():
-            self.assertEqual(type, 'register_vocab')
-        self.assertEqual(sorted(self.emitter.get_results(),
-                                key=lambda d: sorted(d.items())),
-                         sorted(result_list, key=lambda d: sorted(d.items())))
+class KeywordRegistrationTest(unittest.TestCase):
+    def check_emitter(self, expected_message_data):
+        """Verify that the registration messages matches the expected."""
+        for msg_type in self.emitter.get_types():
+            self.assertEqual(msg_type, 'register_vocab')
+        self.assertEqual(
+            sorted(self.emitter.get_results(),
+                   key=lambda d: sorted(d.items())),
+            sorted(expected_message_data, key=lambda d: sorted(d.items())))
         self.emitter.reset()
 
     def setUp(self):
