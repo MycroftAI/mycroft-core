@@ -44,15 +44,27 @@ class IntentServiceInterface:
 
             vocab_type(str): Keyword reference
             entity (str): Primary keyword
-            aliases (list): List of alternative kewords
+            aliases (list): List of alternative keywords
         """
+        # TODO 22.02: Remove compatibility data
         aliases = aliases or []
-        self.bus.emit(Message("register_vocab",
-                              {'start': entity, 'end': vocab_type}))
+        entity_data = {'entity_value': entity, 'entity_type': vocab_type}
+        compatibility_data = {'start': entity, 'end': vocab_type}
+
+        self.bus.emit(
+            Message("register_vocab",
+                    {**entity_data, **compatibility_data})
+        )
         for alias in aliases:
-            self.bus.emit(Message("register_vocab", {
-                'start': alias, 'end': vocab_type, 'alias_of': entity
-            }))
+            alias_data = {
+                'entity_value': alias,
+                'entity_type': vocab_type,
+                'alias_of': entity}
+            compatibility_data = {'start': alias, 'end': vocab_type}
+            self.bus.emit(
+                Message("register_vocab",
+                        {**alias_data, **compatibility_data})
+            )
 
     def register_adapt_regex(self, regex):
         """Register a regex with the intent service.
