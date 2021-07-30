@@ -651,7 +651,10 @@ class ElhuyarSTT(KeySTT):
         chunk_size = int(1e10)
         audioData = audio.get_raw_data(convert_rate=16000, convert_width=2)
         if len(audioData) % chunk_size != 0:
-            conn.send(("%s" % (hex(len(audioData) % chunk_size)[2:])).encode()+b"\r\n")
+            conn.send(
+                ("%s" % (hex(len(audioData) % chunk_size)[2:])).encode()
+                +b"\r\n"
+            )
             conn.send(audioData[-(len(audioData) % chunk_size):]+b"\r\n")
         conn.send(b"0\r\n\r\n")
         resp = conn.getresponse()

@@ -36,8 +36,13 @@ from .remote_tts import RemoteTTS
 
 class ElhuyarTTS(RemoteTTS):
     def __init__(self, lang, config):
-        super(ElhuyarTTS, self).__init__(lang, config, 'http://tts.elhuyar.eus',
-            '/ahots_sintesia/ahots_sintesia/', ElhuyarTTSValidator(self))
+        super(ElhuyarTTS, self).__init__(
+            lang,
+            config,
+            'http://tts.elhuyar.eus',
+            '/ahots_sintesia/ahots_sintesia/',
+            ElhuyarTTSValidator(self)
+        )
         self.token = config.get('token')
         self.gender = config.get('gender', 'M')
         self.speed = config.get('speed', 100)
