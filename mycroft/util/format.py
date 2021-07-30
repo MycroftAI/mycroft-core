@@ -40,8 +40,7 @@ from lingua_franca.format import (
     nice_number,
     nice_time,
     nice_year,
-    pronounce_number,
-    nice_relative_time
+    pronounce_number
 )
 # TODO 21.08 - remove import of private method _translate_word
 # Consider whether the remaining items here are necessary.
