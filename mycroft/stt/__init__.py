@@ -653,9 +653,9 @@ class ElhuyarSTT(KeySTT):
         if len(audioData) % chunk_size != 0:
             conn.send(
                 ("%s" % (hex(len(audioData) % chunk_size)[2:])).encode()
-                +b"\r\n"
+                + b"\r\n"
             )
-            conn.send(audioData[-(len(audioData) % chunk_size):]+b"\r\n")
+            conn.send(audioData[-(len(audioData) % chunk_size):] + b"\r\n")
         conn.send(b"0\r\n\r\n")
         resp = conn.getresponse()
         hypothese = json.loads(resp.read())
