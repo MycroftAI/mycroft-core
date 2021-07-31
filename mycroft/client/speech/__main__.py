@@ -41,6 +41,7 @@ def handle_record_begin():
     LOG.info("Begin Recording...")
     context = {'client_name': 'mycroft_listener',
                'source': 'audio'}
+    LOG.info("[Flow Learning] mycroft.client.speech.__main__py.handle_record_begin  send recognizer_loop:record_begin")
     bus.emit(Message('recognizer_loop:record_begin', context=context))
 
 
@@ -49,11 +50,13 @@ def handle_record_end():
     LOG.info("End Recording...")
     context = {'client_name': 'mycroft_listener',
                'source': 'audio'}
+    LOG.info("[Flow Learning] mycroft.client.speech.__main__py.handle_record_begin  send recognizer_loop:record_end")
     bus.emit(Message('recognizer_loop:record_end', context=context))
 
 
 def handle_no_internet():
     LOG.debug("Notifying enclosure of no internet connection")
+    LOG.info("[Flow learning] Notifying enclosure of no internet connection")
     context = {'client_name': 'mycroft_listener',
                'source': 'audio'}
     bus.emit(Message('enclosure.notify.no_internet', context=context))
@@ -69,6 +72,7 @@ def handle_awoken():
 
 def handle_wakeword(event):
     LOG.info("Wakeword Detected: " + event['utterance'])
+    LOG.info("[Flow Learning] mycroft.client.speech.__main__py.handle_wakeword  wakeword detected, and send recognizer_loop:wakeword")
     bus.emit(Message('recognizer_loop:wakeword', event))
 
 
@@ -109,21 +113,25 @@ def handle_complete_intent_failure(event):
 
 def handle_sleep(event):
     """Put the recognizer loop to sleep."""
+    LOG.info('[Flow Learning] Put the recognizer loop to sleep.')
     loop.sleep()
 
 
 def handle_wake_up(event):
     """Wake up the the recognize loop."""
+    LOG.info('[Flow Learning] Wake up the the recognize loop.')
     loop.awaken()
 
 
 def handle_mic_mute(event):
     """Mute the listener system."""
+    LOG.info('[Flow Learning] Mute the listener system.')
     loop.mute()
 
 
 def handle_mic_unmute(event):
     """Unmute the listener system."""
+    LOG.info('[Flow Learning] unmute the listener system.')
     loop.unmute()
 
 
@@ -132,11 +140,13 @@ def handle_mic_listen(_):
 
     Starts listening as if wakeword was spoken.
     """
+    LOG.info('[Flow Learning] Starts listening as if wakeword was spoken.')
     loop.responsive_recognizer.trigger_listen()
 
 
 def handle_mic_get_status(event):
     """Query microphone mute status."""
+    LOG.info('[Flow Learning] Query microphone mute status.')
     data = {'muted': loop.is_muted()}
     bus.emit(event.response(data))
 
@@ -147,11 +157,13 @@ def handle_paired(event):
     This is done here to make sure it's only done in a single place.
     TODO: Is there a reason this isn't done directly in the pairing skill?
     """
+    LOG.info('[Flow Learning] Update identity information with pairing data.')
     IdentityManager.update(event.data)
 
 
 def handle_audio_start(event):
     """Mute recognizer loop."""
+    LOG.info('[Flow learning] Mute recognizer loop.')
     if config.get("listener").get("mute_during_output"):
         loop.mute()
 
@@ -160,18 +172,21 @@ def handle_audio_end(event):
     """Request unmute, if more sources have requested the mic to be muted
     it will remain muted.
     """
+    LOG.info('[Flow learning] Request unmute, if more sources have requested the mic to be muted it will remain muted.')
     if config.get("listener").get("mute_during_output"):
         loop.unmute()  # restore
 
 
 def handle_stop(event):
     """Handler for mycroft.stop, i.e. button press."""
+    LOG.info('[Flow Learning] Handler for mycroft.stop, i.e. button press.')
     loop.force_unmute()
 
 
 def handle_open():
     # TODO: Move this into the Enclosure (not speech client)
     # Reset the UI to indicate ready for speech processing
+    LOG.info('[Flow Learning] Reset the UI to indicate ready for speech processing.')
     EnclosureAPI(bus).reset()
 
 
@@ -219,6 +234,7 @@ def main(ready_hook=on_ready, error_hook=on_error, stopping_hook=on_stopping,
     global bus
     global loop
     global config
+    LOG.debug("[Flow learning].")
     try:
         reset_sigint_handler()
         PIDLock("voice")

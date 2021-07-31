@@ -61,6 +61,7 @@ def main(ready_hook=on_ready, error_hook=on_error, stopping_hook=on_stopping):
     config = load_message_bus_config()
     routes = [(config.route, MessageBusEventHandler)]
     application = web.Application(routes, debug=True)
+    LOG.info('[Flow Learning] application.listening '+str(config.host)+' '+str(config.port))
     application.listen(config.port, config.host)
     create_daemon(ioloop.IOLoop.instance().start)
     ready_hook()

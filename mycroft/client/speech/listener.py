@@ -75,14 +75,21 @@ class AudioProducer(Thread):
         self.stream_handler = stream_handler
 
     def run(self):
+        LOG.info('[Flow Learning]: in listener.py.AudioProducer.run, begin')
         restart_attempts = 0
         with self.mic as source:
+            LOG.info('[Flow Learning]: in listener.py.AudioProducer.run, with self.mic as source.')
             self.recognizer.adjust_for_ambient_noise(source)
+            LOG.info('[Flow Learning]: in listener.py.AudioProducer.run, with self.mic as source, after adjust for ambient noise.')
+            LOG.info('[Flow Learning]: in listener.py.AudioProducer.run, with self.mic as source, state.running =='+str(self.state.running))
             while self.state.running:
                 try:
+                    LOG.info('[Flow Learning]: in the loop of listener.py.AudioProducer.run, before listen')
                     audio = self.recognizer.listen(source, self.emitter,
                                                    self.stream_handler)
+                    LOG.info('[Flow Learning] in loop of AudioProducer.run, after listen')
                     if audio is not None:
+                        LOG.info('[Flow Learning] in loop of AudioProducer.run, after listen, audio is not None, to be put to queue')
                         self.queue.put((AUDIO_DATA, audio))
                     else:
                         LOG.warning("Audio contains no data.")
@@ -154,12 +161,15 @@ class AudioConsumer(Thread):
             return
 
         tag, data = message
+        LOG.info('[Flow Learning] AudioConsumer.read, tag=' + str(tag))
 
         if tag == AUDIO_DATA:
             if data is not None:
                 if self.state.sleeping:
+                    LOG.info('[Flow Learning] AudioConsumer.read, state is sleep, is about to wake up')
                     self.wake_up(data)
                 else:
+                    LOG.info('[Flow Learning] AudioConsumer.read, state is sleep, is about to wake up')
                     self.process(data)
         elif tag == STREAM_START:
             self.stt.stream_start()
@@ -289,6 +299,8 @@ class RecognizerLoop(EventEmitter):
 
     def _load_config(self):
         """Load configuration parameters from configuration."""
+        LOG.info('[Flow Learning] in listener.py._load_config()')
+        LOG.debug('[Flow Learning]')
         config = Configuration.get()
         self.config_core = config
         self._config_hash = recognizer_conf_hash(config)
@@ -302,6 +314,7 @@ class RecognizerLoop(EventEmitter):
             device_index = find_input_device(device_name)
 
         LOG.debug('Using microphone (None = default): '+str(device_index))
+        LOG.info('[Flow Learning] Using microphone (None = default): '+str(device_index))
 
         self.microphone = MutableMicrophone(device_index, rate,
                                             mute=self.mute_calls > 0)
@@ -312,6 +325,7 @@ class RecognizerLoop(EventEmitter):
         self.responsive_recognizer = ResponsiveRecognizer(
             self.wakeword_recognizer, self._watchdog)
         self.state = RecognizerLoopState()
+        LOG.info('[Flow Learning] end of listener.py.RecognizerLoop._load_config.')
 
     def create_wake_word_recognizer(self):
         """Create a local recognizer to hear the wakeup word
@@ -325,6 +339,8 @@ class RecognizerLoop(EventEmitter):
         If the hotword entry doesn't include phoneme and threshold values these
         will be patched in using the defaults from the config listnere entry.
         """
+        LOG.info('[Flow learning]')
+        LOG.debug('[Flow learning]')
         LOG.info('Creating wake word engine')
         word = self.config.get('wake_word', 'hey mycroft')
 
@@ -382,6 +398,7 @@ class RecognizerLoop(EventEmitter):
                                       stt, self.wakeup_recognizer,
                                       self.wakeword_recognizer)
         self.consumer.start()
+        LOG.info('[Flow Learning] in listener.py.RecognizerLoop.start_async, producer and consumer start.')
 
     def stop(self):
         self.state.running = False
@@ -428,6 +445,7 @@ class RecognizerLoop(EventEmitter):
 
         Wait for KeyboardInterrupt and shutdown cleanly.
         """
+        LOG.info('[Flow Learning] in listener.py.RecognizerLoop.run.')
         try:
             self.start_async()
         except Exception:

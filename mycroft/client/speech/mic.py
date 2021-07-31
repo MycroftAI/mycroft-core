@@ -549,6 +549,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         SessionManager.touch()
         payload = {'utterance': self.wake_word_name,
                    'session': SessionManager.get().session_id}
+        LOG.info('mycroft.client.speech.mic.py.ResponsiveRecognizer.send_wakeword_info: emit  recognizer_loop:wakeword')
         emitter.emit("recognizer_loop:wakeword", payload)
 
     def _write_wakeword_to_disk(self, audio, metadata):
@@ -696,6 +697,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         Returns:
             AudioData: audio with the user's utterance, minus the wake-up-word
         """
+        LOG.info('[Flow Learning] in mycroft.client.speech.mic.py.ResponsiveRecognizer.listen,')
         assert isinstance(source, AudioSource), "Source must be an AudioSource"
 
         #        bytes_per_sec = source.SAMPLE_RATE * source.SAMPLE_WIDTH
@@ -708,6 +710,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         #       speech is detected, but there is no code to actually do that.
         self.adjust_for_ambient_noise(source, 1.0)
 
+        LOG.info('[Flow Learning] in mycroft.client.speech.mic.py.ResponsiveRecognizer.listen, Wait_util_wake_word ')
         LOG.debug("Waiting for wake word...")
         ww_data = self._wait_until_wake_word(source, sec_per_buffer)
 
@@ -721,6 +724,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
             # If the waiting returned from a stop signal
             return
 
+        LOG.info('[Flow Learning] in mycroft.client.speech.mic.py.ResponsiveRecognizer.listen, indicate recording')
         LOG.debug("Recording...")
         # If enabled, play a wave file with a short sound to audibly
         # indicate recording has begun.
@@ -730,6 +734,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
                 # irrelevant after mute - play wav - unmute sequence
                 ww_frames = None
 
+        LOG.info('[Flow Learning] in mycroft.client.speech.mic.py.ResponsiveRecognizer.listen, notify the bus that recognizer_loop:record_begin')
         # Notify system of recording start
         emitter.emit("recognizer_loop:record_begin")
 
@@ -741,6 +746,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         )
         audio_data = self._create_audio_data(frame_data, source)
         emitter.emit("recognizer_loop:record_end")
+        LOG.info('[Flow Learning] in mycroft.client.speech.mic.py.ResponsiveRecognizer.listen, notify the bus that recognizer_loop:record_end')
         if self.save_utterances:
             LOG.info("Recording utterance")
             stamp = str(datetime.datetime.now())

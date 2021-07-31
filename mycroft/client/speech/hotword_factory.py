@@ -260,6 +260,7 @@ class PreciseHotword(HotWordEngine):
         return join(self.folder, 'precise-engine', 'precise-engine')
 
     def install_exe(self, url: str) -> str:
+        LOG.info('[Flow learning]: url='+url)
         url = url.format(arch=platform.machine())
         if not url.endswith('.tar.gz'):
             url = requests.get(url).text.strip()
@@ -517,6 +518,10 @@ class HotWordFactory:
         config = config.get(hotword) or config["hey mycroft"]
 
         module = config.get("module", "precise")
+        return cls.load_module('pocketsphinx', hotword, config, lang, loop)
+        '''
+        LOG.info('[Flow learning]: first try to load hotword module defined in config, then try to load module of pocketsphinx, then load class pocketsphinx.')
         return cls.load_module(module, hotword, config, lang, loop) or \
             cls.load_module('pocketsphinx', hotword, config, lang, loop) or \
             cls.CLASSES['pocketsphinx']()
+        '''
