@@ -303,7 +303,14 @@ class TestMycroftSkill(unittest.TestCase):
 
         # Normal vocaubulary
         self.emitter.reset()
-        expected = [{'start': 'hello', 'end': 'AHelloKeyword'}]
+        expected = [
+            {
+                'start': 'hello',
+                'end': 'AHelloKeyword',
+                'entity_value': 'hello',
+                'entity_type': 'AHelloKeyword'
+            }
+        ]
         s.register_vocabulary('hello', 'HelloKeyword')
         self.check_register_vocabulary(expected)
         # Regex
