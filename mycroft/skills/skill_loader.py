@@ -166,18 +166,18 @@ class SkillLoader:
 
         modified = self.last_modified > self.last_loaded
 
-        # create local reference to avoid threading issues
-        instance = self.instance
-
         reload_allowed = (
                 self.active and
-                (instance is None or instance.reload_skill)
+                (self.instance is None or self.instance.reload_skill)
         )
         return modified and reload_allowed
 
     def reload(self):
         LOG.info('ATTEMPTING TO RELOAD SKILL: ' + self.skill_id)
         if self.instance:
+            if not self.instance.reload_skill:
+                LOG.info("skill does not allow reloading!")
+                return False # not allowed
             self._unload()
         return self._load()
 
