@@ -170,7 +170,6 @@ class Mimic2(TTS):
     """Interface to the Mimic2 TTS."""
     def __init__(self, lang, config):
         super().__init__(lang, config, Mimic2Validator(self))
-        self.cache.load_persistent_cache()
         self.url = config.get('url', "https://mimic-api.mycroft.ai/synthesize?text=")
         self.session = FuturesSession()
 

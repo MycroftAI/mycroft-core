@@ -192,6 +192,7 @@ class TTS(metaclass=ABCMeta):
             self.config, self.tts_name, self.audio_ext
         )
         self.cache.clear()
+        self.cache.load_persistent_cache()
 
     def load_spellings(self):
         """Load phonetic spellings of words as dictionary."""

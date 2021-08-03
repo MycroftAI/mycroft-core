@@ -160,7 +160,7 @@ class TextToSpeechCache:
         )
         self.audio_file_type = audio_file_type
         self.resource_dir = Path(__file__).parent.parent.joinpath("res")
-        self.cached_sentences = dict()
+        self.cached_sentences = {}
         # curate cache if disk usage is above min %
         self.min_free_percent = self.config.get("min_free_percent", 75)
 
@@ -184,8 +184,9 @@ class TextToSpeechCache:
         prior to run time, such as pre-recorded audio files.  This will add
         files that do not already exist.
 
-        ANOTHER NOTE:  Mimic2 is the only TTS engine that supports this.  This
-        logic will need to change if another TTS engine implements it.
+        ANOTHER NOTE:  Mimic2 is the only TTS engine that supports
+        downloading missing files. This logic will need to change if another
+        TTS engine implements it.
         """
         if self.persistent_cache_dir is not None:
             LOG.info("Adding dialog resources to persistent TTS cache...")
@@ -272,6 +273,10 @@ class TextToSpeechCache:
         engines want to take advantage of the persistent cache, this logic
         will need to be more dynamic.
         """
+        # TODO support multiple engines
+        if self.tts_name != "Mimic2":
+            return
+
         sentence_hash = hash_sentence(sentence)
         if sentence_hash not in self.cached_sentences:
             LOG.info("Adding \"{}\" to cache".format(sentence))
