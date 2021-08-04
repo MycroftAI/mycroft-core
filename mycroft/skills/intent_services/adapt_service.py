@@ -202,8 +202,12 @@ class AdaptService:
         """Run the Adapt engine to search for an matching intent.
 
         Args:
-            utterances (iterable): iterable of utterances, expected order
-                                   [raw, normalized, other]
+            utterances (iterable): utterances for consideration in intent
+            matching. As a practical matter, a single utterance will be
+            passed in most cases.  But there are instances, such as
+            streaming STT that could pass multiple.  Each utterance
+            is represented as a tuple containing the raw, normalized, and
+            possibly other variations of the utterance.
 
         Returns:
             Intent structure, or None if no match was found.
@@ -227,7 +231,10 @@ class AdaptService:
                         include_tags=True,
                         context_manager=self.context_manager)]
                     if intents:
-                        take_best(intents[0], utt_tup[0])
+                        utt_best = max(
+                            intents, key=lambda x: x.get('confidence', 0.0)
+                        )
+                        take_best(utt_best, utt_tup[0])
 
                 except Exception as err:
                     LOG.exception(err)

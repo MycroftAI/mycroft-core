@@ -12,7 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
-from .tools import (emit_utterance, wait_for_dialog, then_wait,
-                    then_wait_fail, mycroft_responses,
-                    print_mycroft_responses, wait_for_audio_service)
+"""Public API into the voight_kampff package."""
+from .tools import (
+    emit_utterance,
+    format_dialog_match_error,
+    mycroft_responses,
+    print_mycroft_responses,
+    then_wait,
+    then_wait_fail,
+    wait_for_audio_service,
+    wait_for_dialog,
+    wait_for_dialog_match,
+)
