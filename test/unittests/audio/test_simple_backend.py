@@ -9,18 +9,12 @@ from mycroft.messagebus import Message
 
 """Tests for the simple audio service backend."""
 
-config = {
-    'backends': {
-        'test_simple': {
-            'type': 'simple',
-            'active': True
-        }
-    }
-}
+config = {"backends": {"test_simple": {"type": "simple", "active": True}}}
 
 
 class CallWaiter:
     """Wrapper for logic waiting for play status to be called."""
+
     def __init__(self):
         self.called = False
 
@@ -37,7 +31,7 @@ class CallWaiter:
 
 
 class TestSimpleBackend(unittest.TestCase):
-    @mock.patch('mycroft.audio.services.simple.Session')
+    @mock.patch("mycroft.audio.services.simple.Session")
     def test_find_mime(self, mock_session):
         mock_response = mock.MagicMock()
         mock_session_instance = mock.Mock()
@@ -45,26 +39,26 @@ class TestSimpleBackend(unittest.TestCase):
         mock_session.return_value = mock_session_instance
 
         # Check local file
-        self.assertEqual(simple.find_mime('file:///hello.mp3'),
-                         ['audio', 'mpeg'])
+        self.assertEqual(simple.find_mime("file:///hello.mp3"), ["audio", "mpeg"])
 
         # Check HTTP
         mock_response.status_code = 200
-        mock_response.headers.__getitem__.return_value = 'audio/mpeg'
-        self.assertEqual(simple.find_mime('http://mysite.se/hello.mp3'),
-                         ['audio', 'mpeg'])
+        mock_response.headers.__getitem__.return_value = "audio/mpeg"
+        self.assertEqual(
+            simple.find_mime("http://mysite.se/hello.mp3"), ["audio", "mpeg"]
+        )
 
         status_code = 300
-        mock_response.headers.__getitem__.return_value = ''
-        self.assertEqual(simple.find_mime('http://mysite.se/hello.mp3'),
-                         ['audio', 'mpeg'])
+        mock_response.headers.__getitem__.return_value = ""
         self.assertEqual(
-                simple.find_mime('http://mysite.se/hello.mp3?world=True'),
-                ['audio', 'mpeg'])
+            simple.find_mime("http://mysite.se/hello.mp3"), ["audio", "mpeg"]
+        )
+        self.assertEqual(
+            simple.find_mime("http://mysite.se/hello.mp3?world=True"), ["audio", "mpeg"]
+        )
 
         # Check no info found
-        self.assertEqual(simple.find_mime('file:///no_extension'),
-                         (None, None))
+        self.assertEqual(simple.find_mime("file:///no_extension"), (None, None))
 
     def test_load_service(self):
         bus = mock.Mock()
@@ -76,8 +70,8 @@ class TestSimpleBackend(unittest.TestCase):
         self.assertEqual(service.tracks, [])
         self.assertTrue(isinstance(service.supported_uris(), list))
 
-        service.add_list(['a', 'b', 'c'])
-        self.assertEqual(service.tracks, ['a', 'b', 'c'])
+        service.add_list(["a", "b", "c"])
+        self.assertEqual(service.tracks, ["a", "b", "c"])
 
         service.clear_list()
         self.assertEqual(service.tracks, [])
@@ -88,12 +82,12 @@ class TestSimpleBackend(unittest.TestCase):
         service.play()
         self.assertTrue(bus.emit.called)
 
-    @mock.patch('mycroft.audio.services.simple.play_mp3')
-    @mock.patch('mycroft.audio.services.simple.play_ogg')
-    @mock.patch('mycroft.audio.services.simple.play_wav')
+    @mock.patch("mycroft.audio.services.simple.play_mp3")
+    @mock.patch("mycroft.audio.services.simple.play_ogg")
+    @mock.patch("mycroft.audio.services.simple.play_wav")
     def test_play_internals(self, play_wav_mock, play_ogg_mock, play_mp3_mock):
         bus = mock.Mock()
-        process_mock = mock.Mock(name='process')
+        process_mock = mock.Mock(name="process")
 
         completed = False
         called = CallWaiter()
@@ -114,27 +108,27 @@ class TestSimpleBackend(unittest.TestCase):
         play_mp3_mock.return_value = process_mock
 
         service = simple.SimpleAudioService(config, bus)
-        tracks = ['a.mp3', ['b.ogg', 'audio/ogg'], ['c.wav', 'audio/wav']]
+        tracks = ["a.mp3", ["b.ogg", "audio/ogg"], ["c.wav", "audio/wav"]]
         service.add_list(tracks)
         service.play()
 
-        thread = Thread(target=service._play, args=[Message('plaything')])
+        thread = Thread(target=service._play, args=[Message("plaything")])
         thread.daemon = True
         thread.start()
         called.wait()
 
-        play_mp3_mock.assert_called_with('a.mp3')
+        play_mp3_mock.assert_called_with("a.mp3")
         completed = True
         time.sleep(1)
         self.assertEqual(service.index, 1)
         thread.join()
 
-        thread = Thread(target=service._play, args=[Message('plaything')])
+        thread = Thread(target=service._play, args=[Message("plaything")])
         thread.daemon = True
         thread.start()
         called.wait()
 
-        play_ogg_mock.assert_called_with('b.ogg')
+        play_ogg_mock.assert_called_with("b.ogg")
 
         service.pause()
         process_mock.send_signal.assert_called_with(signal.SIGSTOP)
@@ -144,11 +138,11 @@ class TestSimpleBackend(unittest.TestCase):
         completed = True
         thread.join()
 
-        thread = Thread(target=service._play, args=[Message('plaything')])
+        thread = Thread(target=service._play, args=[Message("plaything")])
         thread.daemon = True
         thread.start()
         called.wait()
-        play_wav_mock.assert_called_with('c.wav')
+        play_wav_mock.assert_called_with("c.wav")
 
         service.stop()
         thread.join()

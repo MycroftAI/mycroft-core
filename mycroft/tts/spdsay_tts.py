@@ -23,8 +23,7 @@ class SpdSay(TTS):
 
     def execute(self, sentence, ident=None, listen=False):
         self.begin_audio()
-        subprocess.call(
-            ['spd-say', '-l', self.lang, '-t', self.voice, sentence])
+        subprocess.call(["spd-say", "-l", self.lang, "-t", self.voice, sentence])
         self.end_audio(listen)
 
 
@@ -38,11 +37,12 @@ class SpdSayValidator(TTSValidator):
 
     def validate_connection(self):
         try:
-            subprocess.call(['spd-say', '--version'])
+            subprocess.call(["spd-say", "--version"])
         except Exception:
             raise Exception(
-                'SpdSay is not installed. Run: sudo apt-get install '
-                'speech-dispatcher')
+                "SpdSay is not installed. Run: sudo apt-get install "
+                "speech-dispatcher"
+            )
 
     def get_tts_class(self):
         return SpdSay

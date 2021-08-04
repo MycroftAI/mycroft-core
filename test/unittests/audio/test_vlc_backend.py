@@ -4,17 +4,10 @@ import unittest.mock as mock
 import mycroft.audio.services.vlc as vlc
 
 
-config = {
-    'backends': {
-        'test_simple': {
-            'type': 'vlc',
-            'active': True
-        }
-    }
-}
+config = {"backends": {"test_simple": {"type": "vlc", "active": True}}}
 
 
-@mock.patch('mycroft.audio.services.vlc.vlc')
+@mock.patch("mycroft.audio.services.vlc.vlc")
 class TestVlcBackend(unittest.TestCase):
     def test_load_service(self, mock_vlc_mod):
         bus = mock.Mock()
@@ -27,11 +20,11 @@ class TestVlcBackend(unittest.TestCase):
         self.assertTrue(isinstance(service.supported_uris(), list))
 
         # Check that the tracks are added to the track_list
-        service.add_list(['a.mp3', 'b.ogg', ['c.wav', 'audio/wav']])
-        service.track_list.add_media.has_calls(['a.mp3', 'b.ogg', 'c.wav'])
+        service.add_list(["a.mp3", "b.ogg", ["c.wav", "audio/wav"]])
+        service.track_list.add_media.has_calls(["a.mp3", "b.ogg", "c.wav"])
 
         # Check that clearing replaces the playlist with an empty one
-        empty_list = mock.Mock(name='EmptyList')
+        empty_list = mock.Mock(name="EmptyList")
         service.instance.media_list_new.return_value = empty_list
         service.clear_list()
         self.assertTrue(service.track_list is empty_list)
@@ -41,8 +34,8 @@ class TestVlcBackend(unittest.TestCase):
         bus = mock.Mock()
         service = vlc.VlcService(config, bus)
 
-        loop_mode = mock.Mock(name='Loop')
-        normal_mode = mock.Mock(name='Normal')
+        loop_mode = mock.Mock(name="Loop")
+        normal_mode = mock.Mock(name="Normal")
         mock_vlc_mod.PlaybackMode.loop = loop_mode
         mock_vlc_mod.PlaybackMode.default = normal_mode
         # Check normal play

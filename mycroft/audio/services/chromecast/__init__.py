@@ -24,29 +24,30 @@ from mycroft.util.log import LOG
 
 class ChromecastService(RemoteAudioBackend):
     """
-        Audio backend for playback on chromecast. Using the default media
-        playback controller included in pychromecast.
+    Audio backend for playback on chromecast. Using the default media
+    playback controller included in pychromecast.
     """
+
     def _connect(self, message):
-        LOG.info('Trying to connect to chromecast')
+        LOG.info("Trying to connect to chromecast")
         casts = pychromecast.get_chromecasts()
-        if self.config is None or 'identifier' not in self.config:
+        if self.config is None or "identifier" not in self.config:
             LOG.error("Chromecast identifier not found!")
             return  # Can't connect since no id is specified
         else:
-            identifier = self.config['identifier']
+            identifier = self.config["identifier"]
         for c in casts:
             if c.name == identifier:
                 self.cast = c
                 break
         else:
-            LOG.info('Couldn\'t find chromecast ' + identifier)
+            LOG.info("Couldn't find chromecast " + identifier)
             self.connection_attempts += 1
             time.sleep(10)
-            self.bus.emit(Message('ChromecastServiceConnect'))
+            self.bus.emit(Message("ChromecastServiceConnect"))
             return
 
-    def __init__(self, config, bus, name='chromecast', cast=None):
+    def __init__(self, config, bus, name="chromecast", cast=None):
         super(ChromecastService, self).__init__(config, bus)
         self.connection_attempts = 0
         self.bus = bus
@@ -59,52 +60,52 @@ class ChromecastService(RemoteAudioBackend):
             self.cast = cast
         else:
             self.cast = None
-            self.bus.on('ChromecastServiceConnect', self._connect)
-            self.bus.emit(Message('ChromecastServiceConnect'))
+            self.bus.on("ChromecastServiceConnect", self._connect)
+            self.bus.emit(Message("ChromecastServiceConnect"))
 
     def supported_uris(self):
-        """ Return supported uris of chromecast. """
+        """Return supported uris of chromecast."""
         LOG.info("Chromecasts found: " + str(self.cast))
         if self.cast:
-            return ['http', 'https']
+            return ["http", "https"]
         else:
             return []
 
     def clear_list(self):
-        """ Clear tracklist. """
+        """Clear tracklist."""
         self.tracklist = []
 
     def add_list(self, tracks):
         """
-            Add list of tracks to chromecast playlist.
+        Add list of tracks to chromecast playlist.
 
-            Args:
-                tracks (list): list media to add to playlist.
+        Args:
+            tracks (list): list media to add to playlist.
         """
         self.tracklist = tracks
         pass
 
     def play(self, repeat=False):
-        """ Start playback.
+        """Start playback.
 
         TODO: add playlist support and repeat
         """
         self.cast.wait()  # Make sure the device is ready to receive command
         self.cast.quit_app()
-        while self.cast.status.status_text != '':
+        while self.cast.status.status_text != "":
             time.sleep(1)
 
         track = self.tracklist[0]
         # Report start of playback to audioservice
         if self._track_start_callback:
             self._track_start_callback(track)
-        LOG.debug('track: {}, type: {}'.format(track, guess_type(track)[0]))
-        mime = guess_type(track)[0] or 'audio/mp3'
+        LOG.debug("track: {}, type: {}".format(track, guess_type(track)[0]))
+        mime = guess_type(track)[0] or "audio/mp3"
         self.cast.wait()  # Make sure the device is ready to receive command
         self.cast.play_media(track, mime)
 
     def stop(self):
-        """ Stop playback and quit app. """
+        """Stop playback and quit app."""
         if self.cast.media_controller.is_playing:
             self.cast.media_controller.stop()
             self.cast.quit_app()
@@ -113,7 +114,7 @@ class ChromecastService(RemoteAudioBackend):
             return False
 
     def pause(self):
-        """ Pause current playback. """
+        """Pause current playback."""
         if not self.cast.media_controller.is_paused:
             self.cast.media_controller.pause()
 
@@ -122,11 +123,11 @@ class ChromecastService(RemoteAudioBackend):
             self.cast.media_controller.play()
 
     def next(self):
-        """ Skip current track. (Not implemented) """
+        """Skip current track. (Not implemented)"""
         pass
 
     def previous(self):
-        """ Return to previous track. (Not implemented) """
+        """Return to previous track. (Not implemented)"""
         pass
 
     def lower_volume(self):
@@ -138,26 +139,26 @@ class ChromecastService(RemoteAudioBackend):
         pass
 
     def track_info(self):
-        """ Return info about currently playing track. """
+        """Return info about currently playing track."""
         info = {}
         ret = {}
-        ret['name'] = info.get('name', '')
-        if 'album' in info:
-            ret['artist'] = info['album']['artists'][0]['name']
-            ret['album'] = info['album'].get('name', '')
+        ret["name"] = info.get("name", "")
+        if "album" in info:
+            ret["artist"] = info["album"]["artists"][0]["name"]
+            ret["album"] = info["album"].get("name", "")
         else:
-            ret['artist'] = ''
-            ret['album'] = ''
+            ret["artist"] = ""
+            ret["album"] = ""
         return ret
 
     def shutdown(self):
-        """ Disconnect from the device. """
+        """Disconnect from the device."""
         self.cast.disconnect()
 
 
 def autodetect(config, bus):
     """
-        Autodetect chromecasts on the network and create backends for each
+    Autodetect chromecasts on the network and create backends for each
     """
     casts = pychromecast.get_chromecasts(timeout=5, tries=2, retry_wait=2)
     ret = []

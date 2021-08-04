@@ -24,6 +24,7 @@ class RollingMean:
     Args:
         mean_samples: Number of samples to use for mean value
     """
+
     def __init__(self, mean_samples):
         self.num_samples = mean_samples
         self.samples = []
@@ -70,6 +71,7 @@ class CyclicAudioBuffer:
         size (int): size in bytes
         initial_data (bytes): initial buffer data
     """
+
     def __init__(self, size, initial_data):
         self.size = size
         # Get at most size bytes from the end of the initial data
@@ -84,7 +86,7 @@ class CyclicAudioBuffer:
         """
         buff = self._buffer + data
         if len(buff) > self.size:
-            buff = buff[-self.size:]
+            buff = buff[-self.size :]
         self._buffer = buff
 
     def get(self):

@@ -27,7 +27,7 @@ import os
 from test.integrationtests.skills.skill_tester import MockSkillsLoader
 from test.integrationtests.skills.skill_tester import SkillTest
 
-SKILL_PATH = '/opt/mycroft/skills'
+SKILL_PATH = "/opt/mycroft/skills"
 
 
 def all_tests():
@@ -44,16 +44,11 @@ def all_tests():
     if len(sys.argv) > 1:
         SKILL_PATH = sys.argv.pop(1)
     tests = {}
-    skills = [
-        skill for skill
-        in glob.glob(SKILL_PATH + '/*')
-        if os.path.isdir(skill)
-    ]
+    skills = [skill for skill in glob.glob(SKILL_PATH + "/*") if os.path.isdir(skill)]
 
     for skill in skills:
         test_intent_files = [
-            f for f
-            in glob.glob(os.path.join(skill, 'test/intent/*.intent.json'))
+            f for f in glob.glob(os.path.join(skill, "test/intent/*.intent.json"))
         ]
         if len(test_intent_files) > 0:
             tests[skill] = test_intent_files
@@ -66,8 +61,9 @@ def all_tests():
 class SkillTestStatus(object):
     """Hold the intents of a skill, and the test status
 
-        Contents are created during test
+    Contents are created during test
     """
+
     def __init__(self):
         self.intent_list = {}
 
@@ -81,9 +77,8 @@ class SkillTestStatus(object):
 
 
 class IntentTestSequenceMeta(type):
-    """Metaclass to create test case for each skill
+    """Metaclass to create test case for each skill"""
 
-    """
     def __new__(mcs, name, bases, d):
         def gen_test(skill):
             def test(self):
@@ -92,14 +87,17 @@ class IntentTestSequenceMeta(type):
                 if len(tests[skill]):
                     succeeded = False
                     for test_case in tests[skill]:
-                        if SkillTest(skill, test_case, self.emitter,
-                                     test_status=skill_test_status). \
-                                run(self.loader):
+                        if SkillTest(
+                            skill,
+                            test_case,
+                            self.emitter,
+                            test_status=skill_test_status,
+                        ).run(self.loader):
                             succeeded = True
 
-                    untested = [i
-                                for i in skill_test_status.intent_list.items()
-                                if not all(i)]
+                    untested = [
+                        i for i in skill_test_status.intent_list.items() if not all(i)
+                    ]
                     for intent_status in untested:
                         print("No test found for intent: ", intent_status[0])
 
@@ -134,5 +132,5 @@ class IntentTestSequence(unittest.TestCase):
         cls.loader.unload_skills()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

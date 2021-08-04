@@ -37,10 +37,10 @@ def _get_download_tmp(dest):
     Returns:
         (str) path to temporary download location
     """
-    tmp_base = dest + '.part'
-    existing = glob(tmp_base + '*')
+    tmp_base = dest + ".part"
+    existing = glob(tmp_base + "*")
     if len(existing) > 0:
-        return '{}.{}'.format(tmp_base, len(existing))
+        return "{}.{}".format(tmp_base, len(existing))
     else:
         return tmp_base
 
@@ -86,10 +86,9 @@ class Downloader(Thread):
         Args:
             dest (str): Save location
         """
-        cmd = ['wget', '-c', self.url, '-O', dest,
-               '--tries=20', '--read-timeout=5']
+        cmd = ["wget", "-c", self.url, "-O", dest, "--tries=20", "--read-timeout=5"]
         if self.header:
-            cmd += ['--header={}'.format(self.header)]
+            cmd += ["--header={}".format(self.header)]
         return subprocess.call(cmd)
 
     def run(self):
@@ -123,7 +122,7 @@ class Downloader(Thread):
     def cleanup(self, tmp):
         """Cleanup after download attempt."""
         if exists(tmp):
-            os.remove(self.dest + '.part')
+            os.remove(self.dest + ".part")
         if self.status == 200:
             self.status = -1
 
@@ -147,6 +146,5 @@ def download(url, dest, complete_action=None, header=None):
     global _running_downloads
     arg_hash = hash(url + dest)
     if arg_hash not in _running_downloads:
-        _running_downloads[arg_hash] = Downloader(url, dest, complete_action,
-                                                  header)
+        _running_downloads[arg_hash] = Downloader(url, dest, complete_action, header)
     return _running_downloads[arg_hash]

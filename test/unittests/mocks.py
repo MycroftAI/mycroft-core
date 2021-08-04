@@ -28,6 +28,7 @@ class AnyCallable:
 
     Useful for assert_called_with arguments.
     """
+
     def __eq__(self, other):
         return callable(other)
 
@@ -48,23 +49,21 @@ def mock_msm(temp_dir):
     """Mock the MycroftSkillsManager because it reaches out to the internet."""
     msm_mock = Mock(spec=MycroftSkillsManager)
     msm_mock.skills_dir = str(temp_dir)
-    msm_mock.platform = 'test_platform'
+    msm_mock.platform = "test_platform"
     msm_mock.lock = Mock()
     msm_mock.repo = Mock(spec=SkillRepo)
-    msm_mock.repo.get_default_skill_names = Mock(return_value=[
-        ('default', ['time', 'weather']),
-        ('test_platform', ['test_skill'])
-    ])
-    msm_mock.device_skill_state = dict(
-        skills=[
-            dict(name='test_skill', beta=False)
+    msm_mock.repo.get_default_skill_names = Mock(
+        return_value=[
+            ("default", ["time", "weather"]),
+            ("test_platform", ["test_skill"]),
         ]
     )
+    msm_mock.device_skill_state = dict(skills=[dict(name="test_skill", beta=False)])
     skill = Mock()
     skill.is_local = True
     skill.path = str(temp_dir)
-    skill.skill_gid = 'test_skill|99.99'
-    skill.meta_info = dict(display_name='Test Skill')
+    skill.skill_gid = "test_skill|99.99"
+    skill.meta_info = dict(display_name="Test Skill")
     msm_mock.list_all_defaults.return_value = [skill]
     msm_mock.default_skills = dict(test_skill=skill)
     msm_mock.all_skills = [skill]
@@ -77,10 +76,10 @@ def mock_config(temp_dir):
     """Supply a reliable return value for the Configuration.get() method."""
     get_config_mock = Mock()
     config = base_config()
-    config['skills']['priority_skills'] = ['foobar']
-    config['data_dir'] = str(temp_dir)
-    config['server']['metrics'] = False
-    config['enclosure'] = {}
+    config["skills"]["priority_skills"] = ["foobar"]
+    config["data_dir"] = str(temp_dir)
+    config["server"]["metrics"] = False
+    config["enclosure"] = {}
 
     get_config_mock.return_value = config
     return get_config_mock
@@ -92,6 +91,7 @@ class MessageBusMock:
     The message bus should not be running during unit tests so mock it
     out in a way that makes it easy to test code that calls it.
     """
+
     def __init__(self):
         self.message_types = []
         self.message_data = []

@@ -38,7 +38,7 @@ class FileStream:
     UPDATE_INTERVAL_S = 1.0
 
     def __init__(self, file_name):
-        self.file = wave.open(file_name, 'rb')
+        self.file = wave.open(file_name, "rb")
         self.size = self.file.getnframes()
         self.sample_rate = self.file.getframerate()
         self.sample_width = self.file.getsampwidth()
@@ -95,7 +95,7 @@ class AudioTester:
         print()  # Pad debug messages
         self.ww_recognizer = RecognizerLoop().create_wake_word_recognizer()
         self.listener = ResponsiveRecognizer(self.ww_recognizer)
-        self.listener.config['confirm_listening'] = False
+        self.listener.config["confirm_listening"] = False
         print()
 
     def test_audio(self, file_name):
@@ -109,7 +109,7 @@ class AudioTester:
         def on_found_wake_word():
             SharedData.times_found += 1
 
-        ee.on('recognizer_loop:record_begin', on_found_wake_word)
+        ee.on("recognizer_loop:record_begin", on_found_wake_word)
 
         try:
             while True:
@@ -128,10 +128,10 @@ class AudioTester:
 
 
 class Color:
-    BOLD = '\033[1m'
-    NORMAL = '\033[0m'
-    GREEN = '\033[92m'
-    RED = '\033[91m'
+    BOLD = "\033[1m"
+    NORMAL = "\033[0m"
+    GREEN = "\033[92m"
+    RED = "\033[91m"
 
 
 def bold_str(val):
@@ -143,7 +143,7 @@ def get_root_dir():
 
 
 def get_file_names(folder):
-    query = join(folder, '*.wav')
+    query = join(folder, "*.wav")
     root_dir = get_root_dir()
     full_path = join(root_dir, query)
     file_names = sorted(glob(full_path))
@@ -167,7 +167,7 @@ def test_audio_files(tester, file_names, on_file_finish):
 
 
 def file_frame_rate(file_name):
-    wf = wave.open(file_name, 'rb')
+    wf = wave.open(file_name, "rb")
     frame_rate = wf.getframerate()
     wf.close()
     return frame_rate
@@ -220,10 +220,10 @@ def test_false_positive(directory):
 
 
 def run_test():
-    directory = join(dirname(__file__), 'data')
+    directory = join(dirname(__file__), "data")
 
-    false_neg_dir = join(directory, 'with_wake_word')
-    false_pos_dir = join(directory, 'without_wake_word')
+    false_neg_dir = join(directory, "with_wake_word")
+    false_pos_dir = join(directory, "without_wake_word")
 
     try:
         test_false_negative(false_neg_dir)

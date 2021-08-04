@@ -77,7 +77,7 @@ class LOG:
 
     @classmethod
     def init(cls):
-        """ Initializes the class, sets the default log level and creates
+        """Initializes the class, sets the default log level and creates
         the required handlers.
         """
 
@@ -88,23 +88,22 @@ class LOG:
         config = {}
         for conf in confs:
             try:
-                merge_dict(config,
-                           load_commented_json(conf) if isfile(conf) else {})
+                merge_dict(config, load_commented_json(conf) if isfile(conf) else {})
             except Exception as e:
-                print('couldn\'t load {}: {}'.format(conf, str(e)))
+                print("couldn't load {}: {}".format(conf, str(e)))
 
-        cls.level = logging.getLevelName(config.get('log_level', 'INFO'))
+        cls.level = logging.getLevelName(config.get("log_level", "INFO"))
         log_message_format = (
-            '{asctime} | {levelname:8} | {process:5} | {name} | {message}'
+            "{asctime} | {levelname:8} | {process:5} | {name} | {message}"
         )
 
-        formatter = logging.Formatter(log_message_format, style='{')
-        formatter.default_msec_format = '%s.%03d'
+        formatter = logging.Formatter(log_message_format, style="{")
+        formatter.default_msec_format = "%s.%03d"
         cls.handler = logging.StreamHandler(sys.stdout)
         cls.handler.setFormatter(formatter)
 
         # Enable logging in external modules
-        cls.create_logger('').setLevel(cls.level)
+        cls.create_logger("").setLevel(cls.level)
 
     @classmethod
     def create_logger(cls, name):
@@ -137,11 +136,11 @@ class LOG:
                 # ...
                 record = stack[2]
                 mod = inspect.getmodule(record[0])
-                module_name = mod.__name__ if mod else ''
-                name = module_name + ':' + record[3] + ':' + str(record[2])
+                module_name = mod.__name__ if mod else ""
+                name = module_name + ":" + record[3] + ":" + str(record[2])
             except Exception:
                 # The location couldn't be determined
-                name = 'Mycroft'
+                name = "Mycroft"
 
         func(cls.create_logger(name), *args, **kwargs)
 

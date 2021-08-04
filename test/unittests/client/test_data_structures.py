@@ -14,8 +14,7 @@
 #
 from unittest import TestCase
 
-from mycroft.client.speech.data_structures import (RollingMean,
-                                                   CyclicAudioBuffer)
+from mycroft.client.speech.data_structures import RollingMean, CyclicAudioBuffer
 
 
 class TestRollingMean(TestCase):
@@ -48,30 +47,30 @@ class TestRollingMean(TestCase):
 
 class TestCyclicBuffer(TestCase):
     def test_init(self):
-        buff = CyclicAudioBuffer(16, b'abc')
-        self.assertEqual(buff.get(), b'abc')
+        buff = CyclicAudioBuffer(16, b"abc")
+        self.assertEqual(buff.get(), b"abc")
         self.assertEqual(len(buff), 3)
 
     def test_init_larger_inital_data(self):
         size = 16
-        buff = CyclicAudioBuffer(size, b'a' * (size + 3))
-        self.assertEqual(buff.get(), b'a' * size)
+        buff = CyclicAudioBuffer(size, b"a" * (size + 3))
+        self.assertEqual(buff.get(), b"a" * size)
 
     def test_append_with_room_left(self):
-        buff = CyclicAudioBuffer(16, b'abc')
-        buff.append(b'def')
-        self.assertEqual(buff.get(), b'abcdef')
+        buff = CyclicAudioBuffer(16, b"abc")
+        buff.append(b"def")
+        self.assertEqual(buff.get(), b"abcdef")
 
     def test_append_with_full(self):
-        buff = CyclicAudioBuffer(3, b'abc')
-        buff.append(b'de')
-        self.assertEqual(buff.get(), b'cde')
+        buff = CyclicAudioBuffer(3, b"abc")
+        buff.append(b"de")
+        self.assertEqual(buff.get(), b"cde")
         self.assertEqual(len(buff), 3)
 
     def test_get_last(self):
-        buff = CyclicAudioBuffer(3, b'abcdef')
-        self.assertEqual(buff.get_last(3), b'def')
+        buff = CyclicAudioBuffer(3, b"abcdef")
+        self.assertEqual(buff.get_last(3), b"def")
 
     def test_get_item(self):
-        buff = CyclicAudioBuffer(6, b'abcdef')
-        self.assertEqual(buff[:], b'abcdef')
+        buff = CyclicAudioBuffer(6, b"abcdef")
+        self.assertEqual(buff[:], b"abcdef")

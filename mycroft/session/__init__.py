@@ -51,7 +51,8 @@ class Session:
 
 
 class SessionManager:
-    """ Keeps track of the current active session. """
+    """Keeps track of the current active session."""
+
     __current_session = None
     __lock = Lock()
 
@@ -62,16 +63,19 @@ class SessionManager:
 
         :return: An active session
         """
-        config = Configuration.get().get('session')
+        config = Configuration.get().get("session")
 
         with SessionManager.__lock:
-            if (not SessionManager.__current_session or
-                    SessionManager.__current_session.expired()):
+            if (
+                not SessionManager.__current_session
+                or SessionManager.__current_session.expired()
+            ):
                 SessionManager.__current_session = Session(
-                    str(uuid4()), expiration_seconds=config.get('ttl', 180))
+                    str(uuid4()), expiration_seconds=config.get("ttl", 180)
+                )
                 LOG.info(
-                    "New Session Start: " +
-                    SessionManager.__current_session.session_id)
+                    "New Session Start: " + SessionManager.__current_session.session_id
+                )
             return SessionManager.__current_session
 
     @staticmethod

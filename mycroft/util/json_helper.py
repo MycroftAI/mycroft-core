@@ -17,11 +17,11 @@ import json
 
 def merge_dict(base, delta):
     """
-        Recursively merging configuration dictionaries.
+    Recursively merging configuration dictionaries.
 
-        Args:
-            base:  Target for merge
-            delta: Dictionary to merge into base
+    Args:
+        base:  Target for merge
+        delta: Dictionary to merge into base
     """
 
     for k, dv in delta.items():
@@ -33,7 +33,7 @@ def merge_dict(base, delta):
 
 
 def load_commented_json(filename):
-    """ Loads an JSON file, ignoring comments
+    """Loads an JSON file, ignoring comments
 
     Supports a trivial extension to the JSON file format.  Allow comments
     to be embedded within the JSON, requiring that a comment be on an
@@ -56,7 +56,7 @@ def load_commented_json(filename):
 
 
 def uncomment_json(commented_json_str):
-    """ Removes comments from a JSON string.
+    """Removes comments from a JSON string.
 
     Supporting a trivial extension to the JSON format.  Allow comments
     to be embedded within the JSON, requiring that a comment be on an

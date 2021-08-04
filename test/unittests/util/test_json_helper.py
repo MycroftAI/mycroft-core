@@ -21,16 +21,15 @@ from mycroft.util.json_helper import load_commented_json
 
 
 class TestFileLoad(unittest.TestCase):
-
     def test_load(self):
         root_dir = dirname(__file__)
         # Load normal JSON file
-        plainfile = join(root_dir, 'plain.json')
-        with open(plainfile, 'r') as f:
+        plainfile = join(root_dir, "plain.json")
+        with open(plainfile, "r") as f:
             data_from_plain = json.load(f)
 
         # Load commented JSON file
-        commentedfile = join(root_dir, 'commented.json')
+        commentedfile = join(root_dir, "commented.json")
         data_from_commented = load_commented_json(commentedfile)
 
         # Should be the same...

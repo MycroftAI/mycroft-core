@@ -18,42 +18,37 @@ from unittest.mock import patch, Mock
 from mycroft.messagebus.client import MessageBusClient, MessageWaiter
 
 WS_CONF = {
-    'websocket': {
-        "host": "testhost",
-        "port": 1337,
-        "route": "/core",
-        "ssl": False
-    }
+    "websocket": {"host": "testhost", "port": 1337, "route": "/core", "ssl": False}
 }
 
 
 class TestMessageBusClient:
     def test_build_url(self):
-        url = MessageBusClient.build_url('localhost', 1337, '/core', False)
-        assert url == 'ws://localhost:1337/core'
-        ssl_url = MessageBusClient.build_url('sslhost', 443, '/core', True)
-        assert ssl_url == 'wss://sslhost:443/core'
+        url = MessageBusClient.build_url("localhost", 1337, "/core", False)
+        assert url == "ws://localhost:1337/core"
+        ssl_url = MessageBusClient.build_url("sslhost", 443, "/core", True)
+        assert ssl_url == "wss://sslhost:443/core"
 
-    @patch('mycroft.configuration.Configuration.get', return_value=WS_CONF)
+    @patch("mycroft.configuration.Configuration.get", return_value=WS_CONF)
     def test_create_client(self, mock_conf):
         mc = MessageBusClient()
-        assert mc.client.url == 'ws://testhost:1337/core'
+        assert mc.client.url == "ws://testhost:1337/core"
 
 
 class TestMessageWaiter(TestCase):
     def test_message_wait_success(self):
         bus = Mock()
-        waiter = MessageWaiter(bus, 'delayed.message')
-        bus.once.assert_called_with('delayed.message', waiter._handler)
+        waiter = MessageWaiter(bus, "delayed.message")
+        bus.once.assert_called_with("delayed.message", waiter._handler)
 
-        test_msg = Mock(name='test_msg')
+        test_msg = Mock(name="test_msg")
         waiter._handler(test_msg)  # Inject response
 
         self.assertEqual(waiter.wait(), test_msg)
 
     def test_message_wait_timeout(self):
         bus = Mock()
-        waiter = MessageWaiter(bus, 'delayed.message')
-        bus.once.assert_called_with('delayed.message', waiter._handler)
+        waiter = MessageWaiter(bus, "delayed.message")
+        bus.once.assert_called_with("delayed.message", waiter._handler)
 
         self.assertEqual(waiter.wait(0.3), None)

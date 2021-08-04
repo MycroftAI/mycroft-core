@@ -29,28 +29,26 @@ def get_plug_mock(name):
 def mock_iter_entry_points(plug_type):
     """Function to return mocked plugins."""
     plugs = {
-        'mycroft.plugins.tts': [get_plug_mock('dummy'),
-                                get_plug_mock('remote')],
-        'mycroft.plugins.stt': [get_plug_mock('dummy'),
-                                get_plug_mock('deepspeech')]
+        "mycroft.plugins.tts": [get_plug_mock("dummy"), get_plug_mock("remote")],
+        "mycroft.plugins.stt": [get_plug_mock("dummy"), get_plug_mock("deepspeech")],
     }
     return plugs.get(plug_type, [])
 
 
-@mock.patch('mycroft.util.plugins.pkg_resources')
+@mock.patch("mycroft.util.plugins.pkg_resources")
 class TestPlugins(TestCase):
     def test_load_existing(self, mock_pkg_res):
         """Ensure that plugin objects are returned if found."""
         mock_pkg_res.iter_entry_points.side_effect = mock_iter_entry_points
 
         # Load a couple of existing modules and verify that they're Ok
-        plug = mycroft_plugins.load_plugin('mycroft.plugins.tts', 'dummy')
-        self.assertEqual(plug.name, 'dummy')
-        plug = mycroft_plugins.load_plugin('mycroft.plugins.stt', 'deepspeech')
-        self.assertEqual(plug.name, 'deepspeech')
+        plug = mycroft_plugins.load_plugin("mycroft.plugins.tts", "dummy")
+        self.assertEqual(plug.name, "dummy")
+        plug = mycroft_plugins.load_plugin("mycroft.plugins.stt", "deepspeech")
+        self.assertEqual(plug.name, "deepspeech")
 
     def test_load_nonexisting(self, mock_pkg_res):
         """Ensure that the return value is None when no plugin is found."""
         mock_pkg_res.iter_entry_points.side_effect = mock_iter_entry_points
-        plug = mycroft_plugins.load_plugin('mycroft.plugins.tts', 'blah')
+        plug = mycroft_plugins.load_plugin("mycroft.plugins.tts", "blah")
         self.assertEqual(plug, None)

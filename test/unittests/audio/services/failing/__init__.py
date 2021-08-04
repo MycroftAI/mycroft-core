@@ -16,11 +16,11 @@ from mycroft.audio.services import AudioBackend
 
 
 class FailingBackend(AudioBackend):
-    def __init__(self, config, emitter, name='Failing'):
+    def __init__(self, config, emitter, name="Failing"):
         raise Exception
 
     def supported_uris(self):
-        return ['file', 'http']
+        return ["file", "http"]
 
 
 def load_service(base_config, emitter):

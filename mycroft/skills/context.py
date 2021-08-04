@@ -19,20 +19,23 @@ Helper decorators for handling context from skills.
 """
 
 
-def adds_context(context, words=''):
+def adds_context(context, words=""):
     """Decorator adding context to the Adapt context manager.
 
     Args:
         context (str): context Keyword to insert
         words (str): optional string content of Keyword
     """
+
     def context_add_decorator(func):
         @wraps(func)
         def func_wrapper(*args, **kwargs):
             ret = func(*args, **kwargs)
             args[0].set_context(context, words)
             return ret
+
         return func_wrapper
+
     return context_add_decorator
 
 
@@ -42,11 +45,14 @@ def removes_context(context):
     Args:
         context (str): Context keyword to remove
     """
+
     def context_removes_decorator(func):
         @wraps(func)
         def func_wrapper(*args, **kwargs):
             ret = func(*args, **kwargs)
             args[0].remove_context(context)
             return ret
+
         return func_wrapper
+
     return context_removes_decorator

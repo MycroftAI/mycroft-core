@@ -27,9 +27,9 @@ class WordExtractor:
         self.begin = 0
         self.end = self.audio_size
         self.precision = int(self.audio_size * self.PRECISION_RATE)
-        self.silence_data = self.create_silence(self.SILENCE_SECS,
-                                                self.audio.sample_rate,
-                                                self.audio.sample_width)
+        self.silence_data = self.create_silence(
+            self.SILENCE_SECS, self.audio.sample_rate, self.audio.sample_width
+        )
         self.metrics = metrics
 
     def __add(self, is_begin, value):
@@ -44,7 +44,7 @@ class WordExtractor:
 
         while dt > self.precision:
             self.__add(is_begin, dt * sign)
-            segment = self.audio.frame_data[self.begin:self.end]
+            segment = self.audio.frame_data[self.begin : self.end]
             found = self.recognizer.is_recognized(segment, self.metrics)
             if not found:
                 self.__add(is_begin, dt * -sign)
@@ -56,15 +56,14 @@ class WordExtractor:
 
     @staticmethod
     def create_silence(seconds, sample_rate, sample_width):
-        return '\0' * int(seconds * sample_rate * sample_width)
+        return "\0" * int(seconds * sample_rate * sample_width)
 
     def get_audio_data_before(self):
-        byte_data = self.audio.frame_data[0:self.begin] + self.silence_data
-        return AudioData(byte_data, self.audio.sample_rate,
-                         self.audio.sample_width)
+        byte_data = self.audio.frame_data[0 : self.begin] + self.silence_data
+        return AudioData(byte_data, self.audio.sample_rate, self.audio.sample_width)
 
     def get_audio_data_after(self):
-        byte_data = self.silence_data + self.audio.frame_data[self.end:
-                                                              self.audio_size]
-        return AudioData(byte_data, self.audio.sample_rate,
-                         self.audio.sample_width)
+        byte_data = (
+            self.silence_data + self.audio.frame_data[self.end : self.audio_size]
+        )
+        return AudioData(byte_data, self.audio.sample_rate, self.audio.sample_width)

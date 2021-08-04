@@ -6,5 +6,6 @@ class Anything:
 
     Useful for assert_called_with arguments.
     """
+
     def __eq__(self, other):
         return True

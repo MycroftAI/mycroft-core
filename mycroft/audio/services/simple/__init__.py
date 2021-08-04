@@ -27,29 +27,29 @@ from requests import Session
 
 def find_mime(path):
     mime = None
-    if path.startswith('http'):
+    if path.startswith("http"):
         response = Session().head(path, allow_redirects=True)
         if 200 <= response.status_code < 300:
-            mime = response.headers['content-type']
+            mime = response.headers["content-type"]
     if not mime:
         mime = mimetypes.guess_type(path)[0]
     # Remove any http address arguments
     if not mime:
-        mime = mimetypes.guess_type(re.sub(r'\?.*$', '', path))[0]
+        mime = mimetypes.guess_type(re.sub(r"\?.*$", "", path))[0]
 
     if mime:
-        return mime.split('/')
+        return mime.split("/")
     else:
         return (None, None)
 
 
 class SimpleAudioService(AudioBackend):
     """
-        Simple Audio backend for both mpg123 and the ogg123 player.
-        This one is rather limited and only implements basic usage.
+    Simple Audio backend for both mpg123 and the ogg123 player.
+    This one is rather limited and only implements basic usage.
     """
 
-    def __init__(self, config, bus, name='simple'):
+    def __init__(self, config, bus, name="simple"):
         super().__init__(config, bus)
         self.config = config
         self.process = None
@@ -64,10 +64,10 @@ class SimpleAudioService(AudioBackend):
         mimetypes.init()
         self.track_lock = Lock()
 
-        self.bus.on('SimpleAudioServicePlay', self._play)
+        self.bus.on("SimpleAudioServicePlay", self._play)
 
     def supported_uris(self):
-        return ['file', 'http']
+        return ["file", "http"]
 
     def clear_list(self):
         with self.track_lock:
@@ -82,7 +82,7 @@ class SimpleAudioService(AudioBackend):
         if isinstance(track_data, list):
             track = track_data[0]
             mime = track_data[1]
-            mime = mime.split('/')
+            mime = mime.split("/")
         else:  # Assume string
             track = track_data
             mime = find_mime(track)
@@ -94,12 +94,12 @@ class SimpleAudioService(AudioBackend):
         This allows mpg123 service to use the next method as well
         as basic play/stop.
         """
-        LOG.info('SimpleAudioService._play')
+        LOG.info("SimpleAudioService._play")
 
         # Stop any existing audio playback
         self._stop_running_process()
 
-        repeat = message.data.get('repeat', False)
+        repeat = message.data.get("repeat", False)
         self._is_playing = True
         self._paused = False
         with self.track_lock:
@@ -108,33 +108,33 @@ class SimpleAudioService(AudioBackend):
             else:
                 return
 
-        LOG.debug('Mime info: {}'.format(mime))
+        LOG.debug("Mime info: {}".format(mime))
 
         # Indicate to audio service which track is being played
         if self._track_start_callback:
             self._track_start_callback(track)
 
         # Replace file:// uri's with normal paths
-        track = track.replace('file://', '')
+        track = track.replace("file://", "")
         try:
-            if 'mpeg' in mime[1]:
+            if "mpeg" in mime[1]:
                 self.process = play_mp3(track)
-            elif 'ogg' in mime[1]:
+            elif "ogg" in mime[1]:
                 self.process = play_ogg(track)
-            elif 'wav' in mime[1]:
+            elif "wav" in mime[1]:
                 self.process = play_wav(track)
             else:
                 # If no mime info could be determined guess mp3
                 self.process = play_mp3(track)
         except FileNotFoundError as e:
-            LOG.error('Couldn\'t play audio, {}'.format(repr(e)))
+            LOG.error("Couldn't play audio, {}".format(repr(e)))
             self.process = None
         except Exception as e:
             LOG.exception(repr(e))
             self.process = None
 
         # Wait for completion or stop request
-        while (self._is_process_running() and not self._stop_signal):
+        while self._is_process_running() and not self._stop_signal:
             sleep(0.25)
 
         if self._stop_signal:
@@ -151,29 +151,28 @@ class SimpleAudioService(AudioBackend):
             if self.index < len(self.tracks) or repeat:
                 if self.index >= len(self.tracks):
                     self.index = 0
-                self.bus.emit(Message('SimpleAudioServicePlay',
-                                      {'repeat': repeat}))
+                self.bus.emit(Message("SimpleAudioServicePlay", {"repeat": repeat}))
             else:
                 self._track_start_callback(None)
                 self._is_playing = False
                 self._paused = False
 
     def play(self, repeat=False):
-        LOG.info('Call SimpleAudioServicePlay')
+        LOG.info("Call SimpleAudioServicePlay")
         self.index = 0
-        self.bus.emit(Message('SimpleAudioServicePlay', {'repeat': repeat}))
+        self.bus.emit(Message("SimpleAudioServicePlay", {"repeat": repeat}))
 
     def stop(self):
-        LOG.info('SimpleAudioServiceStop')
+        LOG.info("SimpleAudioServiceStop")
         self._stop_signal = True
         while self._is_playing:
             sleep(0.1)
         self._stop_signal = False
 
     def _pause(self):
-        """ Pauses playback if possible.
+        """Pauses playback if possible.
 
-            Returns: (bool) New paused status:
+        Returns: (bool) New paused status:
         """
         if self.process:
             # Suspend the playback process
@@ -187,9 +186,9 @@ class SimpleAudioService(AudioBackend):
             self._paused = self._pause()
 
     def _resume(self):
-        """ Resumes playback if possible.
+        """Resumes playback if possible.
 
-            Returns: (bool) New paused status:
+        Returns: (bool) New paused status:
         """
         if self.process:
             # Resume the playback process
@@ -240,9 +239,11 @@ class SimpleAudioService(AudioBackend):
 
 
 def load_service(base_config, bus):
-    backends = base_config.get('backends', [])
-    services = [(b, backends[b]) for b in backends
-                if backends[b]['type'] == 'simple' and
-                backends[b].get('active', True)]
+    backends = base_config.get("backends", [])
+    services = [
+        (b, backends[b])
+        for b in backends
+        if backends[b]["type"] == "simple" and backends[b].get("active", True)
+    ]
     instances = [SimpleAudioService(s[1], bus, s[0]) for s in services]
     return instances

@@ -19,10 +19,15 @@ import os.path
 import curses
 from mycroft.util import get_ipc_directory
 from .text_client import (
-        load_settings, save_settings, simple_cli, gui_main,
-        start_log_monitor, start_mic_monitor, connect_to_mycroft,
-        ctrl_c_handler
-    )
+    load_settings,
+    save_settings,
+    simple_cli,
+    gui_main,
+    start_log_monitor,
+    start_mic_monitor,
+    connect_to_mycroft,
+    ctrl_c_handler,
+)
 from mycroft.configuration import Configuration
 
 sys.stdout = io.StringIO()
@@ -42,10 +47,10 @@ sys.excepthook = custom_except_hook  # noqa
 def main():
     # Monitor system logs
     config = Configuration.get()
-    if 'log_dir' in config:
-        log_dir = os.path.expanduser(config['log_dir'])
-        start_log_monitor(os.path.join(log_dir, 'skills.log'))
-        start_log_monitor(os.path.join(log_dir, 'voice.log'))
+    if "log_dir" in config:
+        log_dir = os.path.expanduser(config["log_dir"])
+        start_log_monitor(os.path.join(log_dir, "skills.log"))
+        start_log_monitor(os.path.join(log_dir, "voice.log"))
     else:
         start_log_monitor("/var/log/mycroft/skills.log")
         start_log_monitor("/var/log/mycroft/voice.log")
@@ -54,7 +59,7 @@ def main():
     start_mic_monitor(os.path.join(get_ipc_directory(), "mic_level"))
 
     connect_to_mycroft()
-    if '--simple' in sys.argv:
+    if "--simple" in sys.argv:
         sys.stdout = sys.__stdout__
         sys.stderr = sys.__stderr__
         simple_cli()

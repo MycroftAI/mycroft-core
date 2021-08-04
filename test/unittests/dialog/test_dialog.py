@@ -27,81 +27,79 @@ class DialogTest(unittest.TestCase):
         self.topdir = pathlib.Path(__file__).parent
 
     def test_general_dialog(self):
-        """ Test the loading and filling of valid simple mustache dialogs """
-        template_path = self.topdir.joinpath('./mustache_templates')
+        """Test the loading and filling of valid simple mustache dialogs"""
+        template_path = self.topdir.joinpath("./mustache_templates")
         for file in template_path.iterdir():
-            if file.suffix == '.dialog':
+            if file.suffix == ".dialog":
                 self.stache.load_template_file(file.name, str(file.absolute()))
                 context = json.load(
-                    file.with_suffix('.context.json').open(
-                        'r', encoding='utf-8'))
+                    file.with_suffix(".context.json").open("r", encoding="utf-8")
+                )
                 self.assertEqual(
                     self.stache.render(file.name, context),
-                    file.with_suffix('.result').open('r',
-                                                     encoding='utf-8').read())
+                    file.with_suffix(".result").open("r", encoding="utf-8").read(),
+                )
 
     def test_unknown_dialog(self):
-        """ Test for returned file name literals in case of unkown dialog """
-        self.assertEqual(
-            self.stache.render("unknown.template"), "unknown template")
+        """Test for returned file name literals in case of unkown dialog"""
+        self.assertEqual(self.stache.render("unknown.template"), "unknown template")
 
     def test_multiple_dialog(self):
         """
         Test the loading and filling of valid mustache dialogs
         where a dialog file contains multiple text versions
         """
-        template_path = self.topdir.joinpath('./mustache_templates_multiple')
+        template_path = self.topdir.joinpath("./mustache_templates_multiple")
         for file in template_path.iterdir():
-            if file.suffix == '.dialog':
+            if file.suffix == ".dialog":
                 self.stache.load_template_file(file.name, str(file.absolute()))
                 context = json.load(
-                    file.with_suffix('.context.json').open(
-                        'r', encoding='utf-8'))
+                    file.with_suffix(".context.json").open("r", encoding="utf-8")
+                )
                 results = [
-                    line.strip() for line in file.with_suffix('.result').open(
-                        'r', encoding='utf-8')
+                    line.strip()
+                    for line in file.with_suffix(".result").open("r", encoding="utf-8")
                 ]
                 # Try all lines
                 for index, line in enumerate(results):
                     self.assertEqual(
-                        self.stache.render(
-                            file.name, index=index, context=context),
-                        line.strip())
+                        self.stache.render(file.name, index=index, context=context),
+                        line.strip(),
+                    )
                 # Test random index function
                 # (bad test because non-deterministic?)
-                self.assertIn(
-                    self.stache.render(file.name, context=context), results)
+                self.assertIn(self.stache.render(file.name, context=context), results)
 
     def test_comment_dialog(self):
         """
         Test the loading and filling of valid mustache dialogs
         where a dialog file contains multiple text versions
         """
-        template_path = self.topdir.joinpath('./mustache_templates_comments')
+        template_path = self.topdir.joinpath("./mustache_templates_comments")
         for f in template_path.iterdir():
-            if f.suffix == '.dialog':
+            if f.suffix == ".dialog":
                 self.stache.load_template_file(f.name, str(f.absolute()))
-                results = [line.strip()
-                           for line in f.with_suffix('.result').open('r')]
+                results = [line.strip() for line in f.with_suffix(".result").open("r")]
                 # Try all lines
                 for index, line in enumerate(results):
-                    self.assertEqual(self.stache.render(f.name, index=index),
-                                     line.strip())
+                    self.assertEqual(
+                        self.stache.render(f.name, index=index), line.strip()
+                    )
 
     def test_dialog_loader(self):
-        template_path = self.topdir.joinpath('./multiple_dialogs')
+        template_path = self.topdir.joinpath("./multiple_dialogs")
         renderer = load_dialogs(template_path)
-        self.assertEqual(renderer.render('one'), 'ONE')
-        self.assertEqual(renderer.render('two'), 'TWO')
+        self.assertEqual(renderer.render("one"), "ONE")
+        self.assertEqual(renderer.render("two"), "TWO")
 
     def test_dialog_loader_missing(self):
-        template_path = self.topdir.joinpath('./missing_dialogs')
+        template_path = self.topdir.joinpath("./missing_dialogs")
         renderer = load_dialogs(template_path)
-        self.assertEqual(renderer.render('test'), 'test')
+        self.assertEqual(renderer.render("test"), "test")
 
     def test_get(self):
-        phrase = 'i didn\'t catch that'
-        res_file = pathlib.Path('text/en-us/').joinpath(phrase + '.dialog')
+        phrase = "i didn't catch that"
+        res_file = pathlib.Path("text/en-us/").joinpath(phrase + ".dialog")
         print(res_file)
         resource = resolve_resource_file(str(res_file))
         with open(resource) as f:
@@ -110,12 +108,12 @@ class DialogTest(unittest.TestCase):
         self.assertIn(string, results)
 
         # Check that the filename is returned if phrase is missing for lang
-        string = get(phrase, lang='ne-ne')
+        string = get(phrase, lang="ne-ne")
         self.assertEqual(string, phrase)
 
         # Check that name is retured if phrase is missing
-        string = get('testing aardwark')
-        self.assertEqual(string, 'testing aardwark')
+        string = get("testing aardwark")
+        self.assertEqual(string, "testing aardwark")
 
 
 if __name__ == "__main__":

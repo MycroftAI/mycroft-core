@@ -19,6 +19,6 @@ import re
 
 def camel_case_split(identifier: str) -> str:
     """Split camel case string."""
-    regex = '.+?(?:(?<=[a-z])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])|$)'
+    regex = ".+?(?:(?<=[a-z])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])|$)"
     matches = re.finditer(regex, identifier)
-    return ' '.join([m.group(0) for m in matches])
+    return " ".join([m.group(0) for m in matches])

@@ -19,8 +19,7 @@ from .tts import TTS, TTSValidator
 class ResponsiveVoice(TTS):
     def __init__(self, lang, config):
         super(ResponsiveVoice, self).__init__(
-            lang, config, ResponsiveVoiceValidator(self), 'mp3',
-            ssml_tags=[]
+            lang, config, ResponsiveVoiceValidator(self), "mp3", ssml_tags=[]
         )
         self.clear_cache()
         self.pitch = config.get("pitch", 0.5)
@@ -33,9 +32,15 @@ class ResponsiveVoice(TTS):
             self.vn = self.sv = ""
 
     def get_tts(self, sentence, wav_file):
-        params = {"t": sentence, "tl": self.lang,
-                  "pitch": self.pitch, "rate": self.rate,
-                  "vol": self.vol, "sv": self.sv, "vn": self.vn}
+        params = {
+            "t": sentence,
+            "tl": self.lang,
+            "pitch": self.pitch,
+            "rate": self.rate,
+            "vol": self.vol,
+            "sv": self.sv,
+            "vn": self.vn,
+        }
         base_url = "http://responsivevoice.org/responsivevoice/getvoice.php"
         r = requests.get(base_url, params)
         with open(wav_file, "w") as f:

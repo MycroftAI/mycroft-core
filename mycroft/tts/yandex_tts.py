@@ -51,15 +51,16 @@ class YandexTTS(TTS):
             "emotion": self.emotion,
             "speed": self.speed,
             "format": "lpcm",
-            "sampleRateHertz": self.sample_rate
+            "sampleRateHertz": self.sample_rate,
         }
 
-        with requests.post(_API_URL, headers=headers, data=data,
-                           stream=True) as resp:
+        with requests.post(_API_URL, headers=headers, data=data, stream=True) as resp:
             if resp.status_code != 200:
                 raise Exception(
                     "Request to Yandex TTS failed: code: {}, body: {}".format(
-                        resp.status_code, resp.text))
+                        resp.status_code, resp.text
+                    )
+                )
 
             for chunk in resp.iter_content(chunk_size=None):
                 yield chunk
@@ -88,8 +89,8 @@ class YandexTTSValidator(TTSValidator):
                 raise Exception("Invalid API key for Yandex TTS")
             else:
                 raise Exception(
-                    "Unexpected HTTP code from Yandex TTS ({})".format(
-                        r.status_code))
+                    "Unexpected HTTP code from Yandex TTS ({})".format(r.status_code)
+                )
         else:
             raise ValueError("API key for Yandex TTS is not defined")
 

@@ -60,7 +60,7 @@ def _update_log_level(msg, name):
         LOG(name).info("Changing log level to: {}".format(lvl))
         try:
             logging.getLogger().setLevel(lvl)
-            logging.getLogger('urllib3').setLevel(lvl)
+            logging.getLogger("urllib3").setLevel(lvl)
         except Exception:
             pass  # We don't really care about if this fails...
     else:
@@ -90,11 +90,12 @@ def create_echo_function(name, whitelist=None):
     """
 
     from mycroft.configuration import Configuration
+
     blacklist = Configuration.get().get("ignore_logs")
 
     # Make sure whitelisting doesn't remove the log level setting command
     if whitelist:
-        whitelist.append('mycroft.debug.log')
+        whitelist.append("mycroft.debug.log")
 
     def echo(message):
         global _log_all_bus_messages
@@ -104,8 +105,7 @@ def create_echo_function(name, whitelist=None):
             # Whitelist match beginning of message
             # i.e 'mycroft.audio.service' will allow the message
             # 'mycroft.audio.service.play' for example
-            if whitelist and not any([msg_type.startswith(e)
-                                     for e in whitelist]):
+            if whitelist and not any([msg_type.startswith(e) for e in whitelist]):
                 return
 
             if blacklist and msg_type in blacklist:
@@ -123,6 +123,7 @@ def create_echo_function(name, whitelist=None):
         if _log_all_bus_messages:
             # Listen for messages and echo them for logging
             LOG(name).info("BUS: {}".format(message))
+
     return echo
 
 
@@ -140,19 +141,20 @@ def start_message_bus_client(service, bus=None, whitelist=None):
     # Local imports to avoid circular importing
     from mycroft.messagebus.client import MessageBusClient
     from mycroft.configuration import Configuration
+
     # Create a client if one was not provided
     if bus is None:
         bus = MessageBusClient()
     Configuration.set_config_update_handlers(bus)
     bus_connected = Event()
-    bus.on('message', create_echo_function(service, whitelist))
+    bus.on("message", create_echo_function(service, whitelist))
     # Set the bus connected event when connection is established
-    bus.once('open', bus_connected.set)
+    bus.once("open", bus_connected.set)
     create_daemon(bus.run_forever)
 
     # Wait for connection
     bus_connected.wait()
-    LOG.info('Connected to messagebus')
+    LOG.info("Connected to messagebus")
 
     return bus
 
@@ -164,6 +166,7 @@ class ProcessState(IntEnum):
     For example Alive can be determined using >= ProcessState.ALIVE,
     which will return True if the state is READY as well as ALIVE.
     """
+
     NOT_STARTED = 0
     STARTED = 1
     ERROR = 2
@@ -174,21 +177,21 @@ class ProcessState(IntEnum):
 
 # Process state change callback mappings.
 _STATUS_CALLBACKS = [
-    'on_started',
-    'on_alive',
-    'on_ready',
-    'on_error',
-    'on_stopping',
+    "on_started",
+    "on_alive",
+    "on_ready",
+    "on_error",
+    "on_stopping",
 ]
 
 
 # namedtuple defaults only available on 3.7 and later python versions
 if sys.version_info < (3, 7):
-    StatusCallbackMap = namedtuple('CallbackMap', _STATUS_CALLBACKS)
+    StatusCallbackMap = namedtuple("CallbackMap", _STATUS_CALLBACKS)
     StatusCallbackMap.__new__.__defaults__ = (None,) * 5
 else:
     StatusCallbackMap = namedtuple(
-        'CallbackMap',
+        "CallbackMap",
         _STATUS_CALLBACKS,
         defaults=(None,) * len(_STATUS_CALLBACKS),
     )
@@ -221,14 +224,11 @@ class ProcessStatus:
 
     def _register_handlers(self):
         """Register messagebus handlers for status queries."""
-        self.bus.on('mycroft.{}.is_alive'.format(self.name), self.check_alive)
-        self.bus.on('mycroft.{}.is_ready'.format(self.name),
-                    self.check_ready)
+        self.bus.on("mycroft.{}.is_alive".format(self.name), self.check_alive)
+        self.bus.on("mycroft.{}.is_ready".format(self.name), self.check_ready)
         # The next one is for backwards compatibility
         # TODO: remove in 21.02
-        self.bus.on(
-            'mycroft.{}.all_loaded'.format(self.name), self.check_ready
-        )
+        self.bus.on("mycroft.{}.all_loaded".format(self.name), self.check_ready)
 
     def check_alive(self, message=None):
         """Respond to is_alive status request.
@@ -243,7 +243,7 @@ class ProcessStatus:
         is_alive = self.state >= ProcessState.ALIVE
 
         if message:
-            status = {'status': is_alive}
+            status = {"status": is_alive}
             self.bus.emit(message.response(data=status))
 
         return is_alive
@@ -260,7 +260,7 @@ class ProcessStatus:
         """
         is_ready = self.state >= ProcessState.READY
         if message:
-            status = {'status': is_ready}
+            status = {"status": is_ready}
             self.bus.emit(message.response(data=status))
 
         return is_ready
@@ -289,7 +289,7 @@ class ProcessStatus:
         if self.callbacks.on_stopping:
             self.callbacks.on_stopping()
 
-    def set_error(self, err=''):
+    def set_error(self, err=""):
         """An error has occured and the process is non-functional."""
         # Intentionally leave is_started True
         self.state = ProcessState.ERROR

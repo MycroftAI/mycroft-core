@@ -14,20 +14,23 @@
 #
 from mycroft.audio.services import AudioBackend
 from mycroft.util.log import LOG
+
 try:
     from py_mplayer import MplayerCtrl
 except ImportError:
-    LOG.error("install py_mplayer with "
-              "pip install git+https://github.com/JarbasAl/py_mplayer")
+    LOG.error(
+        "install py_mplayer with "
+        "pip install git+https://github.com/JarbasAl/py_mplayer"
+    )
     raise
 
 
 class MPlayerService(AudioBackend):
     """
-        Audio backend for mplayer.
+    Audio backend for mplayer.
     """
 
-    def __init__(self, config, bus, name='mplayer'):
+    def __init__(self, config, bus, name="mplayer"):
         super(MPlayerService, self).__init__(config, bus)
         self.config = config
         self.bus = bus
@@ -38,7 +41,7 @@ class MPlayerService(AudioBackend):
         self.mpc = MplayerCtrl()
 
     def supported_uris(self):
-        return ['file', 'http', 'https']
+        return ["file", "http", "https"]
 
     def clear_list(self):
         self.tracks = []
@@ -48,7 +51,7 @@ class MPlayerService(AudioBackend):
         LOG.info("Track list is " + str(tracks))
 
     def play(self, repeat=False):
-        """ Start playback of playlist.
+        """Start playback of playlist.
 
         TODO: Add support for repeat
         """
@@ -98,33 +101,35 @@ class MPlayerService(AudioBackend):
 
     def track_info(self):
         """
-            Fetch info about current playing track.
+        Fetch info about current playing track.
 
-            Returns:
-                Dict with track info.
+        Returns:
+            Dict with track info.
         """
         ret = {}
-        ret['title'] = self.mpc.get_meta_title()
-        ret['artist'] = self.mpc.get_meta_artist()
-        ret['album'] = self.mpc.get_meta_album()
-        ret['genre'] = self.mpc.get_meta_genre()
-        ret['year'] = self.mpc.get_meta_year()
-        ret['track'] = self.mpc.get_meta_track()
-        ret['comment'] = self.mpc.get_meta_comment()
+        ret["title"] = self.mpc.get_meta_title()
+        ret["artist"] = self.mpc.get_meta_artist()
+        ret["album"] = self.mpc.get_meta_album()
+        ret["genre"] = self.mpc.get_meta_genre()
+        ret["year"] = self.mpc.get_meta_year()
+        ret["track"] = self.mpc.get_meta_track()
+        ret["comment"] = self.mpc.get_meta_comment()
         return ret
 
     def shutdown(self):
         """
-            Shutdown mplayer
+        Shutdown mplayer
 
         """
         self.mpc.destroy()
 
 
 def load_service(base_config, emitter):
-    backends = base_config.get('backends', [])
-    services = [(b, backends[b]) for b in backends
-                if backends[b]['type'] == 'mplayer' and
-                backends[b].get("active", True)]
+    backends = base_config.get("backends", [])
+    services = [
+        (b, backends[b])
+        for b in backends
+        if backends[b]["type"] == "mplayer" and backends[b].get("active", True)
+    ]
     instances = [MPlayerService(s[1], emitter, s[0]) for s in services]
     return instances

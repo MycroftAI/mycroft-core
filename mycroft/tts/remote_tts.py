@@ -41,7 +41,7 @@ class RemoteTTS(TTS):
         super(RemoteTTS, self).__init__(lang, config, validator)
         self.api_path = api_path
         self.auth = None
-        self.url = config.get('url', url).rstrip('/')
+        self.url = config.get("url", url).rstrip("/")
         self.session = FuturesSession()
 
     def execute(self, sentence, ident=None, listen=False):
@@ -59,8 +59,8 @@ class RemoteTTS(TTS):
 
     @staticmethod
     def __get_phrases(sentence):
-        phrases = re.split(r'\.+[\s+|\n]', sentence)
-        phrases = [p.replace('\n', '').strip() for p in phrases]
+        phrases = re.split(r"\.+[\s+|\n]", sentence)
+        phrases = [p.replace("\n", "").strip() for p in phrases]
         phrases = [p for p in phrases if len(p) > 0]
         return phrases
 
@@ -72,8 +72,12 @@ class RemoteTTS(TTS):
 
     def __request(self, p):
         return self.session.get(
-            self.url + self.api_path, params=self.build_request_params(p),
-            timeout=10, verify=False, auth=self.auth)
+            self.url + self.api_path,
+            params=self.build_request_params(p),
+            timeout=10,
+            verify=False,
+            auth=self.auth,
+        )
 
     @abc.abstractmethod
     def build_request_params(self, sentence):
@@ -86,9 +90,10 @@ class RemoteTTS(TTS):
             play_wav(self.filename).communicate()
         else:
             LOG.error(
-                '%s Http Error: %s for url: %s' %
-                (resp.status_code, resp.reason, resp.url))
+                "%s Http Error: %s for url: %s"
+                % (resp.status_code, resp.reason, resp.url)
+            )
 
     def __save(self, data):
-        with open(self.filename, 'wb') as f:
+        with open(self.filename, "wb") as f:
             f.write(data)

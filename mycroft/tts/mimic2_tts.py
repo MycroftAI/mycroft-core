@@ -20,9 +20,7 @@ import re
 from urllib import parse
 
 from requests_futures.sessions import FuturesSession
-from requests.exceptions import (
-    ReadTimeout, ConnectionError, ConnectTimeout, HTTPError
-)
+from requests.exceptions import ReadTimeout, ConnectionError, ConnectTimeout, HTTPError
 
 from mycroft.util.file_utils import get_cache_directory
 from mycroft.util.log import LOG
@@ -43,7 +41,7 @@ def _break_chunks(l, n):
         chunk_size (int): chunk size
     """
     for i in range(0, len(l), n):
-        yield " ".join(l[i:i + n])
+        yield " ".join(l[i : i + n])
 
 
 def _split_by_chunk_size(text, chunk_size):
@@ -62,25 +60,13 @@ def _split_by_chunk_size(text, chunk_size):
         return [text]
 
     if chunk_size < len(text_list) < (chunk_size * 2):
-        return list(_break_chunks(
-            text_list,
-            int(math.ceil(len(text_list) / 2))
-        ))
+        return list(_break_chunks(text_list, int(math.ceil(len(text_list) / 2))))
     elif (chunk_size * 2) < len(text_list) < (chunk_size * 3):
-        return list(_break_chunks(
-            text_list,
-            int(math.ceil(len(text_list) / 3))
-        ))
+        return list(_break_chunks(text_list, int(math.ceil(len(text_list) / 3))))
     elif (chunk_size * 3) < len(text_list) < (chunk_size * 4):
-        return list(_break_chunks(
-            text_list,
-            int(math.ceil(len(text_list) / 4))
-        ))
+        return list(_break_chunks(text_list, int(math.ceil(len(text_list) / 4))))
     else:
-        return list(_break_chunks(
-            text_list,
-            int(math.ceil(len(text_list) / 5))
-        ))
+        return list(_break_chunks(text_list, int(math.ceil(len(text_list) / 5))))
 
 
 def _split_by_punctuation(chunks, puncs):
@@ -105,7 +91,7 @@ def _split_by_punctuation(chunks, puncs):
             # Split text by punctuation, but not embedded punctuation.  E.g.
             # Split:  "Short sentence.  Longer sentence."
             # But not at: "I.B.M." or "3.424", "3,424" or "what's-his-name."
-            splits += re.split(r'(?<!\.\S)' + punc + r'\s', t)
+            splits += re.split(r"(?<!\.\S)" + punc + r"\s", t)
         out = splits
     return [t.strip() for t in out]
 
@@ -115,9 +101,9 @@ def _add_punctuation(text):
 
     Mimic2 expects some form of punctuation at the end of a sentence.
     """
-    punctuation = ['.', '?', '!', ';']
+    punctuation = [".", "?", "!", ";"]
     if len(text) >= 1 and text[-1] not in punctuation:
-        return text + '.'
+        return text + "."
     else:
         return text
 
@@ -141,16 +127,14 @@ def _sentence_chunker(text):
 
     # first split by punctuations that are major pauses
     first_splits = _split_by_punctuation(
-        text,
-        puncs=[r'\.', r'\!', r'\?', r'\:', r'\;']
+        text, puncs=[r"\.", r"\!", r"\?", r"\:", r"\;"]
     )
 
     # if chunks are too big, split by minor pauses (comma, hyphen)
     second_splits = []
     for chunk in first_splits:
         if len(chunk) > _max_sentence_size:
-            second_splits += _split_by_punctuation(chunk,
-                                                   puncs=[r'\,', '--', '-'])
+            second_splits += _split_by_punctuation(chunk, puncs=[r"\,", "--", "-"])
         else:
             second_splits.append(chunk)
 
@@ -167,10 +151,11 @@ def _sentence_chunker(text):
 
 class Mimic2(TTS):
     """Interface to the Mimic2 TTS."""
+
     def __init__(self, lang, config):
         super().__init__(lang, config, Mimic2Validator(self))
         self.cache.load_persistent_cache()
-        self.url = config['url']
+        self.url = config["url"]
         self.session = FuturesSession()
 
     def _requests(self, sentence):
@@ -203,14 +188,14 @@ class Mimic2(TTS):
                 # if phoneme doesn't exist use
                 # this as placeholder since it
                 # is the most common one "3"
-                phone = 'z'
+                phone = "z"
             vis = VISIMES.get(phone)
             vis_dur = float(pair[1])
             visemes.append((vis, vis_dur))
         return visemes
 
     def _preprocess_sentence(self, sentence):
-        """Split sentence in chunks better suited for mimic2. """
+        """Split sentence in chunks better suited for mimic2."""
         return _sentence_chunker(sentence)
 
     def get_tts(self, sentence, wav_file):
@@ -225,16 +210,18 @@ class Mimic2(TTS):
             res = self._requests(sentence).result()
             if 200 <= res.status_code < 300:
                 results = res.json()
-                audio = base64.b64decode(results['audio_base64'])
-                vis = results['visimes']
-                with open(wav_file, 'wb') as f:
+                audio = base64.b64decode(results["audio_base64"])
+                vis = results["visimes"]
+                with open(wav_file, "wb") as f:
                     f.write(audio)
             else:
-                raise RemoteTTSException('Backend returned HTTP status '
-                                         '{}'.format(res.status_code))
+                raise RemoteTTSException(
+                    "Backend returned HTTP status " "{}".format(res.status_code)
+                )
         except (ReadTimeout, ConnectionError, ConnectTimeout, HTTPError):
             raise RemoteTTSTimeoutException(
-                "Mimic 2 server request timed out. Falling back to mimic")
+                "Mimic 2 server request timed out. Falling back to mimic"
+            )
         return (wav_file, vis)
 
     def save_phonemes(self, key, phonemes):
@@ -258,8 +245,9 @@ class Mimic2(TTS):
         Args:
             Key:    Key identifying phoneme cache
         """
-        pho_file = os.path.join(get_cache_directory("tts/" + self.tts_name),
-                                key + ".pho")
+        pho_file = os.path.join(
+            get_cache_directory("tts/" + self.tts_name), key + ".pho"
+        )
         if os.path.exists(pho_file):
             try:
                 with open(pho_file, "r") as cachefile:
@@ -271,7 +259,6 @@ class Mimic2(TTS):
 
 
 class Mimic2Validator(TTSValidator):
-
     def __init__(self, tts):
         super(Mimic2Validator, self).__init__(tts)
 

@@ -19,42 +19,61 @@ from mycroft.configuration import Configuration
 class PollyTTS(TTS):
     def __init__(self, lang="en-us", config=None):
         import boto3
+
         config = config or Configuration.get().get("tts", {}).get("polly", {})
-        super(PollyTTS, self).__init__(lang, config, PollyTTSValidator(self),
-                                       audio_ext="mp3",
-                                       ssml_tags=["speak", "say-as", "voice",
-                                                  "prosody", "break",
-                                                  "emphasis", "sub", "lang",
-                                                  "phoneme", "w", "whisper",
-                                                  "amazon:auto-breaths",
-                                                  "p", "s", "amazon:effect",
-                                                  "mark"])
+        super(PollyTTS, self).__init__(
+            lang,
+            config,
+            PollyTTSValidator(self),
+            audio_ext="mp3",
+            ssml_tags=[
+                "speak",
+                "say-as",
+                "voice",
+                "prosody",
+                "break",
+                "emphasis",
+                "sub",
+                "lang",
+                "phoneme",
+                "w",
+                "whisper",
+                "amazon:auto-breaths",
+                "p",
+                "s",
+                "amazon:effect",
+                "mark",
+            ],
+        )
 
         self.voice = self.config.get("voice", "Matthew")
-        self.key_id = self.config.get("access_key_id", '')
-        self.key = self.config.get("secret_access_key", '')
-        self.region = self.config.get("region", 'us-east-1')
+        self.key_id = self.config.get("access_key_id", "")
+        self.key = self.config.get("secret_access_key", "")
+        self.region = self.config.get("region", "us-east-1")
         self.engine = self.config.get("engine", "standard")
-        self.polly = boto3.Session(aws_access_key_id=self.key_id,
-                                   aws_secret_access_key=self.key,
-                                   region_name=self.region).client('polly')
+        self.polly = boto3.Session(
+            aws_access_key_id=self.key_id,
+            aws_secret_access_key=self.key,
+            region_name=self.region,
+        ).client("polly")
 
     def get_tts(self, sentence, wav_file):
         text_type = "text"
         if self.remove_ssml(sentence) != sentence:
             text_type = "ssml"
-            sentence = sentence \
-                .replace("\\whispered", "/amazon:effect") \
-                .replace("whispered", "amazon:effect name=\"whispered\"")
+            sentence = sentence.replace("\\whispered", "/amazon:effect").replace(
+                "whispered", 'amazon:effect name="whispered"'
+            )
         response = self.polly.synthesize_speech(
             OutputFormat=self.audio_ext,
             Text=sentence,
             TextType=text_type,
             VoiceId=self.voice,
-            Engine=self.engine)
+            Engine=self.engine,
+        )
 
-        with open(wav_file, 'wb') as f:
-            f.write(response['AudioStream'].read())
+        with open(wav_file, "wb") as f:
+            f.write(response["AudioStream"].read())
         return (wav_file, None)  # No phonemes
 
     def describe_voices(self, language_code="en-US"):
@@ -81,8 +100,8 @@ class PollyTTSValidator(TTSValidator):
             from boto3 import Session
         except ImportError:
             raise Exception(
-                'PollyTTS dependencies not installed, please run pip install '
-                'boto3 ')
+                "PollyTTS dependencies not installed, please run pip install " "boto3 "
+            )
 
     def validate_connection(self):
         try:
@@ -91,8 +110,9 @@ class PollyTTSValidator(TTSValidator):
             output = self.tts.describe_voices()
         except TypeError:
             raise Exception(
-                'PollyTTS server could not be verified. Please check your '
-                'internet connection and credentials.')
+                "PollyTTS server could not be verified. Please check your "
+                "internet connection and credentials."
+            )
 
     def get_tts_class(self):
         return PollyTTS

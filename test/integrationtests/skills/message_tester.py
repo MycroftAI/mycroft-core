@@ -28,19 +28,19 @@ from tkinter.scrolledtext import ScrolledText
 import skill_tester
 import ast
 
-EXAMPLE_EVENT = '''{
+EXAMPLE_EVENT = """{
   'expect_response': False,
   'utterance': 'Recording audio for 600 seconds'
-}'''
+}"""
 
-EXAMPLE_TEST_CASE = '''{
+EXAMPLE_TEST_CASE = """{
   "utterance": "record",
   "intent_type": "AudioRecordSkillIntent",
   "intent": {
     "AudioRecordSkillKeyword": "record"
   },
   "expected_response": ".*(recording|audio)"
-}'''
+}"""
 
 
 class MessageTester:
@@ -59,24 +59,23 @@ class MessageTester:
         self.result_field = ScrolledText(root, width=180, height=10)
         self.result_field.pack()
         self.result_field.config(state=DISABLED)
-        self.button = Button(root, text="Evaluate", fg="red",
-                             command=self._clicked)
+        self.button = Button(root, text="Evaluate", fg="red", command=self._clicked)
         self.button.pack()
 
-        self.event_field.delete('1.0', END)
-        self.event_field.insert('insert', EXAMPLE_EVENT)
-        self.test_case_field.delete('1.0', END)
-        self.test_case_field.insert('insert', EXAMPLE_TEST_CASE)
+        self.event_field.delete("1.0", END)
+        self.event_field.insert("insert", EXAMPLE_EVENT)
+        self.test_case_field.delete("1.0", END)
+        self.test_case_field.insert("insert", EXAMPLE_TEST_CASE)
 
     def _clicked(self):
-        event = self.event_field.get('1.0', END)
-        test_case = self.test_case_field.get('1.0', END)
+        event = self.event_field.get("1.0", END)
+        test_case = self.test_case_field.get("1.0", END)
 
         evaluation = skill_tester.EvaluationRule(ast.literal_eval(test_case))
         evaluation.evaluate(ast.literal_eval(event))
         self.result_field.config(state=NORMAL)
-        self.result_field.delete('1.0', END)
-        self.result_field.insert('insert', evaluation.rule)
+        self.result_field.delete("1.0", END)
+        self.result_field.insert("insert", evaluation.rule)
         self.result_field.config(state=DISABLED)
 
 

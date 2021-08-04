@@ -21,27 +21,66 @@ from mycroft.util.log import LOG
 
 # Live list of languages
 # Cached list of supported languages (2021-02-09)
-_default_langs = {'af': 'Afrikaans', 'sq': 'Albanian', 'ar': 'Arabic',
-                  'hy': 'Armenian', 'bn': 'Bengali', 'bs': 'Bosnian',
-                  'ca': 'Catalan', 'hr': 'Croatian', 'cs': 'Czech',
-                  'da': 'Danish', 'nl': 'Dutch', 'en': 'English',
-                  'eo': 'Esperanto', 'et': 'Estonian', 'tl': 'Filipino',
-                  'fi': 'Finnish', 'fr': 'French', 'de': 'German',
-                  'el': 'Greek', 'gu': 'Gujarati', 'hi': 'Hindi',
-                  'hu': 'Hungarian', 'is': 'Icelandic', 'id': 'Indonesian',
-                  'it': 'Italian', 'ja': 'Japanese', 'jw': 'Javanese',
-                  'kn': 'Kannada', 'km': 'Khmer', 'ko': 'Korean',
-                  'la': 'Latin', 'lv': 'Latvian', 'mk': 'Macedonian',
-                  'ml': 'Malayalam', 'mr': 'Marathi',
-                  'my': 'Myanmar (Burmese)', 'ne': 'Nepali',
-                  'no': 'Norwegian', 'pl': 'Polish', 'pt': 'Portuguese',
-                  'ro': 'Romanian', 'ru': 'Russian', 'sr': 'Serbian',
-                  'si': 'Sinhala', 'sk': 'Slovak', 'es': 'Spanish',
-                  'su': 'Sundanese', 'sw': 'Swahili', 'sv': 'Swedish',
-                  'ta': 'Tamil', 'te': 'Telugu', 'th': 'Thai', 'tr': 'Turkish',
-                  'uk': 'Ukrainian', 'ur': 'Urdu', 'vi': 'Vietnamese',
-                  'cy': 'Welsh', 'zh': 'Chinese (Mandarin/China)'
-                  }
+_default_langs = {
+    "af": "Afrikaans",
+    "sq": "Albanian",
+    "ar": "Arabic",
+    "hy": "Armenian",
+    "bn": "Bengali",
+    "bs": "Bosnian",
+    "ca": "Catalan",
+    "hr": "Croatian",
+    "cs": "Czech",
+    "da": "Danish",
+    "nl": "Dutch",
+    "en": "English",
+    "eo": "Esperanto",
+    "et": "Estonian",
+    "tl": "Filipino",
+    "fi": "Finnish",
+    "fr": "French",
+    "de": "German",
+    "el": "Greek",
+    "gu": "Gujarati",
+    "hi": "Hindi",
+    "hu": "Hungarian",
+    "is": "Icelandic",
+    "id": "Indonesian",
+    "it": "Italian",
+    "ja": "Japanese",
+    "jw": "Javanese",
+    "kn": "Kannada",
+    "km": "Khmer",
+    "ko": "Korean",
+    "la": "Latin",
+    "lv": "Latvian",
+    "mk": "Macedonian",
+    "ml": "Malayalam",
+    "mr": "Marathi",
+    "my": "Myanmar (Burmese)",
+    "ne": "Nepali",
+    "no": "Norwegian",
+    "pl": "Polish",
+    "pt": "Portuguese",
+    "ro": "Romanian",
+    "ru": "Russian",
+    "sr": "Serbian",
+    "si": "Sinhala",
+    "sk": "Slovak",
+    "es": "Spanish",
+    "su": "Sundanese",
+    "sw": "Swahili",
+    "sv": "Swedish",
+    "ta": "Tamil",
+    "te": "Telugu",
+    "th": "Thai",
+    "tr": "Turkish",
+    "uk": "Ukrainian",
+    "ur": "Urdu",
+    "vi": "Vietnamese",
+    "cy": "Welsh",
+    "zh": "Chinese (Mandarin/China)",
+}
 
 
 _supported_langs = None
@@ -60,16 +99,16 @@ def get_supported_langs():
         try:
             _supported_langs = tts_langs()
         except Exception:
-            LOG.warning('Couldn\'t fetch upto date language codes')
+            LOG.warning("Couldn't fetch upto date language codes")
     return _supported_langs or _default_langs
 
 
 class GoogleTTS(TTS):
     """Interface to google TTS."""
+
     def __init__(self, lang, config):
         self._google_lang = None
-        super(GoogleTTS, self).__init__(lang, config, GoogleTTSValidator(
-            self), 'mp3')
+        super(GoogleTTS, self).__init__(lang, config, GoogleTTSValidator(self), "mp3")
 
     @property
     def google_lang(self):
@@ -107,11 +146,12 @@ class GoogleTTSValidator(TTSValidator):
 
     def validate_connection(self):
         try:
-            gTTS(text='Hi').save(self.tts.filename)
+            gTTS(text="Hi").save(self.tts.filename)
         except Exception:
             raise Exception(
-                'GoogleTTS server could not be verified. Please check your '
-                'internet connection.')
+                "GoogleTTS server could not be verified. Please check your "
+                "internet connection."
+            )
 
     def get_tts_class(self):
         return GoogleTTS

@@ -16,11 +16,12 @@
 from collections import namedtuple
 from .base import IntentMatch
 
-FallbackRange = namedtuple('FallbackRange', ['start', 'stop'])
+FallbackRange = namedtuple("FallbackRange", ["start", "stop"])
 
 
 class FallbackService:
     """Intent Service handling fallback skills."""
+
     def __init__(self, bus):
         self.bus = bus
 
@@ -38,29 +39,28 @@ class FallbackService:
             IntentMatch or None
         """
         msg = message.reply(
-            'mycroft.skills.fallback',
-            data={'utterance': utterances[0][0],
-                  'lang': lang,
-                  'fallback_range': (fb_range.start, fb_range.stop)}
+            "mycroft.skills.fallback",
+            data={
+                "utterance": utterances[0][0],
+                "lang": lang,
+                "fallback_range": (fb_range.start, fb_range.stop),
+            },
         )
         response = self.bus.wait_for_response(msg, timeout=10)
-        if response and response.data['handled']:
-            ret = IntentMatch('Fallback', None, {}, None)
+        if response and response.data["handled"]:
+            ret = IntentMatch("Fallback", None, {}, None)
         else:
             ret = None
         return ret
 
     def high_prio(self, utterances, lang, message):
         """Pre-padatious fallbacks."""
-        return self._fallback_range(utterances, lang, message,
-                                    FallbackRange(0, 5))
+        return self._fallback_range(utterances, lang, message, FallbackRange(0, 5))
 
     def medium_prio(self, utterances, lang, message):
         """General fallbacks."""
-        return self._fallback_range(utterances, lang, message,
-                                    FallbackRange(5, 90))
+        return self._fallback_range(utterances, lang, message, FallbackRange(5, 90))
 
     def low_prio(self, utterances, lang, message):
         """Low prio fallbacks with general matching such as chat-bot."""
-        return self._fallback_range(utterances, lang, message,
-                                    FallbackRange(90, 101))
+        return self._fallback_range(utterances, lang, message, FallbackRange(90, 101))

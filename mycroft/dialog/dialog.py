@@ -53,12 +53,11 @@ class MustacheDialogRenderer:
             template_name (str): a unique identifier for a group of templates
             filename (str): a fully qualified filename of a mustache template.
         """
-        with open(filename, 'r', encoding='utf8') as f:
+        with open(filename, "r", encoding="utf8") as f:
             for line in f:
                 template_text = line.strip()
                 # Skip all lines starting with '#' and all empty lines
-                if (not template_text.startswith('#') and
-                        template_text != ''):
+                if not template_text.startswith("#") and template_text != "":
                     if template_name not in self.templates:
                         self.templates[template_name] = []
 
@@ -66,8 +65,9 @@ class MustacheDialogRenderer:
                     # double (or more) '{' followed by any number of
                     # whitespace followed by actual key followed by any number
                     # of whitespace followed by double (or more) '}'
-                    template_text = re.sub(r'\{\{+\s*(.*?)\s*\}\}+', r'{\1}',
-                                           template_text)
+                    template_text = re.sub(
+                        r"\{\{+\s*(.*?)\s*\}\}+", r"{\1}", template_text
+                    )
 
                     self.templates[template_name].append(template_text)
 
@@ -93,16 +93,16 @@ class MustacheDialogRenderer:
             # This allows things like render("record.not.found") to either
             # find a translation file "record.not.found.dialog" or return
             # "record not found" literal.
-            return template_name.replace('.', ' ')
+            return template_name.replace(".", " ")
 
         # Get the .dialog file's contents, minus any which have been spoken
         # recently.
         template_functions = self.templates.get(template_name)
 
         if index is None:
-            template_functions = ([t for t in template_functions
-                                   if t not in self.recent_phrases] or
-                                  template_functions)
+            template_functions = [
+                t for t in template_functions if t not in self.recent_phrases
+            ] or template_functions
             line = random.choice(template_functions)
         else:
             line = template_functions[index % len(template_functions)]
@@ -113,9 +113,10 @@ class MustacheDialogRenderer:
         # Here's where we keep track of what we've said recently. Remember,
         # this is by line in the .dialog file, not by exact phrase
         self.recent_phrases.append(line)
-        if (len(self.recent_phrases) >
-                min(self.max_recent_phrases, len(self.templates.get(
-                    template_name)) - self.loop_prevention_offset)):
+        if len(self.recent_phrases) > min(
+            self.max_recent_phrases,
+            len(self.templates.get(template_name)) - self.loop_prevention_offset,
+        ):
             self.recent_phrases.pop(0)
         return line
 
@@ -134,14 +135,13 @@ def load_dialogs(dialog_dir, renderer=None):
 
     directory = Path(dialog_dir)
     if not directory.exists() or not directory.is_dir():
-        LOG.warning('No dialog files found: {}'.format(dialog_dir))
+        LOG.warning("No dialog files found: {}".format(dialog_dir))
         return renderer
 
     for path, _, files in os.walk(str(directory)):
         for f in files:
-            if f.endswith('.dialog'):
-                renderer.load_template_file(f.replace('.dialog', ''),
-                                            join(path, f))
+            if f.endswith(".dialog"):
+                renderer.load_template_file(f.replace(".dialog", ""), join(path, f))
     return renderer
 
 
@@ -162,16 +162,17 @@ def get(phrase, lang=None, context=None):
 
     if not lang:
         from mycroft.configuration import Configuration
-        lang = Configuration.get().get('lang')
 
-    filename = join('text', lang.lower(), phrase + '.dialog')
+        lang = Configuration.get().get("lang")
+
+    filename = join("text", lang.lower(), phrase + ".dialog")
     template = resolve_resource_file(filename)
     if not template:
-        LOG.debug('Resource file not found: {}'.format(filename))
+        LOG.debug("Resource file not found: {}".format(filename))
         return phrase
 
     stache = MustacheDialogRenderer()
-    stache.load_template_file('template', template)
+    stache.load_template_file("template", template)
     if not context:
         context = {}
-    return stache.render('template', context)
+    return stache.render("template", context)

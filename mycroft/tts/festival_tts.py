@@ -23,20 +23,20 @@ class Festival(TTS):
 
     def execute(self, sentence, ident=None, listen=False):
 
-        encoding = self.config.get('encoding', 'utf8')
-        lang = self.config.get('lang', self.lang)
+        encoding = self.config.get("encoding", "utf8")
+        lang = self.config.get("lang", self.lang)
 
-        text = subprocess.Popen(('echo', sentence), stdout=subprocess.PIPE)
+        text = subprocess.Popen(("echo", sentence), stdout=subprocess.PIPE)
 
-        if encoding != 'utf8':
-            convert_cmd = ('iconv', '-f', 'utf8', '-t', encoding)
-            converted_text = subprocess.Popen(convert_cmd,
-                                              stdin=text.stdout,
-                                              stdout=subprocess.PIPE)
+        if encoding != "utf8":
+            convert_cmd = ("iconv", "-f", "utf8", "-t", encoding)
+            converted_text = subprocess.Popen(
+                convert_cmd, stdin=text.stdout, stdout=subprocess.PIPE
+            )
             text.wait()
             text = converted_text
 
-        tts_cmd = ('festival', '--tts', '--language', lang)
+        tts_cmd = ("festival", "--tts", "--language", lang)
 
         self.begin_audio()
         subprocess.call(tts_cmd, stdin=text.stdout)
@@ -53,10 +53,9 @@ class FestivalValidator(TTSValidator):
 
     def validate_connection(self):
         try:
-            subprocess.call(['festival', '--version'])
+            subprocess.call(["festival", "--version"])
         except Exception:
-            raise Exception(
-                'Festival is missing. Run: sudo apt-get install festival')
+            raise Exception("Festival is missing. Run: sudo apt-get install festival")
 
     def get_tts_class(self):
         return Festival

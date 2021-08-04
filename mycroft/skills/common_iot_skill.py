@@ -51,6 +51,7 @@ class _BusKeys:
     CommonIoTSkill and the IoTController skill, but
     are not intended to be used elsewhere.
     """
+
     BASE = "iot"
     TRIGGER = BASE + ":trigger"
     RESPONSE = TRIGGER + ".response"
@@ -65,6 +66,7 @@ class _BusKeys:
 # corresponding voc files to the skill-iot-control.                #
 ####################################################################
 
+
 @unique
 class Thing(Enum):
     """
@@ -72,6 +74,7 @@ class Thing(Enum):
     by IoT Skills. This is intended to be used with the
     IoTRequest class. See that class for more details.
     """
+
     LIGHT = auto()
     THERMOSTAT = auto()
     DOOR = auto()
@@ -88,6 +91,7 @@ class Attribute(Enum):
     """
     This class represents 'Attributes' of 'Things'.
     """
+
     BRIGHTNESS = auto()
     COLOR = auto()
     COLOR_TEMPERATURE = auto()
@@ -109,6 +113,7 @@ class State(Enum):
     could produce state information that includes
     brightness or color.
     """
+
     STATE = auto()
     POWERED = auto()
     UNPOWERED = auto()
@@ -126,6 +131,7 @@ class Action(Enum):
     to be used with the IoTRequest class. See that class
     for more details.
     """
+
     ON = auto()
     OFF = auto()
     TOGGLE = auto()
@@ -174,9 +180,9 @@ class IoTRequestVersion(Enum):
     def __lt__(self, other):
         return self.name < other.name
 
-    V1 = {'action', 'thing', 'attribute', 'entity', 'scene'}
-    V2 = V1 | {'value'}
-    V3 = V2 | {'state'}
+    V1 = {"action", "thing", "attribute", "entity", "scene"}
+    V2 = V1 | {"value"}
+    V3 = V2 | {"state"}
 
 
 class IoTRequest:
@@ -218,18 +224,21 @@ class IoTRequest:
     more details.
     """
 
-    def __init__(self,
-                 action: Action,
-                 thing: Thing = None,
-                 attribute: Attribute = None,
-                 entity: str = None,
-                 scene: str = None,
-                 value: int = None,
-                 state: State = None):
+    def __init__(
+        self,
+        action: Action,
+        thing: Thing = None,
+        attribute: Attribute = None,
+        entity: str = None,
+        scene: str = None,
+        value: int = None,
+        state: State = None,
+    ):
 
         if not thing and not entity and not scene:
-            raise Exception("At least one of thing,"
-                            " entity, or scene must be present!")
+            raise Exception(
+                "At least one of thing," " entity, or scene must be present!"
+            )
 
         self.action = action
         self.thing = thing
@@ -240,15 +249,17 @@ class IoTRequest:
         self.state = state
 
     def __repr__(self):
-        template = ('IoTRequest('
-                    'action={action},'
-                    ' thing={thing},'
-                    ' attribute={attribute},'
-                    ' entity={entity},'
-                    ' scene={scene},'
-                    ' value={value},'
-                    ' state={state}'
-                    ')')
+        template = (
+            "IoTRequest("
+            "action={action},"
+            " thing={thing},"
+            " attribute={attribute},"
+            " entity={entity},"
+            " scene={scene},"
+            " value={value},"
+            " state={state}"
+            ")"
+        )
         entity = '"{}"'.format(self.entity) if self.entity else None
         scene = '"{}"'.format(self.scene) if self.scene else None
         value = '"{}"'.format(self.value) if self.value is not None else None
@@ -259,7 +270,7 @@ class IoTRequest:
             entity=entity,
             scene=scene,
             value=value,
-            state=self.state
+            state=self.state,
         )
 
     @property
@@ -272,25 +283,25 @@ class IoTRequest:
 
     def to_dict(self):
         return {
-            'action': self.action.name,
-            'thing': self.thing.name if self.thing else None,
-            'attribute': self.attribute.name if self.attribute else None,
-            'entity': self.entity,
-            'scene': self.scene,
-            'value': self.value,
-            'state': self.state.name if self.state else None
+            "action": self.action.name,
+            "thing": self.thing.name if self.thing else None,
+            "attribute": self.attribute.name if self.attribute else None,
+            "entity": self.entity,
+            "scene": self.scene,
+            "value": self.value,
+            "state": self.state.name if self.state else None,
         }
 
     @classmethod
     def from_dict(cls, data: dict):
         data = data.copy()
-        data['action'] = Action[data['action']]
-        if data.get('thing') not in (None, ''):
-            data['thing'] = Thing[data['thing']]
-        if data.get('attribute') not in (None, ''):
-            data['attribute'] = Attribute[data['attribute']]
-        if data.get('state') not in (None, ''):
-            data['state'] = State[data['state']]
+        data["action"] = Action[data["action"]]
+        if data.get("thing") not in (None, ""):
+            data["thing"] = Thing[data["thing"]]
+        if data.get("attribute") not in (None, ""):
+            data["attribute"] = Attribute[data["attribute"]]
+        if data.get("state") not in (None, ""):
+            data["state"] = State[data["state"]]
 
         return cls(**data)
 
@@ -371,8 +382,9 @@ class CommonIoTSkill(MycroftSkill, ABC):
             super().bind(bus)
             self.add_event(_BusKeys.TRIGGER, self._handle_trigger)
             self.add_event(_BusKeys.RUN + self.skill_id, self._run_request)
-            self.add_event(_BusKeys.CALL_FOR_REGISTRATION,
-                           self._handle_call_for_registration)
+            self.add_event(
+                _BusKeys.CALL_FOR_REGISTRATION, self._handle_call_for_registration
+            )
 
     @contextmanager
     def _current_request(self, id: str):
@@ -402,8 +414,7 @@ class CommonIoTSkill(MycroftSkill, ABC):
 
         can_handle, callback_data = self.can_handle(request)
         if can_handle:
-            data.update({"skill_id": self.skill_id,
-                         "callback_data": callback_data})
+            data.update({"skill_id": self.skill_id, "callback_data": callback_data})
             self.bus.emit(message.response(data))
 
     @_track_request
@@ -423,13 +434,18 @@ class CommonIoTSkill(MycroftSkill, ABC):
     def speak(self, utterance, *args, **kwargs):
         if self._current_iot_request:
             message = dig_for_message()
-            self.bus.emit(message.forward(_BusKeys.SPEAK,
-                                          data={"skill_id": self.skill_id,
-                                                IOT_REQUEST_ID:
-                                                    self._current_iot_request,
-                                                "speak_args": args,
-                                                "speak_kwargs": kwargs,
-                                                "speak": utterance}))
+            self.bus.emit(
+                message.forward(
+                    _BusKeys.SPEAK,
+                    data={
+                        "skill_id": self.skill_id,
+                        IOT_REQUEST_ID: self._current_iot_request,
+                        "speak_args": args,
+                        "speak_kwargs": kwargs,
+                        "speak": utterance,
+                    },
+                )
+            )
         else:
             super().speak(utterance, *args, **kwargs)
 
@@ -456,10 +472,16 @@ class CommonIoTSkill(MycroftSkill, ABC):
             word_type:
         """
         if words:
-            self.bus.emit(Message(_BusKeys.REGISTER,
-                                  data={"skill_id": self.skill_id,
-                                        "type": word_type,
-                                        "words": list(words)}))
+            self.bus.emit(
+                Message(
+                    _BusKeys.REGISTER,
+                    data={
+                        "skill_id": self.skill_id,
+                        "type": word_type,
+                        "words": list(words),
+                    },
+                )
+            )
 
     def register_entities_and_scenes(self):
         """

@@ -19,11 +19,12 @@ just like interacting with any other object.
 from mycroft.messagebus.message import Message
 
 
-class SkillApi():
+class SkillApi:
     """SkillApi providing a simple interface to exported methods from skills
 
     Methods are built from a method_dict provided when initializing the skill.
     """
+
     bus = None
 
     @classmethod
@@ -34,15 +35,15 @@ class SkillApi():
     def __init__(self, method_dict):
         self.method_dict = method_dict
         for key in method_dict:
+
             def get_method(k):
                 def method(*args, **kwargs):
                     m = self.method_dict[k]
-                    data = {'args': args, 'kwargs': kwargs}
-                    method_msg = Message(m['type'], data)
+                    data = {"args": args, "kwargs": kwargs}
+                    method_msg = Message(m["type"], data)
                     response = SkillApi.bus.wait_for_response(method_msg)
-                    if (response and response.data and
-                            'result' in response.data):
-                        return response.data['result']
+                    if response and response.data and "result" in response.data:
+                        return response.data["result"]
                     else:
                         return None
 
@@ -59,7 +60,7 @@ class SkillApi():
         Returns:
             SkillApi
         """
-        public_api_msg = '{}.public_api'.format(skill)
+        public_api_msg = "{}.public_api".format(skill)
         api = SkillApi.bus.wait_for_response(Message(public_api_msg))
         if api:
             return SkillApi(api.data)

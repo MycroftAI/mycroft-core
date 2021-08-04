@@ -29,6 +29,7 @@ from copy import copy
 
 class _MetricSender(threading.Thread):
     """Thread responsible for sending metrics data."""
+
     def __init__(self):
         super().__init__()
         self.queue = Queue()
@@ -46,7 +47,7 @@ class _MetricSender(threading.Thread):
             except Empty:
                 pass  # If the queue is empty just continue the loop
             except Exception as e:
-                LOG.error('Could not send Metrics: {}'.format(repr(e)))
+                LOG.error("Could not send Metrics: {}".format(repr(e)))
 
 
 _metric_uploader = _MetricSender()
@@ -61,11 +62,10 @@ def report_metric(name, data):
         data (dict): JSON dictionary to report. Must be valid JSON
     """
     try:
-        if is_paired() and Configuration().get()['opt_in']:
+        if is_paired() and Configuration().get()["opt_in"]:
             DeviceApi().report_metric(name, data)
     except requests.RequestException as e:
-        LOG.error('Metric couldn\'t be uploaded, due to a network error ({})'
-                  .format(e))
+        LOG.error("Metric couldn't be uploaded, due to a network error ({})".format(e))
 
 
 def report_timing(ident, system, timing, additional_data=None):
@@ -79,25 +79,26 @@ def report_timing(ident, system, timing, additional_data=None):
     """
     additional_data = additional_data or {}
     report = copy(additional_data)
-    report['id'] = ident
-    report['system'] = system
-    report['start_time'] = timing.timestamp
-    report['time'] = timing.time
+    report["id"] = ident
+    report["system"] = system
+    report["start_time"] = timing.timestamp
+    report["time"] = timing.time
 
-    _metric_uploader.queue.put(('timing', report))
+    _metric_uploader.queue.put(("timing", report))
 
 
 class Stopwatch:
     """
-        Simple time measuring class.
+    Simple time measuring class.
     """
+
     def __init__(self):
         self.timestamp = None
         self.time = None
 
     def start(self):
         """
-            Start a time measurement
+        Start a time measurement
         """
         self.timestamp = time.time()
 
@@ -109,7 +110,7 @@ class Stopwatch:
 
     def stop(self):
         """
-            Stop a running time measurement. returns the measured time
+        Stop a running time measurement. returns the measured time
         """
         cur_time = time.time()
         start_time = self.timestamp
@@ -118,13 +119,13 @@ class Stopwatch:
 
     def __enter__(self):
         """
-            Start stopwatch when entering with-block.
+        Start stopwatch when entering with-block.
         """
         self.start()
 
     def __exit__(self, tpe, value, tb):
         """
-            Stop stopwatch when exiting with-block.
+        Stop stopwatch when exiting with-block.
         """
         self.stop()
 
@@ -133,7 +134,7 @@ class Stopwatch:
         if self.timestamp:
             return str(self.time or cur_time - self.timestamp)
         else:
-            return 'Not started'
+            return "Not started"
 
 
 class MetricsAggregator:
@@ -176,14 +177,15 @@ class MetricsAggregator:
     def flush(self):
         publisher = MetricsPublisher()
         payload = {
-            'counters': self._counters,
-            'timers': self._timers,
-            'levels': self._levels,
-            'attributes': self._attributes
+            "counters": self._counters,
+            "timers": self._timers,
+            "levels": self._levels,
+            "attributes": self._attributes,
         }
         self.clear()
-        count = (len(payload['counters']) + len(payload['timers']) +
-                 len(payload['levels']))
+        count = (
+            len(payload["counters"]) + len(payload["timers"]) + len(payload["levels"])
+        )
         if count > 0:
             # LOG.debug(json.dumps(payload))
 
@@ -195,16 +197,18 @@ class MetricsAggregator:
 
 class MetricsPublisher:
     def __init__(self, url=None, enabled=False):
-        conf = Configuration().get()['server']
-        self.url = url or conf['url']
-        self.enabled = enabled or conf['metrics']
+        conf = Configuration().get()["server"]
+        self.url = url or conf["url"]
+        self.enabled = enabled or conf["metrics"]
 
     def publish(self, events):
-        if 'session_id' not in events:
+        if "session_id" not in events:
             session_id = SessionManager.get().session_id
-            events['session_id'] = session_id
+            events["session_id"] = session_id
         if self.enabled:
             requests.post(
                 self.url,
-                headers={'Content-Type': 'application/json'},
-                data=json.dumps(events), verify=False)
+                headers={"Content-Type": "application/json"},
+                data=json.dumps(events),
+                verify=False,
+            )

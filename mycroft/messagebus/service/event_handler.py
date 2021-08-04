@@ -42,8 +42,7 @@ class MessageBusEventHandler(WebSocketHandler):
             return
 
         try:
-            self.emitter.emit(deserialized_message.msg_type,
-                              deserialized_message)
+            self.emitter.emit(deserialized_message.msg_type, deserialized_message)
         except Exception as e:
             LOG.exception(e)
             traceback.print_exc(file=sys.stdout)
@@ -60,8 +59,9 @@ class MessageBusEventHandler(WebSocketHandler):
         client_connections.remove(self)
 
     def emit(self, channel_message):
-        if (hasattr(channel_message, 'serialize') and
-                callable(getattr(channel_message, 'serialize'))):
+        if hasattr(channel_message, "serialize") and callable(
+            getattr(channel_message, "serialize")
+        ):
             self.write_message(channel_message.serialize())
         else:
             self.write_message(json.dumps(channel_message))

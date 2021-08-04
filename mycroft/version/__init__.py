@@ -28,17 +28,15 @@ CORE_VERSION_MINOR = 2
 CORE_VERSION_BUILD = 0
 # END_VERSION_BLOCK
 
-CORE_VERSION_TUPLE = (CORE_VERSION_MAJOR,
-                      CORE_VERSION_MINOR,
-                      CORE_VERSION_BUILD)
-CORE_VERSION_STR = '.'.join(map(str, CORE_VERSION_TUPLE))
+CORE_VERSION_TUPLE = (CORE_VERSION_MAJOR, CORE_VERSION_MINOR, CORE_VERSION_BUILD)
+CORE_VERSION_STR = ".".join(map(str, CORE_VERSION_TUPLE))
 
 
 class VersionManager:
     @staticmethod
     def get():
-        data_dir = expanduser(Configuration.get()['data_dir'])
-        version_file = join(data_dir, 'version.json')
+        data_dir = expanduser(Configuration.get()["data_dir"])
+        version_file = join(data_dir, "version.json")
         if exists(version_file) and isfile(version_file):
             try:
                 with open(version_file) as f:
@@ -50,11 +48,11 @@ class VersionManager:
 
 def check_version(version_string):
     """
-        Check if current version is equal or higher than the
-        version string provided to the function
+    Check if current version is equal or higher than the
+    version string provided to the function
 
-        Args:
-            version_string (string): version string ('Major.Minor.Build')
+    Args:
+        version_string (string): version string ('Major.Minor.Build')
     """
-    version_tuple = tuple(map(int, version_string.split('.')))
+    version_tuple = tuple(map(int, version_string.split(".")))
     return CORE_VERSION_TUPLE >= version_tuple

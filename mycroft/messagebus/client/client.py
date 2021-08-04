@@ -31,11 +31,11 @@ def echo():
     message_bus_client = MessageBusClient()
 
     def repeat_utterance(message):
-        message.msg_type = 'speak'
+        message.msg_type = "speak"
         message_bus_client.emit(message)
 
-    message_bus_client.on('message', create_echo_function(None))
-    message_bus_client.on('recognizer_loop:utterance', repeat_utterance)
+    message_bus_client.on("message", create_echo_function(None))
+    message_bus_client.on("recognizer_loop:utterance", repeat_utterance)
     message_bus_client.run_forever()
 
 

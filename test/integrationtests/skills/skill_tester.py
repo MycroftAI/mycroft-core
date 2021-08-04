@@ -52,16 +52,21 @@ from io import StringIO
 from contextlib import contextmanager
 
 from .colors import color
-from .rules import (intent_type_check, play_query_check, question_check,
-                    expected_data_check, expected_dialog_check,
-                    changed_context_check)
+from .rules import (
+    intent_type_check,
+    play_query_check,
+    question_check,
+    expected_data_check,
+    expected_dialog_check,
+    changed_context_check,
+)
 
-MainModule = '__init__'
+MainModule = "__init__"
 
 DEFAULT_EVALUAITON_TIMEOUT = 30
 
 # Set a configuration value to allow skills to check if they're in a test
-Configuration.get()['test_env'] = True
+Configuration.get()["test_env"] = True
 
 
 class SkillTestError(Exception):
@@ -89,15 +94,15 @@ def create_skill_descriptor(skill_path):
 def get_skills(skills_folder):
     """Find skills in the skill folder or sub folders.
 
-        Recursive traversal into subfolders stop when a __init__.py file
-        is discovered
+    Recursive traversal into subfolders stop when a __init__.py file
+    is discovered
 
-        Args:
-            skills_folder:  Folder to start a search for skills __init__.py
-                            files
+    Args:
+        skills_folder:  Folder to start a search for skills __init__.py
+                        files
 
-        Returns:
-            list: the skills
+    Returns:
+        list: the skills
     """
 
     skills = []
@@ -115,29 +120,30 @@ def get_skills(skills_folder):
 
     _get_skill_descriptor(skills_folder)
 
-    skills = sorted(skills, key=lambda p: basename(p['path']))
+    skills = sorted(skills, key=lambda p: basename(p["path"]))
     return skills
 
 
 def load_skills(emitter, skills_root):
     """Load all skills and set up emitter
 
-        Args:
-            emitter: The emmitter to use
-            skills_root: Directory of the skills __init__.py
+    Args:
+        emitter: The emmitter to use
+        skills_root: Directory of the skills __init__.py
 
-        Returns:
-            tuple: (list of loaded skills, dict with logs for each skill)
+    Returns:
+        tuple: (list of loaded skills, dict with logs for each skill)
 
     """
     skill_list = []
     log = {}
     for skill in get_skills(skills_root):
         path = skill["path"]
-        skill_id = 'test-' + basename(path)
+        skill_id = "test-" + basename(path)
 
         # Catch the logs during skill loading
         from mycroft.util.log import LOG as skills_log
+
         buf = StringIO()
         with temporary_handler(skills_log, StreamHandler(buf)):
             skill_loader = SkillLoader(emitter, path)
@@ -147,8 +153,7 @@ def load_skills(emitter, skills_root):
 
         # Restore skill logger since it was created with the temporary handler
         if skill_loader.instance:
-            skill_loader.instance.log = LOG.create_logger(
-                skill_loader.instance.name)
+            skill_loader.instance.log = LOG.create_logger(skill_loader.instance.name)
         log[path] = buf.getvalue()
 
     return skill_list, log
@@ -183,7 +188,7 @@ class InterceptEmitter(object):
 
     def wait_for_response(self, event, reply_type=None, *args, **kwargs):
         """Simple single thread implementation of wait_for_response."""
-        message_type = reply_type or event.msg_type + '.response'
+        message_type = reply_type or event.msg_type + ".response"
         response = None
 
         def response_handler(msg):
@@ -205,8 +210,7 @@ class InterceptEmitter(object):
 
 
 class MockSkillsLoader(object):
-    """Load a skill and set up emitter
-    """
+    """Load a skill and set up emitter"""
 
     def __init__(self, skills_root):
         self.load_log = None
@@ -214,23 +218,25 @@ class MockSkillsLoader(object):
         self.skills_root = skills_root
         self.emitter = InterceptEmitter()
         from mycroft.skills.intent_service import IntentService
+
         self.ih = IntentService(self.emitter)
         self.skills = None
         self.emitter.on(
-            'mycroft.skills.fallback',
-            FallbackSkill.make_intent_failure_handler(self.emitter))
+            "mycroft.skills.fallback",
+            FallbackSkill.make_intent_failure_handler(self.emitter),
+        )
 
         def make_response(message):
-            skill_id = message.data.get('skill_id', '')
+            skill_id = message.data.get("skill_id", "")
             data = dict(result=False, skill_id=skill_id)
-            self.emitter.emit(Message('skill.converse.response', data))
-        self.emitter.on('skill.converse.request', make_response)
+            self.emitter.emit(Message("skill.converse.response", data))
+
+        self.emitter.on("skill.converse.request", make_response)
 
     def load_skills(self):
         skills, self.load_log = load_skills(self.emitter, self.skills_root)
         self.skills = [s for s in skills if s]
-        self.ih.padatious_service.train(
-            Message('', data=dict(single_thread=True)))
+        self.ih.padatious_service.train(Message("", data=dict(single_thread=True)))
         return self.emitter.emitter  # kick out the underlying emitter
 
     def unload_skills(self):
@@ -240,18 +246,18 @@ class MockSkillsLoader(object):
 def load_test_case_file(test_case_file):
     """Load a test case to run."""
     print("")
-    print(color.HEADER + "="*20 + " RUNNING TEST " + "="*20 + color.RESET)
-    print('Test file: ', test_case_file)
-    with open(test_case_file, 'r') as f:
+    print(color.HEADER + "=" * 20 + " RUNNING TEST " + "=" * 20 + color.RESET)
+    print("Test file: ", test_case_file)
+    with open(test_case_file, "r") as f:
         test_case = json.load(f)
-    print('Test:', json.dumps(test_case, indent=4, sort_keys=False))
+    print("Test:", json.dumps(test_case, indent=4, sort_keys=False))
     return test_case
 
 
 class SkillTest(object):
     """
-        This class is instantiated for each skill being tested. It holds the
-        data needed for the test, and contains the methods doing the test
+    This class is instantiated for each skill being tested. It holds the
+    data needed for the test, and contains the methods doing the test
 
     """
 
@@ -267,7 +273,7 @@ class SkillTest(object):
         self.end_of_skill = False
 
     def run(self, loader):
-        """ Execute the test
+        """Execute the test
 
         Run a test for a skill. The skill, test_case_file and emitter is
         already set up in the __init__ method.
@@ -286,11 +292,10 @@ class SkillTest(object):
         else:
             # The skill wasn't loaded, print the load log for the skill
             if self.skill in loader.load_log:
-                print('\n {} Captured Logs from loading {}'.format('=' * 15,
-                                                                   '=' * 15))
+                print("\n {} Captured Logs from loading {}".format("=" * 15, "=" * 15))
                 print(loader.load_log.pop(self.skill))
 
-            raise SkillTestError('Skill couldn\'t be loaded')
+            raise SkillTestError("Skill couldn't be loaded")
 
         orig_get_response = s.get_response
         original_settings = s.settings
@@ -302,52 +307,62 @@ class SkillTest(object):
 
     def send_play_query(self, s, test_case):
         """Emit an event triggering the a check for playback possibilities."""
-        play_query = test_case['play_query']
-        print('PLAY QUERY', color.USER_UTT + play_query + color.RESET)
-        self.emitter.emit('play:query', Message('play:query:',
-                                                {'phrase': play_query}))
+        play_query = test_case["play_query"]
+        print("PLAY QUERY", color.USER_UTT + play_query + color.RESET)
+        self.emitter.emit("play:query", Message("play:query:", {"phrase": play_query}))
 
     def send_play_start(self, s, test_case):
         """Emit an event starting playback from the skill."""
-        print('PLAY START')
-        callback_data = test_case['play_start']
-        callback_data['skill_id'] = s.skill_id
-        self.emitter.emit('play:start',
-                          Message('play:start', callback_data))
+        print("PLAY START")
+        callback_data = test_case["play_start"]
+        callback_data["skill_id"] = s.skill_id
+        self.emitter.emit("play:start", Message("play:start", callback_data))
 
     def send_question(self, test_case):
         """Emit a Question to the loaded skills."""
-        print("QUESTION: {}".format(test_case['question']))
-        callback_data = {'phrase': test_case['question']}
-        self.emitter.emit('question:query',
-                          Message('question:query', data=callback_data))
+        print("QUESTION: {}".format(test_case["question"]))
+        callback_data = {"phrase": test_case["question"]}
+        self.emitter.emit(
+            "question:query", Message("question:query", data=callback_data)
+        )
 
     def send_utterance(self, test_case):
         """Emit an utterance to the loaded skills."""
-        utt = test_case['utterance']
+        utt = test_case["utterance"]
         print("UTTERANCE:", color.USER_UTT + utt + color.RESET)
-        self.emitter.emit('recognizer_loop:utterance',
-                          Message('recognizer_loop:utterance',
-                                  {'utterances': [utt]}))
+        self.emitter.emit(
+            "recognizer_loop:utterance",
+            Message("recognizer_loop:utterance", {"utterances": [utt]}),
+        )
 
     def apply_test_settings(self, s, test_case):
         """Replace the skills settings with settings from the test_case."""
-        s.settings = copy(test_case['settings'])
-        print(color.YELLOW, 'will run test with custom settings:',
-                            '\n{}'.format(s.settings), color.RESET)
+        s.settings = copy(test_case["settings"])
+        print(
+            color.YELLOW,
+            "will run test with custom settings:",
+            "\n{}".format(s.settings),
+            color.RESET,
+        )
 
     def setup_get_response(self, s, test_case):
         """Setup interception of get_response calls."""
-        def get_response(dialog='', data=None, announcement='',
-                         validator=None, on_fail=None, num_retries=-1):
+
+        def get_response(
+            dialog="",
+            data=None,
+            announcement="",
+            validator=None,
+            on_fail=None,
+            num_retries=-1,
+        ):
             data = data or {}
             utt = announcement or s.dialog_renderer.render(dialog, data)
             print(color.MYCROFT + ">> " + utt + color.RESET)
             s.speak(utt)
 
-            response = test_case['responses'].pop(0)
-            print("SENDING RESPONSE:",
-                  color.USER_UTT + response + color.RESET)
+            response = test_case["responses"].pop(0)
+            print("SENDING RESPONSE:", color.USER_UTT + response + color.RESET)
             return response
 
         s.get_response = get_response
@@ -373,19 +388,19 @@ class SkillTest(object):
         It also handles some special cases for common play skills and common
         query skills.
         """
-        if 'utterance' in test_case:
+        if "utterance" in test_case:
             self.send_utterance(test_case)
-        elif 'play_query' in test_case:
+        elif "play_query" in test_case:
             self.send_play_query(s, test_case)
-        elif 'play_start' in test_case:
+        elif "play_start" in test_case:
             self.send_play_start(s, test_case)
-        elif 'question' in test_case:
+        elif "question" in test_case:
             self.send_question(test_case)
         else:
-            raise SkillTestError('No input provided in test case')
+            raise SkillTestError("No input provided in test case")
 
     def execute_test(self, s):
-        """ Execute test case.
+        """Execute test case.
 
         Args:
             s (MycroftSkill): mycroft skill to test
@@ -395,10 +410,10 @@ class SkillTest(object):
         """
         test_case = load_test_case_file(self.test_case_file)
 
-        if 'settings' in test_case:
+        if "settings" in test_case:
             self.apply_test_settings(s, test_case)
 
-        if 'responses' in test_case:
+        if "responses" in test_case:
             self.setup_get_response(s, test_case)
 
         # If we keep track of test status for the entire skill, then
@@ -406,8 +421,8 @@ class SkillTest(object):
         # tested
         if self.test_status:
             self.test_status.append_intent(s)
-            if 'intent_type' in test_case:
-                self.test_status.set_tested(test_case['intent_type'])
+            if "intent_type" in test_case:
+                self.test_status.set_tested(test_case["intent_type"])
 
         evaluation_rule = EvaluationRule(test_case, s)
 
@@ -421,11 +436,11 @@ class SkillTest(object):
         # Set up context before calling intent
         # This option makes it possible to better isolate (reduce dependance)
         # between test_cases
-        cxt = test_case.get('remove_context', None)
+        cxt = test_case.get("remove_context", None)
         if cxt:
             self.remove_context(s, cxt)
 
-        cxt = test_case.get('set_context', None)
+        cxt = test_case.get("set_context", None)
         if cxt:
             self.set_context(s, cxt)
 
@@ -448,9 +463,10 @@ class SkillTest(object):
 
         If no timeout is specified return the default.
         """
-        if (test_case.get('evaluation_timeout', None) and
-                isinstance(test_case['evaluation_timeout'], int)):
-            return time.time() + int(test_case.get('evaluation_timeout'))
+        if test_case.get("evaluation_timeout", None) and isinstance(
+            test_case["evaluation_timeout"], int
+        ):
+            return time.time() + int(test_case.get("evaluation_timeout"))
         else:
             return time.time() + DEFAULT_EVALUAITON_TIMEOUT
 
@@ -461,13 +477,13 @@ class SkillTest(object):
         """
         try:
             event = q.get(timeout=1)
-            if ':' in event.msg_type:
-                event.data['__type__'] = event.msg_type.split(':')[1]
+            if ":" in event.msg_type:
+                event.data["__type__"] = event.msg_type.split(":")[1]
             else:
-                event.data['__type__'] = event.msg_type
+                event.data["__type__"] = event.msg_type
 
             evaluation_rule.evaluate(event.data)
-            if event.msg_type == 'mycroft.skill.handler.complete':
+            if event.msg_type == "mycroft.skill.handler.complete":
                 self.end_of_skill = True
         except Empty:
             pass
@@ -483,8 +499,8 @@ class SkillTest(object):
         s.bus.q = None
 
         # remove the skill which is not responding
-        self.emitter.remove_all_listeners('speak')
-        self.emitter.remove_all_listeners('mycroft.skill.handler.complete')
+        self.emitter.remove_all_listeners("speak")
+        self.emitter.remove_all_listeners("mycroft.skill.handler.complete")
 
     def results(self, evaluation_rule):
         """Display and report the results."""
@@ -498,25 +514,29 @@ class SkillTest(object):
 
 
 # Messages that should not print debug info
-HIDDEN_MESSAGES = ['skill.converse.request', 'skill.converse.response',
-                   'gui.page.show', 'gui.value.set']
+HIDDEN_MESSAGES = [
+    "skill.converse.request",
+    "skill.converse.response",
+    "gui.page.show",
+    "gui.value.set",
+]
 
 
 class EvaluationRule:
     """
-        This class initially convert the test_case json file to internal rule
-        format, which is stored throughout the testcase run. All Messages on
-        the event bus can be evaluated against the rules (test_case)
+    This class initially convert the test_case json file to internal rule
+    format, which is stored throughout the testcase run. All Messages on
+    the event bus can be evaluated against the rules (test_case)
 
-        This approach makes it easier to add new tests, since Message and rule
-        traversal is already set up for the internal rule format.
-        The test writer can use the internal rule format directly in the
-        test_case using the assert keyword, which allows for more
-        powerfull/individual test cases than the standard dictionaly
+    This approach makes it easier to add new tests, since Message and rule
+    traversal is already set up for the internal rule format.
+    The test writer can use the internal rule format directly in the
+    test_case using the assert keyword, which allows for more
+    powerfull/individual test cases than the standard dictionaly
     """
 
     def __init__(self, test_case, skill=None):
-        """ Convert test_case read from file to internal rule format
+        """Convert test_case read from file to internal rule format
 
         Args:
             test_case:  The loaded test case
@@ -524,70 +544,71 @@ class EvaluationRule:
         """
         self.rule = []
 
-        _x = ['and']
-        if 'utterance' in test_case and 'intent_type' in test_case:
-            intent_type = str(test_case['intent_type'])
+        _x = ["and"]
+        if "utterance" in test_case and "intent_type" in test_case:
+            intent_type = str(test_case["intent_type"])
             _x.append(intent_type_check(intent_type))
 
         # Check for adapt intent info
-        if test_case.get('intent', None):
-            for item in test_case['intent'].items():
-                _x.append(['equal', str(item[0]), str(item[1])])
+        if test_case.get("intent", None):
+            for item in test_case["intent"].items():
+                _x.append(["equal", str(item[0]), str(item[1])])
 
-        if 'play_query_match' in test_case:
-            match = test_case['play_query_match']
-            phrase = match.get('phrase', test_case.get('play_query'))
+        if "play_query_match" in test_case:
+            match = test_case["play_query_match"]
+            phrase = match.get("phrase", test_case.get("play_query"))
             self.rule.append(play_query_check(skill, match, phrase))
-        elif 'expected_answer' in test_case:
-            question = test_case['question']
-            expected_answer = test_case['expected_answer']
+        elif "expected_answer" in test_case:
+            question = test_case["question"]
+            expected_answer = test_case["expected_answer"]
             self.rule.append(question_check(skill, question, expected_answer))
 
         # Check for expected data structure
-        if test_case.get('expected_data'):
-            expected_items = test_case['expected_data'].items()
+        if test_case.get("expected_data"):
+            expected_items = test_case["expected_data"].items()
             self.rule.append(expected_data_check(expected_items))
 
-        if _x != ['and']:
+        if _x != ["and"]:
             self.rule.append(_x)
 
         # Add rules from expeceted_response
         # Accepts a string or a list of multiple strings
-        if isinstance(test_case.get('expected_response', None), str):
-            self.rule.append(['match', 'utterance',
-                              str(test_case['expected_response'])])
-        elif isinstance(test_case.get('expected_response', None), list):
-            texts = test_case['expected_response']
-            rules = [['match', 'utterance', str(r)] for r in texts]
-            self.rule.append(['or'] + rules)
+        if isinstance(test_case.get("expected_response", None), str):
+            self.rule.append(
+                ["match", "utterance", str(test_case["expected_response"])]
+            )
+        elif isinstance(test_case.get("expected_response", None), list):
+            texts = test_case["expected_response"]
+            rules = [["match", "utterance", str(r)] for r in texts]
+            self.rule.append(["or"] + rules)
 
         # Add rules from expected_dialog
         # Accepts dialog (without ".dialog"), the same way as self.speak_dialog
         # as a string or a list of dialogs
-        if test_case.get('expected_dialog', None):
+        if test_case.get("expected_dialog", None):
             if not skill:
-                print(color.FAIL +
-                      'Skill is missing, can\'t run expected_dialog test' +
-                      color.RESET)
+                print(
+                    color.FAIL
+                    + "Skill is missing, can't run expected_dialog test"
+                    + color.RESET
+                )
             else:
-                expected_dialog = test_case['expected_dialog']
-                self.rule.append(['or'] +
-                                 expected_dialog_check(expected_dialog,
-                                                       skill))
+                expected_dialog = test_case["expected_dialog"]
+                self.rule.append(["or"] + expected_dialog_check(expected_dialog, skill))
 
-        if test_case.get('changed_context', None):
-            ctx = test_case['changed_context']
+        if test_case.get("changed_context", None):
+            ctx = test_case["changed_context"]
             for c in changed_context_check(ctx):
                 self.rule.append(c)
 
-        if test_case.get('assert', None):
-            for _x in ast.literal_eval(test_case['assert']):
+        if test_case.get("assert", None):
+            for _x in ast.literal_eval(test_case["assert"]):
                 self.rule.append(_x)
 
         print("Rule created ", self.rule)
 
     def evaluate(self, msg):
-        """ Main entry for evaluating a message against the rules.
+        """Main entry for evaluating a message against the rules.
 
         The rules are prepared in the __init__
         This method is usually called several times with different
@@ -597,7 +618,7 @@ class EvaluationRule:
         Args:
             msg:  The message event to evaluate
         """
-        if msg.get('__type__', '') not in HIDDEN_MESSAGES:
+        if msg.get("__type__", "") not in HIDDEN_MESSAGES:
             print("\nEvaluating message: ", msg)
         for r in self.rule:
             self._partial_evaluate(r, msg)
@@ -616,7 +637,7 @@ class EvaluationRule:
         return value
 
     def _partial_evaluate(self, rule, msg):
-        """ Evaluate the message against a part of the rules
+        """Evaluate the message against a part of the rules
 
         Recursive over rules
 
@@ -627,72 +648,76 @@ class EvaluationRule:
         Returns:
             Bool: True if a partial evaluation succeeded
         """
-        if 'succeeded' in rule:  # Rule has already succeeded, test not needed
+        if "succeeded" in rule:  # Rule has already succeeded, test not needed
             return True
 
-        if rule[0] == 'equal':
+        if rule[0] == "equal":
             if self._get_field_value(rule[1], msg) != rule[2]:
                 return False
 
-        if rule[0] == 'lt':
+        if rule[0] == "lt":
             if not isinstance(self._get_field_value(rule[1], msg), Number):
                 return False
             if self._get_field_value(rule[1], msg) >= rule[2]:
                 return False
 
-        if rule[0] == 'gt':
+        if rule[0] == "gt":
             if not isinstance(self._get_field_value(rule[1], msg), Number):
                 return False
             if self._get_field_value(rule[1], msg) <= rule[2]:
                 return False
 
-        if rule[0] == 'notEqual':
+        if rule[0] == "notEqual":
             if self._get_field_value(rule[1], msg) == rule[2]:
                 return False
 
-        if rule[0] == 'endsWith':
-            if not (self._get_field_value(rule[1], msg) and
-                    self._get_field_value(rule[1], msg).endswith(rule[2])):
+        if rule[0] == "endsWith":
+            if not (
+                self._get_field_value(rule[1], msg)
+                and self._get_field_value(rule[1], msg).endswith(rule[2])
+            ):
                 return False
 
-        if rule[0] == 'exists':
+        if rule[0] == "exists":
             if not self._get_field_value(rule[1], msg):
                 return False
 
-        if rule[0] == 'match':
-            if not (self._get_field_value(rule[1], msg) and
-                    re.match(rule[2], self._get_field_value(rule[1], msg))):
+        if rule[0] == "match":
+            if not (
+                self._get_field_value(rule[1], msg)
+                and re.match(rule[2], self._get_field_value(rule[1], msg))
+            ):
                 return False
 
-        if rule[0] == 'and':
+        if rule[0] == "and":
             for i in rule[1:]:
                 if not self._partial_evaluate(i, msg):
                     return False
 
-        if rule[0] == 'or':
+        if rule[0] == "or":
             for i in rule[1:]:
                 if self._partial_evaluate(i, msg):
                     break
             else:
                 return False
-        rule.append('succeeded')
+        rule.append("succeeded")
         return True
 
     def get_failure(self):
-        """ Get the first rule which has not succeeded
+        """Get the first rule which has not succeeded
 
         Returns:
             str: The failed rule
         """
         for x in self.rule:
-            if x[-1] != 'succeeded':
+            if x[-1] != "succeeded":
                 return x
         return None
 
     def all_succeeded(self):
-        """ Test if all rules succeeded
+        """Test if all rules succeeded
 
         Returns:
             bool: True if all rules succeeded
         """
-        return len([x for x in self.rule if x[-1] != 'succeeded']) == 0
+        return len([x for x in self.rule if x[-1] != "succeeded"]) == 0

@@ -20,23 +20,24 @@ from .remote_tts import RemoteTTS
 
 class MaryTTS(RemoteTTS):
     PARAMS = {
-        'LOCALE': 'en_US',
-        'VOICE': 'cmu-slt-hsmm',
-        'INPUT_TEXT': 'Hello World',
-        'INPUT_TYPE': 'TEXT',
-        'AUDIO': 'WAVE_FILE',
-        'OUTPUT_TYPE': 'AUDIO'
+        "LOCALE": "en_US",
+        "VOICE": "cmu-slt-hsmm",
+        "INPUT_TEXT": "Hello World",
+        "INPUT_TYPE": "TEXT",
+        "AUDIO": "WAVE_FILE",
+        "OUTPUT_TYPE": "AUDIO",
     }
 
     def __init__(self, lang, config):
-        super(MaryTTS, self).__init__(lang, config, config.get('url'),
-                                      '/process', MaryTTSValidator(self))
+        super(MaryTTS, self).__init__(
+            lang, config, config.get("url"), "/process", MaryTTSValidator(self)
+        )
 
     def build_request_params(self, sentence):
         params = self.PARAMS.copy()
-        params['LOCALE'] = self.lang
-        params['VOICE'] = self.voice
-        params['INPUT_TEXT'] = sentence.encode('utf-8')
+        params["LOCALE"] = self.lang
+        params["VOICE"] = self.voice
+        params["INPUT_TEXT"] = sentence.encode("utf-8")
         return params
 
 
@@ -55,8 +56,9 @@ class MaryTTSValidator(TTSValidator):
                 return True
         except Exception:
             raise Exception(
-                'MaryTTS server could not be verified. Check your connection '
-                'to the server: ' + self.tts.url)
+                "MaryTTS server could not be verified. Check your connection "
+                "to the server: " + self.tts.url
+            )
 
     def get_tts_class(self):
         return MaryTTS

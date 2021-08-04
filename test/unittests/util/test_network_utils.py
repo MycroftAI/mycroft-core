@@ -9,9 +9,8 @@ class TestNetworkConnected(TestCase):
         self.assertTrue(connected())
 
 
-@mock.patch('mycroft.configuration.Configuration')
+@mock.patch("mycroft.configuration.Configuration")
 class TestNetworkFailure(TestCase):
-
     def test_dns_and_ncsi_fail(self, mock_conf):
         """Check that DNS and NCSI failure results in False response"""
         mock_conf.get.return_value = {
@@ -20,7 +19,7 @@ class TestNetworkFailure(TestCase):
                 "dns_secondary": "127.0.0.1",
                 "web_url": "https://www.google.com",
                 "ncsi_endpoint": "http://www.msftncsi.com/ncsi.txt",
-                "ncsi_expected_text": "Unexpected text"
+                "ncsi_expected_text": "Unexpected text",
             }
         }
         self.assertFalse(connected())
@@ -33,7 +32,7 @@ class TestNetworkFailure(TestCase):
                 "dns_secondary": "8.8.4.4",
                 "web_url": "https://www.google.com",
                 "ncsi_endpoint": "http://www.msftncsi.com/ncsi.txt",
-                "ncsi_expected_text": "Microsoft NCSI"
+                "ncsi_expected_text": "Microsoft NCSI",
             }
         }
         self.assertTrue(connected())
@@ -46,7 +45,7 @@ class TestNetworkFailure(TestCase):
                 "dns_secondary": "8.8.4.4",
                 "web_url": "https://test.invalid",
                 "ncsi_endpoint": "http://www.msftncsi.com/ncsi.txt",
-                "ncsi_expected_text": "Microsoft NCSI"
+                "ncsi_expected_text": "Microsoft NCSI",
             }
         }
         self.assertFalse(connected())

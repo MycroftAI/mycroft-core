@@ -20,8 +20,7 @@ import requests
 from requests import HTTPError, RequestException
 
 from mycroft.configuration import Configuration
-from mycroft.configuration.config import DEFAULT_CONFIG, SYSTEM_CONFIG, \
-    USER_CONFIG
+from mycroft.configuration.config import DEFAULT_CONFIG, SYSTEM_CONFIG, USER_CONFIG
 from mycroft.identity import IdentityManager, identity_lock
 from mycroft.version import VersionManager
 from mycroft.util import get_arch, connected, LOG
@@ -38,11 +37,12 @@ class InternetDown(RequestException):
     pass
 
 
-UUID = '{MYCROFT_UUID}'
+UUID = "{MYCROFT_UUID}"
 
 
 class Api:
-    """ Generic class to wrap web APIs """
+    """Generic class to wrap web APIs"""
+
     params_to_etag = {}
     etag_to_response = {}
 
@@ -51,10 +51,9 @@ class Api:
 
         # Load the config, skipping the REMOTE_CONFIG since we are
         # getting the info needed to get to it!
-        config = Configuration.get([DEFAULT_CONFIG,
-                                    SYSTEM_CONFIG,
-                                    USER_CONFIG],
-                                   cache=False)
+        config = Configuration.get(
+            [DEFAULT_CONFIG, SYSTEM_CONFIG, USER_CONFIG], cache=False
+        )
         config_server = config.get("server")
         self.url = config_server.get("url")
         self.version = config_server.get("version")
@@ -62,8 +61,8 @@ class Api:
 
     def request(self, params):
         self.check_token()
-        if 'path' in params:
-            params['path'] = params['path'].replace(UUID, self.identity.uuid)
+        if "path" in params:
+            params["path"] = params["path"].replace(UUID, self.identity.uuid)
         self.build_path(params)
         self.old_params = copy(params)
         return self.send(params)
@@ -80,21 +79,23 @@ class Api:
                 self.refresh_token()
 
     def refresh_token(self):
-        LOG.debug('Refreshing token')
+        LOG.debug("Refreshing token")
         if identity_lock.acquire(blocking=False):
             try:
-                data = self.send({
-                    "path": "auth/token",
-                    "headers": {
-                        "Authorization": "Bearer " + self.identity.refresh,
-                        "Device": self.identity.uuid
+                data = self.send(
+                    {
+                        "path": "auth/token",
+                        "headers": {
+                            "Authorization": "Bearer " + self.identity.refresh,
+                            "Device": self.identity.uuid,
+                        },
                     }
-                })
+                )
                 IdentityManager.save(data, lock=False)
-                LOG.debug('Saved credentials')
+                LOG.debug("Saved credentials")
             except HTTPError as e:
                 if e.response.status_code == 401:
-                    LOG.error('Could not refresh token, invalid refresh code.')
+                    LOG.error("Could not refresh token, invalid refresh code.")
                 else:
                     raise
 
@@ -102,14 +103,14 @@ class Api:
                 identity_lock.release()
         else:  # Someone is updating the identity wait for release
             with identity_lock:
-                LOG.debug('Refresh is already in progress, waiting until done')
+                LOG.debug("Refresh is already in progress, waiting until done")
                 time.sleep(1.2)
                 os.sync()
                 self.identity = IdentityManager.load(lock=False)
-                LOG.debug('new credentials loaded')
+                LOG.debug("new credentials loaded")
 
     def send(self, params, no_refresh=False):
-        """ Send request to mycroft backend.
+        """Send request to mycroft backend.
         The method handles Etags and will return a cached response value
         if nothing has changed on the remote.
 
@@ -120,8 +121,8 @@ class Api:
         Returns:
             Requests response object.
         """
-        query_data = frozenset(params.get('query', {}).items())
-        params_key = (params.get('path'), query_data)
+        query_data = frozenset(params.get("query", {}).items())
+        params_key = (params.get("path"), query_data)
         etag = self.params_to_etag.get(params_key)
 
         method = params.get("method", "GET")
@@ -134,17 +135,22 @@ class Api:
         # For an introduction to the Etag feature check out:
         # https://en.wikipedia.org/wiki/HTTP_ETag
         if etag:
-            headers['If-None-Match'] = etag
+            headers["If-None-Match"] = etag
 
         response = requests.request(
-            method, url, headers=headers, params=query,
-            data=data, json=json_body, timeout=(3.05, 15)
+            method,
+            url,
+            headers=headers,
+            params=query,
+            data=data,
+            json=json_body,
+            timeout=(3.05, 15),
         )
         if response.status_code == 304:
             # Etag matched, use response previously cached
             response = self.etag_to_response[etag]
-        elif 'ETag' in response.headers:
-            etag = response.headers['ETag'].strip('"')
+        elif "ETag" in response.headers:
+            etag = response.headers["ETag"].strip('"')
             # Cache response for future lookup when we receive a 304
             self.params_to_etag[params_key] = etag
             self.etag_to_response[etag] = response
@@ -152,7 +158,7 @@ class Api:
         return self.get_response(response, no_refresh)
 
     def get_response(self, response, no_refresh=False):
-        """ Parse response and extract data from response.
+        """Parse response and extract data from response.
 
         Will try to refresh the access token if it's expired.
 
@@ -167,9 +173,12 @@ class Api:
 
         if 200 <= response.status_code < 300:
             return data
-        elif (not no_refresh and response.status_code == 401 and not
-                response.url.endswith("auth/token") and
-                self.identity.is_expired()):
+        elif (
+            not no_refresh
+            and response.status_code == 401
+            and not response.url.endswith("auth/token")
+            and self.identity.is_expired()
+        ):
             self.refresh_token()
             return self.send(self.old_params, no_refresh=True)
         raise HTTPError(data, response=response)
@@ -222,16 +231,14 @@ class Api:
 
 
 class DeviceApi(Api):
-    """ Web API wrapper for obtaining device-level information """
+    """Web API wrapper for obtaining device-level information"""
 
     def __init__(self):
         super(DeviceApi, self).__init__("device")
 
     def get_code(self, state):
         IdentityManager.update()
-        return self.request({
-            "path": "/code?state=" + state
-        })
+        return self.request({"path": "/code?state=" + state})
 
     def activate(self, state, token):
         version = VersionManager.get()
@@ -239,23 +246,25 @@ class DeviceApi(Api):
         platform_build = ""
 
         # load just the local configs to get platform info
-        config = Configuration.get([SYSTEM_CONFIG,
-                                    USER_CONFIG],
-                                   cache=False)
+        config = Configuration.get([SYSTEM_CONFIG, USER_CONFIG], cache=False)
         if "enclosure" in config:
             platform = config.get("enclosure").get("platform", "unknown")
             platform_build = config.get("enclosure").get("platform_build", "")
 
-        return self.request({
-            "method": "POST",
-            "path": "/activate",
-            "json": {"state": state,
-                     "token": token,
-                     "coreVersion": version.get("coreVersion"),
-                     "platform": platform,
-                     "platform_build": platform_build,
-                     "enclosureVersion": version.get("enclosureVersion")}
-        })
+        return self.request(
+            {
+                "method": "POST",
+                "path": "/activate",
+                "json": {
+                    "state": state,
+                    "token": token,
+                    "coreVersion": version.get("coreVersion"),
+                    "platform": platform,
+                    "platform_build": platform_build,
+                    "enclosureVersion": version.get("enclosureVersion"),
+                },
+            }
+        )
 
     def update_version(self):
         version = VersionManager.get()
@@ -263,113 +272,109 @@ class DeviceApi(Api):
         platform_build = ""
 
         # load just the local configs to get platform info
-        config = Configuration.get([SYSTEM_CONFIG,
-                                    USER_CONFIG],
-                                   cache=False)
+        config = Configuration.get([SYSTEM_CONFIG, USER_CONFIG], cache=False)
         if "enclosure" in config:
             platform = config.get("enclosure").get("platform", "unknown")
             platform_build = config.get("enclosure").get("platform_build", "")
 
-        return self.request({
-            "method": "PATCH",
-            "path": "/" + UUID,
-            "json": {"coreVersion": version.get("coreVersion"),
-                     "platform": platform,
-                     "platform_build": platform_build,
-                     "enclosureVersion": version.get("enclosureVersion")}
-        })
+        return self.request(
+            {
+                "method": "PATCH",
+                "path": "/" + UUID,
+                "json": {
+                    "coreVersion": version.get("coreVersion"),
+                    "platform": platform,
+                    "platform_build": platform_build,
+                    "enclosureVersion": version.get("enclosureVersion"),
+                },
+            }
+        )
 
     def send_email(self, title, body, sender):
-        return self.request({
-            "method": "PUT",
-            "path": "/" + UUID + "/message",
-            "json": {"title": title, "body": body, "sender": sender}
-        })
+        return self.request(
+            {
+                "method": "PUT",
+                "path": "/" + UUID + "/message",
+                "json": {"title": title, "body": body, "sender": sender},
+            }
+        )
 
     def report_metric(self, name, data):
-        return self.request({
-            "method": "POST",
-            "path": "/" + UUID + "/metric/" + name,
-            "json": data
-        })
+        return self.request(
+            {"method": "POST", "path": "/" + UUID + "/metric/" + name, "json": data}
+        )
 
     def get(self):
-        """ Retrieve all device information from the web backend """
-        return self.request({
-            "path": "/" + UUID
-        })
+        """Retrieve all device information from the web backend"""
+        return self.request({"path": "/" + UUID})
 
     def get_settings(self):
-        """ Retrieve device settings information from the web backend
+        """Retrieve device settings information from the web backend
 
         Returns:
             str: JSON string with user configuration information.
         """
-        return self.request({
-            "path": "/" + UUID + "/setting"
-        })
+        return self.request({"path": "/" + UUID + "/setting"})
 
     def get_location(self):
-        """ Retrieve device location information from the web backend
+        """Retrieve device location information from the web backend
 
         Returns:
             str: JSON string with user location.
         """
-        return self.request({
-            "path": "/" + UUID + "/location"
-        })
+        return self.request({"path": "/" + UUID + "/location"})
 
     def get_subscription(self):
         """
-            Get information about type of subscrition this unit is connected
-            to.
+        Get information about type of subscrition this unit is connected
+        to.
 
-            Returns: dictionary with subscription information
+        Returns: dictionary with subscription information
         """
-        return self.request({
-            'path': '/' + UUID + '/subscription'})
+        return self.request({"path": "/" + UUID + "/subscription"})
 
     @property
     def is_subscriber(self):
         """
-            status of subscription. True if device is connected to a paying
-            subscriber.
+        status of subscription. True if device is connected to a paying
+        subscriber.
         """
         try:
-            return self.get_subscription().get('@type') != 'free'
+            return self.get_subscription().get("@type") != "free"
         except Exception:
             # If can't retrieve, assume not paired and not a subscriber yet
             return False
 
     def get_subscriber_voice_url(self, voice=None):
         self.check_token()
-        archs = {'x86_64': 'x86_64', 'armv7l': 'arm', 'aarch64': 'arm'}
+        archs = {"x86_64": "x86_64", "armv7l": "arm", "aarch64": "arm"}
         arch = archs.get(get_arch())
         if arch:
-            path = '/' + UUID + '/voice?arch=' + arch
-            return self.request({'path': path})['link']
+            path = "/" + UUID + "/voice?arch=" + arch
+            return self.request({"path": path})["link"]
 
     def get_oauth_token(self, dev_cred):
         """
-            Get Oauth token for dev_credential dev_cred.
+        Get Oauth token for dev_credential dev_cred.
 
-            Argument:
-                dev_cred:   development credentials identifier
+        Argument:
+            dev_cred:   development credentials identifier
 
-            Returns:
-                json string containing token and additional information
+        Returns:
+            json string containing token and additional information
         """
-        return self.request({
-            "method": "GET",
-            "path": "/" + UUID + "/token/" + str(dev_cred)
-        })
+        return self.request(
+            {"method": "GET", "path": "/" + UUID + "/token/" + str(dev_cred)}
+        )
 
     def get_skill_settings(self):
         """Get the remote skill settings for all skills on this device."""
-        return self.request({
-            "method": "GET",
-            "path": "/" + UUID + "/skill/settings",
-        })
+        return self.request(
+            {
+                "method": "GET",
+                "path": "/" + UUID + "/skill/settings",
+            }
+        )
 
     def upload_skill_metadata(self, settings_meta):
         """Upload skill metadata.
@@ -377,63 +382,64 @@ class DeviceApi(Api):
         Args:
             settings_meta (dict): skill info and settings in JSON format
         """
-        return self.request({
-            "method": "PUT",
-            "path": "/" + UUID + "/settingsMeta",
-            "json": settings_meta
-        })
+        return self.request(
+            {
+                "method": "PUT",
+                "path": "/" + UUID + "/settingsMeta",
+                "json": settings_meta,
+            }
+        )
 
     def upload_skills_data(self, data):
-        """ Upload skills.json file. This file contains a manifest of installed
+        """Upload skills.json file. This file contains a manifest of installed
         and failed installations for use with the Marketplace.
 
         Args:
              data: dictionary with skills data from msm
         """
         if not isinstance(data, dict):
-            raise ValueError('data must be of type dict')
+            raise ValueError("data must be of type dict")
 
         _data = deepcopy(data)  # Make sure the input data isn't modified
         # Strip the skills.json down to the bare essentials
         to_send = {}
-        if 'blacklist' in _data:
-            to_send['blacklist'] = _data['blacklist']
+        if "blacklist" in _data:
+            to_send["blacklist"] = _data["blacklist"]
         else:
-            LOG.warning('skills manifest lacks blacklist entry')
-            to_send['blacklist'] = []
+            LOG.warning("skills manifest lacks blacklist entry")
+            to_send["blacklist"] = []
 
         # Make sure skills doesn't contain duplicates (keep only last)
-        if 'skills' in _data:
-            skills = {s['name']: s for s in _data['skills']}
-            to_send['skills'] = [skills[key] for key in skills]
+        if "skills" in _data:
+            skills = {s["name"]: s for s in _data["skills"]}
+            to_send["skills"] = [skills[key] for key in skills]
         else:
-            LOG.warning('skills manifest lacks skills entry')
-            to_send['skills'] = []
+            LOG.warning("skills manifest lacks skills entry")
+            to_send["skills"] = []
 
-        for s in to_send['skills']:
+        for s in to_send["skills"]:
             # Remove optional fields backend objects to
-            if 'update' in s:
-                s.pop('update')
+            if "update" in s:
+                s.pop("update")
 
             # Finalize skill_gid with uuid if needed
-            s['skill_gid'] = s.get('skill_gid', '').replace(
-                '@|', '@{}|'.format(self.identity.uuid))
+            s["skill_gid"] = s.get("skill_gid", "").replace(
+                "@|", "@{}|".format(self.identity.uuid)
+            )
 
-        self.request({
-            "method": "PUT",
-            "path": "/" + UUID + "/skillJson",
-            "json": to_send
-            })
+        self.request(
+            {"method": "PUT", "path": "/" + UUID + "/skillJson", "json": to_send}
+        )
 
 
 class STTApi(Api):
-    """ Web API wrapper for performing Speech to Text (STT) """
+    """Web API wrapper for performing Speech to Text (STT)"""
 
     def __init__(self, path):
         super(STTApi, self).__init__(path)
 
     def stt(self, audio, language, limit):
-        """ Web API wrapper for performing Speech to Text (STT)
+        """Web API wrapper for performing Speech to Text (STT)
 
         Args:
             audio (bytes): The recorded audio, as in a FLAC file
@@ -444,19 +450,21 @@ class STTApi(Api):
             str: JSON structure with transcription results
         """
 
-        return self.request({
-            "method": "POST",
-            "headers": {"Content-Type": "audio/x-flac"},
-            "query": {"lang": language, "limit": limit},
-            "data": audio
-        })
+        return self.request(
+            {
+                "method": "POST",
+                "headers": {"Content-Type": "audio/x-flac"},
+                "query": {"lang": language, "limit": limit},
+                "data": audio,
+            }
+        )
 
 
 class GeolocationApi(Api):
     """Web API wrapper for performing geolocation lookups."""
 
     def __init__(self):
-        super().__init__('geolocation')
+        super().__init__("geolocation")
 
     def get_geolocation(self, location):
         """Call the geolocation endpoint.
@@ -468,16 +476,18 @@ class GeolocationApi(Api):
             str: JSON structure with lookup results
         """
 
-        response = self.request(dict(
-            method="GET",
-            query=dict(location=location),
-        ))
+        response = self.request(
+            dict(
+                method="GET",
+                query=dict(location=location),
+            )
+        )
 
-        return response['data']
+        return response["data"]
 
 
 def has_been_paired():
-    """ Determine if this device has ever been paired with a web backend
+    """Determine if this device has ever been paired with a web backend
 
     Returns:
         bool: True if ever paired with backend (not factory reset)
@@ -529,7 +539,7 @@ def check_remote_pairing(ignore_errors):
     except Exception as e:
         error = e
 
-    LOG.warning('Could not get device info: {}'.format(repr(error)))
+    LOG.warning("Could not get device info: {}".format(repr(error)))
 
     if ignore_errors:
         return False

@@ -56,14 +56,16 @@ def _log_unsupported_language(language, supported_languages):
         supported_languages: [str]
             The list of supported languages.
     """
-    supported = ' '.join(supported_languages)
-    LOG.warning('Language "{language}" not recognized! Please make sure your '
-                'language is one of the following: {supported}.'
-                .format(language=language, supported=supported))
+    supported = " ".join(supported_languages)
+    LOG.warning(
+        'Language "{language}" not recognized! Please make sure your '
+        "language is one of the following: {supported}.".format(
+            language=language, supported=supported
+        )
+    )
 
 
-def extract_datetime(text, anchorDate="DEFAULT", lang=None,
-                     default_time=None):
+def extract_datetime(text, anchorDate="DEFAULT", lang=None, default_time=None):
     """Extracts date and time information from a sentence.
 
     Parses many of the common ways that humans express dates and times,
@@ -112,11 +114,12 @@ def extract_datetime(text, anchorDate="DEFAULT", lang=None,
         None
     """
     if anchorDate is None:
-        warn(DeprecationWarning("extract_datetime(anchorDate=None) is "
-                                "deprecated. This parameter can be omitted."))
+        warn(
+            DeprecationWarning(
+                "extract_datetime(anchorDate=None) is "
+                "deprecated. This parameter can be omitted."
+            )
+        )
     if anchorDate is None or anchorDate == "DEFAULT":
         anchorDate = now_local()
-    return _extract_datetime(text,
-                             anchorDate,
-                             lang or get_default_loc(),
-                             default_time)
+    return _extract_datetime(text, anchorDate, lang or get_default_loc(), default_time)

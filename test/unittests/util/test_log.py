@@ -33,7 +33,7 @@ class CaptureLogs(list):
 
     def __exit__(self, *args):
         self.extend(self._stringio.getvalue().splitlines())
-        del self._stringio    # free up some memory
+        del self._stringio  # free up some memory
         sys.stdout = self._stdout
         LOG.init()
 
@@ -41,12 +41,13 @@ class CaptureLogs(list):
 class TestLog(unittest.TestCase):
     def test_threads(self):
         with CaptureLogs() as output:
+
             def test_logging():
-                LOG.debug('testing debug')
-                LOG.info('testing info')
-                LOG.warning('testing warning')
-                LOG.error('testing error')
-                LOG('testing custom').debug('test')
+                LOG.debug("testing debug")
+                LOG.info("testing info")
+                LOG.warning("testing warning")
+                LOG.error("testing error")
+                LOG("testing custom").debug("test")
 
             threads = []
             for _ in range(100):
@@ -61,8 +62,8 @@ class TestLog(unittest.TestCase):
 
         for line in output:
             found_msg = False
-            for msg in ['debug', 'info', 'warning', 'error', 'custom']:
-                if 'testing ' + msg in line:
+            for msg in ["debug", "info", "warning", "error", "custom"]:
+                if "testing " + msg in line:
                     found_msg = True
             assert found_msg
 

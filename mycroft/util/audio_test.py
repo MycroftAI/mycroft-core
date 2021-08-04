@@ -34,13 +34,13 @@ compatibility with mycroft recognizer loop code.
 """
 
 # Reduce loglevel
-LOG.level = 'ERROR'
-logging.getLogger('urllib3').setLevel(logging.WARNING)
+LOG.level = "ERROR"
+logging.getLogger("urllib3").setLevel(logging.WARNING)
 
 
 @contextmanager
 def mute_output():
-    """ Context manager blocking stdout and stderr completely.
+    """Context manager blocking stdout and stderr completely.
 
     Redirects stdout and stderr to dev-null and restores them on exit.
     """
@@ -66,28 +66,43 @@ def record(filename, duration):
     recognizer = Recognizer()
     with mic as source:
         audio = recognizer.record(source, duration=duration)
-        with open(filename, 'wb') as f:
+        with open(filename, "wb") as f:
             f.write(audio.get_wav_data())
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        '-f',
-        '--filename',
-        dest='filename',
-        default=get_temp_path('test.wav'),
-        help="Filename for saved audio (Default:{}".format(
-            get_temp_path('test.wav')))
+        "-f",
+        "--filename",
+        dest="filename",
+        default=get_temp_path("test.wav"),
+        help="Filename for saved audio (Default:{}".format(get_temp_path("test.wav")),
+    )
     parser.add_argument(
-        '-d', '--duration', dest='duration', type=int, default=10,
-        help="Duration of recording in seconds (Default: 10)")
+        "-d",
+        "--duration",
+        dest="duration",
+        type=int,
+        default=10,
+        help="Duration of recording in seconds (Default: 10)",
+    )
     parser.add_argument(
-        '-v', '--verbose', dest='verbose', action='store_true', default=False,
-        help="Add extra output regarding the recording")
+        "-v",
+        "--verbose",
+        dest="verbose",
+        action="store_true",
+        default=False,
+        help="Add extra output regarding the recording",
+    )
     parser.add_argument(
-        '-l', '--list', dest='show_devices', action='store_true',
-        default=False, help="List all availabile input devices")
+        "-l",
+        "--list",
+        dest="show_devices",
+        action="store_true",
+        default=False,
+        help="List all availabile input devices",
+    )
     args = parser.parse_args()
 
     if args.show_devices:
@@ -98,8 +113,8 @@ def main():
         print("  Index    Device Name")
         for device_index in range(pa.get_device_count()):
             dev = pa.get_device_info_by_index(device_index)
-            if dev['maxInputChannels'] > 0:
-                print('   {}:       {}'.format(device_index, dev['name']))
+            if dev["maxInputChannels"] > 0:
+                print("   {}:       {}".format(device_index, dev["name"]))
         print()
 
     config = Configuration.get()
@@ -130,7 +145,7 @@ def main():
     print(" ===========================================================")
     status = play_wav(args.filename).wait()
     if status:
-        print('An error occured while playing back audio ({})'.format(status))
+        print("An error occured while playing back audio ({})".format(status))
 
 
 if __name__ == "__main__":

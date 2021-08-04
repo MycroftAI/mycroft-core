@@ -25,14 +25,13 @@ class MozillaTTS(TTS):
             self.config = Configuration.get().get("tts", {}).get("mozilla", {})
         else:
             self.config = config
-        super(MozillaTTS, self).__init__(lang, self.config,
-                                         MozillaTTSValidator(self))
-        self.url = self.config['url'] + "/api/tts"
-        self.type = 'wav'
+        super(MozillaTTS, self).__init__(lang, self.config, MozillaTTSValidator(self))
+        self.url = self.config["url"] + "/api/tts"
+        self.type = "wav"
 
     def get_tts(self, sentence, wav_file):
-        response = requests.get(self.url, params={'text': sentence})
-        with open(wav_file, 'wb') as f:
+        response = requests.get(self.url, params={"text": sentence})
+        with open(wav_file, "wb") as f:
             f.write(response.content)
         return (wav_file, None)  # No phonemes
 
@@ -49,7 +48,7 @@ class MozillaTTSValidator(TTSValidator):
         pass
 
     def validate_connection(self):
-        url = self.tts.config['url']
+        url = self.tts.config["url"]
         response = requests.get(url)
         if not response.status_code == 200:
             raise ConnectionRefusedError

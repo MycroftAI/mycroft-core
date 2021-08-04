@@ -19,6 +19,7 @@ from .tts import TTS, TTSValidator
 
 class ESpeak(TTS):
     """TTS module for generating speech using ESpeak."""
+
     def __init__(self, lang, config):
         super(ESpeak, self).__init__(lang, config, ESpeakValidator(self))
 
@@ -32,8 +33,9 @@ class ESpeak(TTS):
         Returns:
             tuple ((str) file location, None)
         """
-        subprocess.call(['espeak', '-v', self.lang + '+' + self.voice,
-                         '-w', wav_file, sentence])
+        subprocess.call(
+            ["espeak", "-v", self.lang + "+" + self.voice, "-w", wav_file, sentence]
+        )
         return wav_file, None
 
 
@@ -47,10 +49,12 @@ class ESpeakValidator(TTSValidator):
 
     def validate_connection(self):
         try:
-            subprocess.call(['espeak', '--version'])
+            subprocess.call(["espeak", "--version"])
         except Exception:
-            raise Exception('ESpeak is not installed. Please install it on '
-                            'your system and restart Mycroft.')
+            raise Exception(
+                "ESpeak is not installed. Please install it on "
+                "your system and restart Mycroft."
+            )
 
     def get_tts_class(self):
         return ESpeak

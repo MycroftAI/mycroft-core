@@ -21,8 +21,7 @@ import mycroft.dialog
 from mycroft.client.enclosure.base import Enclosure
 from mycroft.api import has_been_paired
 from mycroft.audio import wait_while_speaking
-from mycroft.enclosure.display_manager import \
-    init_display_manager_bus_connection
+from mycroft.enclosure.display_manager import init_display_manager_bus_connection
 from mycroft.messagebus.message import Message
 from mycroft.util import connected
 from mycroft.util.log import LOG
@@ -41,10 +40,10 @@ class EnclosureGeneric(Enclosure):
         super().__init__()
 
         # Notifications from mycroft-core
-        self.bus.on('enclosure.notify.no_internet', self.on_no_internet)
+        self.bus.on("enclosure.notify.no_internet", self.on_no_internet)
         # TODO: this requires the Enclosure to be up and running before the
         # training is complete.
-        self.bus.on('mycroft.skills.trained', self.is_device_ready)
+        self.bus.on("mycroft.skills.trained", self.is_device_ready)
 
         # initiates the web sockets on display manager
         # NOTE: this is a temporary place to connect the display manager
@@ -62,20 +61,20 @@ class EnclosureGeneric(Enclosure):
         is_ready = False
         # Bus service assumed to be alive if messages sent and received
         # Enclosure assumed to be alive if this method is running
-        services = {'audio': False, 'speech': False, 'skills': False}
+        services = {"audio": False, "speech": False, "skills": False}
         start = time.monotonic()
         while not is_ready:
             is_ready = self.check_services_ready(services)
             if is_ready:
                 break
             elif time.monotonic() - start >= 60:
-                raise Exception('Timeout waiting for services start.')
+                raise Exception("Timeout waiting for services start.")
             else:
                 time.sleep(3)
 
         if is_ready:
             LOG.info("Mycroft is all loaded and ready to roll!")
-            self.bus.emit(Message('mycroft.ready'))
+            self.bus.emit(Message("mycroft.ready"))
 
         return is_ready
 
@@ -86,9 +85,10 @@ class EnclosureGeneric(Enclosure):
         """
         for ser in services:
             services[ser] = False
-            response = self.bus.wait_for_response(Message(
-                                'mycroft.{}.is_ready'.format(ser)))
-            if response and response.data['status']:
+            response = self.bus.wait_for_response(
+                Message("mycroft.{}.is_ready".format(ser))
+            )
+            if response and response.data["status"]:
                 services[ser] = True
         return all([services[ser] for ser in services])
 
@@ -106,16 +106,22 @@ class EnclosureGeneric(Enclosure):
         # TODO: This should go into EnclosureMark1 subclass of Enclosure.
         if has_been_paired():
             # Handle the translation within that code.
-            self.bus.emit(Message("speak", {
-                'utterance': "This device is not connected to the Internet. "
-                             "Either plug in a network cable or set up your "
-                             "wifi connection."}))
+            self.bus.emit(
+                Message(
+                    "speak",
+                    {
+                        "utterance": "This device is not connected to the Internet. "
+                        "Either plug in a network cable or set up your "
+                        "wifi connection."
+                    },
+                )
+            )
         else:
             # enter wifi-setup mode automatically
-            self.bus.emit(Message('system.wifi.setup', {'lang': self.lang}))
+            self.bus.emit(Message("system.wifi.setup", {"lang": self.lang}))
 
     def speak(self, text):
-        self.bus.emit(Message("speak", {'utterance': text}))
+        self.bus.emit(Message("speak", {"utterance": text}))
 
     def _handle_pairing_complete(self, _):
         """
@@ -130,9 +136,11 @@ class EnclosureGeneric(Enclosure):
         if not connected():  # and self.conn_monitor is None:
             if has_been_paired():
                 # TODO: Enclosure/localization
-                self.speak("This unit is not connected to the Internet. "
-                           "Either plug in a network cable or setup your "
-                           "wifi connection.")
+                self.speak(
+                    "This unit is not connected to the Internet. "
+                    "Either plug in a network cable or setup your "
+                    "wifi connection."
+                )
             else:
                 # Begin the unit startup process, this is the first time it
                 # is being run with factory defaults.
@@ -144,12 +152,12 @@ class EnclosureGeneric(Enclosure):
                 self.bus.emit(Message("mycroft.mic.mute"))
                 # Setup handler to unmute mic at the end of on boarding
                 # i.e. after pairing is complete
-                self.bus.once('mycroft.paired', self._handle_pairing_complete)
+                self.bus.once("mycroft.paired", self._handle_pairing_complete)
 
-                self.speak(mycroft.dialog.get('mycroft.intro'))
+                self.speak(mycroft.dialog.get("mycroft.intro"))
                 wait_while_speaking()
                 time.sleep(2)  # a pause sounds better than just jumping in
 
                 # Kick off wifi-setup automatically
-                data = {'allow_timeout': False, 'lang': self.lang}
-                self.bus.emit(Message('system.wifi.setup', data))
+                data = {"allow_timeout": False, "lang": self.lang}
+                self.bus.emit(Message("system.wifi.setup", data))

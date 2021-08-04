@@ -14,21 +14,21 @@
 import os
 from os.path import join, dirname, expanduser, exists
 
-DEFAULT_CONFIG = join(dirname(__file__), 'mycroft.conf')
-SYSTEM_CONFIG = os.environ.get('MYCROFT_SYSTEM_CONFIG',
-                               '/etc/mycroft/mycroft.conf')
-USER_CONFIG = join(expanduser('~'), '.mycroft/mycroft.conf')
+DEFAULT_CONFIG = join(dirname(__file__), "mycroft.conf")
+SYSTEM_CONFIG = os.environ.get("MYCROFT_SYSTEM_CONFIG", "/etc/mycroft/mycroft.conf")
+USER_CONFIG = join(expanduser("~"), ".mycroft/mycroft.conf")
 REMOTE_CONFIG = "mycroft.ai"
-WEB_CONFIG_CACHE = os.environ.get('MYCROFT_WEB_CACHE',
-                                  '/var/tmp/mycroft_web_cache.json')
+WEB_CONFIG_CACHE = os.environ.get(
+    "MYCROFT_WEB_CACHE", "/var/tmp/mycroft_web_cache.json"
+)
 
 
 def __ensure_folder_exists(path):
-    """ Make sure the directory for the specified path exists.
+    """Make sure the directory for the specified path exists.
 
-        Args:
-            path (str): path to config file
-     """
+    Args:
+        path (str): path to config file
+    """
     directory = dirname(path)
     if not exists(directory):
         os.makedirs(directory)

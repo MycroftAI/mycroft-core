@@ -26,10 +26,10 @@ class EnclosureArduino:
         self.__init_events()
 
     def __init_events(self):
-        self.bus.on('enclosure.system.reset', self.reset)
-        self.bus.on('enclosure.system.mute', self.mute)
-        self.bus.on('enclosure.system.unmute', self.unmute)
-        self.bus.on('enclosure.system.blink', self.blink)
+        self.bus.on("enclosure.system.reset", self.reset)
+        self.bus.on("enclosure.system.mute", self.mute)
+        self.bus.on("enclosure.system.unmute", self.unmute)
+        self.bus.on("enclosure.system.blink", self.blink)
 
     def reset(self, event=None):
         self.writer.write("system.reset")

@@ -33,7 +33,7 @@ FIVE_MINUTES = 300  # number of seconds in a minute
 
 
 def skill_is_blacklisted(skill):
-    blacklist = Configuration.get()['skills']['blacklisted_skills']
+    blacklist = Configuration.get()["skills"]["blacklisted_skills"]
     return os.path.basename(skill.path) in blacklist or skill.name in blacklist
 
 
@@ -45,16 +45,17 @@ class SkillUpdater:
                                 with the mycroft core system and handle
                                 commands.
     """
+
     _installed_skills_file_path = None
     _msm = None
 
     def __init__(self, bus=None):
-        self.msm_lock = ComboLock(get_temp_path('mycroft-msm.lck'))
+        self.msm_lock = ComboLock(get_temp_path("mycroft-msm.lck"))
         self.install_retries = 0
         self.config = Configuration.get()
-        update_interval = self.config['skills']['update_interval']
+        update_interval = self.config["skills"]["update_interval"]
         self.update_interval = int(update_interval) * ONE_HOUR
-        self.dot_msm_path = os.path.join(self.msm.skills_dir, '.msm')
+        self.dot_msm_path = os.path.join(self.msm.skills_dir, ".msm")
         self.next_download = self._determine_next_download_time()
         self._log_next_download_time()
         self.installed_skills = set()
@@ -72,9 +73,8 @@ class SkillUpdater:
         Update immediately if the .msm or installed skills file is missing
         otherwise use the timestamp on .msm as a basis.
         """
-        msm_files_exist = (
-            os.path.exists(self.dot_msm_path) and
-            os.path.exists(self.installed_skills_file_path)
+        msm_files_exist = os.path.exists(self.dot_msm_path) and os.path.exists(
+            self.installed_skills_file_path
         )
         if msm_files_exist:
             mtime = os.path.getmtime(self.dot_msm_path)
@@ -93,12 +93,11 @@ class SkillUpdater:
             virtual_env_path = os.path.dirname(os.path.dirname(sys.executable))
             if os.access(virtual_env_path, os.W_OK | os.R_OK | os.X_OK):
                 self._installed_skills_file_path = os.path.join(
-                    virtual_env_path,
-                    '.mycroft-skills'
+                    virtual_env_path, ".mycroft-skills"
                 )
             else:
                 self._installed_skills_file_path = os.path.expanduser(
-                    '~/.mycroft/.mycroft-skills'
+                    "~/.mycroft/.mycroft-skills"
                 )
 
         return self._installed_skills_file_path
@@ -115,10 +114,10 @@ class SkillUpdater:
     def default_skill_names(self) -> tuple:
         """Property representing the default skills expected to be installed"""
         default_skill_groups = dict(self.msm.repo.get_default_skill_names())
-        default_skills = set(default_skill_groups['default'])
+        default_skills = set(default_skill_groups["default"])
         platform_default_skills = default_skill_groups.get(self.msm.platform)
         if platform_default_skills is None:
-            log_msg = 'No default skills found for platform {}'
+            log_msg = "No default skills found for platform {}"
             LOG.info(log_msg.format(self.msm.platform))
         else:
             default_skills.update(platform_default_skills)
@@ -135,9 +134,9 @@ class SkillUpdater:
 
     def _save_installed_skills(self):
         """Save the skill listing after the download to a file."""
-        with open(self.installed_skills_file_path, 'w') as skills_file:
+        with open(self.installed_skills_file_path, "w") as skills_file:
             for skill_name in self.installed_skills:
-                skills_file.write(skill_name + '\n')
+                skills_file.write(skill_name + "\n")
 
     def update_skills(self, quick=False):
         """Invoke MSM to install default skills and/or update installed skills
@@ -145,7 +144,7 @@ class SkillUpdater:
         Args:
             quick (bool): Expedite the download by running with more threads?
         """
-        LOG.info('Beginning skill update...')
+        LOG.info("Beginning skill update...")
         self.msm._device_skill_state = None  # TODO: Proper msm method
         success = True
         if connected():
@@ -166,36 +165,32 @@ class SkillUpdater:
             success = False
 
         if success:
-            LOG.info('Skill update complete')
+            LOG.info("Skill update complete")
 
         return success
 
     def handle_not_connected(self):
         """Notifications of the device not being connected to the internet"""
-        LOG.error('msm failed, network connection not available')
+        LOG.error("msm failed, network connection not available")
         self.next_download = time() + FIVE_MINUTES
 
     def _apply_install_or_update(self, quick):
         """Invoke MSM to install or update a skill."""
         try:
             # Determine if all defaults are installed
-            defaults = all(
-                [s.is_local for s in self.msm.default_skills.values()]
-            )
+            defaults = all([s.is_local for s in self.msm.default_skills.values()])
             num_threads = 20 if not defaults or quick else 2
             self.msm.apply(
-                self.install_or_update,
-                self.msm.list(),
-                max_threads=num_threads
+                self.install_or_update, self.msm.list(), max_threads=num_threads
             )
             self.post_manifest()
 
         except MsmException as e:
-            LOG.error('Failed to update skills: {}'.format(repr(e)))
+            LOG.error("Failed to update skills: {}".format(repr(e)))
 
     def post_manifest(self, reload_skills_manifest=False):
         """Post the manifest of the device's skills to the backend."""
-        upload_allowed = self.config['skills'].get('upload_skill_manifest')
+        upload_allowed = self.config["skills"].get("upload_skill_manifest")
         if upload_allowed and is_paired():
             if reload_skills_manifest:
                 self.msm.clear_cache()
@@ -203,11 +198,11 @@ class SkillUpdater:
                 device_api = DeviceApi()
                 device_api.upload_skills_data(self.msm.device_skill_state)
             except Exception:
-                LOG.exception('Could not upload skill manifest')
+                LOG.exception("Could not upload skill manifest")
 
     def install_or_update(self, skill):
         """Install missing defaults and update existing skills"""
-        if self._get_device_skill_state(skill.name).get('beta', False):
+        if self._get_device_skill_state(skill.name).get("beta", False):
             skill.sha = None  # Will update to latest head
         if skill.is_local:
             skill.update()
@@ -215,12 +210,10 @@ class SkillUpdater:
                 skill.update_deps()
         elif skill.name in self.default_skill_names:
             try:
-                self.msm.install(skill, origin='default')
+                self.msm.install(skill, origin="default")
             except Exception:
                 if skill.name in self.default_skill_names:
-                    LOG.warning(
-                        'Failed to install default skill: ' + skill.name
-                    )
+                    LOG.warning("Failed to install default skill: " + skill.name)
                     self.default_skill_install_error = True
                 raise
         self.installed_skills.add(skill.name)
@@ -240,8 +233,8 @@ class SkillUpdater:
     def _get_device_skill_state(self, skill_name):
         """Get skill data structure from name."""
         device_skill_state = {}
-        for msm_skill_state in self.msm.device_skill_state.get('skills', []):
-            if msm_skill_state.get('name') == skill_name:
+        for msm_skill_state in self.msm.device_skill_state.get("skills", []):
+            if msm_skill_state.get("name") == skill_name:
                 device_skill_state = msm_skill_state
 
         return device_skill_state
@@ -255,13 +248,13 @@ class SkillUpdater:
 
     def _update_download_time(self):
         """Update timestamp on .msm file to be used when system is restarted"""
-        with open(self.dot_msm_path, 'a'):
+        with open(self.dot_msm_path, "a"):
             os.utime(self.dot_msm_path, None)
         self.next_download = time() + self.update_interval
         self._log_next_download_time()
 
     def _log_next_download_time(self):
         LOG.info(
-            'Next scheduled skill update: ' +
-            str(datetime.fromtimestamp(self.next_download))
+            "Next scheduled skill update: "
+            + str(datetime.fromtimestamp(self.next_download))
         )

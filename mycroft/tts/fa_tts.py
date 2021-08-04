@@ -20,23 +20,22 @@ from .remote_tts import RemoteTTS
 
 class FATTS(RemoteTTS):
     PARAMS = {
-        'voice[name]': 'cmu-slt-hsmm',
-        'input[type]': 'TEXT',
-        'input[locale]': 'en_US',
-        'input[content]': 'Hello World',
-        'output[format]': 'WAVE_FILE',
-        'output[type]': 'AUDIO'
+        "voice[name]": "cmu-slt-hsmm",
+        "input[type]": "TEXT",
+        "input[locale]": "en_US",
+        "input[content]": "Hello World",
+        "output[format]": "WAVE_FILE",
+        "output[type]": "AUDIO",
     }
 
     def __init__(self, lang, config):
-        super(FATTS, self).__init__(lang, config, '/say',
-                                    FATTSValidator(self))
+        super(FATTS, self).__init__(lang, config, "/say", FATTSValidator(self))
 
     def build_request_params(self, sentence):
         params = self.PARAMS.copy()
-        params['voice[name]'] = self.voice
-        params['input[locale]'] = self.lang
-        params['input[content]'] = sentence.encode('utf-8')
+        params["voice[name]"] = self.voice
+        params["input[locale]"] = self.lang
+        params["input[content]"] = sentence.encode("utf-8")
         return params
 
 
@@ -52,12 +51,13 @@ class FATTSValidator(TTSValidator):
         try:
             resp = requests.get(self.tts.url + "/info/version", verify=False)
             content = resp.json()
-            if content.get('product', '').find('FA-TTS') < 0:
-                raise Exception('Invalid FA-TTS server.')
+            if content.get("product", "").find("FA-TTS") < 0:
+                raise Exception("Invalid FA-TTS server.")
         except Exception:
             raise Exception(
-                'FA-TTS server could not be verified. Check your connection '
-                'to the server: ' + self.tts.url)
+                "FA-TTS server could not be verified. Check your connection "
+                "to the server: " + self.tts.url
+            )
 
     def get_tts_class(self):
         return FATTS

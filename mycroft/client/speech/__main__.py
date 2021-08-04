@@ -25,7 +25,7 @@ from mycroft.util import (
     create_daemon,
     reset_sigint_handler,
     start_message_bus_client,
-    wait_for_exit_signal
+    wait_for_exit_signal,
 )
 from mycroft.util.log import LOG
 from mycroft.util.process_utils import ProcessStatus, StatusCallbackMap
@@ -39,72 +39,67 @@ config = None
 def handle_record_begin():
     """Forward internal bus message to external bus."""
     LOG.info("Begin Recording...")
-    context = {'client_name': 'mycroft_listener',
-               'source': 'audio'}
-    bus.emit(Message('recognizer_loop:record_begin', context=context))
+    context = {"client_name": "mycroft_listener", "source": "audio"}
+    bus.emit(Message("recognizer_loop:record_begin", context=context))
 
 
 def handle_record_end():
     """Forward internal bus message to external bus."""
     LOG.info("End Recording...")
-    context = {'client_name': 'mycroft_listener',
-               'source': 'audio'}
-    bus.emit(Message('recognizer_loop:record_end', context=context))
+    context = {"client_name": "mycroft_listener", "source": "audio"}
+    bus.emit(Message("recognizer_loop:record_end", context=context))
 
 
 def handle_no_internet():
     LOG.debug("Notifying enclosure of no internet connection")
-    context = {'client_name': 'mycroft_listener',
-               'source': 'audio'}
-    bus.emit(Message('enclosure.notify.no_internet', context=context))
+    context = {"client_name": "mycroft_listener", "source": "audio"}
+    bus.emit(Message("enclosure.notify.no_internet", context=context))
 
 
 def handle_awoken():
     """Forward mycroft.awoken to the messagebus."""
     LOG.info("Listener is now Awake: ")
-    context = {'client_name': 'mycroft_listener',
-               'source': 'audio'}
-    bus.emit(Message('mycroft.awoken', context=context))
+    context = {"client_name": "mycroft_listener", "source": "audio"}
+    bus.emit(Message("mycroft.awoken", context=context))
 
 
 def handle_wakeword(event):
-    LOG.info("Wakeword Detected: " + event['utterance'])
-    bus.emit(Message('recognizer_loop:wakeword', event))
+    LOG.info("Wakeword Detected: " + event["utterance"])
+    bus.emit(Message("recognizer_loop:wakeword", event))
 
 
 def handle_utterance(event):
-    LOG.info("Utterance: " + str(event['utterances']))
-    context = {'client_name': 'mycroft_listener',
-               'source': 'audio',
-               'destination': ["skills"]}
-    if 'ident' in event:
-        ident = event.pop('ident')
-        context['ident'] = ident
-    bus.emit(Message('recognizer_loop:utterance', event, context))
+    LOG.info("Utterance: " + str(event["utterances"]))
+    context = {
+        "client_name": "mycroft_listener",
+        "source": "audio",
+        "destination": ["skills"],
+    }
+    if "ident" in event:
+        ident = event.pop("ident")
+        context["ident"] = ident
+    bus.emit(Message("recognizer_loop:utterance", event, context))
 
 
 def handle_unknown():
-    context = {'client_name': 'mycroft_listener',
-               'source': 'audio'}
-    bus.emit(Message('mycroft.speech.recognition.unknown', context=context))
+    context = {"client_name": "mycroft_listener", "source": "audio"}
+    bus.emit(Message("mycroft.speech.recognition.unknown", context=context))
 
 
 def handle_speak(event):
     """
-        Forward speak message to message bus.
+    Forward speak message to message bus.
     """
-    context = {'client_name': 'mycroft_listener',
-               'source': 'audio'}
-    bus.emit(Message('speak', event, context))
+    context = {"client_name": "mycroft_listener", "source": "audio"}
+    bus.emit(Message("speak", event, context))
 
 
 def handle_complete_intent_failure(event):
     """Extreme backup for answering completely unhandled intent requests."""
     LOG.info("Failed to find intent.")
-    data = {'utterance': dialog.get('not.loaded')}
-    context = {'client_name': 'mycroft_listener',
-               'source': 'audio'}
-    bus.emit(Message('speak', data, context))
+    data = {"utterance": dialog.get("not.loaded")}
+    context = {"client_name": "mycroft_listener", "source": "audio"}
+    bus.emit(Message("speak", data, context))
 
 
 def handle_sleep(event):
@@ -137,7 +132,7 @@ def handle_mic_listen(_):
 
 def handle_mic_get_status(event):
     """Query microphone mute status."""
-    data = {'muted': loop.is_muted()}
+    data = {"muted": loop.is_muted()}
     bus.emit(event.response(data))
 
 
@@ -176,46 +171,50 @@ def handle_open():
 
 
 def on_ready():
-    LOG.info('Speech client is ready.')
+    LOG.info("Speech client is ready.")
 
 
 def on_stopping():
-    LOG.info('Speech service is shutting down...')
+    LOG.info("Speech service is shutting down...")
 
 
-def on_error(e='Unknown'):
-    LOG.error('Audio service failed to launch ({}).'.format(repr(e)))
+def on_error(e="Unknown"):
+    LOG.error("Audio service failed to launch ({}).".format(repr(e)))
 
 
 def connect_loop_events(loop):
-    loop.on('recognizer_loop:utterance', handle_utterance)
-    loop.on('recognizer_loop:speech.recognition.unknown', handle_unknown)
-    loop.on('speak', handle_speak)
-    loop.on('recognizer_loop:record_begin', handle_record_begin)
-    loop.on('recognizer_loop:awoken', handle_awoken)
-    loop.on('recognizer_loop:wakeword', handle_wakeword)
-    loop.on('recognizer_loop:record_end', handle_record_end)
-    loop.on('recognizer_loop:no_internet', handle_no_internet)
+    loop.on("recognizer_loop:utterance", handle_utterance)
+    loop.on("recognizer_loop:speech.recognition.unknown", handle_unknown)
+    loop.on("speak", handle_speak)
+    loop.on("recognizer_loop:record_begin", handle_record_begin)
+    loop.on("recognizer_loop:awoken", handle_awoken)
+    loop.on("recognizer_loop:wakeword", handle_wakeword)
+    loop.on("recognizer_loop:record_end", handle_record_end)
+    loop.on("recognizer_loop:no_internet", handle_no_internet)
 
 
 def connect_bus_events(bus):
     # Register handlers for events on main Mycroft messagebus
-    bus.on('open', handle_open)
-    bus.on('complete_intent_failure', handle_complete_intent_failure)
-    bus.on('recognizer_loop:sleep', handle_sleep)
-    bus.on('recognizer_loop:wake_up', handle_wake_up)
-    bus.on('mycroft.mic.mute', handle_mic_mute)
-    bus.on('mycroft.mic.unmute', handle_mic_unmute)
-    bus.on('mycroft.mic.get_status', handle_mic_get_status)
-    bus.on('mycroft.mic.listen', handle_mic_listen)
+    bus.on("open", handle_open)
+    bus.on("complete_intent_failure", handle_complete_intent_failure)
+    bus.on("recognizer_loop:sleep", handle_sleep)
+    bus.on("recognizer_loop:wake_up", handle_wake_up)
+    bus.on("mycroft.mic.mute", handle_mic_mute)
+    bus.on("mycroft.mic.unmute", handle_mic_unmute)
+    bus.on("mycroft.mic.get_status", handle_mic_get_status)
+    bus.on("mycroft.mic.listen", handle_mic_listen)
     bus.on("mycroft.paired", handle_paired)
-    bus.on('recognizer_loop:audio_output_start', handle_audio_start)
-    bus.on('recognizer_loop:audio_output_end', handle_audio_end)
-    bus.on('mycroft.stop', handle_stop)
+    bus.on("recognizer_loop:audio_output_start", handle_audio_start)
+    bus.on("recognizer_loop:audio_output_end", handle_audio_end)
+    bus.on("mycroft.stop", handle_stop)
 
 
-def main(ready_hook=on_ready, error_hook=on_error, stopping_hook=on_stopping,
-         watchdog=lambda: None):
+def main(
+    ready_hook=on_ready,
+    error_hook=on_error,
+    stopping_hook=on_stopping,
+    watchdog=lambda: None,
+):
     global bus
     global loop
     global config
@@ -225,9 +224,10 @@ def main(ready_hook=on_ready, error_hook=on_error, stopping_hook=on_stopping,
         config = Configuration.get()
         bus = start_message_bus_client("VOICE")
         connect_bus_events(bus)
-        callbacks = StatusCallbackMap(on_ready=ready_hook, on_error=error_hook,
-                                      on_stopping=stopping_hook)
-        status = ProcessStatus('speech', bus, callbacks)
+        callbacks = StatusCallbackMap(
+            on_ready=ready_hook, on_error=error_hook, on_stopping=stopping_hook
+        )
+        status = ProcessStatus("speech", bus, callbacks)
 
         # Register handlers on internal RecognizerLoop bus
         loop = RecognizerLoop(watchdog)

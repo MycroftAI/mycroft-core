@@ -35,7 +35,7 @@ from mycroft.util import (
     connected,
     reset_sigint_handler,
     start_message_bus_client,
-    wait_for_exit_signal
+    wait_for_exit_signal,
 )
 from mycroft.util.log import LOG
 from mycroft.util.process_utils import ProcessStatus, StatusCallbackMap
@@ -46,7 +46,7 @@ from .event_scheduler import EventScheduler
 from .intent_service import IntentService
 from .skill_manager import SkillManager
 
-RASPBERRY_PI_PLATFORMS = ('mycroft_mark_1', 'picroft', 'mycroft_mark_2pi')
+RASPBERRY_PI_PLATFORMS = ("mycroft_mark_1", "picroft", "mycroft_mark_2pi")
 
 
 class DevicePrimer(object):
@@ -56,9 +56,10 @@ class DevicePrimer(object):
         message_bus_client: Bus client used to interact with the system
         config (dict): Mycroft configuration
     """
+
     def __init__(self, message_bus_client, config):
         self.bus = message_bus_client
-        self.platform = config['enclosure'].get("platform", "unknown")
+        self.platform = config["enclosure"].get("platform", "unknown")
         self.enclosure = EnclosureAPI(self.bus)
         self.is_paired = False
         self.backend_down = False
@@ -76,7 +77,7 @@ class DevicePrimer(object):
             self._notify_backend_down()
         else:
             self._display_skill_loading_notification()
-            self.bus.emit(Message('mycroft.internet.connected'))
+            self.bus.emit(Message("mycroft.internet.connected"))
             self._ensure_device_is_paired()
             self._update_device_attributes_on_backend()
 
@@ -85,11 +86,11 @@ class DevicePrimer(object):
         try:
             self.is_paired = is_paired(ignore_errors=False)
         except BackendDown:
-            LOG.error('Cannot complete device updates due to backend issues.')
+            LOG.error("Cannot complete device updates due to backend issues.")
             self.backend_down = True
 
         if self.is_paired:
-            LOG.info('Device is paired')
+            LOG.info("Device is paired")
 
     def _update_system_clock(self):
         """Force a sync of the local clock with the Network Time Protocol.
@@ -101,16 +102,14 @@ class DevicePrimer(object):
         that device.
         """
         if self.platform in RASPBERRY_PI_PLATFORMS:
-            LOG.info('Updating the system clock via NTP...')
+            LOG.info("Updating the system clock via NTP...")
             if self.is_paired:
                 # Only display time sync message when paired because the prompt
                 # to go to home.mycroft.ai will be displayed by the pairing
                 # skill when pairing
                 self.enclosure.mouth_text(dialog.get("message_synching.clock"))
             self.bus.wait_for_response(
-                Message('system.ntp.sync'),
-                'system.ntp.sync.complete',
-                15
+                Message("system.ntp.sync"), "system.ntp.sync.complete", 15
             )
 
     def _notify_backend_down(self):
@@ -130,7 +129,7 @@ class DevicePrimer(object):
         So skip pairing if the backend is down.
         """
         if not self.is_paired and not self.backend_down:
-            LOG.info('Device not paired, invoking the pairing skill')
+            LOG.info("Device not paired, invoking the pairing skill")
             payload = dict(utterances=["pair my device"], lang="en-us")
             self.bus.emit(Message("recognizer_loop:utterance", payload))
 
@@ -141,7 +140,7 @@ class DevicePrimer(object):
         and platform name for each device, if it is known.
         """
         if self.is_paired:
-            LOG.info('Sending updated device attributes to the backend...')
+            LOG.info("Sending updated device attributes to the backend...")
             try:
                 api = DeviceApi()
                 api.update_version()
@@ -151,53 +150,56 @@ class DevicePrimer(object):
     def _update_system(self):
         """Emit an update event that will be handled by the admin service."""
         if not self.is_paired:
-            LOG.info('Attempting system update...')
-            self.bus.emit(Message('system.update'))
+            LOG.info("Attempting system update...")
+            self.bus.emit(Message("system.update"))
             msg = Message(
-                'system.update',
-                dict(paired=self.is_paired, platform=self.platform)
+                "system.update", dict(paired=self.is_paired, platform=self.platform)
             )
-            resp = self.bus.wait_for_response(msg, 'system.update.processing')
+            resp = self.bus.wait_for_response(msg, "system.update.processing")
 
-            if resp and (resp.data or {}).get('processing', True):
+            if resp and (resp.data or {}).get("processing", True):
                 self.bus.wait_for_response(
-                    Message('system.update.waiting'),
-                    'system.update.complete',
-                    1000
+                    Message("system.update.waiting"), "system.update.complete", 1000
                 )
 
     def _speak_dialog(self, dialog_id, wait=False):
-        data = {'utterance': dialog.get(dialog_id)}
+        data = {"utterance": dialog.get(dialog_id)}
         self.bus.emit(Message("speak", data))
         if wait:
             wait_while_speaking()
 
 
 def on_started():
-    LOG.info('Skills service is starting up.')
+    LOG.info("Skills service is starting up.")
 
 
 def on_alive():
-    LOG.info('Skills service is alive.')
+    LOG.info("Skills service is alive.")
 
 
 def on_ready():
-    LOG.info('Skills service is ready.')
+    LOG.info("Skills service is ready.")
 
 
-def on_error(e='Unknown'):
-    LOG.info('Skills service failed to launch ({})'.format(repr(e)))
+def on_error(e="Unknown"):
+    LOG.info("Skills service failed to launch ({})".format(repr(e)))
 
 
 def on_stopping():
-    LOG.info('Skills service is shutting down...')
+    LOG.info("Skills service is shutting down...")
 
 
-def main(alive_hook=on_alive, started_hook=on_started, ready_hook=on_ready,
-         error_hook=on_error, stopping_hook=on_stopping, watchdog=None):
+def main(
+    alive_hook=on_alive,
+    started_hook=on_started,
+    ready_hook=on_ready,
+    error_hook=on_error,
+    stopping_hook=on_stopping,
+    watchdog=None,
+):
     reset_sigint_handler()
     # Create PID file, prevent multiple instances of this service
-    mycroft.lock.Lock('skills')
+    mycroft.lock.Lock("skills")
     config = Configuration.get()
     lang_code = config.get("lang", "en-us")
     load_languages([lang_code, "en-us"])
@@ -206,12 +208,14 @@ def main(alive_hook=on_alive, started_hook=on_started, ready_hook=on_ready,
     bus = start_message_bus_client("SKILLS")
     _register_intent_services(bus)
     event_scheduler = EventScheduler(bus)
-    callbacks = StatusCallbackMap(on_started=started_hook,
-                                  on_alive=alive_hook,
-                                  on_ready=ready_hook,
-                                  on_error=error_hook,
-                                  on_stopping=stopping_hook)
-    status = ProcessStatus('skills', bus, callbacks)
+    callbacks = StatusCallbackMap(
+        on_started=started_hook,
+        on_alive=alive_hook,
+        on_ready=ready_hook,
+        on_error=error_hook,
+        on_stopping=stopping_hook,
+    )
+    status = ProcessStatus("skills", bus, callbacks)
 
     SkillApi.connect_bus(bus)
     skill_manager = _initialize_skill_manager(bus, watchdog)
@@ -246,10 +250,7 @@ def _register_intent_services(bus):
     """
     service = IntentService(bus)
     # Register handler to trigger fallback system
-    bus.on(
-        'mycroft.skills.fallback',
-        FallbackSkill.make_intent_failure_handler(bus)
-    )
+    bus.on("mycroft.skills.fallback", FallbackSkill.make_intent_failure_handler(bus))
     return service
 
 
@@ -267,9 +268,9 @@ def _initialize_skill_manager(bus, watchdog):
         # retry
         skill_manager = None
         LOG.info(
-            'MSM is uninitialized and requires network connection to fetch '
-            'skill information\nWill retry after internet connection is '
-            'established.'
+            "MSM is uninitialized and requires network connection to fetch "
+            "skill information\nWill retry after internet connection is "
+            "established."
         )
 
     return skill_manager
@@ -281,14 +282,14 @@ def _wait_for_internet_connection():
 
 
 def shutdown(skill_manager, event_scheduler):
-    LOG.info('Shutting down Skills service')
+    LOG.info("Shutting down Skills service")
     if event_scheduler is not None:
         event_scheduler.shutdown()
     # Terminate all running threads that update skills
     if skill_manager is not None:
         skill_manager.stop()
         skill_manager.join()
-    LOG.info('Skills service shutdown complete!')
+    LOG.info("Skills service shutdown complete!")
 
 
 if __name__ == "__main__":

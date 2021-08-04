@@ -23,48 +23,48 @@ from mycroft.util.log import LOG
 
 
 sys.path.append(abspath(dirname(__file__)))
-Mopidy = __import__('mopidypost').Mopidy
+Mopidy = __import__("mopidypost").Mopidy
 
 
 class MopidyService(RemoteAudioBackend):
     def _connect(self, message):
         """
-            Callback method to connect to mopidy if server is not available
-            at startup.
+        Callback method to connect to mopidy if server is not available
+        at startup.
         """
-        url = 'http://localhost:6680'
+        url = "http://localhost:6680"
         if self.config is not None:
-            url = self.config.get('url', url)
+            url = self.config.get("url", url)
         try:
             self.mopidy = Mopidy(url)
         except Exception:
             if self.connection_attempts < 1:
-                LOG.debug('Could not connect to server, will retry quietly')
+                LOG.debug("Could not connect to server, will retry quietly")
             self.connection_attempts += 1
             time.sleep(10)
-            self.bus.emit(Message('MopidyServiceConnect'))
+            self.bus.emit(Message("MopidyServiceConnect"))
             return
 
-        LOG.info('Connected to mopidy server')
+        LOG.info("Connected to mopidy server")
 
-    def __init__(self, config, bus, name='mopidy'):
+    def __init__(self, config, bus, name="mopidy"):
         self.connection_attempts = 0
         self.bus = bus
         self.config = config
         self.name = name
 
         self.mopidy = None
-        self.bus.on('MopidyServiceConnect', self._connect)
-        self.bus.emit(Message('MopidyServiceConnect'))
+        self.bus.on("MopidyServiceConnect", self._connect)
+        self.bus.emit(Message("MopidyServiceConnect"))
 
     def supported_uris(self):
         """
-            Return supported uri's if mopidy server is found,
-            otherwise return empty list indicating this service
-            doesn't support anything.
+        Return supported uri's if mopidy server is found,
+        otherwise return empty list indicating this service
+        doesn't support anything.
         """
         if self.mopidy:
-            return ['file', 'http', 'https', 'local', 'spotify', 'gmusic']
+            return ["file", "http", "https", "local", "spotify", "gmusic"]
         else:
             return []
 
@@ -75,7 +75,7 @@ class MopidyService(RemoteAudioBackend):
         self.mopidy.add_list(tracks)
 
     def play(self, repeat=False):
-        """ Start playback.
+        """Start playback.
 
         TODO: Add repeat support.
         """
@@ -110,20 +110,22 @@ class MopidyService(RemoteAudioBackend):
     def track_info(self):
         info = self.mopidy.currently_playing()
         ret = {}
-        ret['name'] = info.get('name', '')
-        if 'album' in info:
-            ret['artist'] = info['album']['artists'][0]['name']
-            ret['album'] = info['album'].get('name', '')
+        ret["name"] = info.get("name", "")
+        if "album" in info:
+            ret["artist"] = info["album"]["artists"][0]["name"]
+            ret["album"] = info["album"].get("name", "")
         else:
-            ret['artist'] = ''
-            ret['album'] = ''
+            ret["artist"] = ""
+            ret["album"] = ""
         return ret
 
 
 def load_service(base_config, bus):
-    backends = base_config.get('backends', [])
-    services = [(b, backends[b]) for b in backends
-                if backends[b]['type'] == 'mopidy' and
-                backends[b].get('active', True)]
+    backends = base_config.get("backends", [])
+    services = [
+        (b, backends[b])
+        for b in backends
+        if backends[b]["type"] == "mopidy" and backends[b].get("active", True)
+    ]
     instances = [MopidyService(s[1], bus, s[0]) for s in services]
     return instances

@@ -41,8 +41,7 @@ def get_mimic_binary():
     """
     config = Configuration.get().get("tts", {}).get("mimic")
 
-    bin_ = config.get("path",
-                      os.path.join(MYCROFT_ROOT_PATH, 'mimic', 'bin', 'mimic'))
+    bin_ = config.get("path", os.path.join(MYCROFT_ROOT_PATH, "mimic", "bin", "mimic"))
 
     if not os.path.isfile(bin_):
         # Search for mimic on the path
@@ -59,8 +58,8 @@ def get_subscriber_voices():
     Returns:
         (dict) map of voices to custom Mimic executables.
     """
-    data_dir = expanduser(Configuration.get()['data_dir'])
-    return {'trinity': join(data_dir, 'voices/mimic_tn')}
+    data_dir = expanduser(Configuration.get()["data_dir"])
+    return {"trinity": join(data_dir, "voices/mimic_tn")}
 
 
 def download_subscriber_voices(selected_voice):
@@ -72,7 +71,7 @@ def download_subscriber_voices(selected_voice):
 
     def make_executable(dest):
         """Call back function to make the downloaded file executable."""
-        LOG.info('Make executable new voice binary executable')
+        LOG.info("Make executable new voice binary executable")
         # make executable
         file_stat = os.stat(dest)
         os.chmod(dest, file_stat.st_mode | stat.S_IEXEC)
@@ -80,7 +79,7 @@ def download_subscriber_voices(selected_voice):
     # First download the selected voice if needed
     voice_file = subscriber_voices.get(selected_voice)
     if voice_file is not None and not exists(voice_file):
-        LOG.info('Voice doesn\'t exist, downloading')
+        LOG.info("Voice doesn't exist, downloading")
         url = DeviceApi().get_subscriber_voice_url(selected_voice)
         # Check we got an url
         if url:
@@ -89,8 +88,9 @@ def download_subscriber_voices(selected_voice):
             while not dl_status.done:
                 sleep(1)
         else:
-            LOG.debug('{} is not available for this architecture'
-                      .format(selected_voice))
+            LOG.debug(
+                "{} is not available for this architecture".format(selected_voice)
+            )
 
     # Download the rest of the subsciber voices as needed
     for voice in subscriber_voices:
@@ -104,8 +104,7 @@ def download_subscriber_voices(selected_voice):
                 while not dl_status.done:
                     sleep(1)
             else:
-                LOG.debug('{} is not available for this architecture'
-                          .format(voice))
+                LOG.debug("{} is not available for this architecture".format(voice))
 
 
 def parse_phonemes(phonemes):
@@ -117,16 +116,20 @@ def parse_phonemes(phonemes):
         (list) list of phoneme duration pairs
     """
     phon_str = phonemes.decode()
-    pairs = phon_str.split(' ')
-    return [pair.split(':') for pair in pairs if ':' in pair]
+    pairs = phon_str.split(" ")
+    return [pair.split(":") for pair in pairs if ":" in pair]
 
 
 class Mimic(TTS):
     """TTS interface for local mimic v1."""
+
     def __init__(self, lang, config):
         super(Mimic, self).__init__(
-            lang, config, MimicValidator(self), 'wav',
-            ssml_tags=["speak", "ssml", "phoneme", "voice", "audio", "prosody"]
+            lang,
+            config,
+            MimicValidator(self),
+            "wav",
+            ssml_tags=["speak", "ssml", "phoneme", "voice", "audio", "prosody"],
         )
         self.default_binary = get_mimic_binary()
 
@@ -143,12 +146,12 @@ class Mimic(TTS):
     def modify_tag(self, tag):
         """Modify the SSML to suite Mimic."""
         ssml_conversions = {
-            'x-slow': '0.4',
-            'slow': '0.7',
-            'medium': '1.0',
-            'high': '1.3',
-            'x-high': '1.6',
-            'speed': 'rate'
+            "x-slow": "0.4",
+            "slow": "0.7",
+            "medium": "1.0",
+            "high": "1.3",
+            "x-high": "1.6",
+            "speed": "rate",
         }
         for key, value in ssml_conversions.items():
             tag = tag.replace(key, value)
@@ -158,25 +161,28 @@ class Mimic(TTS):
     def args(self):
         """Build mimic arguments."""
         subscriber_voices = self.subscriber_voices
-        if (self.voice in subscriber_voices and
-                exists(subscriber_voices[self.voice]) and self.is_subscriber):
+        if (
+            self.voice in subscriber_voices
+            and exists(subscriber_voices[self.voice])
+            and self.is_subscriber
+        ):
             # Use subscriber voice
             mimic_bin = subscriber_voices[self.voice]
             voice = self.voice
         elif self.voice in subscriber_voices:
             # Premium voice but bin doesn't exist, use ap while downloading
             mimic_bin = self.default_binary
-            voice = 'ap'
+            voice = "ap"
         else:
             # Normal case use normal binary and selected voice
             mimic_bin = self.default_binary
             voice = self.voice
 
-        args = [mimic_bin, '-voice', voice, '-psdur', '-ssml']
+        args = [mimic_bin, "-voice", voice, "-psdur", "-ssml"]
 
-        stretch = self.config.get('duration_stretch', None)
+        stretch = self.config.get("duration_stretch", None)
         if stretch:
-            args += ['--setf', 'duration_stretch={}'.format(stretch)]
+            args += ["--setf", "duration_stretch={}".format(stretch)]
         return args
 
     def get_tts(self, sentence, wav_file):
@@ -189,8 +195,7 @@ class Mimic(TTS):
         Returns:
             tuple ((str) file location, (str) generated phonemes)
         """
-        phonemes = subprocess.check_output(self.args + ['-o', wav_file,
-                                                        '-t', sentence])
+        phonemes = subprocess.check_output(self.args + ["-o", wav_file, "-t", sentence])
         return wav_file, parse_phonemes(phonemes)
 
     def viseme(self, phoneme_pairs):
@@ -204,12 +209,13 @@ class Mimic(TTS):
         """
         visemes = []
         for phon, dur in phoneme_pairs:
-            visemes.append((VISIMES.get(phon, '4'), float(dur)))
+            visemes.append((VISIMES.get(phon, "4"), float(dur)))
         return visemes
 
 
 class MimicValidator(TTSValidator):
     """Validator class checking that Mimic can be used."""
+
     def validate_lang(self):
         """Verify that the language is supported."""
         # TODO: Verify version of mimic can handle the requested language
@@ -218,15 +224,15 @@ class MimicValidator(TTSValidator):
         """Check that Mimic executable is found and works."""
         mimic_bin = get_mimic_binary()
         try:
-            subprocess.call([mimic_bin, '--version'])
+            subprocess.call([mimic_bin, "--version"])
         except Exception as err:
             if mimic_bin:
-                LOG.error('Failed to find mimic at: {}'.format(mimic_bin))
+                LOG.error("Failed to find mimic at: {}".format(mimic_bin))
             else:
-                LOG.error('Mimic executable not found')
+                LOG.error("Mimic executable not found")
             raise Exception(
-                'Mimic was not found. Run install-mimic.sh to install it.') \
-                from err
+                "Mimic was not found. Run install-mimic.sh to install it."
+            ) from err
 
     def get_tts_class(self):
         """Return the TTS class associated with the validator."""
@@ -244,56 +250,56 @@ class MimicValidator(TTSValidator):
 
 VISIMES = {
     # /A group
-    'v': '5',
-    'f': '5',
+    "v": "5",
+    "f": "5",
     # /B group
-    'uh': '2',
-    'w': '2',
-    'uw': '2',
-    'er': '2',
-    'r': '2',
-    'ow': '2',
+    "uh": "2",
+    "w": "2",
+    "uw": "2",
+    "er": "2",
+    "r": "2",
+    "ow": "2",
     # /C group
-    'b': '4',
-    'p': '4',
-    'm': '4',
+    "b": "4",
+    "p": "4",
+    "m": "4",
     # /D group
-    'aw': '1',
+    "aw": "1",
     # /E group
-    'th': '3',
-    'dh': '3',
+    "th": "3",
+    "dh": "3",
     # /F group
-    'zh': '3',
-    'ch': '3',
-    'sh': '3',
-    'jh': '3',
+    "zh": "3",
+    "ch": "3",
+    "sh": "3",
+    "jh": "3",
     # /G group
-    'oy': '6',
-    'ao': '6',
+    "oy": "6",
+    "ao": "6",
     # /Hgroup
-    'z': '3',
-    's': '3',
+    "z": "3",
+    "s": "3",
     # /I group
-    'ae': '0',
-    'eh': '0',
-    'ey': '0',
-    'ah': '0',
-    'ih': '0',
-    'y': '0',
-    'iy': '0',
-    'aa': '0',
-    'ay': '0',
-    'ax': '0',
-    'hh': '0',
+    "ae": "0",
+    "eh": "0",
+    "ey": "0",
+    "ah": "0",
+    "ih": "0",
+    "y": "0",
+    "iy": "0",
+    "aa": "0",
+    "ay": "0",
+    "ax": "0",
+    "hh": "0",
     # /J group
-    'n': '3',
-    't': '3',
-    'd': '3',
-    'l': '3',
+    "n": "3",
+    "t": "3",
+    "d": "3",
+    "l": "3",
     # /K group
-    'g': '3',
-    'ng': '3',
-    'k': '3',
+    "g": "3",
+    "ng": "3",
+    "k": "3",
     # blank mouth
-    'pau': '4',
+    "pau": "4",
 }

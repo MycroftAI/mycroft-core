@@ -31,27 +31,25 @@ class EnclosureMouth:
         self.showing_visemes = False
 
     def __init_events(self):
-        self.bus.on('enclosure.mouth.reset', self.reset)
-        self.bus.on('enclosure.mouth.talk', self.talk)
-        self.bus.on('enclosure.mouth.think', self.think)
-        self.bus.on('enclosure.mouth.listen', self.listen)
-        self.bus.on('enclosure.mouth.smile', self.smile)
-        self.bus.on('enclosure.mouth.viseme_list', self.viseme_list)
-        self.bus.on('enclosure.mouth.text', self.text)
-        self.bus.on('enclosure.mouth.display', self.display)
-        self.bus.on('enclosure.mouth.display_image', self.display_image)
-        self.bus.on('enclosure.weather.display', self.display_weather)
-        self.bus.on('mycroft.stop', self.clear_visemes)
-        self.bus.on('enclosure.mouth.events.activate',
-                    self._activate_visemes)
-        self.bus.on('enclosure.mouth.events.deactivate',
-                    self._deactivate_visemes)
+        self.bus.on("enclosure.mouth.reset", self.reset)
+        self.bus.on("enclosure.mouth.talk", self.talk)
+        self.bus.on("enclosure.mouth.think", self.think)
+        self.bus.on("enclosure.mouth.listen", self.listen)
+        self.bus.on("enclosure.mouth.smile", self.smile)
+        self.bus.on("enclosure.mouth.viseme_list", self.viseme_list)
+        self.bus.on("enclosure.mouth.text", self.text)
+        self.bus.on("enclosure.mouth.display", self.display)
+        self.bus.on("enclosure.mouth.display_image", self.display_image)
+        self.bus.on("enclosure.weather.display", self.display_weather)
+        self.bus.on("mycroft.stop", self.clear_visemes)
+        self.bus.on("enclosure.mouth.events.activate", self._activate_visemes)
+        self.bus.on("enclosure.mouth.events.deactivate", self._deactivate_visemes)
 
     def _activate_visemes(self, event=None):
-        self.bus.on('enclosure.mouth.viseme_list', self.viseme_list)
+        self.bus.on("enclosure.mouth.viseme_list", self.viseme_list)
 
     def _deactivate_visemes(self, event=None):
-        self.bus.remove('enclosure.mouth.viseme_list', self.viseme_list)
+        self.bus.remove("enclosure.mouth.viseme_list", self.viseme_list)
 
     def reset(self, event=None):
         self.writer.write("mouth.reset")
@@ -70,14 +68,14 @@ class EnclosureMouth:
 
     def viseme_list(self, event=None):
         if event and event.data:
-            start = event.data['start']
-            visemes = event.data['visemes']
+            start = event.data["start"]
+            visemes = event.data["visemes"]
             self.showing_visemes = True
             for code, end in visemes:
                 if not self.showing_visemes:
                     break
                 if time.time() < start + end:
-                    self.writer.write('mouth.viseme=' + code)
+                    self.writer.write("mouth.viseme=" + code)
                     time.sleep(start + end - time.time())
             self.reset()
 
@@ -91,7 +89,7 @@ class EnclosureMouth:
         self.writer.write("mouth.text=" + text)
 
     def __display(self, code, clear_previous, x_offset, y_offset):
-        """ Write the encoded image to enclosure screen.
+        """Write the encoded image to enclosure screen.
 
         Args:
             code (str):           encoded image to display
@@ -118,7 +116,7 @@ class EnclosureMouth:
             self.writer.write(message)
 
     def display(self, event=None):
-        """ Display a Mark-1 specific code.
+        """Display a Mark-1 specific code.
         Args:
             event (Message): messagebus message with data to display
         """
@@ -134,7 +132,7 @@ class EnclosureMouth:
             self.__display(code, clear_previous, x_offset, y_offset)
 
     def display_image(self, event=None):
-        """ Display an image on the enclosure.
+        """Display an image on the enclosure.
 
         The method uses PIL to convert the image supplied into a code
         suitable for the Mark-1 display.
@@ -145,16 +143,16 @@ class EnclosureMouth:
         if not event:
             return
 
-        image_absolute_path = event.data['img_path']
-        refresh = event.data['clearPrev']
-        invert = event.data['invert']
-        x_offset = event.data['xOffset']
-        y_offset = event.data['yOffset']
-        threshold = event.data.get('threshold', 70)  # default threshold
+        image_absolute_path = event.data["img_path"]
+        refresh = event.data["clearPrev"]
+        invert = event.data["invert"]
+        x_offset = event.data["xOffset"]
+        y_offset = event.data["yOffset"]
+        threshold = event.data.get("threshold", 70)  # default threshold
         # to understand how this funtion works you need to understand how the
         # Mark I arduino proprietary encoding works to display to the faceplate
         img = Image.open(image_absolute_path).convert("RGBA")
-        img2 = Image.new('RGBA', img.size, (255, 255, 255))
+        img2 = Image.new("RGBA", img.size, (255, 255, 255))
         width = img.size[0]
         height = img.size[1]
 
@@ -178,11 +176,42 @@ class EnclosureMouth:
 
         # Each char value represents a width number starting with B=1
         # then increment 1 for the next. ie C=2
-        width_codes = ['B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L',
-                       'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W',
-                       'X', 'Y', 'Z', '[', '\\', ']', '^', '_', '`', 'a']
+        width_codes = [
+            "B",
+            "C",
+            "D",
+            "E",
+            "F",
+            "G",
+            "H",
+            "I",
+            "J",
+            "K",
+            "L",
+            "M",
+            "N",
+            "O",
+            "P",
+            "Q",
+            "R",
+            "S",
+            "T",
+            "U",
+            "V",
+            "W",
+            "X",
+            "Y",
+            "Z",
+            "[",
+            "\\",
+            "]",
+            "^",
+            "_",
+            "`",
+            "a",
+        ]
 
-        height_codes = ['B', 'C', 'D', 'E', 'F', 'G', 'H', 'I']
+        height_codes = ["B", "C", "D", "E", "F", "G", "H", "I"]
 
         encode += width_codes[width - 1]
         encode += height_codes[height - 1]
@@ -194,14 +223,14 @@ class EnclosureMouth:
             for j in range(height):
                 if img.getpixel((i, j)) < threshold:
                     if invert is False:
-                        binary_values.append('1')
+                        binary_values.append("1")
                     else:
-                        binary_values.append('0')
+                        binary_values.append("0")
                 else:
                     if invert is False:
-                        binary_values.append('0')
+                        binary_values.append("0")
                     else:
-                        binary_values.append('1')
+                        binary_values.append("1")
 
         # these values are used to determine how binary values
         # needs to be grouped together
@@ -217,7 +246,7 @@ class EnclosureMouth:
         # this loop will group together the individual binary values
         # ie. binary_list = ['1111', '001', '0101', '100']
         binary_list = []
-        binary_code = ''
+        binary_code = ""
         increment = 0
         alternate = False
         for val in binary_values:
@@ -227,18 +256,34 @@ class EnclosureMouth:
                 # binary code is reversed for encoding
                 binary_list.append(binary_code[::-1])
                 increment = 0
-                binary_code = ''
+                binary_code = ""
                 alternate = True
             elif increment == number_of_bottom_pixel and alternate is True:
                 binary_list.append(binary_code[::-1])
                 increment = 0
-                binary_code = ''
+                binary_code = ""
                 alternate = False
 
         # Code to let the Makrk I arduino know where to place the
         # pixels on the faceplate
-        pixel_codes = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H',
-                       'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P']
+        pixel_codes = [
+            "A",
+            "B",
+            "C",
+            "D",
+            "E",
+            "F",
+            "G",
+            "H",
+            "I",
+            "J",
+            "K",
+            "L",
+            "M",
+            "N",
+            "O",
+            "P",
+        ]
 
         for binary_values in binary_list:
             number = int(binary_values, 2)

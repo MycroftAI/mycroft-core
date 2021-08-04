@@ -30,8 +30,7 @@ def find_plugins(plug_type):
     """
     return {
         entry_point.name: entry_point.load()
-        for entry_point
-        in pkg_resources.iter_entry_points(plug_type)
+        for entry_point in pkg_resources.iter_entry_points(plug_type)
     }
 
 
@@ -49,8 +48,7 @@ def load_plugin(plug_type, plug_name):
     if plug_name in plugins:
         ret = plugins[plug_name]
     else:
-        LOG.warning('Could not find the plugin {}.{}'.format(plug_type,
-                                                             plug_name))
+        LOG.warning("Could not find the plugin {}.{}".format(plug_type, plug_name))
         ret = None
 
     return ret

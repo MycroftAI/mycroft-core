@@ -35,27 +35,27 @@ The script also ensures that the skills marked for testing are installed and
 that any specified extra skills also gets installed into the environment.
 """
 
-FEATURE_DIR = join(dirname(__file__), 'features') + '/'
+FEATURE_DIR = join(dirname(__file__), "features") + "/"
 
 
 def copy_config_definition_files(source, destination):
     """Copy all feature files from source to destination."""
     # Copy feature files to the feature directory
-    for f in glob(join(source, '*.config.json')):
+    for f in glob(join(source, "*.config.json")):
         shutil.copyfile(f, join(destination, basename(f)))
 
 
 def copy_feature_files(source, destination):
     """Copy all feature files from source to destination."""
     # Copy feature files to the feature directory
-    for f in glob(join(source, '*.feature')):
+    for f in glob(join(source, "*.feature")):
         shutil.copyfile(f, join(destination, basename(f)))
 
 
 def copy_step_files(source, destination):
     """Copy all python files from source to destination."""
     # Copy feature files to the feature directory
-    for f in glob(join(source, '*.py')):
+    for f in glob(join(source, "*.py")):
         shutil.copyfile(f, join(destination, basename(f)))
 
 
@@ -64,12 +64,12 @@ def apply_config(config, args):
     with open(expanduser(config)) as f:
         conf_dict = yaml.safe_load(f)
 
-    if not args.test_skills and 'test_skills' in conf_dict:
-        args.test_skills = conf_dict['test_skills']
-    if not args.extra_skills and 'extra_skills' in conf_dict:
-        args.extra_skills = conf_dict['extra_skills']
-    if not args.platform and 'platform' in conf_dict:
-        args.platform = conf_dict['platform']
+    if not args.test_skills and "test_skills" in conf_dict:
+        args.test_skills = conf_dict["test_skills"]
+    if not args.extra_skills and "extra_skills" in conf_dict:
+        args.extra_skills = conf_dict["extra_skills"]
+    if not args.platform and "platform" in conf_dict:
+        args.platform = conf_dict["platform"]
 
 
 def create_argument_parser():
@@ -77,36 +77,52 @@ def create_argument_parser():
 
     Returns: ArgumentParser
     """
+
     class TestSkillAction(argparse.Action):
         def __call__(self, parser, args, values, option_string=None):
-            args.test_skills = values.replace(',', ' ').split()
+            args.test_skills = values.replace(",", " ").split()
 
     class ExtraSkillAction(argparse.Action):
         def __call__(self, parser, args, values, option_string=None):
-            args.extra_skills = values.replace(',', ' ').split()
+            args.extra_skills = values.replace(",", " ").split()
 
     platforms = list(MycroftSkillsManager.SKILL_GROUPS)
     parser = argparse.ArgumentParser(formatter_class=RawTextHelpFormatter)
-    parser.add_argument('-p', '--platform', choices=platforms,
-                        default='mycroft_mark_1')
-    parser.add_argument('-t', '--test-skills', default=[],
-                        action=TestSkillAction,
-                        help=('Comma-separated list of skills to test.\n'
-                              'Ex: "mycroft-weather, mycroft-stock"'))
-    parser.add_argument('-s', '--extra-skills', default=[],
-                        action=ExtraSkillAction,
-                        help=('Comma-separated list of extra skills to '
-                              'install.\n'
-                              'Ex: "cocktails, laugh"'))
-    parser.add_argument('-r', '--random-skills', default=0, type=int,
-                        help='Number of random skills to install.')
-    parser.add_argument('-d', '--skills-dir')
-    parser.add_argument('-u', '--repo-url',
-                        help='URL for skills repo to install / update from')
-    parser.add_argument('-b', '--branch',
-                        help='repo branch to use')
-    parser.add_argument('-c', '--config',
-                        help='Path to test configuration file.')
+    parser.add_argument("-p", "--platform", choices=platforms, default="mycroft_mark_1")
+    parser.add_argument(
+        "-t",
+        "--test-skills",
+        default=[],
+        action=TestSkillAction,
+        help=(
+            "Comma-separated list of skills to test.\n"
+            'Ex: "mycroft-weather, mycroft-stock"'
+        ),
+    )
+    parser.add_argument(
+        "-s",
+        "--extra-skills",
+        default=[],
+        action=ExtraSkillAction,
+        help=(
+            "Comma-separated list of extra skills to "
+            "install.\n"
+            'Ex: "cocktails, laugh"'
+        ),
+    )
+    parser.add_argument(
+        "-r",
+        "--random-skills",
+        default=0,
+        type=int,
+        help="Number of random skills to install.",
+    )
+    parser.add_argument("-d", "--skills-dir")
+    parser.add_argument(
+        "-u", "--repo-url", help="URL for skills repo to install / update from"
+    )
+    parser.add_argument("-b", "--branch", help="repo branch to use")
+    parser.add_argument("-c", "--config", help="Path to test configuration file.")
     return parser
 
 
@@ -127,7 +143,7 @@ def install_or_upgrade_skills(msm, skills):
     skills = [msm.find_skill(s) for s in skills]
     for s in skills:
         if not s.is_local:
-            print('Installing {}'.format(s))
+            print("Installing {}".format(s))
             msm.install(s)
         else:
             try:
@@ -145,34 +161,31 @@ def collect_test_cases(msm, skills):
     """
     for skill_name in skills:
         skill = msm.find_skill(skill_name)
-        behave_dir = join(skill.path, 'test', 'behave')
+        behave_dir = join(skill.path, "test", "behave")
         if exists(behave_dir):
             copy_feature_files(behave_dir, FEATURE_DIR)
             copy_config_definition_files(behave_dir, FEATURE_DIR)
 
-            step_dir = join(behave_dir, 'steps')
+            step_dir = join(behave_dir, "steps")
             if exists(step_dir):
-                copy_step_files(step_dir, join(FEATURE_DIR, 'steps'))
+                copy_step_files(step_dir, join(FEATURE_DIR, "steps"))
         else:
             # Generate feature file if no data exists yet
-            print('No feature files exists for {}, '
-                  'generating...'.format(skill_name))
+            print("No feature files exists for {}, " "generating...".format(skill_name))
             # No feature files setup, generate automatically
             feature = generate_feature(skill_name, skill.path)
-            with open(join(FEATURE_DIR, skill_name + '.feature'), 'w') as f:
+            with open(join(FEATURE_DIR, skill_name + ".feature"), "w") as f:
                 f.write(feature)
 
 
 def print_install_report(platform, test_skills, extra_skills):
     """Print in nice format."""
-    print('-------- TEST SETUP --------')
-    yml = yaml.dump({
-        'platform': platform,
-        'test_skills': test_skills,
-        'extra_skills': extra_skills
-        })
+    print("-------- TEST SETUP --------")
+    yml = yaml.dump(
+        {"platform": platform, "test_skills": test_skills, "extra_skills": extra_skills}
+    )
     print(yml)
-    print('----------------------------')
+    print("----------------------------")
 
 
 def get_arguments(cmdline_args):
@@ -216,8 +229,9 @@ def main(args):
     if args.config:
         apply_config(args.config, args)
 
-    msm = create_skills_manager(args.platform, args.skills_dir,
-                                args.repo_url, args.branch)
+    msm = create_skills_manager(
+        args.platform, args.skills_dir, args.repo_url, args.branch
+    )
 
     random_skills = get_random_skills(msm, args.random_skills)
     all_skills = args.test_skills + args.extra_skills + random_skills
@@ -225,9 +239,10 @@ def main(args):
     install_or_upgrade_skills(msm, all_skills)
     collect_test_cases(msm, args.test_skills)
 
-    print_install_report(msm.platform, args.test_skills,
-                         args.extra_skills + random_skills)
+    print_install_report(
+        msm.platform, args.test_skills, args.extra_skills + random_skills
+    )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main(get_arguments(sys.argv[1:]))

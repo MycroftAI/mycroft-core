@@ -17,6 +17,7 @@ import subprocess
 import sys
 from .test_setup import main as test_setup
 from .test_setup import create_argument_parser
+
 """Voigt Kampff Test Module
 
 A single interface for the Voice Kampff integration test module.
@@ -30,8 +31,8 @@ def main(cmdline_args):
     setup_args, behave_args = parser.parse_known_args(cmdline_args)
     test_setup(setup_args)
     os.chdir(os.path.dirname(__file__))
-    subprocess.call(['./run_test_suite.sh', *behave_args])
+    subprocess.call(["./run_test_suite.sh", *behave_args])
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main(sys.argv[1:])

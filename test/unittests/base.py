@@ -35,20 +35,20 @@ class MycroftUnitTestBase(TestCase):
 
     def _mock_msm(self):
         if self.use_msm_mock:
-            msm_patch = patch(self.mock_package + 'create_msm')
+            msm_patch = patch(self.mock_package + "create_msm")
             self.addCleanup(msm_patch.stop)
             self.create_msm_mock = msm_patch.start()
             self.msm_mock = mock_msm(self.temp_dir)
             self.create_msm_mock.return_value = self.msm_mock
 
     def _mock_config(self):
-        config_mgr_patch = patch(self.mock_package + 'Configuration')
+        config_mgr_patch = patch(self.mock_package + "Configuration")
         self.addCleanup(config_mgr_patch.stop)
         self.config_mgr_mock = config_mgr_patch.start()
         self.config_mgr_mock.get = mock_config(self.temp_dir)
 
     def _mock_log(self):
-        log_patch = patch(self.mock_package + 'LOG')
+        log_patch = patch(self.mock_package + "LOG")
         self.addCleanup(log_patch.stop)
         self.log_mock = log_patch.start()
 

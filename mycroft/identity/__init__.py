@@ -19,7 +19,8 @@ import os
 from mycroft.filesystem import FileSystemAccess
 from mycroft.util.log import LOG
 from mycroft.util.combo_lock import ComboLock
-identity_lock = ComboLock('/tmp/identity-lock')
+
+identity_lock = ComboLock("/tmp/identity-lock")
 
 
 class DeviceIdentity:
@@ -41,9 +42,9 @@ class IdentityManager:
 
     @staticmethod
     def _load():
-        LOG.debug('Loading identity')
+        LOG.debug("Loading identity")
         try:
-            with FileSystemAccess('identity').open('identity2.json', 'r') as f:
+            with FileSystemAccess("identity").open("identity2.json", "r") as f:
                 IdentityManager.__identity = DeviceIdentity(**json.load(f))
         except Exception:
             IdentityManager.__identity = DeviceIdentity()
@@ -61,13 +62,13 @@ class IdentityManager:
 
     @staticmethod
     def save(login=None, lock=True):
-        LOG.debug('Saving identity')
+        LOG.debug("Saving identity")
         if lock:
             identity_lock.acquire()
         try:
             if login:
                 IdentityManager._update(login)
-            with FileSystemAccess('identity').open('identity2.json', 'w') as f:
+            with FileSystemAccess("identity").open("identity2.json", "w") as f:
                 json.dump(IdentityManager.__identity.__dict__, f)
                 f.flush()
                 os.fsync(f.fileno())
@@ -77,7 +78,7 @@ class IdentityManager:
 
     @staticmethod
     def _update(login=None):
-        LOG.debug('Updaing identity')
+        LOG.debug("Updaing identity")
         login = login or {}
         expiration = login.get("expiration", 0)
         IdentityManager.__identity.uuid = login.get("uuid", "")

@@ -20,9 +20,10 @@ import mycroft.audio.audioservice as audio_service
 from mycroft.messagebus import Message
 
 from .services.working import WorkingBackend
+
 """Tests for Audioservice class"""
 
-seek_message = Message('seek', data={'seconds': 5})
+seek_message = Message("seek", data={"seconds": 5})
 
 
 class MockEmitter:
@@ -55,25 +56,25 @@ class MockEmitter:
 
 def setup_mock_backends(mock_load_services, emitter):
     backend = WorkingBackend({}, emitter)
-    second_backend = WorkingBackend({}, emitter, 'second')
+    second_backend = WorkingBackend({}, emitter, "second")
     mock_load_services.return_value = [backend, second_backend]
     return backend, second_backend
 
 
 class TestService(unittest.TestCase):
     emitter = MockEmitter()
-    service_path = abspath(join(dirname(__file__), 'services'))
+    service_path = abspath(join(dirname(__file__), "services"))
 
     def test_load(self):
-        service = audio_service.load_services({}, TestService.emitter,
-                                              TestService.service_path)
+        service = audio_service.load_services(
+            {}, TestService.emitter, TestService.service_path
+        )
         self.assertEqual(len(service), 1)
 
-    @mock.patch('mycroft.audio.audioservice.load_services')
+    @mock.patch("mycroft.audio.audioservice.load_services")
     def test_audio_backend_shutdown(self, mock_load_services):
         """Test shutdown of audio backend."""
-        backend, second_backend = setup_mock_backends(mock_load_services,
-                                                      self.emitter)
+        backend, second_backend = setup_mock_backends(mock_load_services, self.emitter)
         service = audio_service.AudioService(self.emitter)
         service.load_services()
 
@@ -85,30 +86,29 @@ class TestService(unittest.TestCase):
         self.assertTrue(backend.shutdown.called)
         self.assertTrue(second_backend.shutdown.called)
 
-    @mock.patch('mycroft.audio.audioservice.load_services')
+    @mock.patch("mycroft.audio.audioservice.load_services")
     def test_audio_service_track_start(self, mock_load_services):
         """Test start of new track messages."""
-        backend, second_backend = setup_mock_backends(mock_load_services,
-                                                      self.emitter)
+        backend, second_backend = setup_mock_backends(mock_load_services, self.emitter)
         service = audio_service.AudioService(self.emitter)
         service.load_services()
         service.default = backend
 
         self.emitter.reset()
-        service.track_start('The universe song')
+        service.track_start("The universe song")
         service.track_start(None)
-        self.assertEqual(self.emitter.types, ['mycroft.audio.playing_track',
-                                              'mycroft.audio.queue_end'])
-        self.assertEqual(self.emitter.results,
-                         [{'track': 'The universe song'}, {}])
+        self.assertEqual(
+            self.emitter.types,
+            ["mycroft.audio.playing_track", "mycroft.audio.queue_end"],
+        )
+        self.assertEqual(self.emitter.results, [{"track": "The universe song"}, {}])
 
         service.shutdown()
 
-    @mock.patch('mycroft.audio.audioservice.load_services')
+    @mock.patch("mycroft.audio.audioservice.load_services")
     def test_audio_service_methods_not_playing(self, mock_load_services):
         """Check that backend methods aren't called when stopped."""
-        backend, second_backend = setup_mock_backends(mock_load_services,
-                                                      self.emitter)
+        backend, second_backend = setup_mock_backends(mock_load_services, self.emitter)
         mock_load_services.return_value = [backend, second_backend]
 
         service = audio_service.AudioService(self.emitter)
@@ -137,11 +137,10 @@ class TestService(unittest.TestCase):
 
         service.shutdown()
 
-    @mock.patch('mycroft.audio.audioservice.load_services')
+    @mock.patch("mycroft.audio.audioservice.load_services")
     def test_audio_service_methods_playing(self, mock_load_services):
         """Check that backend methods are called during playback."""
-        backend, second_backend = setup_mock_backends(mock_load_services,
-                                                      self.emitter)
+        backend, second_backend = setup_mock_backends(mock_load_services, self.emitter)
         mock_load_services.return_value = [backend, second_backend]
 
         service = audio_service.AudioService(self.emitter)
@@ -150,12 +149,12 @@ class TestService(unittest.TestCase):
         service.default = backend
 
         # Check that play doesn't play unsupported media uri type
-        m = Message('audio.service.play', data={'tracks': ['asdf://hello']})
+        m = Message("audio.service.play", data={"tracks": ["asdf://hello"]})
         service._play(m)
         self.assertFalse(backend.play.called)
 
         # Check that play plays supported media uri type
-        m = Message('audio.service.play', data={'tracks': ['http://hello']})
+        m = Message("audio.service.play", data={"tracks": ["http://hello"]})
         service._play(m)
         self.assertTrue(backend.play.called)
 
@@ -176,9 +175,13 @@ class TestService(unittest.TestCase):
         self.assertTrue(backend.lower_volume.called)
 
         # Check that play respects requested backends
-        m = Message('audio.service.play',
-                    data={'tracks': [['http://hello', 'audio/mp3']],
-                          'utterance': 'using second'})
+        m = Message(
+            "audio.service.play",
+            data={
+                "tracks": [["http://hello", "audio/mp3"]],
+                "utterance": "using second",
+            },
+        )
         service._play(m)
         self.assertTrue(second_backend.play.called)
 
@@ -199,11 +202,10 @@ class TestService(unittest.TestCase):
 
         service.shutdown()
 
-    @mock.patch('mycroft.audio.audioservice.load_services')
+    @mock.patch("mycroft.audio.audioservice.load_services")
     def test_audio_service_queue_methods(self, mock_load_services):
         """Check that backend methods are called during playback."""
-        backend, second_backend = setup_mock_backends(mock_load_services,
-                                                      self.emitter)
+        backend, second_backend = setup_mock_backends(mock_load_services, self.emitter)
         mock_load_services.return_value = [backend, second_backend]
 
         service = audio_service.AudioService(self.emitter)
@@ -215,16 +217,16 @@ class TestService(unittest.TestCase):
         # Test queueing starts playback if stopped
         backend.play.reset_mock()
         backend.add_list.reset_mock()
-        m = Message('audio.service.queue', data={'tracks': ['http://hello']})
+        m = Message("audio.service.queue", data={"tracks": ["http://hello"]})
         service._queue(m)
-        backend.add_list.called_with(['http://hello'])
+        backend.add_list.called_with(["http://hello"])
         self.assertTrue(backend.play.called)
 
         # Test queuing doesn't call play if play is in progress
         backend.play.reset_mock()
         backend.add_list.reset_mock()
         service._queue(m)
-        backend.add_list.called_with(['http://hello'])
+        backend.add_list.called_with(["http://hello"])
         self.assertFalse(backend.play.called)
 
         service.shutdown()

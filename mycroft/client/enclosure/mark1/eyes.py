@@ -29,29 +29,30 @@ class EnclosureEyes:
         self.__init_events()
 
     def __init_events(self):
-        self.bus.on('enclosure.eyes.on', self.on)
-        self.bus.on('enclosure.eyes.off', self.off)
-        self.bus.on('enclosure.eyes.blink', self.blink)
-        self.bus.on('enclosure.eyes.narrow', self.narrow)
-        self.bus.on('enclosure.eyes.look', self.look)
-        self.bus.on('enclosure.eyes.color', self.color)
-        self.bus.on('enclosure.eyes.level', self.brightness)
-        self.bus.on('enclosure.eyes.volume', self.volume)
-        self.bus.on('enclosure.eyes.spin', self.spin)
-        self.bus.on('enclosure.eyes.timedspin', self.timed_spin)
-        self.bus.on('enclosure.eyes.reset', self.reset)
-        self.bus.on('enclosure.eyes.setpixel', self.set_pixel)
-        self.bus.on('enclosure.eyes.fill', self.fill)
+        self.bus.on("enclosure.eyes.on", self.on)
+        self.bus.on("enclosure.eyes.off", self.off)
+        self.bus.on("enclosure.eyes.blink", self.blink)
+        self.bus.on("enclosure.eyes.narrow", self.narrow)
+        self.bus.on("enclosure.eyes.look", self.look)
+        self.bus.on("enclosure.eyes.color", self.color)
+        self.bus.on("enclosure.eyes.level", self.brightness)
+        self.bus.on("enclosure.eyes.volume", self.volume)
+        self.bus.on("enclosure.eyes.spin", self.spin)
+        self.bus.on("enclosure.eyes.timedspin", self.timed_spin)
+        self.bus.on("enclosure.eyes.reset", self.reset)
+        self.bus.on("enclosure.eyes.setpixel", self.set_pixel)
+        self.bus.on("enclosure.eyes.fill", self.fill)
 
-        self.bus.on('enclosure.eyes.rgb.get', self.handle_get_color)
+        self.bus.on("enclosure.eyes.rgb.get", self.handle_get_color)
 
     def handle_get_color(self, message):
         """Get the eye RGB color for all pixels
         Returns:
            (list) list of (r,g,b) tuples for each eye pixel
         """
-        self.bus.emit(message.reply("enclosure.eyes.rgb",
-                                    {"pixels": self._current_rgb}))
+        self.bus.emit(
+            message.reply("enclosure.eyes.rgb", {"pixels": self._current_rgb})
+        )
 
     def on(self, event=None):
         self.writer.write("eyes.on")

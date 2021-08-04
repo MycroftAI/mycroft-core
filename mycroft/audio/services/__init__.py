@@ -137,8 +137,8 @@ class AudioBackend(metaclass=ABCMeta):
             dict: Track info containing atleast the keys artist and album.
         """
         ret = {}
-        ret['artist'] = ''
-        ret['album'] = ''
+        ret["artist"] = ""
+        ret["album"] = ""
         return ret
 
     def shutdown(self):

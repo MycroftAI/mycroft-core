@@ -67,8 +67,9 @@ class DynamicEnergytest(TestCase):
         source.stream.inject(higher_base)
         recognizer = ResponsiveRecognizer(MockHotwordEngine())
 
-        sec_per_buffer = float(source.CHUNK) / (source.SAMPLE_RATE *
-                                                source.SAMPLE_WIDTH)
+        sec_per_buffer = float(source.CHUNK) / (
+            source.SAMPLE_RATE * source.SAMPLE_WIDTH
+        )
 
         test_seconds = 30.0
         while test_seconds > 0:
@@ -80,7 +81,6 @@ class DynamicEnergytest(TestCase):
         higher_base_energy = audioop.rms(higher_base, source.SAMPLE_WIDTH)
         # after recalibration (because of max audio length) new threshold
         # should be >= 1.5 * higher_base_energy
-        delta_below_threshold = (
-            recognizer.energy_threshold - higher_base_energy)
-        min_delta = higher_base_energy * .5
+        delta_below_threshold = recognizer.energy_threshold - higher_base_energy
+        min_delta = higher_base_energy * 0.5
         assert abs(delta_below_threshold - min_delta) < 1

@@ -32,6 +32,7 @@ from enum import Enum
 
 # These are the main functions we are using lingua franca to provide
 from lingua_franca import get_default_loc
+
 # TODO 21.08 - move nice_duration methods to Lingua Franca.
 from lingua_franca.format import (
     join_list,
@@ -40,13 +41,18 @@ from lingua_franca.format import (
     nice_number,
     nice_time,
     nice_year,
-    pronounce_number
+    pronounce_number,
 )
+
 # TODO 21.08 - remove import of private method _translate_word
 # Consider whether the remaining items here are necessary.
-from lingua_franca.format import (NUMBER_TUPLE, DateTimeFormat,
-                                  date_time_format, expand_options,
-                                  _translate_word)
+from lingua_franca.format import (
+    NUMBER_TUPLE,
+    DateTimeFormat,
+    date_time_format,
+    expand_options,
+    _translate_word,
+)
 from padatious.util import expand_parentheses
 
 
@@ -59,9 +65,16 @@ class TimeResolution(Enum):
     MILLISECONDS = 6
 
 
-def _duration_handler(time1, lang=None, speech=True, *, time2=None,
-                      use_years=True, clock=False,
-                      resolution=TimeResolution.SECONDS):
+def _duration_handler(
+    time1,
+    lang=None,
+    speech=True,
+    *,
+    time2=None,
+    use_years=True,
+    clock=False,
+    resolution=TimeResolution.SECONDS
+):
     """Convert duration in seconds to a nice spoken timespan.
 
     Used as a handler by nice_duration and nice_duration_dt.
@@ -115,31 +128,49 @@ def _duration_handler(time1, lang=None, speech=True, *, time2=None,
     if time2:
         type2 = type(time2)
         if type1 is not type2:
-            raise Exception("nice_duration() can't combine data types: "
-                            "{} and {}".format(type1, type2))
+            raise Exception(
+                "nice_duration() can't combine data types: "
+                "{} and {}".format(type1, type2)
+            )
         elif type1 is datetime.datetime:
             duration = time1 - time2
-            _leapdays = (abs(leapdays(time1.year, time2.year)))
+            _leapdays = abs(leapdays(time1.year, time2.year))
 
             # when operating on datetimes, refuse resolutions that
             # would result in bunches of trailing zeroes
-            if all([time1.second == 0, time2.second == 0,
-                    resolution.value >= TimeResolution.SECONDS.value]):
+            if all(
+                [
+                    time1.second == 0,
+                    time2.second == 0,
+                    resolution.value >= TimeResolution.SECONDS.value,
+                ]
+            ):
                 resolution = TimeResolution.MINUTES
-            if all([time1.minute == 0, time2.minute == 0,
-                    resolution.value == TimeResolution.MINUTES.value]):
+            if all(
+                [
+                    time1.minute == 0,
+                    time2.minute == 0,
+                    resolution.value == TimeResolution.MINUTES.value,
+                ]
+            ):
                 resolution = TimeResolution.HOURS
-            if all([time1.hour == 0, time2.hour == 0,
-                    resolution.value == TimeResolution.HOURS.value]):
+            if all(
+                [
+                    time1.hour == 0,
+                    time2.hour == 0,
+                    resolution.value == TimeResolution.HOURS.value,
+                ]
+            ):
                 resolution = TimeResolution.DAYS
 
         else:
             _tmp = warnings.formatwarning
-            warnings.formatwarning = lambda msg, * \
-                args, **kwargs: "{}\n".format(msg)
-            warning = ("WARN: mycroft.util.format.nice_duration_dt() can't "
-                       "subtract " + str(type1) + ". Ignoring 2nd "
-                       "argument '" + str(time2) + "'.")
+            warnings.formatwarning = lambda msg, *args, **kwargs: "{}\n".format(msg)
+            warning = (
+                "WARN: mycroft.util.format.nice_duration_dt() can't "
+                "subtract " + str(type1) + ". Ignoring 2nd "
+                "argument '" + str(time2) + "'."
+            )
             warnings.warn(warning)
             warnings.formatwarning = _tmp
             duration = time1
@@ -148,7 +179,7 @@ def _duration_handler(time1, lang=None, speech=True, *, time2=None,
 
     # Pull decimal portion of seconds, if present, to use for milliseconds
     if isinstance(duration, float):
-        milliseconds = str(duration).split('.')[1]
+        milliseconds = str(duration).split(".")[1]
         if speech:
             milliseconds = milliseconds[:2]
         else:
@@ -196,13 +227,11 @@ def _duration_handler(time1, lang=None, speech=True, *, time2=None,
             if out:
                 out += " "
             out += pronounce_number(minutes, lang) + " "
-            out += _translate_word("minute" if minutes ==
-                                   1 else "minutes", lang)
+            out += _translate_word("minute" if minutes == 1 else "minutes", lang)
 
-        if ((seconds > 0 and resolution.value >=
-             TimeResolution.SECONDS.value) or
-            (milliseconds > 0 and resolution.value ==
-             TimeResolution.MILLISECONDS.value)):
+        if (seconds > 0 and resolution.value >= TimeResolution.SECONDS.value) or (
+            milliseconds > 0 and resolution.value == TimeResolution.MILLISECONDS.value
+        ):
 
             if resolution.value == TimeResolution.MILLISECONDS.value:
                 seconds += milliseconds
@@ -213,8 +242,7 @@ def _duration_handler(time1, lang=None, speech=True, *, time2=None,
                     out += _translate_word("and", lang) + " "
             # speaking "zero point five seconds" is better than "point five"
             out += pronounce_number(seconds, lang) + " "
-            out += _translate_word("second" if seconds ==
-                                   1 else "seconds", lang)
+            out += _translate_word("second" if seconds == 1 else "seconds", lang)
 
     else:
         # M:SS, MM:SS, H:MM:SS, Dd H:MM:SS format
@@ -226,28 +254,29 @@ def _duration_handler(time1, lang=None, speech=True, *, time2=None,
             out = str(years) + "y "
         if days > 0 and resolution.value > TimeResolution.YEARS.value:
             out += str(days) + "d "
-        if (hours > 0 and resolution.value > TimeResolution.DAYS.value) or \
-                (clock and resolution is TimeResolution.HOURS):
+        if (hours > 0 and resolution.value > TimeResolution.DAYS.value) or (
+            clock and resolution is TimeResolution.HOURS
+        ):
             out += str(hours)
 
         if resolution.value == TimeResolution.MINUTES.value and not clock:
-            out += (("h " + str(minutes) + "m") if hours > 0
-                    else str(minutes) + "m")
-        elif (minutes > 0 and resolution.value > TimeResolution.HOURS.value) \
-                or (clock and resolution.value >= TimeResolution.HOURS.value):
+            out += ("h " + str(minutes) + "m") if hours > 0 else str(minutes) + "m"
+        elif (minutes > 0 and resolution.value > TimeResolution.HOURS.value) or (
+            clock and resolution.value >= TimeResolution.HOURS.value
+        ):
             if hours != 0 or (clock and resolution is TimeResolution.HOURS):
                 out += ":"
                 if minutes < 10:
                     out += "0"
             out += str(minutes) + ":"
-            if (seconds > 0 and resolution.value >
-                    TimeResolution.MINUTES.value) or clock:
+            if (
+                seconds > 0 and resolution.value > TimeResolution.MINUTES.value
+            ) or clock:
                 out += _seconds_str
             else:
                 out += "00"
         # if we have seconds but no minutes...
-        elif (seconds > 0 or clock) and resolution.value > \
-                TimeResolution.MINUTES.value:
+        elif (seconds > 0 or clock) and resolution.value > TimeResolution.MINUTES.value:
             # check if output ends in hours
             try:
                 if str(hours) == out.split()[-1]:
@@ -256,8 +285,9 @@ def _duration_handler(time1, lang=None, speech=True, *, time2=None,
                 pass
             out += ("00:" if hours > 0 else "0:") + _seconds_str
 
-        if (milliseconds > 0 or clock) and resolution.value \
-                == TimeResolution.MILLISECONDS.value:
+        if (
+            milliseconds > 0 or clock
+        ) and resolution.value == TimeResolution.MILLISECONDS.value:
             _mill = str(milliseconds).split(".")[1]
             # right-pad milliseconds to three decimal places
             while len(_mill) < 3:
@@ -274,8 +304,14 @@ def _duration_handler(time1, lang=None, speech=True, *, time2=None,
                 out += "." + _mill
 
         # If this evaluates True, out currently ends in hours: "1d 12"
-        if out and all([resolution.value >= TimeResolution.HOURS.value,
-                        ":" not in out, out[-1] != "m", hours > 0]):
+        if out and all(
+            [
+                resolution.value >= TimeResolution.HOURS.value,
+                ":" not in out,
+                out[-1] != "m",
+                hours > 0,
+            ]
+        ):
             # to "1d 12h"
             out += "h"
         out = out.strip()
@@ -299,9 +335,15 @@ def _duration_handler(time1, lang=None, speech=True, *, time2=None,
     return out
 
 
-def nice_duration(duration, lang=None, speech=True, use_years=True,
-                  clock=False, resolution=TimeResolution.SECONDS):
-    """ Convert duration in seconds to a nice spoken timespan
+def nice_duration(
+    duration,
+    lang=None,
+    speech=True,
+    use_years=True,
+    clock=False,
+    resolution=TimeResolution.SECONDS,
+):
+    """Convert duration in seconds to a nice spoken timespan
 
     Accepts:
         time, in seconds, or datetime.timedelta
@@ -337,14 +379,26 @@ def nice_duration(duration, lang=None, speech=True, use_years=True,
     Returns:
         str: timespan as a string
     """
-    return _duration_handler(duration, lang=lang, speech=speech,
-                             use_years=use_years, resolution=resolution,
-                             clock=clock)
+    return _duration_handler(
+        duration,
+        lang=lang,
+        speech=speech,
+        use_years=use_years,
+        resolution=resolution,
+        clock=clock,
+    )
 
 
-def nice_duration_dt(date1, date2, lang=None, speech=True, use_years=True,
-                     clock=False, resolution=TimeResolution.SECONDS):
-    """ Convert duration between datetimes to a nice spoken timespan
+def nice_duration_dt(
+    date1,
+    date2,
+    lang=None,
+    speech=True,
+    use_years=True,
+    clock=False,
+    resolution=TimeResolution.SECONDS,
+):
+    """Convert duration between datetimes to a nice spoken timespan
 
     Accepts:
         2 x datetime.datetime
@@ -385,9 +439,15 @@ def nice_duration_dt(date1, date2, lang=None, speech=True, use_years=True,
     try:
         big = max(date1, date2)
         small = min(date1, date2)
-    except(TypeError):
+    except (TypeError):
         big = date1
         small = date2
-    return _duration_handler(big, lang=lang, speech=speech, time2=small,
-                             use_years=use_years, resolution=resolution,
-                             clock=clock)
+    return _duration_handler(
+        big,
+        lang=lang,
+        speech=speech,
+        time2=small,
+        use_years=use_years,
+        resolution=resolution,
+        clock=clock,
+    )

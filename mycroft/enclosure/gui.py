@@ -44,7 +44,8 @@ class SkillGUI:
         """Returns True if at least 1 gui is connected, else False"""
         if self.skill.bus:
             reply = self.skill.bus.wait_for_response(
-                Message("gui.status.request"), "gui.status.request.response")
+                Message("gui.status.request"), "gui.status.request.response"
+            )
             if reply:
                 return reply.data["connected"]
         return False
@@ -52,15 +53,15 @@ class SkillGUI:
     @property
     def remote_url(self):
         """Returns configuration value for url of remote-server."""
-        return self.config.get('remote-server')
+        return self.config.get("remote-server")
 
     def build_message_type(self, event):
         """Builds a message matching the output from the enclosure."""
-        return '{}.{}'.format(self.skill.skill_id, event)
+        return "{}.{}".format(self.skill.skill_id, event)
 
     def setup_default_handlers(self):
         """Sets the handlers for the default messages."""
-        msg_type = self.build_message_type('set')
+        msg_type = self.build_message_type("set")
         self.skill.add_event(msg_type, self.gui_set)
 
     def register_handler(self, event, handler):
@@ -103,7 +104,7 @@ class SkillGUI:
         if self.page:
             # emit notification (but not needed if page has not been shown yet)
             data = self.__session_data.copy()
-            data.update({'__from': self.skill.skill_id})
+            data.update({"__from": self.skill.skill_id})
             self.skill.bus.emit(Message("gui.value.set", data))
 
     def __getitem__(self, key):
@@ -126,8 +127,9 @@ class SkillGUI:
         """
         self.__session_data = {}
         self.page = None
-        self.skill.bus.emit(Message("gui.clear.namespace",
-                                    {"__from": self.skill.skill_id}))
+        self.skill.bus.emit(
+            Message("gui.clear.namespace", {"__from": self.skill.skill_id})
+        )
 
     def send_event(self, event_name, params=None):
         """Trigger a gui event.
@@ -138,13 +140,18 @@ class SkillGUI:
                     should be sent along with the request.
         """
         params = params or {}
-        self.skill.bus.emit(Message("gui.event.send",
-                                    {"__from": self.skill.skill_id,
-                                     "event_name": event_name,
-                                     "params": params}))
+        self.skill.bus.emit(
+            Message(
+                "gui.event.send",
+                {
+                    "__from": self.skill.skill_id,
+                    "event_name": event_name,
+                    "params": params,
+                },
+            )
+        )
 
-    def show_page(self, name, override_idle=None,
-                  override_animations=False):
+    def show_page(self, name, override_idle=None, override_animations=False):
         """Begin showing the page in the GUI
 
         Args:
@@ -159,8 +166,9 @@ class SkillGUI:
         """
         self.show_pages([name], 0, override_idle, override_animations)
 
-    def show_pages(self, page_names, index=0, override_idle=None,
-                   override_animations=False):
+    def show_pages(
+        self, page_names, index=0, override_idle=None, override_animations=False
+    ):
         """Begin showing the list of pages in the GUI.
 
         Args:
@@ -177,39 +185,45 @@ class SkillGUI:
                 False: 'Default' always show animations.
         """
         if not isinstance(page_names, list):
-            raise ValueError('page_names must be a list')
+            raise ValueError("page_names must be a list")
 
         if index > len(page_names):
-            raise ValueError('Default index is larger than page list length')
+            raise ValueError("Default index is larger than page list length")
 
         self.page = page_names[index]
 
         # First sync any data...
         data = self.__session_data.copy()
-        data.update({'__from': self.skill.skill_id})
+        data.update({"__from": self.skill.skill_id})
         self.skill.bus.emit(Message("gui.value.set", data))
 
         # Convert pages to full reference
         page_urls = []
         for name in page_names:
             if name.startswith("SYSTEM"):
-                page = resolve_resource_file(join('ui', name))
+                page = resolve_resource_file(join("ui", name))
             else:
-                page = self.skill.find_resource(name, 'ui')
+                page = self.skill.find_resource(name, "ui")
             if page:
-                if self.config.get('remote'):
+                if self.config.get("remote"):
                     page_urls.append(self.remote_url + "/" + page)
                 else:
                     page_urls.append("file://" + page)
             else:
                 raise FileNotFoundError("Unable to find page: {}".format(name))
 
-        self.skill.bus.emit(Message("gui.page.show",
-                                    {"page": page_urls,
-                                     "index": index,
-                                     "__from": self.skill.skill_id,
-                                     "__idle": override_idle,
-                                     "__animations": override_animations}))
+        self.skill.bus.emit(
+            Message(
+                "gui.page.show",
+                {
+                    "page": page_urls,
+                    "index": index,
+                    "__from": self.skill.skill_id,
+                    "__idle": override_idle,
+                    "__animations": override_animations,
+                },
+            )
+        )
 
     def remove_page(self, page):
         """Remove a single page from the GUI.
@@ -227,29 +241,32 @@ class SkillGUI:
                                ["Weather.qml", "Forecast.qml", "Other.qml"]
         """
         if not isinstance(page_names, list):
-            raise ValueError('page_names must be a list')
+            raise ValueError("page_names must be a list")
 
         # Convert pages to full reference
         page_urls = []
         for name in page_names:
             if name.startswith("SYSTEM"):
-                page = resolve_resource_file(join('ui', name))
+                page = resolve_resource_file(join("ui", name))
             else:
-                page = self.skill.find_resource(name, 'ui')
+                page = self.skill.find_resource(name, "ui")
             if page:
-                if self.config.get('remote'):
+                if self.config.get("remote"):
                     page_urls.append(self.remote_url + "/" + page)
                 else:
                     page_urls.append("file://" + page)
             else:
                 raise FileNotFoundError("Unable to find page: {}".format(name))
 
-        self.skill.bus.emit(Message("gui.page.delete",
-                                    {"page": page_urls,
-                                     "__from": self.skill.skill_id}))
+        self.skill.bus.emit(
+            Message(
+                "gui.page.delete", {"page": page_urls, "__from": self.skill.skill_id}
+            )
+        )
 
-    def show_text(self, text, title=None, override_idle=None,
-                  override_animations=False):
+    def show_text(
+        self, text, title=None, override_idle=None, override_animations=False
+    ):
         """Display a GUI page for viewing simple text.
 
         Args:
@@ -265,12 +282,17 @@ class SkillGUI:
         """
         self["text"] = text
         self["title"] = title
-        self.show_page("SYSTEM_TextFrame.qml", override_idle,
-                       override_animations)
+        self.show_page("SYSTEM_TextFrame.qml", override_idle, override_animations)
 
-    def show_image(self, url, caption=None,
-                   title=None, fill=None,
-                   override_idle=None, override_animations=False):
+    def show_image(
+        self,
+        url,
+        caption=None,
+        title=None,
+        fill=None,
+        override_idle=None,
+        override_animations=False,
+    ):
         """Display a GUI page for viewing an image.
 
         Args:
@@ -291,12 +313,17 @@ class SkillGUI:
         self["title"] = title
         self["caption"] = caption
         self["fill"] = fill
-        self.show_page("SYSTEM_ImageFrame.qml", override_idle,
-                       override_animations)
+        self.show_page("SYSTEM_ImageFrame.qml", override_idle, override_animations)
 
-    def show_animated_image(self, url, caption=None,
-                            title=None, fill=None,
-                            override_idle=None, override_animations=False):
+    def show_animated_image(
+        self,
+        url,
+        caption=None,
+        title=None,
+        fill=None,
+        override_idle=None,
+        override_animations=False,
+    ):
         """Display a GUI page for viewing an image.
 
         Args:
@@ -317,11 +344,13 @@ class SkillGUI:
         self["title"] = title
         self["caption"] = caption
         self["fill"] = fill
-        self.show_page("SYSTEM_AnimatedImageFrame.qml", override_idle,
-                       override_animations)
+        self.show_page(
+            "SYSTEM_AnimatedImageFrame.qml", override_idle, override_animations
+        )
 
-    def show_html(self, html, resource_url=None, override_idle=None,
-                  override_animations=False):
+    def show_html(
+        self, html, resource_url=None, override_idle=None, override_animations=False
+    ):
         """Display an HTML page in the GUI.
 
         Args:
@@ -337,11 +366,9 @@ class SkillGUI:
         """
         self["html"] = html
         self["resourceLocation"] = resource_url
-        self.show_page("SYSTEM_HtmlFrame.qml", override_idle,
-                       override_animations)
+        self.show_page("SYSTEM_HtmlFrame.qml", override_idle, override_animations)
 
-    def show_url(self, url, override_idle=None,
-                 override_animations=False):
+    def show_url(self, url, override_idle=None, override_animations=False):
         """Display an HTML page in the GUI.
 
         Args:
@@ -355,8 +382,7 @@ class SkillGUI:
                 False: 'Default' always show animations.
         """
         self["url"] = url
-        self.show_page("SYSTEM_UrlFrame.qml", override_idle,
-                       override_animations)
+        self.show_page("SYSTEM_UrlFrame.qml", override_idle, override_animations)
 
     def release(self):
         """Signal that this skill is no longer using the GUI,
@@ -364,8 +390,9 @@ class SkillGUI:
         Also calls self.clear() to reset the state variables
         Platforms can close the window or go back to previous page"""
         self.clear()
-        self.skill.bus.emit(Message("mycroft.gui.screen.close",
-                                    {"skill_id": self.skill.skill_id}))
+        self.skill.bus.emit(
+            Message("mycroft.gui.screen.close", {"skill_id": self.skill.skill_id})
+        )
 
     def shutdown(self):
         """Shutdown gui interface.

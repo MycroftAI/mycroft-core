@@ -29,15 +29,15 @@ from tornado.websocket import WebSocketHandler
 from mycroft.messagebus.message import Message
 
 
-Namespace = namedtuple('Namespace', ['name', 'pages'])
+Namespace = namedtuple("Namespace", ["name", "pages"])
 write_lock = Lock()
 namespace_lock = Lock()
 
-RESERVED_KEYS = ['__from', '__idle']
+RESERVED_KEYS = ["__from", "__idle"]
 
 
 def _get_page_data(message):
-    """ Extract page related data from a message.
+    """Extract page related data from a message.
 
     Args:
         message: messagebus message object
@@ -48,10 +48,10 @@ def _get_page_data(message):
     """
     data = message.data
     # Note:  'page' can be either a string or a list of strings
-    if 'page' not in data:
+    if "page" not in data:
         raise ValueError("Page missing in data")
-    if 'index' in data:
-        index = data['index']
+    if "index" in data:
+        index = data["index"]
     else:
         index = 0
     page = data.get("page", "")
@@ -63,14 +63,14 @@ class Enclosure:
     def __init__(self):
         # Load full config
         config = Configuration.get()
-        self.lang = config['lang']
+        self.lang = config["lang"]
         self.config = config.get("enclosure")
         self.global_config = config
 
         # Create Message Bus Client
         self.bus = MessageBusClient()
 
-        self.gui = create_gui_service(self, config['gui_websocket'])
+        self.gui = create_gui_service(self, config["gui_websocket"])
         # This datastore holds the data associated with the GUI provider. Data
         # is stored in Namespaces, so you can have:
         # self.datastore["namespace"]["name"] = value
@@ -125,11 +125,14 @@ class Enclosure:
     def handle_gui_status_request(self, message):
         """Reply to gui status request, allows querying if a gui is
         connected using the message bus"""
-        self.bus.emit(message.reply("gui.status.request.response",
-                                    {"connected": self.gui_connected}))
+        self.bus.emit(
+            message.reply(
+                "gui.status.request.response", {"connected": self.gui_connected}
+            )
+        )
 
     def send(self, msg_dict):
-        """ Send to all registered GUIs. """
+        """Send to all registered GUIs."""
         for connection in GUIWebsocketHandler.clients:
             try:
                 connection.send(msg_dict)
@@ -137,15 +140,17 @@ class Enclosure:
                 LOG.exception(repr(e))
 
     def on_gui_send_event(self, message):
-        """ Send an event to the GUIs. """
+        """Send an event to the GUIs."""
         try:
-            data = {'type': 'mycroft.events.triggered',
-                    'namespace': message.data.get('__from'),
-                    'event_name': message.data.get('event_name'),
-                    'params': message.data.get('params')}
+            data = {
+                "type": "mycroft.events.triggered",
+                "namespace": message.data.get("__from"),
+                "event_name": message.data.get("event_name"),
+                "params": message.data.get("params"),
+            }
             self.send(data)
         except Exception as e:
-            LOG.error('Could not send event ({})'.format(repr(e)))
+            LOG.error("Could not send event ({})".format(repr(e)))
 
     def on_gui_set_value(self, message):
         data = message.data
@@ -160,7 +165,7 @@ class Enclosure:
                     LOG.exception(repr(e))
 
     def set(self, namespace, name, value):
-        """ Perform the send of the values to the connected GUIs. """
+        """Perform the send of the values to the connected GUIs."""
         if namespace not in self.datastore:
             self.datastore[namespace] = {}
         if self.datastore[namespace].get(name) != value:
@@ -168,13 +173,15 @@ class Enclosure:
 
             # If the namespace is loaded send data to GUI
             if namespace in [l.name for l in self.loaded]:
-                msg = {"type": "mycroft.session.set",
-                       "namespace": namespace,
-                       "data": {name: value}}
+                msg = {
+                    "type": "mycroft.session.set",
+                    "namespace": namespace,
+                    "data": {name: value},
+                }
                 self.send(msg)
 
     def on_gui_delete_page(self, message):
-        """ Bus handler for removing pages. """
+        """Bus handler for removing pages."""
         page, namespace, _ = _get_page_data(message)
         try:
             with namespace_lock:
@@ -183,9 +190,9 @@ class Enclosure:
             LOG.exception(repr(e))
 
     def on_gui_delete_namespace(self, message):
-        """ Bus handler for removing namespace. """
+        """Bus handler for removing namespace."""
         try:
-            namespace = message.data['__from']
+            namespace = message.data["__from"]
             with namespace_lock:
                 self.remove_namespace(namespace)
         except Exception as e:
@@ -207,7 +214,7 @@ class Enclosure:
         return None
 
     def __insert_pages(self, namespace, pages):
-        """ Insert pages into the namespace
+        """Insert pages into the namespace
 
         Args:
             namespace (str): Namespace to add to
@@ -215,38 +222,44 @@ class Enclosure:
         """
         LOG.debug("Inserting new pages")
         if not isinstance(pages, list):
-            raise ValueError('Argument must be list of pages')
+            raise ValueError("Argument must be list of pages")
 
-        self.send({"type": "mycroft.gui.list.insert",
-                   "namespace": namespace,
-                   "position": len(self.loaded[0].pages),
-                   "data": [{"url": p} for p in pages]
-                   })
+        self.send(
+            {
+                "type": "mycroft.gui.list.insert",
+                "namespace": namespace,
+                "position": len(self.loaded[0].pages),
+                "data": [{"url": p} for p in pages],
+            }
+        )
         # Insert the pages into local reprensentation as well.
         updated = Namespace(self.loaded[0].name, self.loaded[0].pages + pages)
         self.loaded[0] = updated
 
     def __remove_page(self, namespace, pos):
-        """ Delete page.
+        """Delete page.
 
         Args:
             namespace (str): Namespace to remove from
             pos (int):      Page position to remove
         """
         LOG.debug("Deleting {} from {}".format(pos, namespace))
-        self.send({"type": "mycroft.gui.list.remove",
-                   "namespace": namespace,
-                   "position": pos,
-                   "items_number": 1
-                   })
+        self.send(
+            {
+                "type": "mycroft.gui.list.remove",
+                "namespace": namespace,
+                "position": pos,
+                "items_number": 1,
+            }
+        )
         # Remove the page from the local reprensentation as well.
         self.loaded[0].pages.pop(pos)
         # Add a check to return any display to idle from position 0
-        if (pos == 0 and len(self.loaded[0].pages) == 0):
+        if pos == 0 and len(self.loaded[0].pages) == 0:
             self.bus.emit(Message("mycroft.device.show.idle"))
 
     def __insert_new_namespace(self, namespace, pages):
-        """ Insert new namespace and pages.
+        """Insert new namespace and pages.
 
         This first sends a message adding a new namespace at the
         highest priority (position 0 in the namespace stack)
@@ -256,31 +269,39 @@ class Enclosure:
             pages (str):      Pages to insert (name matches QML)
         """
         LOG.debug("Inserting new namespace")
-        self.send({"type": "mycroft.session.list.insert",
-                   "namespace": "mycroft.system.active_skills",
-                   "position": 0,
-                   "data": [{"skill_id": namespace}]
-                   })
+        self.send(
+            {
+                "type": "mycroft.session.list.insert",
+                "namespace": "mycroft.system.active_skills",
+                "position": 0,
+                "data": [{"skill_id": namespace}],
+            }
+        )
 
         # Load any already stored Data
         data = self.datastore.get(namespace, {})
         for key in data:
-            msg = {"type": "mycroft.session.set",
-                   "namespace": namespace,
-                   "data": {key: data[key]}}
+            msg = {
+                "type": "mycroft.session.set",
+                "namespace": namespace,
+                "data": {key: data[key]},
+            }
             self.send(msg)
 
         LOG.debug("Inserting new page")
-        self.send({"type": "mycroft.gui.list.insert",
-                   "namespace": namespace,
-                   "position": 0,
-                   "data": [{"url": p} for p in pages]
-                   })
+        self.send(
+            {
+                "type": "mycroft.gui.list.insert",
+                "namespace": namespace,
+                "position": 0,
+                "data": [{"url": p} for p in pages],
+            }
+        )
         # Make sure the local copy is updated
         self.loaded.insert(0, Namespace(namespace, pages))
 
     def __move_namespace(self, from_pos, to_pos):
-        """ Move an existing namespace to a new position in the stack.
+        """Move an existing namespace to a new position in the stack.
 
         Args:
             from_pos (int): Position in the stack to move from
@@ -291,16 +312,21 @@ class Enclosure:
         # a page change is done. Deactivating this for now.
         if self.explicit_move:
             LOG.debug("move {} to {}".format(from_pos, to_pos))
-            self.send({"type": "mycroft.session.list.move",
-                       "namespace": "mycroft.system.active_skills",
-                       "from": from_pos, "to": to_pos,
-                       "items_number": 1})
+            self.send(
+                {
+                    "type": "mycroft.session.list.move",
+                    "namespace": "mycroft.system.active_skills",
+                    "from": from_pos,
+                    "to": to_pos,
+                    "items_number": 1,
+                }
+            )
         # Move the local representation of the skill from current
         # position to position 0.
         self.loaded.insert(to_pos, self.loaded.pop(from_pos))
 
     def __switch_page(self, namespace, pages):
-        """ Switch page to an already loaded page.
+        """Switch page to an already loaded page.
 
         Args:
             pages (list): pages (str) to switch to
@@ -312,15 +338,21 @@ class Enclosure:
             LOG.exception(repr(e))
             num = 0
 
-        LOG.debug('Switching to already loaded page at '
-                  'index {} in namespace {}'.format(num, namespace))
-        self.send({"type": "mycroft.events.triggered",
-                   "namespace": namespace,
-                   "event_name": "page_gained_focus",
-                   "data": {"number": num}})
+        LOG.debug(
+            "Switching to already loaded page at "
+            "index {} in namespace {}".format(num, namespace)
+        )
+        self.send(
+            {
+                "type": "mycroft.events.triggered",
+                "namespace": namespace,
+                "event_name": "page_gained_focus",
+                "data": {"number": num},
+            }
+        )
 
     def show(self, namespace, page, index):
-        """ Show a page and load it as needed.
+        """Show a page and load it as needed.
 
         Args:
             page (str or list): page(s) to show
@@ -359,7 +391,7 @@ class Enclosure:
             LOG.exception(repr(e))
 
     def remove_namespace(self, namespace):
-        """ Remove namespace.
+        """Remove namespace.
 
         Args:
             namespace (str): namespace to remove
@@ -369,16 +401,19 @@ class Enclosure:
             return
         else:
             LOG.debug("Removing namespace {} at {}".format(namespace, index))
-            self.send({"type": "mycroft.session.list.remove",
-                       "namespace": "mycroft.system.active_skills",
-                       "position": index,
-                       "items_number": 1
-                       })
+            self.send(
+                {
+                    "type": "mycroft.session.list.remove",
+                    "namespace": "mycroft.system.active_skills",
+                    "position": index,
+                    "items_number": 1,
+                }
+            )
             # Remove namespace from loaded namespaces
             self.loaded.pop(index)
 
     def remove_pages(self, namespace, pages):
-        """ Remove the listed pages from the provided namespace.
+        """Remove the listed pages from the provided namespace.
 
         Args:
             namespace (str):    The namespace to modify
@@ -413,7 +448,7 @@ class Enclosure:
     # If the connection is lost, it must be renegotiated and restarted.
     def on_gui_client_connected(self, message):
         # GUI has announced presence
-        LOG.info('GUI HAS ANNOUNCED!')
+        LOG.info("GUI HAS ANNOUNCED!")
         port = self.global_config["gui_websocket"]["base_port"]
         LOG.debug("on_gui_client_connected")
         gui_id = message.data.get("gui_id")
@@ -421,9 +456,7 @@ class Enclosure:
         LOG.debug("Heard announcement from gui_id: {}".format(gui_id))
 
         # Announce connection, the GUI should connect on it soon
-        self.bus.emit(Message("mycroft.gui.port",
-                              {"port": port,
-                               "gui_id": gui_id}))
+        self.bus.emit(Message("mycroft.gui.port", {"port": port, "gui_id": gui_id}))
 
     def register_gui_handlers(self):
         # TODO: Register handlers for standard (Mark 1) events
@@ -463,96 +496,108 @@ class Enclosure:
 # GUIConnection
 ##########################################################################
 
-gui_app_settings = {
-    'debug': True
-}
+gui_app_settings = {"debug": True}
 
 
 def create_gui_service(enclosure, config):
     import tornado.options
-    LOG.info('Starting message bus for GUI...')
-    # Disable all tornado logging so mycroft loglevel isn't overridden
-    tornado.options.parse_command_line(['--logging=None'])
 
-    routes = [(config['route'], GUIWebsocketHandler)]
+    LOG.info("Starting message bus for GUI...")
+    # Disable all tornado logging so mycroft loglevel isn't overridden
+    tornado.options.parse_command_line(["--logging=None"])
+
+    routes = [(config["route"], GUIWebsocketHandler)]
     application = web.Application(routes, debug=True)
     application.enclosure = enclosure
-    application.listen(config['base_port'], config['host'])
+    application.listen(config["base_port"], config["host"])
 
     create_daemon(ioloop.IOLoop.instance().start)
-    LOG.info('GUI Message bus started!')
+    LOG.info("GUI Message bus started!")
     return application
 
 
 class GUIWebsocketHandler(WebSocketHandler):
     """The socket pipeline between the GUI and Mycroft."""
+
     clients = []
 
     def open(self):
         GUIWebsocketHandler.clients.append(self)
-        LOG.info('New Connection opened!')
+        LOG.info("New Connection opened!")
         self.synchronize()
 
     def on_close(self):
-        LOG.info('Closing {}'.format(id(self)))
+        LOG.info("Closing {}".format(id(self)))
         GUIWebsocketHandler.clients.remove(self)
 
     def synchronize(self):
-        """ Upload namespaces, pages and data to the last connected. """
+        """Upload namespaces, pages and data to the last connected."""
         namespace_pos = 0
         enclosure = self.application.enclosure
 
         for namespace, pages in enclosure.loaded:
-            LOG.info('Sync {}'.format(namespace))
+            LOG.info("Sync {}".format(namespace))
             # Insert namespace
-            self.send({"type": "mycroft.session.list.insert",
-                       "namespace": "mycroft.system.active_skills",
-                       "position": namespace_pos,
-                       "data": [{"skill_id": namespace}]
-                       })
+            self.send(
+                {
+                    "type": "mycroft.session.list.insert",
+                    "namespace": "mycroft.system.active_skills",
+                    "position": namespace_pos,
+                    "data": [{"skill_id": namespace}],
+                }
+            )
             # Insert pages
-            self.send({"type": "mycroft.gui.list.insert",
-                       "namespace": namespace,
-                       "position": 0,
-                       "data": [{"url": p} for p in pages]
-                       })
+            self.send(
+                {
+                    "type": "mycroft.gui.list.insert",
+                    "namespace": namespace,
+                    "position": 0,
+                    "data": [{"url": p} for p in pages],
+                }
+            )
             # Insert data
             data = enclosure.datastore.get(namespace, {})
             for key in data:
-                self.send({"type": "mycroft.session.set",
-                           "namespace": namespace,
-                           "data": {key: data[key]}
-                           })
+                self.send(
+                    {
+                        "type": "mycroft.session.set",
+                        "namespace": namespace,
+                        "data": {key: data[key]},
+                    }
+                )
             namespace_pos += 1
 
     def on_message(self, message):
         LOG.info("Received: {}".format(message))
         msg = json.loads(message)
-        if (msg.get('type') == "mycroft.events.triggered" and
-                (msg.get('event_name') == 'page_gained_focus' or
-                    msg.get('event_name') == 'system.gui.user.interaction')):
+        if msg.get("type") == "mycroft.events.triggered" and (
+            msg.get("event_name") == "page_gained_focus"
+            or msg.get("event_name") == "system.gui.user.interaction"
+        ):
             # System event, a page was changed
-            msg_type = 'gui.page_interaction'
-            msg_data = {'namespace': msg['namespace'],
-                        'page_number': msg['parameters'].get('number'),
-                        'skill_id': msg['parameters'].get('skillId')}
-        elif msg.get('type') == "mycroft.events.triggered":
+            msg_type = "gui.page_interaction"
+            msg_data = {
+                "namespace": msg["namespace"],
+                "page_number": msg["parameters"].get("number"),
+                "skill_id": msg["parameters"].get("skillId"),
+            }
+        elif msg.get("type") == "mycroft.events.triggered":
             # A normal event was triggered
-            msg_type = '{}.{}'.format(msg['namespace'], msg['event_name'])
-            msg_data = msg['parameters']
+            msg_type = "{}.{}".format(msg["namespace"], msg["event_name"])
+            msg_data = msg["parameters"]
 
-        elif msg.get('type') == 'mycroft.session.set':
+        elif msg.get("type") == "mycroft.session.set":
             # A value was changed send it back to the skill
-            msg_type = '{}.{}'.format(msg['namespace'], 'set')
-            msg_data = msg['data']
+            msg_type = "{}.{}".format(msg["namespace"], "set")
+            msg_data = msg["data"]
 
         message = Message(msg_type, msg_data)
-        LOG.info('Forwarding to bus...')
+        LOG.info("Forwarding to bus...")
         self.application.enclosure.bus.emit(message)
-        LOG.info('Done!')
+        LOG.info("Done!")
 
     def write_message(self, *arg, **kwarg):
-        """Wraps WebSocketHandler.write_message() with a lock. """
+        """Wraps WebSocketHandler.write_message() with a lock."""
         try:
             asyncio.get_event_loop()
         except RuntimeError:
@@ -568,7 +613,7 @@ class GUIWebsocketHandler(WebSocketHandler):
             data (dict): Data to transmit
         """
         s = json.dumps(data)
-        LOG.info('Sending {}'.format(s))
+        LOG.info("Sending {}".format(s))
         self.write_message(s)
 
     def check_origin(self, origin):

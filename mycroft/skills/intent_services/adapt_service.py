@@ -34,8 +34,8 @@ def _entity_skill_id(skill_id):
         (str) skill id on the format used by skill entities
     """
     skill_id = skill_id[:-1]
-    skill_id = skill_id.replace('.', '_')
-    skill_id = skill_id.replace('-', '_')
+    skill_id = skill_id.replace(".", "_")
+    skill_id = skill_id.replace("-", "_")
     return skill_id
 
 
@@ -45,7 +45,8 @@ class AdaptIntent(IntentBuilder):
     Args:
         name (str): Optional name of intent
     """
-    def __init__(self, name=''):
+
+    def __init__(self, name=""):
         super().__init__(name)
 
 
@@ -58,7 +59,7 @@ def _strip_result(context_features):
     stripped = []
     processed = []
     for feature in context_features:
-        keyword = feature['data'][0][1]
+        keyword = feature["data"][0][1]
         if keyword not in processed:
             stripped.append(feature)
             processed.append(keyword)
@@ -71,6 +72,7 @@ class ContextManager:
     Use to track context throughout the course of a conversational session.
     How to manage a session's lifecycle is not captured here.
     """
+
     def __init__(self, timeout):
         self.frame_stack = []
         self.timeout = timeout * 60  # minutes to seconds
@@ -85,8 +87,11 @@ class ContextManager:
         Args:
             context_id (str): context entry to remove
         """
-        self.frame_stack = [(f, t) for (f, t) in self.frame_stack
-                            if context_id in f.entities[0].get('data', [])]
+        self.frame_stack = [
+            (f, t)
+            for (f, t) in self.frame_stack
+            if context_id in f.entities[0].get("data", [])
+        ]
 
     def inject_context(self, entity, metadata=None):
         """
@@ -107,14 +112,13 @@ class ContextManager:
             if top_frame and top_frame[0].metadata_matches(metadata):
                 top_frame[0].merge_context(entity, metadata)
             else:
-                frame = ContextManagerFrame(entities=[entity],
-                                            metadata=metadata.copy())
+                frame = ContextManagerFrame(entities=[entity], metadata=metadata.copy())
                 self.frame_stack.insert(0, (frame, time.time()))
         except (IndexError, KeyError):
             pass
 
     def get_context(self, max_frames=None, missing_entities=None):
-        """ Constructs a list of entities from the context.
+        """Constructs a list of entities from the context.
 
         Args:
             max_frames(int): maximum number of frames to look back
@@ -126,39 +130,40 @@ class ContextManager:
         """
         missing_entities = missing_entities or []
 
-        relevant_frames = [frame[0] for frame in self.frame_stack if
-                           time.time() - frame[1] < self.timeout]
+        relevant_frames = [
+            frame[0]
+            for frame in self.frame_stack
+            if time.time() - frame[1] < self.timeout
+        ]
         if not max_frames or max_frames > len(relevant_frames):
             max_frames = len(relevant_frames)
 
         missing_entities = list(missing_entities)
         context = []
-        last = ''
+        last = ""
         depth = 0
         entity = {}
         for i in range(max_frames):
-            frame_entities = [entity.copy() for entity in
-                              relevant_frames[i].entities]
+            frame_entities = [entity.copy() for entity in relevant_frames[i].entities]
             for entity in frame_entities:
-                entity['confidence'] = entity.get('confidence', 1.0) \
-                                       / (2.0 + depth)
+                entity["confidence"] = entity.get("confidence", 1.0) / (2.0 + depth)
             context += frame_entities
 
             # Update depth
-            if entity['origin'] != last or entity['origin'] == '':
+            if entity["origin"] != last or entity["origin"] == "":
                 depth += 1
-            last = entity['origin']
+            last = entity["origin"]
 
         result = []
         if missing_entities:
             for entity in context:
-                if entity.get('data') in missing_entities:
+                if entity.get("data") in missing_entities:
                     result.append(entity)
                     # NOTE: this implies that we will only ever get one
                     # of an entity kind from context, unless specified
                     # multiple times in missing_entities. Cannot get
                     # an arbitrary number of an entity kind.
-                    missing_entities.remove(entity.get('data'))
+                    missing_entities.remove(entity.get("data"))
         else:
             result = context
 
@@ -168,14 +173,15 @@ class ContextManager:
 
 class AdaptService:
     """Intent service wrapping the Apdapt intent Parser."""
+
     def __init__(self, config):
         self.config = config
         self.engine = IntentDeterminationEngine()
         # Context related intializations
-        self.context_keywords = self.config.get('keywords', [])
-        self.context_max_frames = self.config.get('max_frames', 3)
-        self.context_timeout = self.config.get('timeout', 2)
-        self.context_greedy = self.config.get('greedy', False)
+        self.context_keywords = self.config.get("keywords", [])
+        self.context_max_frames = self.config.get("max_frames", 3)
+        self.context_timeout = self.config.get("timeout", 2)
+        self.context_greedy = self.config.get("greedy", False)
         self.context_manager = ContextManager(self.context_timeout)
         self.lock = Lock()
 
@@ -189,13 +195,13 @@ class AdaptService:
         Args:
             intent: Intent to scan for keywords
         """
-        for tag in intent['__tags__']:
-            if 'entities' not in tag:
+        for tag in intent["__tags__"]:
+            if "entities" not in tag:
                 continue
-            context_entity = tag['entities'][0]
+            context_entity = tag["entities"][0]
             if self.context_greedy:
                 self.context_manager.inject_context(context_entity)
-            elif context_entity['data'][0][1] in self.context_keywords:
+            elif context_entity["data"][0][1] in self.context_keywords:
                 self.context_manager.inject_context(context_entity)
 
     def match_intent(self, utterances, _=None, __=None):
@@ -212,20 +218,25 @@ class AdaptService:
 
         def take_best(intent, utt):
             nonlocal best_intent
-            best = best_intent.get('confidence', 0.0) if best_intent else 0.0
-            conf = intent.get('confidence', 0.0)
+            best = best_intent.get("confidence", 0.0) if best_intent else 0.0
+            conf = intent.get("confidence", 0.0)
             if conf > best:
                 best_intent = intent
                 # TODO - Shouldn't Adapt do this?
-                best_intent['utterance'] = utt
+                best_intent["utterance"] = utt
 
         for utt_tup in utterances:
             for utt in utt_tup:
                 try:
-                    intents = [i for i in self.engine.determine_intent(
-                        utt, 100,
-                        include_tags=True,
-                        context_manager=self.context_manager)]
+                    intents = [
+                        i
+                        for i in self.engine.determine_intent(
+                            utt,
+                            100,
+                            include_tags=True,
+                            context_manager=self.context_manager,
+                        )
+                    ]
                     if intents:
                         take_best(intents[0], utt_tup[0])
 
@@ -234,9 +245,9 @@ class AdaptService:
 
         if best_intent:
             self.update_context(best_intent)
-            skill_id = best_intent['intent_type'].split(":")[0]
+            skill_id = best_intent["intent_type"].split(":")[0]
             ret = IntentMatch(
-                'Adapt', best_intent['intent_type'], best_intent, skill_id
+                "Adapt", best_intent["intent_type"], best_intent, skill_id
             )
         else:
             ret = None
@@ -249,7 +260,8 @@ class AdaptService:
                 self.engine.register_regex_entity(regex_str)
             else:
                 self.engine.register_entity(
-                    start_concept, end_concept, alias_of=alias_of)
+                    start_concept, end_concept, alias_of=alias_of
+                )
 
     def register_intent(self, intent):
         """Register new intent with adapt engine.
@@ -268,8 +280,9 @@ class AdaptService:
         """
         with self.lock:
             skill_parsers = [
-                p.name for p in self.engine.intent_parsers if
-                p.name.startswith(skill_id)
+                p.name
+                for p in self.engine.intent_parsers
+                if p.name.startswith(skill_id)
             ]
             self.engine.drop_intent_parser(skill_parsers)
             self._detach_skill_keywords(skill_id)
@@ -297,8 +310,7 @@ class AdaptService:
         skill_id = _entity_skill_id(skill_id)
 
         def match_skill_regexes(regexp):
-            return any([r.startswith(skill_id)
-                        for r in regexp.groupindex.keys()])
+            return any([r.startswith(skill_id) for r in regexp.groupindex.keys()])
 
         self.engine.drop_regex_entity(match_func=match_skill_regexes)
 
@@ -308,7 +320,5 @@ class AdaptService:
         Args:
             intent_name (str): Identifier for intent to remove.
         """
-        new_parsers = [
-            p for p in self.engine.intent_parsers if p.name != intent_name
-        ]
+        new_parsers = [p for p in self.engine.intent_parsers if p.name != intent_name]
         self.engine.intent_parsers = new_parsers

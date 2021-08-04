@@ -27,11 +27,11 @@ def on_ready():
 
 
 def on_stopping():
-    LOG.info('Enclosure is shutting down...')
+    LOG.info("Enclosure is shutting down...")
 
 
-def on_error(e='Unknown'):
-    LOG.error('Enclosure failed: {}'.format(repr(e)))
+def on_error(e="Unknown"):
+    LOG.error("Enclosure failed: {}".format(repr(e)))
 
 
 def create_enclosure(platform):
@@ -46,10 +46,12 @@ def create_enclosure(platform):
     if platform == "mycroft_mark_1":
         LOG.info("Creating Mark I Enclosure")
         from mycroft.client.enclosure.mark1 import EnclosureMark1
+
         enclosure = EnclosureMark1()
     elif platform == "mycroft_mark_2":
         LOG.info("Creating Mark II Enclosure")
         from mycroft.client.enclosure.mark2 import EnclosureMark2
+
         enclosure = EnclosureMark2()
     else:
         LOG.info("Creating generic enclosure, platform='{}'".format(platform))
@@ -57,6 +59,7 @@ def create_enclosure(platform):
         # TODO: Mechanism to load from elsewhere.  E.g. read a script path from
         # the mycroft.conf, then load/launch that script.
         from mycroft.client.enclosure.generic import EnclosureGeneric
+
         enclosure = EnclosureGeneric()
 
     return enclosure

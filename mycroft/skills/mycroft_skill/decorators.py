@@ -21,7 +21,7 @@ def intent_handler(intent_parser):
     def real_decorator(func):
         # Store the intent_parser inside the function
         # This will be used later to call register_intent
-        if not hasattr(func, 'intents'):
+        if not hasattr(func, "intents"):
             func.intents = []
         func.intents.append(intent_parser)
         return func
@@ -38,7 +38,7 @@ def intent_file_handler(intent_file):
     def real_decorator(func):
         # Store the intent_file inside the function
         # This will be used later to call register_intent_file
-        if not hasattr(func, 'intent_files'):
+        if not hasattr(func, "intent_files"):
             func.intent_files = []
         func.intent_files.append(intent_file)
         return func
@@ -55,7 +55,7 @@ def resting_screen_handler(name):
     def real_decorator(func):
         # Store the resting information inside the function
         # This will be used later in register_resting_screen
-        if not hasattr(func, 'resting_handler'):
+        if not hasattr(func, "resting_handler"):
             func.resting_handler = name
         return func
 
@@ -69,6 +69,6 @@ def skill_api_method(func):
     and an api object can be created for interaction with the skill.
     """
     # tag the method by adding an api_method member to it
-    if not hasattr(func, 'api_method') and hasattr(func, '__name__'):
+    if not hasattr(func, "api_method") and hasattr(func, "__name__"):
         func.api_method = True
     return func

@@ -30,25 +30,18 @@ from mycroft.util.log import LOG
 from mycroft.util.file_utils import get_temp_path
 
 MsmConfig = namedtuple(
-    'MsmConfig',
-    [
-        'platform',
-        'repo_branch',
-        'repo_cache',
-        'repo_url',
-        'skills_dir',
-        'versioned'
-    ]
+    "MsmConfig",
+    ["platform", "repo_branch", "repo_cache", "repo_url", "skills_dir", "versioned"],
 )
 
 
 def _init_msm_lock():
     msm_lock = None
     try:
-        msm_lock = ComboLock(get_temp_path('mycroft-msm.lck'))
-        LOG.debug('mycroft-msm combo lock instantiated')
+        msm_lock = ComboLock(get_temp_path("mycroft-msm.lck"))
+        LOG.debug("mycroft-msm combo lock instantiated")
     except Exception:
-        LOG.exception('Failed to create msm lock!')
+        LOG.exception("Failed to create msm lock!")
 
     return msm_lock
 
@@ -63,18 +56,18 @@ def build_msm_config(device_config: dict) -> MsmConfig:
     ensure that changes to configs not related to MSM will not result in new
     instances of MSM being created.
     """
-    msm_config = device_config['skills']['msm']
-    msm_repo_config = msm_config['repo']
-    enclosure_config = device_config['enclosure']
-    data_dir = path.expanduser(device_config['data_dir'])
+    msm_config = device_config["skills"]["msm"]
+    msm_repo_config = msm_config["repo"]
+    enclosure_config = device_config["enclosure"]
+    data_dir = path.expanduser(device_config["data_dir"])
 
     return MsmConfig(
-        platform=enclosure_config.get('platform', 'default'),
-        repo_branch=msm_repo_config['branch'],
-        repo_cache=path.join(data_dir, msm_repo_config['cache']),
-        repo_url=msm_repo_config['url'],
-        skills_dir=path.join(data_dir, msm_config['directory']),
-        versioned=msm_config['versioned']
+        platform=enclosure_config.get("platform", "default"),
+        repo_branch=msm_repo_config["branch"],
+        repo_cache=path.join(data_dir, msm_repo_config["cache"]),
+        repo_url=msm_repo_config["url"],
+        skills_dir=path.join(data_dir, msm_config["directory"]),
+        versioned=msm_config["versioned"],
     )
 
 
@@ -88,27 +81,27 @@ def create_msm(msm_config: MsmConfig) -> MycroftSkillsManager:
     times.
     """
     if msm_config.repo_url != "https://github.com/MycroftAI/mycroft-skills":
-        LOG.warning("You have enabled a third-party skill store.\n"
-                    "Unable to guarantee the safety of skills from "
-                    "sources other than the Mycroft Marketplace.\n"
-                    "Proceed with caution.")
+        LOG.warning(
+            "You have enabled a third-party skill store.\n"
+            "Unable to guarantee the safety of skills from "
+            "sources other than the Mycroft Marketplace.\n"
+            "Proceed with caution."
+        )
     msm_lock = _init_msm_lock()
-    LOG.info('Acquiring lock to instantiate MSM')
+    LOG.info("Acquiring lock to instantiate MSM")
     with msm_lock:
         if not path.exists(msm_config.skills_dir):
             makedirs(msm_config.skills_dir)
 
         msm_skill_repo = SkillRepo(
-            msm_config.repo_cache,
-            msm_config.repo_url,
-            msm_config.repo_branch
+            msm_config.repo_cache, msm_config.repo_url, msm_config.repo_branch
         )
         msm_instance = MycroftSkillsManager(
             platform=msm_config.platform,
             skills_dir=msm_config.skills_dir,
             repo=msm_skill_repo,
-            versioned=msm_config.versioned
+            versioned=msm_config.versioned,
         )
-    LOG.info('Releasing MSM instantiation lock.')
+    LOG.info("Releasing MSM instantiation lock.")
 
     return msm_instance

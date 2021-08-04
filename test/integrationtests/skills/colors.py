@@ -17,40 +17,40 @@ import os
 
 
 class Clr:
-    PINK = '\033[95m'
-    BLUE = '\033[94m'
-    CYAN = '\033[96m'
-    GREEN = '\033[92m'
-    YELLOW = '\033[93m'
-    RED = '\033[91m'
-    DKGRAY = '\033[90m'
+    PINK = "\033[95m"
+    BLUE = "\033[94m"
+    CYAN = "\033[96m"
+    GREEN = "\033[92m"
+    YELLOW = "\033[93m"
+    RED = "\033[91m"
+    DKGRAY = "\033[90m"
     # Classes
-    USER_UTT = '\033[96m'  # cyan
-    MYCROFT = '\033[33m'   # bright yellow
-    HEADER = '\033[94m'    # blue
-    WARNING = '\033[93m'   # yellow
-    FAIL = '\033[91m'      # red
-    RESET = '\033[0m'
+    USER_UTT = "\033[96m"  # cyan
+    MYCROFT = "\033[33m"  # bright yellow
+    HEADER = "\033[94m"  # blue
+    WARNING = "\033[93m"  # yellow
+    FAIL = "\033[91m"  # red
+    RESET = "\033[0m"
 
 
 class NoClr:
-    PINK = ''
-    BLUE = ''
-    CYAN = ''
-    GREEN = ''
-    YELLOW = ''
-    RED = ''
-    DKGRAY = ''
-    USER_UTT = ''
-    MYCROFT = ''
-    HEADER = ''
-    WARNING = ''
-    FAIL = ''
-    RESET = ''
+    PINK = ""
+    BLUE = ""
+    CYAN = ""
+    GREEN = ""
+    YELLOW = ""
+    RED = ""
+    DKGRAY = ""
+    USER_UTT = ""
+    MYCROFT = ""
+    HEADER = ""
+    WARNING = ""
+    FAIL = ""
+    RESET = ""
 
 
 # MST as in Mycroft Skill Tester
-if 'MST_NO_COLOR' not in os.environ:
+if "MST_NO_COLOR" not in os.environ:
     color = Clr
 else:
     color = NoClr

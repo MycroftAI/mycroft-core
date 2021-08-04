@@ -29,8 +29,9 @@ MAX_NOISE = 25
 class TestNoiseTracker(TestCase):
     def test_no_loud_data(self):
         """Check that no loud data generates complete after silence timeout."""
-        noise_tracker = NoiseTracker(MIN_NOISE, MAX_NOISE, SECS_PER_BUFFER,
-                                     LOUD_TIME_LIMIT, SILENCE_TIME_LIMIT)
+        noise_tracker = NoiseTracker(
+            MIN_NOISE, MAX_NOISE, SECS_PER_BUFFER, LOUD_TIME_LIMIT, SILENCE_TIME_LIMIT
+        )
 
         num_updates_timeout = int(SILENCE_TIME_LIMIT / SECS_PER_BUFFER)
         num_low_updates = int(LOUD_TIME_LIMIT / SECS_PER_BUFFER)
@@ -48,8 +49,9 @@ class TestNoiseTracker(TestCase):
 
     def test_silence_reset(self):
         """Check that no loud data generates complete after silence timeout."""
-        noise_tracker = NoiseTracker(MIN_NOISE, MAX_NOISE, SECS_PER_BUFFER,
-                                     LOUD_TIME_LIMIT, SILENCE_TIME_LIMIT)
+        noise_tracker = NoiseTracker(
+            MIN_NOISE, MAX_NOISE, SECS_PER_BUFFER, LOUD_TIME_LIMIT, SILENCE_TIME_LIMIT
+        )
 
         num_updates_timeout = int(SILENCE_TIME_LIMIT / SECS_PER_BUFFER)
         num_low_updates = int(LOUD_TIME_LIMIT / SECS_PER_BUFFER)
@@ -72,10 +74,10 @@ class TestNoiseTracker(TestCase):
         self.assertTrue(noise_tracker.recording_complete())
 
     def test_all_loud_data(self):
-        """Check that only loud samples doesn't generate a complete recording.
-        """
-        noise_tracker = NoiseTracker(MIN_NOISE, MAX_NOISE, SECS_PER_BUFFER,
-                                     LOUD_TIME_LIMIT, SILENCE_TIME_LIMIT)
+        """Check that only loud samples doesn't generate a complete recording."""
+        noise_tracker = NoiseTracker(
+            MIN_NOISE, MAX_NOISE, SECS_PER_BUFFER, LOUD_TIME_LIMIT, SILENCE_TIME_LIMIT
+        )
 
         num_high_updates = int(LOUD_TIME_LIMIT / SECS_PER_BUFFER) + 1
         for _ in range(num_high_updates):
@@ -83,10 +85,10 @@ class TestNoiseTracker(TestCase):
             self.assertFalse(noise_tracker.recording_complete())
 
     def test_all_loud_followed_by_silence(self):
-        """Check that a long enough high sentence is completed after silence.
-        """
-        noise_tracker = NoiseTracker(MIN_NOISE, MAX_NOISE, SECS_PER_BUFFER,
-                                     LOUD_TIME_LIMIT, SILENCE_TIME_LIMIT)
+        """Check that a long enough high sentence is completed after silence."""
+        noise_tracker = NoiseTracker(
+            MIN_NOISE, MAX_NOISE, SECS_PER_BUFFER, LOUD_TIME_LIMIT, SILENCE_TIME_LIMIT
+        )
 
         num_high_updates = int(LOUD_TIME_LIMIT / SECS_PER_BUFFER) + 1
         for _ in range(num_high_updates):

@@ -27,10 +27,9 @@ DATA_DIR = os.path.join(os.path.abspath(os.path.dirname(__file__)), "data")
 
 class PocketSphinxRecognizerTest(unittest.TestCase):
     def setUp(self):
-        with patch('mycroft.configuration.Configuration.get') as \
-                mock_config_get:
+        with patch("mycroft.configuration.Configuration.get") as mock_config_get:
             conf = base_config()
-            conf['hotwords']['hey mycroft']['module'] = 'pocketsphinx'
+            conf["hotwords"]["hey mycroft"]["module"] = "pocketsphinx"
             mock_config_get.return_value = conf
             rl = RecognizerLoop()
             self.recognizer = RecognizerLoop.create_wake_word_recognizer(rl)
@@ -48,30 +47,30 @@ class PocketSphinxRecognizerTest(unittest.TestCase):
         with source as audio:
             assert self.recognizer.found_wake_word(audio.stream.read())
 
-    @patch.object(Configuration, 'get')
+    @patch.object(Configuration, "get")
     def testRecognitionFallback(self, mock_config_get):
         """If language config doesn't exist set default (english)"""
         conf = base_config()
-        conf['hotwords']['hey mycroft'] = {
-            'lang': 'DOES NOT EXIST',
-            'module': 'pocketsphinx',
-            'phonemes': 'HH EY . M AY K R AO F T',
-            'threshold': 1e-90
+        conf["hotwords"]["hey mycroft"] = {
+            "lang": "DOES NOT EXIST",
+            "module": "pocketsphinx",
+            "phonemes": "HH EY . M AY K R AO F T",
+            "threshold": 1e-90,
         }
-        conf['lang'] = 'DOES NOT EXIST'
+        conf["lang"] = "DOES NOT EXIST"
         mock_config_get.return_value = conf
 
         rl = RecognizerLoop()
         ps_hotword = RecognizerLoop.create_wake_word_recognizer(rl)
 
-        expected = 'en-us'
-        res = ps_hotword.decoder.get_config().get_string('-hmm')
-        self.assertEqual(expected, res.split('/')[-2])
-        self.assertEqual('does not exist', ps_hotword.lang)
+        expected = "en-us"
+        res = ps_hotword.decoder.get_config().get_string("-hmm")
+        self.assertEqual(expected, res.split("/")[-2])
+        self.assertEqual("does not exist", ps_hotword.lang)
 
 
 class LocalRecognizerInitTest(unittest.TestCase):
-    @patch.object(Configuration, 'get')
+    @patch.object(Configuration, "get")
     def testListenerConfig(self, mock_config_get):
         """Ensure that the fallback method collecting phonemes etc.
         from the listener config works.
@@ -84,19 +83,19 @@ class LocalRecognizerInitTest(unittest.TestCase):
         self.assertEqual(rl.wakeword_recognizer.key_phrase, "hey mycroft")
 
         # Test "Hey Victoria"
-        test_config['listener']['wake_word'] = 'hey victoria'
-        test_config['listener']['phonemes'] = 'HH EY . V IH K T AO R IY AH'
-        test_config['listener']['threshold'] = 1e-90
+        test_config["listener"]["wake_word"] = "hey victoria"
+        test_config["listener"]["phonemes"] = "HH EY . V IH K T AO R IY AH"
+        test_config["listener"]["threshold"] = 1e-90
         rl = RecognizerLoop()
         self.assertEqual(rl.wakeword_recognizer.key_phrase, "hey victoria")
 
         # Test Invalid"
-        test_config['listener']['wake_word'] = 'hey victoria'
-        test_config['listener']['phonemes'] = 'ZZZZZZZZZZZZ'
+        test_config["listener"]["wake_word"] = "hey victoria"
+        test_config["listener"]["phonemes"] = "ZZZZZZZZZZZZ"
         rl = RecognizerLoop()
         self.assertEqual(rl.wakeword_recognizer.key_phrase, "hey mycroft")
 
-    @patch.object(Configuration, 'get')
+    @patch.object(Configuration, "get")
     def testHotwordConfig(self, mock_config_get):
         """Ensure that the fallback method collecting phonemes etc.
         from the listener config works.
@@ -105,34 +104,32 @@ class LocalRecognizerInitTest(unittest.TestCase):
         mock_config_get.return_value = test_config
 
         # Set fallback values
-        test_config['listener']['phonemes'] = 'HH EY . V IH K T AO R IY AH'
-        test_config['listener']['threshold'] = 1e-90
+        test_config["listener"]["phonemes"] = "HH EY . V IH K T AO R IY AH"
+        test_config["listener"]["threshold"] = 1e-90
 
         steve_conf = {
-            'model': 'pocketsphinx',
-            'phonemes': 'S T IY V .',
-            'threshold': 1e-42
+            "model": "pocketsphinx",
+            "phonemes": "S T IY V .",
+            "threshold": 1e-42,
         }
 
-        test_config['hotwords']['steve'] = steve_conf
-        test_config['listener']['wake_word'] = 'steve'
+        test_config["hotwords"]["steve"] = steve_conf
+        test_config["listener"]["wake_word"] = "steve"
 
         rl = RecognizerLoop()
-        self.assertEqual(rl.wakeword_recognizer.key_phrase, 'steve')
+        self.assertEqual(rl.wakeword_recognizer.key_phrase, "steve")
 
         # Ensure phonemes and threshold are poulated from listener config
         # if they're missing
 
         # Set fallback values
-        test_config['listener']['phonemes'] = 'S T IY V .'
-        test_config['listener']['threshold'] = 1e-90
+        test_config["listener"]["phonemes"] = "S T IY V ."
+        test_config["listener"]["threshold"] = 1e-90
 
-        steve_conf = {
-            'model': 'pocketsphinx'
-        }
+        steve_conf = {"model": "pocketsphinx"}
 
-        test_config['hotwords']['steve'] = steve_conf
-        test_config['listener']['wake_word'] = 'steve'
+        test_config["hotwords"]["steve"] = steve_conf
+        test_config["listener"]["wake_word"] = "steve"
         rl = RecognizerLoop()
-        self.assertEqual(rl.wakeword_recognizer.key_phrase, 'steve')
-        self.assertEqual(rl.wakeword_recognizer.phonemes, 'S T IY V .')
+        self.assertEqual(rl.wakeword_recognizer.key_phrase, "steve")
+        self.assertEqual(rl.wakeword_recognizer.phonemes, "S T IY V .")

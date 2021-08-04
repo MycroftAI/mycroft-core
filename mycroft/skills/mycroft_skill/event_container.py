@@ -20,7 +20,7 @@ def unmunge_message(message, skill_id):
         for key in list(message.data.keys()):
             if key.startswith(skill_id):
                 # replace the munged key with the real one
-                new_key = key[len(skill_id):]
+                new_key = key[len(skill_id) :]
                 message.data[new_key] = message.data.pop(key)
 
     return message
@@ -35,8 +35,8 @@ def get_handler_name(handler):
     Returns:
         string: handler name as string
     """
-    if '__self__' in dir(handler) and 'name' in dir(handler.__self__):
-        return handler.__self__.name + '.' + handler.__name__
+    if "__self__" in dir(handler) and "name" in dir(handler.__self__):
+        return handler.__self__.name + "." + handler.__name__
     else:
         return handler.__name__
 
@@ -52,15 +52,16 @@ def create_wrapper(handler, skill_id, on_start, on_end, on_error):
         on_end (function): function to call after executing the handler
         on_error (function): function to call for error reporting
     """
+
     def wrapper(message):
         stopwatch = Stopwatch()
         try:
             # TODO: Fix for real in mycroft-messagebus-client
             # Makes sure the message type is consistent with the type declared
             # in mycroft.messagebus and isinstance will work.
-            message = Message(message.msg_type,
-                              data=message.data,
-                              context=message.context)
+            message = Message(
+                message.msg_type, data=message.data, context=message.context
+            )
 
             message = unmunge_message(message, skill_id)
             if on_start:
@@ -81,10 +82,14 @@ def create_wrapper(handler, skill_id, on_start, on_end, on_error):
 
             # Send timing metrics
             context = message.context
-            if context and 'ident' in context:
-                report_timing(context['ident'], 'skill_handler', stopwatch,
-                              {'handler': handler.__name__,
-                               'skill_id': skill_id})
+            if context and "ident" in context:
+                report_timing(
+                    context["ident"],
+                    "skill_handler",
+                    stopwatch,
+                    {"handler": handler.__name__, "skill_id": skill_id},
+                )
+
     return wrapper
 
 
@@ -101,6 +106,7 @@ def create_basic_wrapper(handler, on_error=None):
     Returns:
         Wrapped callable
     """
+
     def wrapper(message):
         try:
             if len(signature(handler).parameters) == 0:
@@ -120,6 +126,7 @@ class EventContainer:
     This container tracks events added by a skill, allowing unregistering
     all events on shutdown.
     """
+
     def __init__(self, bus=None):
         self.bus = bus
         self.events = []
@@ -136,6 +143,7 @@ class EventContainer:
             once (bool, optional): Event handler will be removed after it has
                                    been run once.
         """
+
         def once_wrapper(message):
             # Remove registered one-time handler before invoking,
             # allowing them to re-schedule themselves.
@@ -150,7 +158,7 @@ class EventContainer:
                 self.bus.on(name, handler)
                 self.events.append((name, handler))
 
-            LOG.debug('Added event: {}'.format(name))
+            LOG.debug("Added event: {}".format(name))
 
     def remove(self, name):
         """Removes an event from bus emitter and events list.
@@ -167,7 +175,7 @@ class EventContainer:
                 try:
                     self.events.remove((_name, _handler))
                 except ValueError:
-                    LOG.error('Failed to remove event {}'.format(name))
+                    LOG.error("Failed to remove event {}".format(name))
                     pass
                 removed = True
 

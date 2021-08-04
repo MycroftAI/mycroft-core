@@ -21,38 +21,40 @@ from .colors import color
 
 
 def intent_type_check(intent_type):
-    return (['or'] +
-            [['endsWith', 'intent_type', intent_type]] +
-            [['endsWith', '__type__', intent_type]])
+    return (
+        ["or"]
+        + [["endsWith", "intent_type", intent_type]]
+        + [["endsWith", "__type__", intent_type]]
+    )
 
 
 def play_query_check(skill, match, phrase):
-    d = ['and']
-    d.append(['equal', '__type__', 'query'])
-    d.append(['equal', 'skill_id', skill.skill_id])
-    d.append(['equal', 'phrase', phrase])
-    d.append(['gt', 'conf', match.get('confidence_threshold', 0.5)])
+    d = ["and"]
+    d.append(["equal", "__type__", "query"])
+    d.append(["equal", "skill_id", skill.skill_id])
+    d.append(["equal", "phrase", phrase])
+    d.append(["gt", "conf", match.get("confidence_threshold", 0.5)])
     return d
 
 
 def question_check(skill, question, expected_answer):
-    d = ['and']
-    d.append(['equal', '__type__', 'query.response'])
-    d.append(['equal', 'skill_id', skill.skill_id])
-    d.append(['equal', 'phrase', question])
-    d.append(['match', 'answer', expected_answer])
+    d = ["and"]
+    d.append(["equal", "__type__", "query.response"])
+    d.append(["equal", "skill_id", skill.skill_id])
+    d.append(["equal", "phrase", question])
+    d.append(["match", "answer", expected_answer])
     return d
 
 
 def expected_data_check(expected_items):
-    d = ['and']
+    d = ["and"]
     for item in expected_items:
-        d.append(['equal', item[0], item[1]])
+        d.append(["equal", item[0], item[1]])
     return d
 
 
 def load_dialog_list(skill, dialog):
-    """ Load dialog from files into a single list.
+    """Load dialog from files into a single list.
 
     Args:
         skill (MycroftSkill): skill to load dialog from
@@ -67,13 +69,17 @@ def load_dialog_list(skill, dialog):
             for e in skill.dialog_renderer.templates[d]:
                 dialogs += expand_options(e)
     except Exception as template_load_exception:
-        print(color.FAIL +
-              "Failed to load dialog template " +
-              "'dialog/en-us/" + d + ".dialog'" +
-              color.RESET)
-        raise Exception("Can't load 'excepted_dialog': "
-                        "file '" + d + ".dialog'") \
-            from template_load_exception
+        print(
+            color.FAIL
+            + "Failed to load dialog template "
+            + "'dialog/en-us/"
+            + d
+            + ".dialog'"
+            + color.RESET
+        )
+        raise Exception(
+            "Can't load 'excepted_dialog': " "file '" + d + ".dialog'"
+        ) from template_load_exception
     return dialogs
 
 
@@ -86,15 +92,15 @@ def expected_dialog_check(expected_dialog, skill):
     # Extract dialog texts from skill
     dialogs = load_dialog_list(skill, dialog)
     # Allow custom fields to be anything
-    d = [re.sub(r'{.*?\}', r'.*', t) for t in dialogs]
+    d = [re.sub(r"{.*?\}", r".*", t) for t in dialogs]
     # Merge consequtive .*'s into a single .*
-    d = [re.sub(r'\.\*( \.\*)+', r'.*', t) for t in d]
+    d = [re.sub(r"\.\*( \.\*)+", r".*", t) for t in d]
 
     # Create rule allowing any of the sentences for that dialog
-    return [['match', 'utterance', r] for r in d]
+    return [["match", "utterance", r] for r in d]
 
 
 def changed_context_check(ctx):
     if not isinstance(ctx, list):
         ctx = [ctx]
-    return [['endsWith', 'context', str(c)] for c in ctx]
+    return [["endsWith", "context", str(c)] for c in ctx]

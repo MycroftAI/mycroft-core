@@ -1,4 +1,3 @@
-
 # Copyright 2017 Mycroft AI Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -23,13 +22,11 @@ from requests import RequestException
 from mycroft.util.json_helper import load_commented_json, merge_dict
 from mycroft.util.log import LOG
 
-from .locations import (DEFAULT_CONFIG, SYSTEM_CONFIG, USER_CONFIG,
-                        WEB_CONFIG_CACHE)
+from .locations import DEFAULT_CONFIG, SYSTEM_CONFIG, USER_CONFIG, WEB_CONFIG_CACHE
 
 
 def is_remote_list(values):
-    """Check if list corresponds to a backend formatted collection of dicts
-    """
+    """Check if list corresponds to a backend formatted collection of dicts"""
     for v in values:
         if not isinstance(v, dict):
             return False
@@ -83,6 +80,7 @@ def translate_list(config, values):
 
 class LocalConf(dict):
     """Config dictionary from file."""
+
     def __init__(self, path):
         super(LocalConf, self).__init__()
         if path:
@@ -115,7 +113,7 @@ class LocalConf(dict):
         that are as close to the user's as possible.
         """
         path = path or self.path
-        with open(path, 'w') as f:
+        with open(path, "w") as f:
             json.dump(self, f, indent=2)
 
     def merge(self, conf):
@@ -124,11 +122,13 @@ class LocalConf(dict):
 
 class RemoteConf(LocalConf):
     """Config dictionary fetched from mycroft.ai."""
+
     def __init__(self, cache=None):
         super(RemoteConf, self).__init__(None)
 
         cache = cache or WEB_CONFIG_CACHE
         from mycroft.api import is_paired
+
         if not is_paired():
             self.load_local(cache)
             return
@@ -136,6 +136,7 @@ class RemoteConf(LocalConf):
         try:
             # Here to avoid cyclic import
             from mycroft.api import DeviceApi
+
             api = DeviceApi()
             setting = api.get_settings()
 
@@ -143,10 +144,11 @@ class RemoteConf(LocalConf):
             try:
                 location = api.get_location()
             except RequestException as e:
-                LOG.error("RequestException fetching remote location: {}"
-                          .format(str(e)))
+                LOG.error(
+                    "RequestException fetching remote location: {}".format(str(e))
+                )
                 if exists(cache) and isfile(cache):
-                    location = load_commented_json(cache).get('location')
+                    location = load_commented_json(cache).get("location")
 
             if location:
                 setting["location"] = location
@@ -158,18 +160,21 @@ class RemoteConf(LocalConf):
             self.store(cache)
 
         except RequestException as e:
-            LOG.error("RequestException fetching remote configuration: {}"
-                      .format(str(e)))
+            LOG.error(
+                "RequestException fetching remote configuration: {}".format(str(e))
+            )
             self.load_local(cache)
 
         except Exception as e:
-            LOG.error("Failed to fetch remote configuration: %s" % repr(e),
-                      exc_info=True)
+            LOG.error(
+                "Failed to fetch remote configuration: %s" % repr(e), exc_info=True
+            )
             self.load_local(cache)
 
 
 class Configuration:
     """Namespace for operations on the configuration singleton."""
+
     __config = {}  # Cached config
     __patch = {}  # Patch config that skills can update to override config
 
@@ -204,9 +209,13 @@ class Configuration:
             (dict) merged dict of all configuration files
         """
         if not configs:
-            configs = [LocalConf(DEFAULT_CONFIG), RemoteConf(),
-                       LocalConf(SYSTEM_CONFIG), LocalConf(USER_CONFIG),
-                       Configuration.__patch]
+            configs = [
+                LocalConf(DEFAULT_CONFIG),
+                RemoteConf(),
+                LocalConf(SYSTEM_CONFIG),
+                LocalConf(USER_CONFIG),
+                Configuration.__patch,
+            ]
         else:
             # Handle strings in stack
             for index, item in enumerate(configs):

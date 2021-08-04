@@ -39,7 +39,7 @@ def then_wait(msg_type, criteria_func, context, timeout=None):
     """
     timeout = timeout or context.step_timeout
     start_time = time.monotonic()
-    debug = ''
+    debug = ""
     while time.monotonic() < start_time + timeout:
         for message in context.bus.get_messages(msg_type):
             status, test_dbg = criteria_func(message)
@@ -78,16 +78,16 @@ def mycroft_responses(context):
 
     Returns: (str) Mycroft responses including skill and dialog file
     """
-    responses = ''
-    messages = context.bus.get_messages('speak')
+    responses = ""
+    messages = context.bus.get_messages("speak")
     if len(messages) > 0:
-        responses = 'Mycroft responded with:\n'
+        responses = "Mycroft responded with:\n"
         for m in messages:
-            responses += 'Mycroft: '
-            if 'meta' in m.data and 'dialog' in m.data['meta']:
-                responses += '{}.dialog'.format(m.data['meta']['dialog'])
-            responses += '({})\n'.format(m.data['meta'].get('skill'))
-            responses += '"{}"\n'.format(m.data['utterance'])
+            responses += "Mycroft: "
+            if "meta" in m.data and "dialog" in m.data["meta"]:
+                responses += "{}.dialog".format(m.data["meta"]["dialog"])
+            responses += "({})\n".format(m.data["meta"].get("skill"))
+            responses += '"{}"\n'.format(m.data["utterance"])
     return responses
 
 
@@ -102,12 +102,18 @@ def emit_utterance(bus, utt):
         bus (InterceptAllBusClient): Bus instance to listen on
         dialogs (list): list of acceptable dialogs
     """
-    bus.emit(Message('recognizer_loop:utterance',
-                     data={'utterances': [utt],
-                           'lang': 'en-us',
-                           'session': '',
-                           'ident': time.time()},
-                     context={'client_name': 'mycroft_listener'}))
+    bus.emit(
+        Message(
+            "recognizer_loop:utterance",
+            data={
+                "utterances": [utt],
+                "lang": "en-us",
+                "session": "",
+                "ident": time.time(),
+            },
+            context={"client_name": "mycroft_listener"},
+        )
+    )
 
 
 def wait_for_dialog(bus, dialogs, context=None, timeout=None):
@@ -126,8 +132,8 @@ def wait_for_dialog(bus, dialogs, context=None, timeout=None):
         timeout = timeout or TIMEOUT
     start_time = time.monotonic()
     while time.monotonic() < start_time + timeout:
-        for message in bus.get_messages('speak'):
-            dialog = message.data.get('meta', {}).get('dialog')
+        for message in bus.get_messages("speak"):
+            dialog = message.data.get("meta", {}).get("dialog")
             if dialog in dialogs:
                 bus.clear_messages()
                 return
@@ -145,18 +151,18 @@ def wait_for_audio_service(context, message_type):
         message_type (string): final component of bus message in form
                                `mycroft.audio.service.{type}
     """
-    msg_type = 'mycroft.audio.service.{}'.format(message_type)
+    msg_type = "mycroft.audio.service.{}".format(message_type)
 
     def check_for_msg(message):
-        return (message.msg_type == msg_type, '')
+        return (message.msg_type == msg_type, "")
 
     passed, debug = then_wait(msg_type, check_for_msg, context)
 
     if not passed:
         debug += mycroft_responses(context)
     if not debug:
-        if message_type == 'play':
-            message_type = 'start'
+        if message_type == "play":
+            message_type = "start"
         debug = "Mycroft didn't {} playback".format(message_type)
 
     assert passed, debug
