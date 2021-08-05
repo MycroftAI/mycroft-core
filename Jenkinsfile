@@ -51,6 +51,7 @@ pipeline {
                     --target voight_kampff_builder \
                     --build-arg platform=mycroft_mark_1 \
                     --label build=${JOB_NAME} \
+                    --no-cache \
                     -t voight-kampff-mark-1:${BRANCH_ALIAS} .'
                 echo 'Running Mark I Voight-Kampff Test Suite'
                 timeout(time: 90, unit: 'MINUTES')
