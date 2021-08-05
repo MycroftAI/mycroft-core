@@ -131,8 +131,10 @@ def install_or_upgrade_skills(msm, skills):
             msm.install(s)
         else:
             try:
+                print(f'Upgrading {s}')
                 msm.update(s)
-            except MsmException:
+            except MsmException as e:
+                print(repr(e))
                 pass
 
 
