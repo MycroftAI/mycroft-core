@@ -30,10 +30,6 @@ from test.integrationtests.voight_kampff import (mycroft_responses, then_wait,
                                                  then_wait_fail)
 
 
-TIMEOUT = 10
-SLEEP_LENGTH = 0.25
-
-
 def find_dialog(skill_path, dialog, lang):
     """Check the usual location for dialogs.
 
@@ -253,13 +249,10 @@ def then_user_follow_up(context, text):
 
 @then('mycroft should send the message "{message_type}"')
 def then_messagebus_message(context, message_type):
-    """Set a timeout for the current Scenario."""
-    cnt = 0
-    while context.bus.get_messages(message_type) == []:
-        if cnt > int(TIMEOUT * (1.0 / SLEEP_LENGTH)):
-            assert False, "Message not found"
-            break
-        else:
-            cnt += 1
+    """Verify a specific message is sent."""
+    def check_dummy(message):
+        """We are just interested in the message data, just the type."""
+        return True, ""
 
-        time.sleep(SLEEP_LENGTH)
+    message_found, _ = then_wait(message_type, check_dummy, context)
+    assert message_found, "No matching message received."

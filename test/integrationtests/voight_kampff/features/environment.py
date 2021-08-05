@@ -148,13 +148,11 @@ def after_all(context):
 def after_feature(context, feature):
     context.log.info('Result: {} ({:.2f}s)'.format(str(feature.status.name),
                                                    feature.duration))
-    sleep(1)
 
 
 def after_scenario(context, scenario):
     """Wait for mycroft completion and reset any changed state."""
     # TODO wait for skill handler complete
-    sleep(0.5)
     wait_while_speaking()
     context.bus.clear_all_messages()
     context.matched_message = None
