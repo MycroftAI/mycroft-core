@@ -61,6 +61,9 @@ Item {
             interactionBar.isRequested = true;
         }
 
+        onFullScreenRequested: {
+            request.accept()
+        }
     }
     
     Popup {
