@@ -1,0 +1,123 @@
+{
+  "decade_format": {
+    "1": {"match": "^0$", "format": ""},
+    "2": {"match": "^\\d$", "format": "{x}"},
+    "3": {"match": "^1\\d$", "format": "{xx}"},
+    "4": {"match": "^\\d0$", "format": "{x0}"},
+    "5": {"match": "^[2-9]\\d$", "format": "{x}in{x0}"},
+    "default": "{number}"
+  },
+    "hundreds_format": {
+    "1": {"match": "^\\d{1,2}$", "format": "{formatted_decade}"},
+    "2": {"match": "^1\\d{2}$", "format": "sto {formatted_decade}"},
+    "3": {"match": "^2\\d{2}$", "format": "dvesto {formatted_decade}"},
+    "4": {"match": "^\\d{3}$", "format": "{x_in_x00}sto {formatted_decade}"},
+    "default": "{formatted_decade}"
+  },
+    "thousand_format": {
+    "1": {"match": "^\\d{1,3}$", "format": "{formatted_hundreds}"},
+    "2": {"match": "^1\\d{3}$", "format": "tisoč {formatted_hundreds}"},
+    "default": "{x_in_x000} tisoč {formatted_hundreds}"
+  },
+    "year_format": {
+    "default": "{formatted_thousand} {bc}",
+    "bc": "pr. n. št."
+  },
+    "date_format": {
+    "date_full": "{weekday}, {day} {month} {formatted_year}",
+    "date_full_no_year": "{weekday}, {day} {month}",
+    "date_full_no_year_month": "{weekday}, {day}",
+    "today": "danes",
+    "tomorrow": "jutri",
+    "yesterday": "včeraj"
+  },
+    "date_time_format": {
+    "date_time": "{formatted_date}, ob {formatted_time}"
+  },
+    "weekday": {
+    "0": "ponedeljek",
+    "1": "torek",
+    "2": "sreda",
+    "3": "četrtek",
+    "4": "petek",
+    "5": "sobota",
+    "6": "nedelja"
+  },
+  "date": {
+    "1": "prvi",
+    "2": "drugi",
+    "3": "tretji",
+    "4": "četrti",
+    "5": "peti",
+    "6": "šesti",
+    "7": "sedmi",
+    "8": "osmi",
+    "9": "deveti",
+    "10": "deseti",
+    "11": "enajsti",
+    "12": "dvanajsti",
+    "13": "trinajsti",
+    "14": "štirinajsti",
+    "15": "petjanjsti",
+    "16": "šestnajsti",
+    "17": "sedemnajsti",
+    "18": "osemnajsti",
+    "19": "devetnajsti",
+    "20": "dvajseti",
+    "21": "enaindvajseti",
+    "22": "dvaindvajseti",
+    "23": "triindvajseti",
+    "24": "štiriindvajseti",
+    "25": "petindvajseti",
+    "26": "šestindvajseti",
+    "27": "sedemindvajseti",
+    "28": "osemindvajseti",
+    "29": "devetindvajseti",
+    "30": "trideseti",
+    "31": "enaintrideseti"
+  },
+  "month": {
+    "1": "januar",
+    "2": "februar",
+    "3": "marec",
+    "4": "april",
+    "5": "maj",
+    "6": "junij",
+    "7": "julij",
+    "8": "avgust",
+    "9": "september",
+    "10": "oktober",
+    "11": "november",
+    "12": "december"
+  },
+  "number": {
+    "0": "nič",
+    "1": "ena",
+    "2": "dva",
+    "3": "tri",
+    "4": "štiri",
+    "5": "pet",
+    "6": "šest",
+    "7": "sedem",
+    "8": "osem",
+    "9": "devet",
+    "10": "deset",
+    "11": "enajst",
+    "12": "dvanajst",
+    "13": "trinajst",
+    "14": "štirinajst",
+    "15": "petnajst",
+    "16": "šestnajst",
+    "17": "sedemnajst",
+    "18": "osemnajst",
+    "19": "devetnajst",
+    "20": "dvajset",
+    "30": "trideset",
+    "40": "štirideset",
+    "50": "petdeset",
+    "60": "šestdeset",
+    "70": "sedemdeset",
+    "80": "osemdeset",
+    "90": "devetdeset"
+  }
+}

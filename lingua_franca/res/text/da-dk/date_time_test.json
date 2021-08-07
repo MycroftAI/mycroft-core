@@ -1,0 +1,32 @@
+{
+  "test_nice_year": {
+      "1": {"datetime_param": "2017, 1, 31, 13, 22, 3", "bc": "None", "assertEqual": "to tusind og sytten"},
+      "2": {"datetime_param": "1984, 1, 31, 13, 22, 3", "bc": "None", "assertEqual": "nitten hundred og fire og firs"},
+      "3": {"datetime_param": "1906, 1, 31, 13, 22, 3", "bc": "None", "assertEqual": "nitten hundred og seks"},
+      "4": {"datetime_param": "1802, 1, 31, 13, 22, 3", "bc": "None", "assertEqual": "atten hundred og to" },
+      "5": {"datetime_param": "806, 1, 31, 13, 22, 3", "bc": "None", "assertEqual": "otte hundred og seks" },
+      "6": {"datetime_param": "1800, 1, 31, 13, 22, 3", "bc": "None", "assertEqual": "atten hundred" },
+      "7": {"datetime_param": "1, 1, 31, 13, 22, 3", "bc": "None", "assertEqual": "et" },
+      "8": {"datetime_param": "103, 1, 31, 13, 22, 3", "bc": "None", "assertEqual": "et hundred og tre" },
+      "9": {"datetime_param": "1000, 1, 31, 13, 22, 3", "bc": "None", "assertEqual": "et tusind" },
+      "10": {"datetime_param": "2000, 1, 31, 13, 22, 3", "bc": "None", "assertEqual": "to tusind" },
+      "11": {"datetime_param": "99, 1, 31, 13, 22, 3", "bc": "True", "assertEqual": "ni og halvfems f.kr." },
+      "12": {"datetime_param": "5, 1, 31, 13, 22, 3", "bc": "True", "assertEqual": "fem f.kr." },
+      "13": {"datetime_param": "3120, 1, 31, 13, 22, 3", "bc": "True", "assertEqual": "tre tusind et hundred og tyve f.kr." },
+      "14": {"datetime_param": "3241, 1, 31, 13, 22, 3", "bc": "True", "assertEqual": "tre tusind to hundred og en og fyrre f.kr." }
+  },
+  "test_nice_date": {
+      "1": {"datetime_param": "2017, 1, 31, 0, 2, 3", "now": "None", "assertEqual": "tirsdag, den en og tredivte januar, to tusind og sytten"},
+      "2": {"datetime_param": "2018, 2, 4, 0, 2, 3", "now": "2017, 1, 1, 0, 2, 3", "assertEqual": "søndag, den fjerde februar, to tusind og atten"},
+      "3": {"datetime_param": "2018, 2, 4, 0, 2, 3", "now": "2018, 1, 1, 0, 2, 3", "assertEqual": "søndag, den fjerde februar"},
+      "4": {"datetime_param": "2018, 2, 4, 0, 2, 3", "now": "2018, 2, 1, 0, 2, 3", "assertEqual": "søndag, den fjerde"},
+      "5": {"datetime_param": "2018, 2, 4, 0, 2, 3", "now": "2018, 2, 3, 0, 2, 3", "assertEqual": "i morgen"},
+      "6": {"datetime_param": "2018, 2, 4, 0, 2, 3", "now": "2018, 2, 4, 0, 2, 3", "assertEqual": "i dag"},
+      "7": {"datetime_param": "2018, 2, 4, 0, 2, 3", "now": "2018, 2, 5, 0, 2, 3", "assertEqual": "i går"},
+      "8": {"datetime_param": "2018, 2, 4, 0, 2, 3", "now": "2018, 2, 6, 0, 2, 3", "assertEqual": "søndag, den fjerde februar"},
+      "9": {"datetime_param": "2018, 2, 4, 0, 2, 3", "now": "2019, 2, 6, 0, 2, 3", "assertEqual": "søndag, den fjerde februar, to tusind og atten"}
+  },
+  "test_nice_date_time": {
+      "1": {"datetime_param": "2017, 1, 31, 13, 22, 3", "now": "None",  "use_24hour": "False", "use_ampm": "True", "assertEqual": "tirsdag, den en og tredivte januar, to tusind og sytten klokken et toogtyve om eftermiddagen"}
+  }
+}

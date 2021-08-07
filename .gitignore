@@ -26,6 +26,7 @@ doc/_build/
 .vscode
 .theia
 .venv/
+*/__pycache__
 
 # Created by unit tests
 test/unittests/skills/test_skill/settings.json
