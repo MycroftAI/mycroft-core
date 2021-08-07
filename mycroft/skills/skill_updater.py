@@ -54,6 +54,8 @@ class SkillUpdater:
         self.config = Configuration.get()
         update_interval = self.config['skills']['update_interval']
         self.update_interval = int(update_interval) * ONE_HOUR
+        # self.update_interval = 60
+        LOG.info('[Flow Learning] update_interval == '+str(self.update_interval))
         self.dot_msm_path = os.path.join(self.msm.skills_dir, '.msm')
         self.next_download = self._determine_next_download_time()
         self._log_next_download_time()

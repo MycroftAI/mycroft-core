@@ -40,12 +40,14 @@ def handle_speak(event):
 
     Parse sentences and invoke text to speech service.
     """
+    LOG.info('[Flow Learning] in mycroft.audio.speech.py.handle_speak')
     config = Configuration.get()
     Configuration.set_config_update_handlers(bus)
     global _last_stop_signal
 
     # if the message is targeted and audio is not the target don't
     # don't synthezise speech
+    LOG.info('[Flow Learning] in mycroft.audio.speech.py.handle_speak')
     event.context = event.context or {}
     if event.context.get('destination') and not \
             ('debug_cli' in event.context['destination'] or
@@ -53,11 +55,13 @@ def handle_speak(event):
         return
 
     # Get conversation ID
+    LOG.info('[Flow Learning] in mycroft.audio.speech.py.handle_speak')
     if event.context and 'ident' in event.context:
         ident = event.context['ident']
     else:
         ident = 'unknown'
 
+    LOG.info('[Flow Learning] in mycroft.audio.speech.py.handle_speak')
     start = time.time()  # Time of speech request
     with lock:
         stopwatch = Stopwatch()
@@ -78,6 +82,10 @@ def handle_speak(event):
             # if a character (only alpha) ends with a period
             # ex: A. Lincoln -> A.Lincoln
             # so that we don't split at the period
+            LOG.info('[Flow Learning] in mycroft.audio.speech.py.handle_speak')
+            LOG.info('[Flow Learning] utterance is ' + str(utterance))
+
+            # mycroft-zh todo: do we need to do these handles?
             utterance = re.sub(r'\b([A-za-z][\.])(\s+)', r'\g<1>', utterance)
             chunks = re.split(r'(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\;|\?)\s',
                               utterance)
@@ -92,12 +100,14 @@ def handle_speak(event):
                     tts.playback.clear()
                     break
                 try:
+                    LOG.info('[Flow Learning] in mycroft.audio.speech.py. handle_speak, under for chunk, listen in chunks, call mute_and_speak')
                     mute_and_speak(chunk, ident, listen)
                 except KeyboardInterrupt:
                     raise
                 except Exception:
                     LOG.error('Error in mute_and_speak', exc_info=True)
         else:
+            LOG.info('[Flow Learning] in mycroft.audio.speech.py.handle_speak to call mute_and_speak')
             mute_and_speak(utterance, ident, listen)
 
         stopwatch.stop()

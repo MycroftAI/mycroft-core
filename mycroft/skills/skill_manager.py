@@ -227,6 +227,7 @@ class SkillManager(Thread):
 
     def run(self):
         """Load skills and update periodically from disk and internet."""
+        LOG.info('[Flow Learing] in mycroft.skills.skill_manager.py. SkillManager.run()')
         self._remove_git_locks()
         self._connected_event.wait()
         if (not self.skill_updater.defaults_installed() and
@@ -243,10 +244,15 @@ class SkillManager(Thread):
         # Scan the file folder that contains Skills.  If a Skill is updated,
         # unload the existing version from memory and reload from the disk.
         while not self._stop_event.is_set():
+            LOG.info("[Flow Learning] in mycroft.skills.skill_manager.py.SkillManager.run, in while not self._stop_event.is_set()")
             try:
+                LOG.info("[Flow Learning] in mycroft.skills.skill_manager.py.SkillManager.run, in while self._unload_removed_skills()")
                 self._unload_removed_skills()
+                LOG.info("[Flow Learning] in mycroft.skills.skill_manager.py.SkillManager.run, in while _reload_modified_skills()")
                 self._reload_modified_skills()
+                LOG.info("[Flow Learning] in mycroft.skills.skill_manager.py.SkillManager.run, in while self._load_new_skills()")
                 self._load_new_skills()
+                LOG.info("[Flow Learning] in mycroft.skills.skill_manager.py.SkillManager.run, in while self._update_skills()")
                 self._update_skills()
                 if (is_paired() and self.upload_queue.started and
                         len(self.upload_queue) > 0):
@@ -270,6 +276,7 @@ class SkillManager(Thread):
 
     def _load_on_startup(self):
         """Handle initial skill load."""
+        LOG.info('[Flow Learning] in mycroft.skills.skill_manager.py.SkillManager._load_on_startup')
         LOG.info('Loading installed skills...')
         self._load_new_skills()
         LOG.info("Skills all loaded!")
@@ -291,6 +298,8 @@ class SkillManager(Thread):
 
     def _load_new_skills(self):
         """Handle load of skills installed since startup."""
+        LOG.info('[Flow Learing] in mycroft.skills.skill_manager.py.SkillManager._load_new_skills')
+        LOG.info('[Flow Learing] in mycroft.skills.skill_manager.py.SkillManager._load_new_skills, self._get_skill_directories()=' + str(self._get_skill_directories()))
         for skill_dir in self._get_skill_directories():
             if skill_dir not in self.skill_loaders:
                 loader = self._load_skill(skill_dir)
@@ -298,6 +307,7 @@ class SkillManager(Thread):
                     self.upload_queue.put(loader)
 
     def _load_skill(self, skill_directory):
+        LOG.info('[Flow Learing] in mycroft.skills.skill_manager.py.SkillManager._load_skill, skill_directory=' + skill_directory)
         skill_loader = SkillLoader(self.bus, skill_directory)
         try:
             load_status = skill_loader.load()

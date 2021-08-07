@@ -517,6 +517,7 @@ class MycroftSkill:
         """
         num_fails = 0
         while True:
+            LOG.info('[Flow Learning] in mycroft.skills.mycroft_skill.mycroft_skill.py.MycroftSkill._wait_response')
             response = self.__get_response()
 
             if response is None:

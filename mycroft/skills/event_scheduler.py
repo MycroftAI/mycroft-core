@@ -94,6 +94,7 @@ class EventScheduler(Thread):
 
     def run(self):
         while self.is_running:
+            # LOG.info('[Flow Learning] in mycroft.skills.event_scheduler.py. EventScheduler.run()')
             self.check_state()
             time.sleep(0.5)
 
@@ -126,6 +127,7 @@ class EventScheduler(Thread):
 
         # Finally, emit the queued up events that triggered
         for msg in pending_messages:
+            LOG.info('[Flow Learning] in mycroft.skills.event_scheduler.py. EventScheduler.check_state()' + str(msg))
             self.bus.emit(msg)
 
     def schedule_event(self, event, sched_time, repeat=None,

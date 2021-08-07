@@ -236,6 +236,7 @@ class SkillLoader:
         self.bus.emit(message)
 
     def _load(self):
+        LOG.info('[Flow Learing] in mycroft.skills.skill_loader.py.SkillLoader._load')
         self._prepare_for_load()
         if self.is_blacklisted:
             self._skip_load()
@@ -267,7 +268,9 @@ class SkillLoader:
 
     def _load_skill_source(self):
         """Use Python's import library to load a skill's source code."""
+        LOG.info('[Flow Learing] in mycroft.skills.skill_loader.py.SkillLoader._load_skill_source, Use Python"s import library to load a skill"s source code.')
         main_file_path = os.path.join(self.skill_directory, SKILL_MAIN_MODULE)
+        LOG.info('[Flow Learing] in mycroft.skills.skill_loader.py.SkillLoader._load_skill_source, main_file_path=' + main_file_path)
         if not os.path.exists(main_file_path):
             error_msg = 'Failed to load {} due to a missing file.'
             LOG.error(error_msg.format(self.skill_id))

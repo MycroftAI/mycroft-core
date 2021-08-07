@@ -88,6 +88,7 @@ def handle_utterance(event):
 
 
 def handle_unknown():
+    LOG.info("[Flow Learning] emit mycroft.speech.recognition.unknown to Messagebus.")
     context = {'client_name': 'mycroft_listener',
                'source': 'audio'}
     bus.emit(Message('mycroft.speech.recognition.unknown', context=context))
@@ -97,6 +98,7 @@ def handle_speak(event):
     """
         Forward speak message to message bus.
     """
+    LOG.info("[Flow Learning] emit speak to Messagebus.")
     context = {'client_name': 'mycroft_listener',
                'source': 'audio'}
     bus.emit(Message('speak', event, context))
@@ -104,7 +106,7 @@ def handle_speak(event):
 
 def handle_complete_intent_failure(event):
     """Extreme backup for answering completely unhandled intent requests."""
-    LOG.info("Failed to find intent.")
+    LOG.info("Failed to find intent. send message of 'speak' to bus.")
     data = {'utterance': dialog.get('not.loaded')}
     context = {'client_name': 'mycroft_listener',
                'source': 'audio'}

@@ -293,6 +293,7 @@ class AudioService:
             Args:
                 message: message bus message, not used but required
         """
+        LOG.info('[Flow Learning] in class AudioService')
         if self.current:
             self.current.pause()
 
@@ -303,6 +304,7 @@ class AudioService:
             Args:
                 message: message bus message, not used but required
         """
+        LOG.info('[Flow Learning] in class AudioService')
         if self.current:
             self.current.resume()
 
@@ -314,6 +316,7 @@ class AudioService:
             Args:
                 message: message bus message, not used but required
         """
+        LOG.info('[Flow Learning] in class AudioService')
         if self.current:
             self.current.next()
 
@@ -325,11 +328,13 @@ class AudioService:
             Args:
                 message: message bus message, not used but required
         """
+        LOG.info('[Flow Learning] in class AudioService')
         if self.current:
             self.current.previous()
 
     def _perform_stop(self):
         """Stop audioservice if active."""
+        LOG.info('[Flow Learning] in class AudioService')
         if self.current:
             name = self.current.name
             if self.current.stop():
@@ -345,6 +350,7 @@ class AudioService:
             Args:
                 message: message bus message, not used but required
         """
+        LOG.info('[Flow Learning] in class AudioService')
         if time.monotonic() - self.play_start_time > 1:
             LOG.debug('stopping all playing services')
             with self.service_lock:
@@ -358,6 +364,7 @@ class AudioService:
             Args:
                 message: message bus message, not used but required
         """
+        LOG.info('[Flow Learning] in class AudioService, to lower volume.')
         if self.current:
             LOG.debug('lowering volume')
             self.current.lower_volume()
@@ -365,6 +372,7 @@ class AudioService:
 
     def _restore_volume(self, _=None):
         """Triggered when mycroft is done speaking and restores the volume."""
+        LOG.info('[Flow Learning] in class AudioService, to restore volume.')
         current = self.current
         if current:
             LOG.debug('restoring volume')
@@ -384,6 +392,7 @@ class AudioService:
             LOG.debug('restoring volume')
             self.current.restore_volume()
 
+        LOG.info('[Flow Learning] in class AudioService')
         if self.current:
             self.bus.on('recognizer_loop:speech.recognition.unknown',
                         restore_volume)
@@ -407,6 +416,7 @@ class AudioService:
                 prefered_service: indecates the service the user prefer to play
                                   the tracks.
         """
+        LOG.info('[Flow Learning] in class AudioService')
         self._perform_stop()
 
         if isinstance(tracks[0], str):
@@ -440,6 +450,7 @@ class AudioService:
         self.play_start_time = time.monotonic()
 
     def _queue(self, message):
+        LOG.info('[Flow Learning] in class AudioService')
         if self.current:
             with self.service_lock:
                 tracks = message.data['tracks']
@@ -456,6 +467,7 @@ class AudioService:
             Args:
                 message: message bus message, not used but required
         """
+        LOG.info('[Flow Learning] in class AudioService')
         with self.service_lock:
             tracks = message.data['tracks']
             repeat = message.data.get('repeat', False)
@@ -478,6 +490,7 @@ class AudioService:
             Args:
                 message: message bus message, not used but required
         """
+        LOG.info('[Flow Learning] in class AudioService')
         if self.current:
             track_info = self.current.track_info()
         else:
@@ -487,6 +500,7 @@ class AudioService:
 
     def _list_backends(self, message):
         """ Return a dict of available backends. """
+        LOG.info('[Flow Learning] in class AudioService')
         data = {}
         for s in self.service:
             info = {
@@ -504,6 +518,7 @@ class AudioService:
             Args:
                 message: message bus message
         """
+        LOG.info('[Flow Learning] in class AudioService')
         seconds = message.data.get("seconds", 1)
         if self.current:
             self.current.seek_forward(seconds)
@@ -515,11 +530,13 @@ class AudioService:
             Args:
                 message: message bus message
         """
+        LOG.info('[Flow Learning] in class AudioService')
         seconds = message.data.get("seconds", 1)
         if self.current:
             self.current.seek_backward(seconds)
 
     def shutdown(self):
+        LOG.info('[Flow Learning] in class AudioService')
         for s in self.service:
             try:
                 LOG.info('shutting down ' + s.name)

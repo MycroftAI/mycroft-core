@@ -77,6 +77,7 @@ class IntentService:
     querying the intent service.
     """
     def __init__(self, bus):
+        LOG.info('[Flow Learning] IntentService is initializing...')
         # Dictionary for translating a skill id to a name
         self.bus = bus
 
@@ -271,6 +272,7 @@ class IntentService:
         Args:
             message (Message): The messagebus data
         """
+        LOG.info('[Flow Learning] in mycroft.skills.intent_service.py.IntentService.handle_utterance, try to match utterance with Mycroft skills or some handle.')
         try:
             lang = _get_message_lang(message)
             set_default_lf_lang(lang)
@@ -297,6 +299,7 @@ class IntentService:
                     if match:
                         break
             if match:
+                LOG.info('[Flow Learning] A skill or handle is matched.')
                 if match.skill_id:
                     self.add_active_skill(match.skill_id)
                     # If the service didn't report back the skill_id it
@@ -310,6 +313,7 @@ class IntentService:
             else:
                 # Nothing was able to handle the intent
                 # Ask politely for forgiveness for failing in this vital task
+                LOG.info('[Flow Learning] Nothing matches, ask politely for forgiveness.')
                 self.send_complete_intent_failure(message)
             self.send_metrics(match, message.context, stopwatch)
         except Exception as err:
@@ -346,6 +350,7 @@ class IntentService:
         Args:
             message (Message): original message to forward from
         """
+        LOG.info('[Flow Learning] send message of complete_intent_failure to bus.')
         self.bus.emit(message.forward('complete_intent_failure'))
 
     def handle_register_vocab(self, message):

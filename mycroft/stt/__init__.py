@@ -615,6 +615,33 @@ def load_stt_plugin(module_name):
     return load_plugin('mycroft.plugin.stt', module_name)
 
 
+class BaiduSTT(STT):
+    def __init__(self):
+        from aip import AipSpeech
+        LOG.info('[Flow Learning] in BaiduSTT.__init__')
+        super(BaiduSTT, self).__init__()
+        self.lang = self.config['lang']
+        LOG.info('[Flow Learning] self.config = ' + str(self.config))
+        self.sample_rate = 16000 if self.config['sample_rate'] is None else self.config['sample_rate']
+        self.per = 0 if self.config['per'] is None else self.config['per']
+        self.dev_pid = self.config['dev_pid']
+        self.format = 'pcm'
+        self.client = AipSpeech(self.config['appid'], self.credential['api_key'], self.credential['secret_key'])
+
+    def execute(self, audio, language=None):
+        LOG.info('is about to send voice to Baidu!')
+        waveData = audio.get_raw_data(convert_rate=self.sample_rate)
+        res = self.client.asr(waveData, self.format, self.sample_rate, {
+            'dev_pid': self.dev_pid,
+        })
+        if res['err_no'] == 0:
+            LOG.info('Speech is recognized:{}'.format(res['result']))
+            return ''.join(res['result'])
+        else:
+            LOG.info('Error during Speech recognition: {}'.format(res['err_msg']))
+            return ''
+
+
 class STTFactory:
     CLASSES = {
         "mycroft": MycroftSTT,
@@ -630,7 +657,8 @@ class STTFactory:
         "deepspeech_server": DeepSpeechServerSTT,
         "deepspeech_stream_server": DeepSpeechStreamServerSTT,
         "mycroft_deepspeech": MycroftDeepSpeechSTT,
-        "yandex": YandexSTT
+        "yandex": YandexSTT,
+        "baidu": BaiduSTT
     }
 
     @staticmethod
@@ -638,7 +666,9 @@ class STTFactory:
         try:
             config = Configuration.get().get("stt", {})
             module = config.get("module", "mycroft")
+            LOG.info("module of stt is "+module)
             if module in STTFactory.CLASSES:
+                LOG.info("module is in STTFactory.CLASSES: module =="+module)
                 clazz = STTFactory.CLASSES[module]
             else:
                 clazz = load_stt_plugin(module)

@@ -260,6 +260,7 @@ def _initialize_skill_manager(bus, watchdog):
         SkillManager instance or None if it couldn't be initialized
     """
     try:
+        LOG.info('[Flow Learning] in mycroft.skills.__main__.py._initialize_skill_manager, is about to get SkillManager, skill_manager.load_priority')
         skill_manager = SkillManager(bus, watchdog)
         skill_manager.load_priority()
     except MsmException:
