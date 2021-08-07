@@ -212,9 +212,9 @@ a developer modifying mycroft-core itself, you should run on the
         git checkout ${branch}
     else
         echo -e "$HIGHLIGHT N - using an unstable branch $RESET"
-        branch=dev
+        branch=feature/put-into-one-repo
     fi
-
+    echo " branch is ${branch}"
     sleep 0.5
     echo "
 Mycroft is actively developed and constantly evolving.  It is recommended
