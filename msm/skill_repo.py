@@ -38,6 +38,7 @@ LOG = logging.getLogger(__name__)
 MYCROFT_SKILLS_DATA = "https://raw.githubusercontent.com/MycroftAI/mycroft-skills-data"
 FIVE_MINUTES = 300
 
+
 def load_skills_data(branch, path):
     try:
         market_info_url = (MYCROFT_SKILLS_DATA + "/" + branch +
@@ -95,7 +96,7 @@ class SkillRepo(object):
             return f.read()
 
     def __prepare_repo(self):
-        LOG.info('[Flow Learning] .venv.lib.python3.8/site-packages/msm/skill_repo.py/SkillRepo.__prepare_repo, fetch from git self.url=' + self.url + ' path=' + self.path )
+        LOG.info('[Flow Learning] .venv.lib.python3.8/site-packages/msm/skill_repo.py/SkillRepo.__prepare_repo, fetch from git self.url=' + self.url + ' path=' + self.path)
         if not exists(dirname(self.path)):
             makedirs(dirname(self.path))
 
@@ -161,6 +162,7 @@ class SkillRepo(object):
             yield folder, sha
 
     def get_default_skill_names(self):
+        LOG.info('[Flow Learning] in msm.skill_repo.py.SkillRepo.get_default_skill_names ' + str(self.path) + 'DEFAULT-SKILLS*')
         for defaults_file in glob(join(self.path, 'DEFAULT-SKILLS*')):
             with open(defaults_file) as f:
                 skills = list(filter(

@@ -58,6 +58,7 @@ class SkillUpdater:
         LOG.info('[Flow Learning] update_interval == '+str(self.update_interval))
         self.dot_msm_path = os.path.join(self.msm.skills_dir, '.msm')
         self.next_download = self._determine_next_download_time()
+        LOG.info('[Flow Learning] before calling _log_next_download_time()')
         self._log_next_download_time()
         self.installed_skills = set()
         self.default_skill_install_error = False
@@ -79,11 +80,13 @@ class SkillUpdater:
             os.path.exists(self.installed_skills_file_path)
         )
         if msm_files_exist:
+            LOG.info('[Flow Learning] in SkillUpdater._determine_next_download_time(), msm_files_exist.')
             mtime = os.path.getmtime(self.dot_msm_path)
             next_download = mtime + self.update_interval
         else:
             # Last update can't be found or the requirements don't seem to be
             # installed trigger update before skill loading
+            LOG.info('[Flow Learning] in SkillUpdater._determine_next_download_time(), msm_files do not exist.')
             next_download = time() - 1
 
         return next_download
@@ -190,13 +193,18 @@ class SkillUpdater:
                 self.msm.list(),
                 max_threads=num_threads
             )
-            self.post_manifest()
+            # mycroft-core-zh: todo, pairing doesn't support. add the config into mycroft.conf.
+            if False:
+                self.post_manifest()
 
         except MsmException as e:
             LOG.error('Failed to update skills: {}'.format(repr(e)))
 
     def post_manifest(self, reload_skills_manifest=False):
         """Post the manifest of the device's skills to the backend."""
+        # mycroft-core-zh: todo, pairing doesn't support. add the config into mycroft.conf.
+        if True:
+            LOG.error('Pairing(connect with web backend server such as https://api.mycroft.ai) is not supported by mycroft-core-zh')
         upload_allowed = self.config['skills'].get('upload_skill_manifest')
         if upload_allowed and is_paired():
             if reload_skills_manifest:
@@ -250,6 +258,7 @@ class SkillUpdater:
 
     def _schedule_retry(self):
         """Schedule the next skill update in the event of a failure."""
+        LOG.info('[Flow Learning] before calling _log_next_download_time()')
         self.install_retries += 1
         self.next_download = time() + FIVE_MINUTES
         self._log_next_download_time()
@@ -257,6 +266,7 @@ class SkillUpdater:
 
     def _update_download_time(self):
         """Update timestamp on .msm file to be used when system is restarted"""
+        LOG.info('[Flow Learning] before calling _log_next_download_time()')
         with open(self.dot_msm_path, 'a'):
             os.utime(self.dot_msm_path, None)
         self.next_download = time() + self.update_interval

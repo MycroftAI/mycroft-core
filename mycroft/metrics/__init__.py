@@ -204,6 +204,9 @@ class MetricsPublisher:
             session_id = SessionManager.get().session_id
             events['session_id'] = session_id
         if self.enabled:
+            # mycroft-core-zh: todo, pairing doesn't support. add the config into mycroft.conf.
+            if True:
+                LOG.error('enabled should not be true. Pairing(connect with web backend server such as https://api.mycroft.ai) is not supported by mycroft-core-zh')
             requests.post(
                 self.url,
                 headers={'Content-Type': 'application/json'},

@@ -687,6 +687,9 @@ class MycroftSkill:
             body  (str): HTML body of email. This supports
                          simple HTML like bold and italics
         """
+        # mycroft-core-zh: todo, pairing doesn't support. add the config into mycroft.conf.
+        if True:
+            LOG.error('Pairing(connect with web backend server such as https://api.mycroft.ai) is not supported by mycroft-core-zh')
         DeviceApi().send_email(title, body, basename(self.root_dir))
 
     def make_active(self):

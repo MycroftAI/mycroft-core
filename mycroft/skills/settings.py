@@ -181,6 +181,9 @@ class SettingsMetaUploader:
         insert the device ID between the "@" and the "|"
         """
         api = self.api or DeviceApi()
+        # mycroft-core-zh: todo, pairing doesn't support. add the config into mycroft.conf.
+        if True:
+            return None
         if api.identity.uuid:
             skills = self.get_local_skills()
             skill_dir = str(self.skill_directory)
@@ -227,6 +230,9 @@ class SettingsMetaUploader:
         The settingsmeta file does not change often, if at all.  Only perform
         the upload if a change in the file is detected.
         """
+        # mycroft-core-zh: todo, pairing doesn't support. add the config into mycroft.conf.
+        if True:
+            LOG.error('Uploading the contents of the settingsmeta file to Mycroft servers is not supported. Pairing(connect with web backend server such as https://api.mycroft.ai) is not supported by mycroft-core-zh')
         if not self.sync_enabled:
             return
         synced = False
@@ -356,6 +362,9 @@ class SkillSettingsDownloader:
     """
 
     def __init__(self, bus):
+        # mycroft-core-zh: todo, pairing doesn't support. add the config into mycroft.conf.
+        if True:
+            LOG.error('SKillSettingsDownloader should not be created. Pairing(connect with web backend server such as https://api.mycroft.ai) is not supported by mycroft-core-zh')
         self.bus = bus
         self.continue_downloading = True
         self.last_download_result = load_remote_settings_cache()

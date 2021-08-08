@@ -66,19 +66,26 @@ class DevicePrimer(object):
 
     def prepare_device(self):
         """Internet dependent updates of various aspects of the device."""
-        self._get_pairing_status()
+        # mycroft-core-zh: todo, pairing doesn't support. add the config into mycroft.conf.
+        if False:
+            self._get_pairing_status()
         self._update_system_clock()
-        self._update_system()
+        # mycroft-core-zh: todo, pairing doesn't support. add the config into mycroft.conf.
+        if False:
+            self._update_system()
         # Above will block during update process and kill this instance if
         # new software is installed
 
-        if self.backend_down:
+        # mycroft-core-zh: todo, pairing doesn't support. add the config into mycroft.conf.
+        if self.backend_down and False:
             self._notify_backend_down()
         else:
             self._display_skill_loading_notification()
             self.bus.emit(Message('mycroft.internet.connected'))
-            self._ensure_device_is_paired()
-            self._update_device_attributes_on_backend()
+            # mycroft-core-zh: todo, pairing doesn't support. add the config into mycroft.conf.
+            if False:
+                self._ensure_device_is_paired()
+                self._update_device_attributes_on_backend()
 
     def _get_pairing_status(self):
         """Set an instance attribute indicating the device's pairing status"""
@@ -214,16 +221,22 @@ def main(alive_hook=on_alive, started_hook=on_started, ready_hook=on_ready,
     status = ProcessStatus('skills', bus, callbacks)
 
     SkillApi.connect_bus(bus)
+    LOG.info('[Flow Learning]in skills.__main__.py, call _initialize_skill_manager')
     skill_manager = _initialize_skill_manager(bus, watchdog)
+    LOG.info('[Flow Learning]in skills.__main__.py, after call _initialize_skill_manager')
 
     status.set_started()
+    LOG.info('[Flow Learning]in skills.__main__.py, before  call _wait_for_internet_connection()')
     _wait_for_internet_connection()
+    LOG.info('[Flow Learning]in skills.__main__.py, after  call _wait_for_internet_connection()')
 
     if skill_manager is None:
         skill_manager = _initialize_skill_manager(bus, watchdog)
 
+    LOG.info('[Flow Learning] in skills.__main__.py.main() create DevicePrimer()')
     device_primer = DevicePrimer(bus, config)
     device_primer.prepare_device()
+    LOG.info('[Flow Learning] in skills.__main__.py.main() is about to skill_manager.start() this will start run() function.')
     skill_manager.start()
     while not skill_manager.is_alive():
         time.sleep(0.1)
@@ -260,8 +273,9 @@ def _initialize_skill_manager(bus, watchdog):
         SkillManager instance or None if it couldn't be initialized
     """
     try:
-        LOG.info('[Flow Learning] in mycroft.skills.__main__.py._initialize_skill_manager, is about to get SkillManager, skill_manager.load_priority')
+        LOG.info('[Flow Learning] in mycroft.skills.__main__.py._initialize_skill_manager, is about to get SkillManager')
         skill_manager = SkillManager(bus, watchdog)
+        LOG.info('[Flow Learning] in mycroft.skills.__main__.py._initialize_skill_manager, and then call skill_manager.load_priority')
         skill_manager.load_priority()
     except MsmException:
         # skill manager couldn't be created, wait for network connection and
@@ -279,6 +293,7 @@ def _initialize_skill_manager(bus, watchdog):
 def _wait_for_internet_connection():
     while not connected():
         time.sleep(1)
+        LOG.warning('[Flow Learning] not connected and sleep 1 sec.')
 
 
 def shutdown(skill_manager, event_scheduler):

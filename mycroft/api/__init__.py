@@ -120,6 +120,9 @@ class Api:
         Returns:
             Requests response object.
         """
+        # mycroft-core-zh: todo, pairing doesn't support. add the config into mycroft.conf.
+        if True:
+            LOG.error('Pairing(connect with web backend server such as https://api.mycroft.ai) is not supported by mycroft-core-zh')
         query_data = frozenset(params.get('query', {}).items())
         params_key = (params.get('path'), query_data)
         etag = self.params_to_etag.get(params_key)
@@ -225,6 +228,9 @@ class DeviceApi(Api):
     """ Web API wrapper for obtaining device-level information """
 
     def __init__(self):
+        # mycroft-core-zh: todo, pairing doesn't support. add the config into mycroft.conf.
+        if True:
+            LOG.error('Pairing(connect with web backend server such as https://api.mycroft.ai) is not supported by mycroft-core-zh')
         super(DeviceApi, self).__init__("device")
 
     def get_code(self, state):
@@ -287,6 +293,9 @@ class DeviceApi(Api):
         })
 
     def report_metric(self, name, data):
+        # mycroft-core-zh: todo, pairing doesn't support. add the config into mycroft.conf.
+        if True:
+            LOG.error('report_metric should not be called. Pairing(connect with web backend server such as https://api.mycroft.ai) is not supported by mycroft-core-zh')
         return self.request({
             "method": "POST",
             "path": "/" + UUID + "/metric/" + name,
@@ -497,6 +506,10 @@ def is_paired(ignore_errors=True):
     Returns:
         bool: True if paired with backend
     """
+    # mycroft-core-zh: todo, pairing doesn't support. add the config into mycroft.conf.
+    if True:
+        return False
+
     global _paired_cache
     if _paired_cache:
         # NOTE: This assumes once paired, the unit remains paired.  So

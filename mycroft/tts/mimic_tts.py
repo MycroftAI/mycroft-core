@@ -68,6 +68,9 @@ def download_subscriber_voices(selected_voice):
 
     The function starts with the currently selected if applicable
     """
+    # mycroft-core-zh: todo, pairing doesn't support. add the config into mycroft.conf.This may not support.
+    if True:
+        LOG.warning('This may not support. because Pairing(connect with web backend server such as https://api.mycroft.ai) is not supported by mycroft-core-zh')
     subscriber_voices = get_subscriber_voices()
 
     def make_executable(dest):
@@ -134,11 +137,14 @@ class Mimic(TTS):
 
         # Download subscriber voices if needed
         self.subscriber_voices = get_subscriber_voices()
-        self.is_subscriber = DeviceApi().is_subscriber
-        if self.is_subscriber:
-            trd = Thread(target=download_subscriber_voices, args=[self.voice])
-            trd.daemon = True
-            trd.start()
+
+        # mycroft-core-zh: todo, pairing doesn't support. add the config into mycroft.conf.
+        if False:
+            self.is_subscriber = DeviceApi().is_subscriber
+            if self.is_subscriber:
+                trd = Thread(target=download_subscriber_voices, args=[self.voice])
+                trd.daemon = True
+                trd.start()
 
     def modify_tag(self, tag):
         """Modify the SSML to suite Mimic."""

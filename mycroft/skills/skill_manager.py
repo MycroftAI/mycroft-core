@@ -132,7 +132,11 @@ class SkillManager(Thread):
         self.enclosure = EnclosureAPI(bus)
         self.initial_load_complete = False
         self.num_install_retries = 0
-        self.settings_downloader = SkillSettingsDownloader(self.bus)
+
+        # mycroft-core-zh: todo, pairing doesn't support. add the config into mycroft.conf.
+        self.settings_downloader = None
+        if False:
+            self.settings_downloader = SkillSettingsDownloader(self.bus)
 
         self.empty_skill_dirs = set()  # Save a record of empty skill dirs.
 
@@ -162,10 +166,14 @@ class SkillManager(Thread):
         self.bus.on('skillmanager.keep', self.deactivate_except)
         self.bus.on('skillmanager.activate', self.activate_skill)
         self.bus.on('mycroft.paired', self.handle_paired)
-        self.bus.on(
-            'mycroft.skills.settings.update',
-            self.settings_downloader.download
-        )
+        # mycroft-core-zh: todo, pairing doesn't support. add the config into mycroft.conf.
+        if True:
+            LOG.warning('The event of mycroft.skills.settings.update will not be handled. Pairing(connect with web backend server such as https://api.mycroft.ai) is not supported by mycroft-core-zh')
+        else:
+            self.bus.on(
+                'mycroft.skills.settings.update',
+                self.settings_downloader.download
+            )
 
     @property
     def skills_config(self):
@@ -191,6 +199,9 @@ class SkillManager(Thread):
         self.skill_updater.next_download = time() - 1
 
     def _start_settings_update(self):
+        # mycroft-core-zh: todo, pairing doesn't support. add the config into mycroft.conf.
+        if True:
+            LOG.error('_start_settings_update() for remote server should not be called. Pairing(connect with web backend server such as https://api.mycroft.ai) is not supported by mycroft-core-zh')
         LOG.info('Start settings update')
         self.skill_updater.post_manifest(reload_skills_manifest=True)
         self.upload_queue.start()
@@ -200,9 +211,14 @@ class SkillManager(Thread):
 
     def handle_paired(self, _):
         """Trigger upload of skills manifest after pairing."""
-        self._start_settings_update()
+        # mycroft-core-zh: todo, pairing doesn't support. add the config into mycroft.conf.
+        if True:
+            LOG.error('handle_paired() should not be called. Pairing(connect with web backend server such as https://api.mycroft.ai) is not supported by mycroft-core-zh')
+        else:
+            self._start_settings_update()
 
     def load_priority(self):
+        LOG.info('[Flow Learning] in skills.skill_manager.py.SkillManager.load_priority ')
         skills = {skill.name: skill for skill in self.msm.all_skills}
         priority_skills = self.skills_config.get("priority_skills", [])
         for skill_name in priority_skills:
@@ -238,7 +254,8 @@ class SkillManager(Thread):
         self._load_on_startup()
 
         # Sync backend and skills.
-        if is_paired() and not self.upload_queue.started:
+        # mycroft-core-zh: todo, pairing doesn't support. add the config into mycroft.conf.
+        if is_paired() and not self.upload_queue.started and False:
             self._start_settings_update()
 
         # Scan the file folder that contains Skills.  If a Skill is updated,
@@ -254,8 +271,10 @@ class SkillManager(Thread):
                 self._load_new_skills()
                 LOG.info("[Flow Learning] in mycroft.skills.skill_manager.py.SkillManager.run, in while self._update_skills()")
                 self._update_skills()
+
+                # mycroft-core-zh: todo, pairing doesn't support. add the config into mycroft.conf.
                 if (is_paired() and self.upload_queue.started and
-                        len(self.upload_queue) > 0):
+                        len(self.upload_queue) > 0) and False:
                     self.msm.clear_cache()
                     self.skill_updater.post_manifest()
                     self.upload_queue.send()
@@ -361,6 +380,7 @@ class SkillManager(Thread):
 
     def _update_skills(self):
         """Update skills once an hour if update is enabled"""
+        LOG.info('[Flow Learning]  in skills.skill_manager.py.SkillManger._update_skills')
         do_skill_update = (
             time() >= self.skill_updater.next_download and
             self.skills_config["auto_update"]
@@ -428,8 +448,12 @@ class SkillManager(Thread):
     def stop(self):
         """Tell the manager to shutdown."""
         self._stop_event.set()
-        self.settings_downloader.stop_downloading()
-        self.upload_queue.stop()
+        # mycroft-core-zh: todo, pairing doesn't support. add the config into mycroft.conf.
+        if True:
+            LOG.warning('self.settings_downloader.stop_downloading() and self.upload_queue.stop() will not be called. Pairing(connect with web backend server such as https://api.mycroft.ai) is not supported by mycroft-core-zh')
+        else:
+            self.settings_downloader.stop_downloading()
+            self.upload_queue.stop()
 
         # Do a clean shutdown of all skills
         for skill_loader in self.skill_loaders.values():

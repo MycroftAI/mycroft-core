@@ -294,6 +294,9 @@ def requires_pairing(func):
 class MycroftSTT(STT):
     """Default mycroft STT."""
     def __init__(self):
+        # mycroft-core-zh: todo, pairing doesn't support. add the config into mycroft.conf.
+        if True:
+            LOG.error('MycroftSTT is not supported for mycroft-core-zh, Pairing(connect with web backend server such as https://api.mycroft.ai) is not supported by mycroft-core-zh')
         super(MycroftSTT, self).__init__()
         self.api = STTApi("stt")
 
@@ -310,6 +313,9 @@ class MycroftSTT(STT):
 class MycroftDeepSpeechSTT(STT):
     """Mycroft Hosted DeepSpeech"""
     def __init__(self):
+        # mycroft-core-zh: todo, pairing doesn't support. add the config into mycroft.conf.
+        if True:
+            LOG.error('MycroftDeepSpeechSTT is not supported for mycroft-core-zh, Pairing(connect with web backend server such as https://api.mycroft.ai) is not supported by mycroft-core-zh')
         super(MycroftDeepSpeechSTT, self).__init__()
         self.api = STTApi("deepspeech")
 

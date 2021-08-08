@@ -379,6 +379,9 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         If an error occurs it's handled and a temporary value is returned.
         When a value is received it will be cached until next start.
         """
+        # mycroft-core-zh: todo, pairing doesn't support. add the config into mycroft.conf.
+        if True:
+            return '0'
         if not self._account_id:
             try:
                 self._account_id = DeviceApi().get()['user']['uuid']

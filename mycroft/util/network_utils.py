@@ -6,6 +6,7 @@ from urllib.error import URLError
 from .log import LOG
 
 
+# mycroft-core-zh: todo if conf is for zh, use baidu instead of google to check connected.
 def connected():
     """Check connection by connecting to 8.8.8.8 and if google.com is
     reachable if this fails, Check Microsoft NCSI is used as a backup.
@@ -13,12 +14,31 @@ def connected():
     Returns:
         True if internet connection can be detected
     """
-    if _connected_dns():
-        # Outside IP is reachable check if names are resolvable
-        return _connected_google()
+    if True:
+        return connected_baidu()
     else:
-        # DNS can't be reached, do a complete fetch in case it's blocked
-        return _connected_ncsi()
+        if _connected_dns():
+            # Outside IP is reachable check if names are resolvable
+            return _connected_google()
+        else:
+            # DNS can't be reached, do a complete fetch in case it's blocked
+            return _connected_ncsi()
+
+
+def connected_baidu():
+    """Check internet connection by retrieving the baidu endpoint.
+
+    Returns:
+        True if internet connection can be detected
+    """
+    try:
+        r = requests.get('https://www.baidu.com')
+        LOG.info(str(r))
+        if r.status_code >= 200 and r.status_code < 300:
+            return True
+    except Exception:
+        LOG.error('internet connection fails, unable to retrieve the baidu.')
+    return False
 
 
 def _connected_ncsi():

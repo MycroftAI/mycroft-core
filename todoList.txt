@@ -1,0 +1,13 @@
+self._get_pairing_status()
+
+2021-08-08 00:06:20.809 | INFO     | 42206 | __main__:main:229 | [Flow Learning] in skills.__main__.py.main() create DevicePrimer()
+
+
+1. add token in .conf that mycroft-core-zh doesn't get remote skills (they are based on github) 
+
+2. pair match
+Address of the REMOTE server ("url": "https://api.mycroft.ai")
+
+3. fail to load mplayer
+2021-08-08 18:47:58.630 | INFO     | 14184 | mycroft.audio.audioservice:load_internal_services:134 | Loading mplayer
+2021-08-08 18:47:58.647 | ERROR    | 14184 | audioservice_mplayer:<module>:20 | install py_mplayer with pip install git+https://github.com/JarbasAl/py_mplayer

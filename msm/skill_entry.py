@@ -113,14 +113,18 @@ class SkillEntry(object):
     }
 
     def __init__(self, name, path, url='', sha='', msm=None):
+        LOG.info('[Flow Learning] in SkillEntry.__init__()')
         url = url.rstrip('/')
         url = url[:-len('.git')] if url.endswith('.git') else url
         self.path = path
         self.url = url
         self.sha = sha
         self.msm = msm
-        if msm:
+        LOG.info('[Flow Learning] in SkillEntry.__init__()2')
+        # mycroft-core-zh: disable get from remote
+        if msm and url != '':
             u = url.lower()
+            LOG.info('[Flow Learning] in SkillEntry.__init__() meta_info ')
             self.meta_info = msm.repo.skills_meta_info.get(u, {})
         else:
             self.meta_info = {}
@@ -131,11 +135,13 @@ class SkillEntry(object):
         else:
             self.name = basename(path)
 
+        LOG.info('[Flow Learning] in SkillEntry.__init__()3')
         # TODO: Handle git:// urls as well
         from_github = False
         if url.startswith('https://'):
             url_tokens = url.rstrip("/").split("/")
             from_github = url_tokens[-3] == 'github.com' if url else False
+        LOG.info('[Flow Learning] in SkillEntry.__init__()4')
         self.author = self.extract_author(url) if from_github else ''
         self.id = self.extract_repo_id(url) if from_github else self.name
         self.is_local = exists(path)
@@ -210,16 +216,22 @@ class SkillEntry(object):
                         retrieval.
             use_cache:  Enable/Disable cache usage. defaults to True
         """
-        LOG.info('[Flow Learning] in msm.skill_entry.py SKillEntry.from_folder.')
+        LOG.info('[Flow Learning] in msm.skill_entry.py SKillEntry.from_folder().')
+        LOG.info('[Flow Learning] in msm.skill_entry.py SKillEntry.from_folder().  before if msm.local_skills.values()=')
         if msm and use_cache:
+            LOG.info('[Flow Learning] in msm.skill_entry.py SKillEntry.from_folder(). msm.local_skills.values().len =' + len(msm.local_skills.values()))
             skills = {skill.path: skill for skill in msm.local_skills.values()}
+            LOG.info('[Flow Learning] in msm.skill_entry.py SKillEntry.from_folder().')
             if path in skills:
                 return skills[path]
-        # Shore: todo zh disable git
+        # mycroft-core-zh: todo zh disable git
         url = ''
         if False:
             url = cls.find_git_url(path)
-        return cls(None, path, url, msm=msm)
+        LOG.info('[Flow Learning] in msm.skill_entry.py SKillEntry.from_folder() before cls().')
+        tmpCls = cls(None, path, url, msm=msm)
+        LOG.info('[Flow Learning] in msm.skill_entry.py SKillEntry.from_folder(). after tmpCls' + str(tmpCls))
+        return tmpCls
 
     @classmethod
     def create_path(cls, folder, url, name=''):

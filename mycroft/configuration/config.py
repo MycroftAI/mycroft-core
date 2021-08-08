@@ -125,6 +125,9 @@ class LocalConf(dict):
 class RemoteConf(LocalConf):
     """Config dictionary fetched from mycroft.ai."""
     def __init__(self, cache=None):
+        # mycroft-core-zh: todo, pairing doesn't support. add the config into mycroft.conf.
+        if True:
+            LOG.warning('in RemoteConf.init(), should not get conf from remote server. Pairing(connect with web backend server such as https://api.mycroft.ai) is not supported by mycroft-core-zh')
         super(RemoteConf, self).__init__(None)
 
         cache = cache or WEB_CONFIG_CACHE
@@ -133,6 +136,9 @@ class RemoteConf(LocalConf):
             self.load_local(cache)
             return
 
+        # mycroft-core-zh: todo, pairing doesn't support. add the config into mycroft.conf.
+        if True:
+            LOG.error('in RemoteConf.init(), should not get conf from remote server. Pairing(connect with web backend server such as https://api.mycroft.ai) is not supported by mycroft-core-zh')
         try:
             # Here to avoid cyclic import
             from mycroft.api import DeviceApi
