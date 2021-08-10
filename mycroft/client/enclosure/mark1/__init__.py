@@ -14,11 +14,12 @@
 #
 import subprocess
 import time
-import sys
 from alsaaudio import Mixer
 from threading import Thread, Timer
 
 import serial
+
+import xdg.BaseDirectory
 
 import mycroft.dialog
 from mycroft.client.enclosure.base import Enclosure
@@ -29,7 +30,7 @@ from mycroft.client.enclosure.mark1.eyes import EnclosureEyes
 from mycroft.client.enclosure.mark1.mouth import EnclosureMouth
 from mycroft.enclosure.display_manager import \
     init_display_manager_bus_connection
-from mycroft.configuration import Configuration, LocalConf, USER_CONFIG
+from mycroft.configuration import LocalConf, USER_CONFIG
 from mycroft.messagebus.message import Message
 from mycroft.util import play_wav, create_signal, connected, check_for_signal
 from mycroft.util.audio_test import record
@@ -164,6 +165,10 @@ class EnclosureReader(Thread):
         if "unit.factory-reset" in data:
             self.bus.emit(Message("speak", {
                 'utterance': mycroft.dialog.get("reset to factory defaults")}))
+            subprocess.call(
+                (f'rm {xdg.BaseDirectory.save_config_path("mycroft")}'
+                 '/mycroft/identity/identity2.json'),
+                shell=True)
             subprocess.call(
                 'rm ~/.mycroft/identity/identity2.json',
                 shell=True)

@@ -20,8 +20,6 @@ import requests
 from requests import HTTPError, RequestException
 
 from mycroft.configuration import Configuration
-from mycroft.configuration.config import DEFAULT_CONFIG, SYSTEM_CONFIG, \
-    USER_CONFIG
 from mycroft.identity import IdentityManager, identity_lock
 from mycroft.version import VersionManager
 from mycroft.util import get_arch, connected, LOG
@@ -49,12 +47,9 @@ class Api:
     def __init__(self, path):
         self.path = path
 
-        # Load the config, skipping the REMOTE_CONFIG since we are
+        # Load the config, skipping the remote config since we are
         # getting the info needed to get to it!
-        config = Configuration.get([DEFAULT_CONFIG,
-                                    SYSTEM_CONFIG,
-                                    USER_CONFIG],
-                                   cache=False)
+        config = Configuration.get(cache=False, remote=False)
         config_server = config.get("server")
         self.url = config_server.get("url")
         self.version = config_server.get("version")
@@ -239,9 +234,7 @@ class DeviceApi(Api):
         platform_build = ""
 
         # load just the local configs to get platform info
-        config = Configuration.get([SYSTEM_CONFIG,
-                                    USER_CONFIG],
-                                   cache=False)
+        config = Configuration.get(cache=False, remote=False)
         if "enclosure" in config:
             platform = config.get("enclosure").get("platform", "unknown")
             platform_build = config.get("enclosure").get("platform_build", "")
@@ -263,9 +256,7 @@ class DeviceApi(Api):
         platform_build = ""
 
         # load just the local configs to get platform info
-        config = Configuration.get([SYSTEM_CONFIG,
-                                    USER_CONFIG],
-                                   cache=False)
+        config = Configuration.get(cache=False, remote=False)
         if "enclosure" in config:
             platform = config.get("enclosure").get("platform", "unknown")
             platform_build = config.get("enclosure").get("platform_build", "")
