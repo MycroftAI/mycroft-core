@@ -8,9 +8,10 @@
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
 [![Join chat](https://img.shields.io/badge/Mattermost-join_chat-brightgreen.svg)](https://chat.mycroft.ai)
 
-# Mycroft
+# EVA Assistente Virtual
 
-Mycroft is a hackable open source voice assistant.
+Eva é uma assistente virtual por comandos de voz em lingua portuguesa, no caso com sotaque brasileiro
+e de código aberto. Eva é baseada no assistente virtual Mycroft (em língua inglesa), tentando ser o mais compatível possível com este.  
 
 ## Table of Contents
 
@@ -29,66 +30,65 @@ Mycroft is a hackable open source voice assistant.
     + [Using Mycroft behind an authenticated proxy](#using-mycroft-behind-an-authenticated-proxy)
 - [Getting Involved](#getting-involved)
 - [Links](#links)
+## Começando
 
-## Getting Started
-
-First, get the code on your system!  The simplest method is via git ([git installation instructions](https://gist.github.com/derhuerst/1b15ff4652a867391f03)):
-- `cd ~/`
-- `git clone https://github.com/MycroftAI/mycroft-core.git`
+Primeiro, pegue o código em seu sistema! O método mais simples é via git ([instruções de instalação do git] (https://gist.github.com/derhuerst/1b15ff4652a867391f03)):
+- `cd ~ /`
+- `git clone https: // github.com / MycroftAI / mycroft-core.git`
 - `cd mycroft-core`
 - `bash dev_setup.sh`
 
 
-This script sets up dependencies and a [virtualenv][about-virtualenv].  If running in an environment besides Ubuntu/Debian, Arch or Fedora you may need to manually install packages as instructed by dev_setup.sh.
+Este script configura dependências e um [virtualenv] [about-virtualenv]. Se estiver executando em um ambiente além do Ubuntu / Debian, Arch ou Fedora, você pode precisar instalar manualmente os pacotes conforme instruído por dev_setup.sh.
 
-[about-virtualenv]:https://virtualenv.pypa.io/en/stable/
+[about-virtualenv]: https: //virtualenv.pypa.io/en/stable/
 
-NOTE: The default branch for this repository is 'dev', which should be considered a work-in-progress. If you want to clone a more stable version, switch over to the 'master' branch.
+NOTA: O branch padrão para este repositório é 'dev', que deve ser considerado um trabalho em andamento. Se você quiser clonar uma versão mais estável, mude para o branch 'master'.
 
-## Running Mycroft
+## Executando Mycroft
 
-Mycroft provides `start-mycroft.sh` to perform common tasks. This script uses a virtualenv created by `dev_setup.sh`.  Assuming you installed mycroft-core in your home directory run:
-- `cd ~/mycroft-core`
+Mycroft fornece `start-mycroft.sh` para realizar tarefas comuns. Este script usa um virtualenv criado por `dev_setup.sh`. Supondo que você instalou mycroft-core em seu diretório inicial, execute:
+- `cd ~ / mycroft-core`
 - `./start-mycroft.sh debug`
 
-The "debug" command will start the background services (microphone listener, skill, messagebus, and audio subsystems) as well as bringing up a text-based Command Line Interface (CLI) you can use to interact with Mycroft and see the contents of the various logs. Alternatively you can run `./start-mycroft.sh all` to begin the services without the command line interface.  Later you can bring up the CLI using `./start-mycroft.sh cli`.
+O comando "debug" iniciará os serviços de segundo plano (ouvinte de microfone, habilidade, messagebus e subsistemas de áudio), bem como exibirá uma Interface de Linha de Comando (CLI) baseada em texto que você pode usar para interagir com Mycroft e ver o conteúdo do vários registros. Alternativamente, você pode executar `./start-mycroft.sh all` para iniciar os serviços sem a interface de linha de comando. Posteriormente, você pode ativar a CLI usando `./start-mycroft.sh cli`.
 
-The background services can be stopped as a group with:
-- `./stop-mycroft.sh`
+Os serviços de segundo plano podem ser interrompidos como um grupo com:
+- `. / stop-mycroft.sh`
 
-## Using Mycroft
+## Usando EVA
 
-### *Home* Device and Account Manager
-Mycroft AI, Inc. maintains a device and account management system known as Mycroft Home. Developers may sign up at: https://home.mycroft.ai
+### * Home * Device and Account Manager
+A Mycroft AI, Inc. mantém um sistema de gerenciamento de dispositivos e contas conhecido como Mycroft Home. Os desenvolvedores podem se inscrever em: https://home.mycroft.ai
 
-By default, mycroft-core  is configured to use Home. By saying "Hey Mycroft, pair my device" (or any other request verbal request) you will be informed that your device needs to be paired. Mycroft will speak a 6-digit code which you can enter into the pairing page within the [Mycroft Home site](https://home.mycroft.ai).
+Por padrão, mycroft-core é configurado para usar Home. Ao dizer "Ei, Mycroft, emparelhe meu dispositivo" (ou qualquer outra solicitação verbal), você será informado de que seu dispositivo precisa ser emparelhado. O Mycroft falará um código de 6 dígitos que você pode inserir na página de emparelhamento no [site Mycroft Home] (https://home.mycroft.ai).
 
-Once paired, your unit will use Mycroft API keys for services such as Speech-to-Text (STT), weather and various other skills.
+Uma vez emparelhado, sua unidade usará as chaves de API do Mycroft para serviços como Speech-to-Text (STT), clima e várias outras habilidades.
 
-### Skills
+### Funcionalidades
 
-Mycroft is nothing without skills.  There are a handful of default skills that are downloaded automatically to your `/opt/mycroft/skills` directory, but most need to be installed explicitly.  See the [Skill Repo](https://github.com/MycroftAI/mycroft-skills#welcome) to discover skills made by others.  Please share your own interesting work!
+Eva não é nada sem habilidades. Existem várias habilidades padrão que são baixadas automaticamente para o diretório `/opt/mycroft/skills`, mas a maioria precisa ser instalada explicitamente. Veja o [Skill Repo] (https://github.com/EVA-FMRP/funcionalidades#SejaBemVindo) para descobrir funcionalidades feitas por outros colaboradores. Por favor, compartilhe seu próprio trabalho!
 
-## Behind the scenes
+## Rodando no background
 
-### Pairing Information
-Pairing information generated by registering with Home is stored in:
-`~/.config/mycroft/identity/identity2.json` <b><-- DO NOT SHARE THIS WITH OTHERS!</b>
+### Informações de emparelhamento
+As informações de emparelhamento geradas pelo registro no Home são armazenadas em:
+`~ /.config/mycroft/identity/identity2.json` <b> <- NÃO COMPARTILHE ISTO COM OUTROS! </b>
 
-### Configuration
-Mycroft's configuration consists of 4 possible locations:
-- `mycroft-core/mycroft/configuration/mycroft.conf`(Defaults)
-- [Mycroft Home](https://home.mycroft.ai) (Remote)
-- `/etc/mycroft/mycroft.conf` (Machine)
-- `$XDG_CONFIG_DIR/mycroft/mycroft.conf` (which is by default `$HOME/.config/mycroft/mycroft.conf`) (USER)
+### Configuração
+A configuração do Mycroft consiste em 4 localizações possíveis:
+- `mycroft-core/mycroft/configuration/mycroft.conf` (padrão)
+- [Mycroft Home] (https://home.mycroft.ai) (Remoto)
+- `/etc/mycroft/mycroft.conf` (Sistema Operacional)
+- `$XDG_CONFIG_DIR/mycroft/mycroft.conf` (que é por padrão` $HOME/.config/mycroft/mycroft.conf`) (USUÁRIO)
 
-When the configuration loader starts, it looks in these locations in this order, and loads ALL configurations. Keys that exist in multiple configuration files will be overridden by the last file to contain the value. This process results in a minimal amount being written for a specific device and user, without modifying default distribution files.
+Quando o carregador de configuração é iniciado, ele procura nesses locais nesta ordem e carrega TODAS as configurações. As chaves que existem em vários arquivos de configuração serão substituídas pelo último arquivo que contém o valor. Este processo resulta em uma quantidade mínima sendo escrita para um dispositivo e usuário específicos, sem modificar os arquivos de distribuição padrão.
 
-### Using Mycroft Without Home
+### Usando EVA somente local
 
-If you do not wish to use the Mycroft Home service, before starting Mycroft for the first time, create `$HOME/.config/mycroft/mycroft.conf` with the following contents:
+Se você não deseja usar o serviço Mycroft Home, antes de iniciar o Mycroft pela primeira vez, crie `$HOME/.config/mycroft/mycroft.conf` com o seguinte conteúdo:
 
-```
+`` `
 {
   "skills": {
     "blacklisted_skills": [
@@ -97,57 +97,29 @@ If you do not wish to use the Mycroft Home service, before starting Mycroft for 
     ]
   }
 }
-```
+`` `
 
-### API Key Services
+### Serviços principais de API
 
-The Mycroft backend provides access to a range of API keys for specific services. Without pairing with the Mycroft backend, you will need to add your own API keys, install a different Skill or Plugin to perform that function, or not have access to that functionality.
+O back-end Mycroft fornece acesso a uma variedade de chaves de API para serviços específicos. Sem emparelhar com o backend Mycroft, você precisará adicionar suas próprias chaves de API, instalar uma habilidade ou plug-in diferente para executar essa função ou não terá acesso a essa funcionalidade.
 
-These are the keys currently used in Mycroft Core through the Mycroft backend:
+Estas são as chaves usadas atualmente no Mycroft Core por meio do backend Mycroft:
 
-- [STT API, Google STT, Google Cloud Speech](http://www.chromium.org/developers/how-tos/api-keys)
-  - [A range of STT services](https://mycroft-ai.gitbook.io/docs/using-mycroft-ai/customizations/stt-engine) are available for use with Mycroft.
-- [Weather Skill API, OpenWeatherMap](http://openweathermap.org/api)
-- [Wolfram-Alpha Skill](http://products.wolframalpha.com/api/)
+- [STT API, Google STT, Google Cloud Speech] (http://www.chromium.org/developers/how-tos/api-keys)
+  - [Uma gama de serviços STT] (https://mycroft-ai.gitbook.io/docs/using-mycroft-ai/customizations/stt-engine) estão disponíveis para uso com Mycroft.
+- [API Weather Skill, OpenWeatherMap] (http://openweathermap.org/api)
+- [Wolfram-Alpha Skill] (http://products.wolframalpha.com/api/)
 
 
-### Using Mycroft behind a proxy
+### Usando Mycroft atrás de um proxy
 
-Many schools, universities and workplaces run a `proxy` on their network. If you need to type in a username and password to access the external internet, then you are likely behind a `proxy`.
+Muitas escolas, universidades e locais de trabalho executam um `proxy` em sua rede. Se você precisa digitar um nome de usuário e senha para acessar a Internet externa, provavelmente você está atrás de um `proxy`.
 
-If you plan to use Mycroft behind a proxy, then you will need to do an additional configuration step.
+Se você planeja usar o Mycroft por trás de um proxy, precisará executar uma etapa de configuração adicional.
 
-_NOTE: In order to complete this step, you will need to know the `hostname` and `port` for the proxy server. Your network administrator will be able to provide these details. Your network administrator may want information on what type of traffic Mycroft will be using. We use `https` traffic on port `443`, primarily for accessing ReST-based APIs._
+_NOTA: Para completar este passo, você precisará saber o `hostname` e a` porta` do servidor proxy. Seu administrador de rede poderá fornecer esses detalhes
 
-#### Using Mycroft behind a proxy without authentication
-
-If you are using Mycroft behind a proxy without authentication, add the following environment variables, changing the `proxy_hostname.com` and `proxy_port` for the values for your network. These commands are executed from the Linux command line interface (CLI).
-
-```bash
-$ export http_proxy=http://proxy_hostname.com:proxy_port
-$ export https_port=http://proxy_hostname.com:proxy_port
-$ export no_proxy="localhost,127.0.0.1,localaddress,.localdomain.com,0.0.0.0,::1"
-```
-
-#### Using Mycroft behind an authenticated proxy
-
-If  you are behind a proxy which requires authentication, add the following environment variables, changing the `proxy_hostname.com` and `proxy_port` for the values for your network. These commands are executed from the Linux command line interface (CLI).
-
-```bash
-$ export http_proxy=http://user:password@proxy_hostname.com:proxy_port
-$ export https_port=http://user:password@proxy_hostname.com:proxy_port
-$ export no_proxy="localhost,127.0.0.1,localaddress,.localdomain.com,0.0.0.0,::1"
-```
-
-## Getting Involved
-
-This is an open source project. We would love your help. We have prepared a [contributing](.github/CONTRIBUTING.md) guide to help you get started.
-
-If this is your first PR, or you're not sure where to get started,
-say hi in [Mycroft Chat](https://chat.mycroft.ai/) and a team member would be happy to mentor you.
-Join the [Mycroft Forum](https://community.mycroft.ai/) for questions and answers.
-
-## Links
+ ## Links
 * [Creating a Skill](https://mycroft-ai.gitbook.io/docs/skill-development/your-first-skill)
 * [Documentation](https://docs.mycroft.ai)
 * [Skill Writer API Docs](https://mycroft-core.readthedocs.io/en/master/)
