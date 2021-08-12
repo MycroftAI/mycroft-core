@@ -59,12 +59,14 @@ class SimpleAudioService(AudioBackend):
         self._is_playing = False
         self._paused = False
         self.tracks = []
+        self.current_track_info = {}
         self.index = 0
         self.supports_mime_hints = True
         mimetypes.init()
         self.track_lock = Lock()
 
         self.bus.on('SimpleAudioServicePlay', self._play)
+        self.bus.on('play:status', self._set_track_info)
 
     def supported_uris(self):
         return ['file', 'http']
@@ -87,6 +89,14 @@ class SimpleAudioService(AudioBackend):
             track = track_data
             mime = find_mime(track)
         return track, mime
+
+    def _set_track_info(self, message):
+        """Handle setting of track info from play:status message"""
+        self.current_track_info = message.data
+
+    def track_info(self):
+        """Provide dictionary of info on currently playing track"""
+        return self.current_track_info
 
     def _play(self, message):
         """Implementation specific async method to handle playback.
