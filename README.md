@@ -12,25 +12,25 @@
 
 Eva é uma assistente virtual por comandos de voz em lingua portuguesa, no caso com sotaque brasileiro
 e de código aberto. Eva é baseada no assistente virtual Mycroft (em língua inglesa), tentando ser o mais compatível possível com este.  
+## Índice
 
-## Table of Contents
+- [Introdução] (#introdução)
+- [Executando EVA] (#running-mycroft)
+- [Usando Mycroft] (#using-mycroft)
+   * [* Home * Device and Account Manager] (#home-device-and-account-manager)
+   * [Habilidades] (# habilidades)
+- [Nos bastidores] (# nos bastidores)
+   * [Informações de emparelhamento] (#informações de emparelhamento)
+   * [Configuração] (# configuração)
+   * [Usando Mycroft sem casa] (#using-mycroft-without-home)
+   * [API Key Services] (#api-key-services)
+   * [Usando Mycroft atrás de um proxy] (#using-mycroft-behind-a-proxy)
+     + [Usando Mycroft atrás de um proxy sem autenticação] (# using-mycroft-behind-a-proxy-sem-autenticação)
+     + [Usando Mycroft atrás de um proxy autenticado] (# using-mycroft-behind-an-authenticated-proxy)
+- [Envolvimento] (#envolvimento)
+- [Links] (#links)
 
-- [Getting Started](#getting-started)
-- [Running Mycroft](#running-mycroft)
-- [Using Mycroft](#using-mycroft)
-  * [*Home* Device and Account Manager](#home-device-and-account-manager)
-  * [Skills](#skills)
-- [Behind the scenes](#behind-the-scenes)
-  * [Pairing Information](#pairing-information)
-  * [Configuration](#configuration)
-  * [Using Mycroft Without Home](#using-mycroft-without-home)
-  * [API Key Services](#api-key-services)
-  * [Using Mycroft behind a proxy](#using-mycroft-behind-a-proxy)
-    + [Using Mycroft behind a proxy without authentication](#using-mycroft-behind-a-proxy-without-authentication)
-    + [Using Mycroft behind an authenticated proxy](#using-mycroft-behind-an-authenticated-proxy)
-- [Getting Involved](#getting-involved)
-- [Links](#links)
-## Começando
+## Introdução
 
 Primeiro, baixe o código em seu sistema! O método mais simples é via git ([instruções de instalação do git] (https://gist.github.com/derhuerst/1b15ff4652a867391f03)), 
 Digite no terminal:
