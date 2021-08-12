@@ -57,15 +57,20 @@ SkillSettings Usage Example:
 """
 import json
 import os
+from os.path import dirname
 import re
 from pathlib import Path
 from threading import Timer
+from xdg.BaseDirectory import xdg_cache_home
+
+import yaml
 
 from mycroft.api import DeviceApi, is_paired
 from mycroft.configuration import Configuration
 from mycroft.messagebus.message import Message
 from mycroft.util import camel_case_split
 from mycroft.util.log import LOG
+from mycroft.util.file_utils import ensure_directory_exists
 from .msm_wrapper import build_msm_config, create_msm
 
 ONE_MINUTE = 60
@@ -137,6 +142,12 @@ class SettingsMetaUploader:
         self.settings_meta = {}
         self.api = None
         self.upload_timer = None
+        self.sync_enabled = self.config["server"].get("sync_skill_settings",
+                                                      False)
+        if not self.sync_enabled:
+            LOG.info("Skill settings sync is disabled, settingsmeta will "
+                     "not be uploaded")
+
         self._stopped = None
 
         # Property placeholders
@@ -216,6 +227,8 @@ class SettingsMetaUploader:
         The settingsmeta file does not change often, if at all.  Only perform
         the upload if a change in the file is detected.
         """
+        if not self.sync_enabled:
+            return
         synced = False
         if is_paired():
             self.api = DeviceApi()
@@ -249,8 +262,6 @@ class SettingsMetaUploader:
 
     def _load_settings_meta_file(self):
         """Read the contents of the settingsmeta file into memory."""
-        # Imported here do handle issue with readthedocs build
-        import yaml
         _, ext = os.path.splitext(str(self.settings_meta_path))
         is_json_file = self.settings_meta_path.suffix == ".json"
         try:
@@ -301,6 +312,42 @@ class SettingsMetaUploader:
         return success
 
 
+# Path to remote cache
+REMOTE_CACHE = Path(xdg_cache_home, 'mycroft', 'remote_skill_settings.json')
+
+
+def load_remote_settings_cache():
+    """Load cached remote skill settings.
+
+    Returns:
+        (dict) Loaded remote settings cache or None of none exists.
+    """
+    remote_settings = {}
+    if REMOTE_CACHE.exists():
+        try:
+            with open(str(REMOTE_CACHE)) as cache:
+                remote_settings = json.load(cache)
+        except Exception as error:
+            LOG.warning('Failed to read remote_cache ({})'.format(error))
+    return remote_settings
+
+
+def save_remote_settings_cache(remote_settings):
+    """Save updated remote settings to cache file.
+
+    Args:
+        remote_settings (dict): downloaded remote settings.
+    """
+    try:
+        ensure_directory_exists(dirname(str(REMOTE_CACHE)))
+        with open(str(REMOTE_CACHE), 'w') as cache:
+            json.dump(remote_settings, cache)
+    except Exception as error:
+        LOG.warning('Failed to write remote_cache. ({})'.format(error))
+    else:
+        LOG.debug('Updated local cache of remote skill settings.')
+
+
 class SkillSettingsDownloader:
     """Manages download of skill settings.
 
@@ -311,10 +358,15 @@ class SkillSettingsDownloader:
     def __init__(self, bus):
         self.bus = bus
         self.continue_downloading = True
-        self.last_download_result = {}
-        self.remote_settings = None
+        self.last_download_result = load_remote_settings_cache()
+
         self.api = DeviceApi()
         self.download_timer = None
+        self.sync_enabled = Configuration.get()["server"]\
+            .get("sync_skill_settings", False)
+        if not self.sync_enabled:
+            LOG.info("Skill settings sync is disabled, backend settings will "
+                     "not be downloaded")
 
     def stop_downloading(self):
         """Stop synchronizing backend and core."""
@@ -323,8 +375,13 @@ class SkillSettingsDownloader:
             self.download_timer.cancel()
 
     # TODO: implement as websocket
-    def download(self):
-        """Download the settings stored on the backend and check for changes"""
+    def download(self, message=None):
+        """Download the settings stored on the backend and check for changes
+
+        When used as a messagebus handler a message is passed but not used.
+        """
+        if not self.sync_enabled:
+            return
         if is_paired():
             remote_settings = self._get_remote_settings()
             if remote_settings:
@@ -333,11 +390,11 @@ class SkillSettingsDownloader:
                     LOG.debug('Skill settings changed since last download')
                     self._emit_settings_change_events(remote_settings)
                     self.last_download_result = remote_settings
+                    save_remote_settings_cache(remote_settings)
                 else:
                     LOG.debug('No skill settings changes since last download')
         else:
             LOG.debug('Settings not downloaded - device is not paired')
-
         # If this method is called outside of the timer loop, ensure the
         # existing timer is canceled before starting a new one.
         if self.download_timer:

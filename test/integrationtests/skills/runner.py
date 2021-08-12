@@ -27,7 +27,7 @@ import unittest
 import os
 from os.path import exists
 import sys
-import imp
+import importlib
 import argparse
 from test.integrationtests.skills.skill_tester import MockSkillsLoader
 from test.integrationtests.skills.skill_tester import SkillTest
@@ -45,6 +45,31 @@ parser.add_argument("skill_path", nargs='?', default=os.getcwd(),
 args = parser.parse_args()
 HOME_DIR = os.path.dirname(args.skill_path + '/')
 sys.argv = sys.argv[:1]
+
+
+def load_test_environment(skill):
+    """Load skill's test environment if present
+
+    Args:
+        skill (str): path to skill root folder
+
+    Returns:
+        Module if a valid test environment module was found else None
+    """
+    test_env = None
+    test_env_path = os.path.join(skill, 'test/__init__.py')
+    if exists(test_env_path):
+        skill_env = skill + '.test_env'
+        spec = importlib.util.spec_from_file_location(skill_env, test_env_path)
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[skill_env] = module
+        spec.loader.exec_module(module)
+        if (hasattr(module, 'test_runner') and
+                callable(module.test_runner) or
+                hasattr(module, 'test_setup') and
+                callable(module.test_setup)):
+            test_env = module
+    return test_env
 
 
 def discover_tests():
@@ -74,15 +99,7 @@ def discover_tests():
             tests[skill] = test_intent_files
 
         # Load test environment script
-        test_env = None
-        if exists(os.path.join(skill, 'test/__init__.py')):
-            module = imp.load_source(skill + '.test_env',
-                                     os.path.join(skill, 'test/__init__.py'))
-            if (hasattr(module, 'test_runner') and
-                    callable(module.test_runner) or
-                    hasattr(module, 'test_setup') and
-                    callable(module.test_setup)):
-                test_env = module
+        test_env = load_test_environment(skill)
         test_envs[skill] = test_env
 
     return tests, test_envs

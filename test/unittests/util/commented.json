@@ -54,7 +54,7 @@
     }
   },
   "skills": {
-    "directory": "~/.mycroft/skills"
+    "directory": "~/.local/share/mycroft/skills"
   },
   "server": {
     "url": "https://api.mycroft.ai",

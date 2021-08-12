@@ -20,7 +20,7 @@ from .tts import TTS, TTSValidator
 from mycroft.util.log import LOG
 
 # Live list of languages
-# Cached list of supported languages (2020-05-27)
+# Cached list of supported languages (2021-02-09)
 _default_langs = {'af': 'Afrikaans', 'sq': 'Albanian', 'ar': 'Arabic',
                   'hy': 'Armenian', 'bn': 'Bengali', 'bs': 'Bosnian',
                   'ca': 'Catalan', 'hr': 'Croatian', 'cs': 'Czech',
@@ -40,20 +40,7 @@ _default_langs = {'af': 'Afrikaans', 'sq': 'Albanian', 'ar': 'Arabic',
                   'su': 'Sundanese', 'sw': 'Swahili', 'sv': 'Swedish',
                   'ta': 'Tamil', 'te': 'Telugu', 'th': 'Thai', 'tr': 'Turkish',
                   'uk': 'Ukrainian', 'ur': 'Urdu', 'vi': 'Vietnamese',
-                  'cy': 'Welsh', 'zh-cn': 'Chinese (Mandarin/China)',
-                  'zh-tw': 'Chinese (Mandarin/Taiwan)',
-                  'en-us': 'English (US)', 'en-ca': 'English (Canada)',
-                  'en-uk': 'English (UK)', 'en-gb': 'English (UK)',
-                  'en-au': 'English (Australia)', 'en-gh': 'English (Ghana)',
-                  'en-in': 'English (India)', 'en-ie': 'English (Ireland)',
-                  'en-nz': 'English (New Zealand)',
-                  'en-ng': 'English (Nigeria)',
-                  'en-ph': 'English (Philippines)',
-                  'en-za': 'English (South Africa)',
-                  'en-tz': 'English (Tanzania)', 'fr-ca': 'French (Canada)',
-                  'fr-fr': 'French (France)', 'pt-br': 'Portuguese (Brazil)',
-                  'pt-pt': 'Portuguese (Portugal)', 'es-es': 'Spanish (Spain)',
-                  'es-us': 'Spanish (United States)'
+                  'cy': 'Welsh', 'zh': 'Chinese (Mandarin/China)'
                   }
 
 
@@ -98,7 +85,7 @@ class GoogleTTS(TTS):
     def get_tts(self, sentence, wav_file):
         """Fetch tts audio using gTTS.
 
-        Arguments:
+        Args:
             sentence (str): Sentence to generate audio for
             wav_file (str): output file path
         Returns:

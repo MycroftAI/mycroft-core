@@ -22,6 +22,7 @@ import os  # Operating System functions
 # Wrapper around chain of handler functions for a specific system level signal.
 # Often used to trap Ctrl-C for specific application purposes.
 from mycroft.util import LOG
+from mycroft.util.file_utils import get_temp_path
 
 
 class Signal:  # python 3+ class Signal
@@ -98,7 +99,7 @@ class Lock:  # python 3+ 'class Lock'
 
     #
     # Class constants
-    DIRECTORY = '/tmp/mycroft'
+    DIRECTORY = get_temp_path('mycroft')
     FILE = '/{}.pid'
 
     #
@@ -133,8 +134,8 @@ class Lock:  # python 3+ 'class Lock'
     #    Delete the exiting file
     def exists(self):
         """
-        Check to see if the PID lock file currently exists.  If it does
-        than send a SIGTERM signal to the process defined by the value
+        Check if the PID lock file exists.  If it does
+        then send a SIGKILL signal to the process defined by the value
         in the lock file.  Catch the keyboard interrupt exception to
         prevent propagation if stopped by use of Ctrl-C.
         """

@@ -19,6 +19,7 @@
 import sys
 import re
 import os
+from os.path import dirname, join
 
 import sphinx_rtd_theme
 from sphinx.ext.autodoc import (
@@ -42,15 +43,22 @@ extensions = [
     'sphinx.ext.githubpages',
     'sphinx.ext.napoleon'
 ]
+req_path = os.path.join(os.path.dirname(os.path.dirname(
+    os.path.realpath(__file__))), 'requirements', 'requirements.txt')
 
+# To easily run sphinx without additional installation autodoc_mock_imports
+# sets modules to mock.
+
+# Step 1: Pull module names to mock from requirements
 # Assuming package name is the same as the module name
-with open(os.path.join(os.path.dirname(os.path.dirname(
-        os.path.realpath(__file__))), 'requirements.txt')) as f:
+with open(req_path) as f:
     autodoc_mock_imports = map(str.strip, re.findall(r'^\s*[a-zA-Z_]*',
                                f.read().lower().replace('-', '_'),
                                flags=re.MULTILINE))
 
-# Dependencies with different module names
+# Step 2: Add custom names
+# Not all module names match the package name (as stated in requirements.txt)
+# this adds the modules whose names don't match the package name.
 autodoc_mock_imports = list(autodoc_mock_imports) + [
     'adapt',
     'alsaaudio',
@@ -58,20 +66,42 @@ autodoc_mock_imports = list(autodoc_mock_imports) + [
     'past',
     'serial',
     'websocket',
-    'speech_recognition'
+    'speech_recognition',
+    'yaml',
+    'mycroft_bus_client'
 ]
 
 templates_path = ['_templates']
 source_suffix = '.rst'
 master_doc = 'index'
 
+
+def get_version():
+    version_file = join(dirname(__file__),
+                        '..', 'mycroft', 'version', '__init__.py')
+    with open(version_file) as f:
+        while 'START_VERSION_BLOCK' not in f.readline():
+            pass
+
+        def safe_read_version_line():
+            try:
+                return f.readline().split('=')[1].strip()
+            except Exception:
+                return '0'
+
+        major = safe_read_version_line()
+        minor = safe_read_version_line()
+        build = safe_read_version_line()
+        return 'v' + '.'.join((major, minor, build))
+
+
 # General Info
 project = 'Mycroft'
 copyright = '2017, Mycroft AI Inc.'
 author = 'Mycroft AI Inc.'
 
-version = '0.1.0'
-release = '0.1.0'  # Includes alpha/beta/rc tags.
+version = get_version()
+release = version
 
 language = None
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']

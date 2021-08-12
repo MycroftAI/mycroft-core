@@ -13,13 +13,14 @@
 # limitations under the License.
 #
 from copy import deepcopy
-import hashlib
 import os
 import random
 import re
 from abc import ABCMeta, abstractmethod
+from pathlib import Path
 from threading import Thread
 from time import time
+from warnings import warn
 
 import os.path
 from os.path import dirname, exists, isdir, join
@@ -32,8 +33,11 @@ from mycroft.metrics import report_timing, Stopwatch
 from mycroft.util import (
     play_wav, play_mp3, check_for_signal, create_signal, resolve_resource_file
 )
+from mycroft.util.file_utils import get_temp_path
 from mycroft.util.log import LOG
+from mycroft.util.plugins import load_plugin
 from queue import Queue, Empty
+from .cache import hash_sentence, TextToSpeechCache
 
 
 _TTS_ENV = deepcopy(os.environ)
@@ -126,11 +130,11 @@ class PlaybackThread(Thread):
     def show_visemes(self, pairs):
         """Send viseme data to enclosure
 
-        Arguments:
-            pairs(list): Visime and timing pair
+        Args:
+            pairs (list): Visime and timing pair
 
         Returns:
-            True if button has been pressed.
+            bool: True if button has been pressed.
         """
         if self.enclosure:
             self.enclosure.mouth_viseme(time(), pairs)
@@ -156,13 +160,14 @@ class TTS(metaclass=ABCMeta):
     It aggregates the minimum required parameters and exposes
     ``execute(sentence)`` and ``validate_ssml(sentence)`` functions.
 
-    Arguments:
+    Args:
         lang (str):
         config (dict): Configuration for this specific tts engine
         validator (TTSValidator): Used to verify proper installation
         phonetic_spelling (bool): Whether to spell certain words phonetically
         ssml_tags (list): Supported ssml properties. Ex. ['speak', 'prosody']
     """
+
     def __init__(self, lang, config, validator, audio_ext='wav',
                  phonetic_spelling=True, ssml_tags=None):
         super(TTS, self).__init__()
@@ -175,18 +180,21 @@ class TTS(metaclass=ABCMeta):
         self.ssml_tags = ssml_tags or []
 
         self.voice = config.get("voice")
-        self.filename = '/tmp/tts.wav'
+        self.filename = get_temp_path('tts.wav')
         self.enclosure = None
         random.seed()
         self.queue = Queue()
         self.playback = PlaybackThread(self.queue)
         self.playback.start()
-        self.clear_cache()
         self.spellings = self.load_spellings()
         self.tts_name = type(self).__name__
+        self.cache = TextToSpeechCache(
+            self.config, self.tts_name, self.audio_ext
+        )
+        self.cache.clear()
 
     def load_spellings(self):
-        """Load phonetic spellings of words as dictionary"""
+        """Load phonetic spellings of words as dictionary."""
         path = join('text', self.lang.lower(), 'phonetic_spellings.txt')
         spellings_file = resolve_resource_file(path)
         if not spellings_file:
@@ -201,7 +209,7 @@ class TTS(metaclass=ABCMeta):
             return {}
 
     def begin_audio(self):
-        """Helper function for child classes to call in execute()"""
+        """Helper function for child classes to call in execute()."""
         # Create signals informing start of speech
         self.bus.emit(Message("recognizer_loop:audio_output_start"))
 
@@ -213,24 +221,22 @@ class TTS(metaclass=ABCMeta):
         if it has been requested. It also checks if cache directory needs
         cleaning to free up disk space.
 
-        Arguments:
+        Args:
             listen (bool): indication if listening trigger should be sent.
         """
 
         self.bus.emit(Message("recognizer_loop:audio_output_end"))
         if listen:
             self.bus.emit(Message('mycroft.mic.listen'))
-        # Clean the cache as needed
-        cache_dir = mycroft.util.get_cache_directory("tts/" + self.tts_name)
-        mycroft.util.curate_cache(cache_dir, min_free_percent=100)
 
+        self.cache.curate()
         # This check will clear the "signal"
         check_for_signal("isSpeaking")
 
     def init(self, bus):
         """Performs intial setup of TTS object.
 
-        Arguments:
+        Args:
             bus:    Mycroft messagebus connection
         """
         self.bus = bus
@@ -243,7 +249,7 @@ class TTS(metaclass=ABCMeta):
 
         Should get data from tts.
 
-        Arguments:
+        Args:
             sentence(str): Sentence to synthesize
             wav_file(str): output file
 
@@ -253,11 +259,23 @@ class TTS(metaclass=ABCMeta):
         pass
 
     def modify_tag(self, tag):
-        """Override to modify each supported ssml tag"""
+        """Override to modify each supported ssml tag.
+
+        Args:
+            tag (str): SSML tag to check and possibly transform.
+        """
         return tag
 
     @staticmethod
     def remove_ssml(text):
+        """Removes SSML tags from a string.
+
+        Args:
+            text (str): input string
+
+        Returns:
+            str: input string stripped from tags.
+        """
         return re.sub('<[^>]*>', '', text).replace('  ', ' ')
 
     def validate_ssml(self, utterance):
@@ -265,11 +283,11 @@ class TTS(metaclass=ABCMeta):
 
         Remove unsupported / invalid tags
 
-        Arguments:
-            utterance(str): Sentence to validate
+        Args:
+            utterance (str): Sentence to validate
 
         Returns:
-            validated_sentence (str)
+            str: validated_sentence
         """
         # if ssml is not supported by TTS engine remove all tags
         if not self.ssml_tags:
@@ -294,7 +312,7 @@ class TTS(metaclass=ABCMeta):
         This method can be overridden to create chunks suitable to the
         TTS engine in question.
 
-        Arguments:
+        Args:
             sentence (str): sentence to preprocess
 
         Returns:
@@ -305,14 +323,14 @@ class TTS(metaclass=ABCMeta):
     def execute(self, sentence, ident=None, listen=False):
         """Convert sentence to speech, preprocessing out unsupported ssml
 
-            The method caches results if possible using the hash of the
-            sentence.
+        The method caches results if possible using the hash of the
+        sentence.
 
-            Arguments:
-                sentence:   Sentence to be spoken
-                ident:      Id reference to current interaction
-                listen:     True if listen should be triggered at the end
-                            of the utterance.
+        Args:
+            sentence: (str) Sentence to be spoken
+            ident: (str) Id reference to current interaction
+            listen: (bool) True if listen should be triggered at the end
+                    of the utterance.
         """
         sentence = self.validate_ssml(sentence)
 
@@ -338,34 +356,76 @@ class TTS(metaclass=ABCMeta):
                   for i in range(len(chunks))]
 
         for sentence, l in chunks:
-            key = str(hashlib.md5(
-                sentence.encode('utf-8', 'ignore')).hexdigest())
-            wav_file = os.path.join(
-                mycroft.util.get_cache_directory("tts/" + self.tts_name),
-                key + '.' + self.audio_ext)
+            sentence_hash = hash_sentence(sentence)
+            if sentence_hash in self.cache:
+                audio_file, phoneme_file = self._get_sentence_from_cache(
+                    sentence_hash
+                )
+                if phoneme_file is None:
+                    phonemes = None
+                else:
+                    phonemes = phoneme_file.load()
 
-            if os.path.exists(wav_file):
-                LOG.debug("TTS cache hit")
-                phonemes = self.load_phonemes(key)
             else:
-                wav_file, phonemes = self.get_tts(sentence, wav_file)
+                # TODO: this should be changed return the audio data from
+                #  the API call and then to call the add_to_cache method
+                #  of the TTS cache.  But this requires changing the public
+                #  API of the get_tts method in each engine.
+                audio_file = self.cache.define_audio_file(sentence_hash)
+                # TODO 21.08: remove mutation of audio_file.path.
+                returned_file, phonemes = self.get_tts(
+                    sentence, str(audio_file.path))
+                # Convert to Path as needed
+                returned_file = Path(returned_file)
+                if returned_file != audio_file.path:
+                    warn(
+                        DeprecationWarning(
+                            f"{self.tts_name} is saving files "
+                            "to a different path than requested. If you are "
+                            "the maintainer of this plugin, please adhere to "
+                            "the file path argument provided. Modified paths "
+                            "will be ignored in a future release."))
+                    audio_file.path = returned_file
                 if phonemes:
-                    self.save_phonemes(key, phonemes)
+                    phoneme_file = self.cache.define_phoneme_file(
+                        sentence_hash
+                    )
+                    phoneme_file.save(phonemes)
+                else:
+                    phoneme_file = None
+                self.cache.cached_sentences[sentence_hash] = (
+                    audio_file, phoneme_file
+                )
+            viseme = self.viseme(phonemes) if phonemes else None
+            self.queue.put(
+                (self.audio_ext, str(audio_file.path), viseme, ident, l)
+            )
 
-            vis = self.viseme(phonemes) if phonemes else None
-            self.queue.put((self.audio_ext, wav_file, vis, ident, l))
+    def _get_sentence_from_cache(self, sentence_hash):
+        cached_sentence = self.cache.cached_sentences[sentence_hash]
+        audio_file, phoneme_file = cached_sentence
+        LOG.info("Found {} in TTS cache".format(audio_file.name))
+
+        return audio_file, phoneme_file
 
     def viseme(self, phonemes):
-        """Create visemes from phonemes. Needs to be implemented for all
-            tts backends.
+        """Create visemes from phonemes.
 
-            Arguments:
-                phonemes(str): String with phoneme data
+        May be implemented to convert TTS phonemes into Mycroft mouth
+        visuals.
+
+        Args:
+            phonemes (str): String with phoneme data
+
+        Returns:
+            list: visemes
         """
         return None
 
     def clear_cache(self):
         """Remove all cached files."""
+        # TODO: remove in 21.08
+        LOG.warning("This method is deprecated, use TextToSpeechCache.clear")
         if not os.path.exists(mycroft.util.get_cache_directory('tts')):
             return
         for d in os.listdir(mycroft.util.get_cache_directory("tts")):
@@ -382,10 +442,12 @@ class TTS(metaclass=ABCMeta):
     def save_phonemes(self, key, phonemes):
         """Cache phonemes
 
-        Arguments:
-            key:        Hash key for the sentence
-            phonemes:   phoneme string to save
+        Args:
+            key (str):        Hash key for the sentence
+            phonemes (str):   phoneme string to save
         """
+        # TODO: remove in 21.08
+        LOG.warning("This method is deprecated, use PhonemeFile.save")
         cache_dir = mycroft.util.get_cache_directory("tts/" + self.tts_name)
         pho_file = os.path.join(cache_dir, key + ".pho")
         try:
@@ -398,9 +460,11 @@ class TTS(metaclass=ABCMeta):
     def load_phonemes(self, key):
         """Load phonemes from cache file.
 
-        Arguments:
-            Key:    Key identifying phoneme cache
+        Args:
+            key (str): Key identifying phoneme cache
         """
+        # TODO: remove in 21.08
+        LOG.warning("This method is deprecated, use PhonemeFile.load")
         pho_file = os.path.join(
             mycroft.util.get_cache_directory("tts/" + self.tts_name),
             key + ".pho")
@@ -424,6 +488,7 @@ class TTSValidator(metaclass=ABCMeta):
     It exposes and implements ``validate(tts)`` function as a template to
     validate the TTS engines.
     """
+
     def __init__(self, tts):
         self.tts = tts
 
@@ -435,6 +500,7 @@ class TTSValidator(metaclass=ABCMeta):
         self.validate_connection()
 
     def validate_dependencies(self):
+        """Determine if all the TTS's external dependencies are satisfied."""
         pass
 
     def validate_instance(self):
@@ -453,18 +519,39 @@ class TTSValidator(metaclass=ABCMeta):
 
     @abstractmethod
     def validate_lang(self):
-        pass
+        """Ensure the TTS supports current language."""
 
     @abstractmethod
     def validate_connection(self):
-        pass
+        """Ensure the TTS can connect to it's backend.
+
+        This can mean for example being able to launch the correct executable
+        or contact a webserver.
+        """
 
     @abstractmethod
     def get_tts_class(self):
-        pass
+        """Return TTS class that this validator is for."""
+
+
+def load_tts_plugin(module_name):
+    """Wrapper function for loading tts plugin.
+
+    Args:
+        (str) Mycroft tts module name from config
+    Returns:
+        class: found tts plugin class
+    """
+    return load_plugin('mycroft.plugin.tts', module_name)
 
 
 class TTSFactory:
+    """Factory class instantiating the configured TTS engine.
+
+    The factory can select between a range of built-in TTS engines and also
+    from TTS engine plugins.
+    """
+    from mycroft.tts.festival_tts import Festival
     from mycroft.tts.espeak_tts import ESpeak
     from mycroft.tts.fa_tts import FATTS
     from mycroft.tts.google_tts import GoogleTTS
@@ -478,6 +565,7 @@ class TTSFactory:
     from mycroft.tts.yandex_tts import YandexTTS
     from mycroft.tts.dummy_tts import DummyTTS
     from mycroft.tts.polly_tts import PollyTTS
+    from mycroft.tts.mozilla_tts import MozillaTTS
 
     CLASSES = {
         "mimic": Mimic,
@@ -485,6 +573,7 @@ class TTSFactory:
         "google": GoogleTTS,
         "marytts": MaryTTS,
         "fatts": FATTS,
+        "festival": Festival,
         "espeak": ESpeak,
         "spdsay": SpdSay,
         "watson": WatsonTTS,
@@ -492,6 +581,7 @@ class TTSFactory:
         "responsive_voice": ResponsiveVoice,
         "yandex": YandexTTS,
         "polly": PollyTTS,
+        "mozilla": MozillaTTS,
         "dummy": DummyTTS
     }
 
@@ -512,7 +602,14 @@ class TTSFactory:
         tts_config = config.get('tts', {}).get(tts_module, {})
         tts_lang = tts_config.get('lang', lang)
         try:
-            clazz = TTSFactory.CLASSES.get(tts_module)
+            if tts_module in TTSFactory.CLASSES:
+                clazz = TTSFactory.CLASSES[tts_module]
+            else:
+                clazz = load_tts_plugin(tts_module)
+                LOG.info('Loaded plugin {}'.format(tts_module))
+            if clazz is None:
+                raise ValueError('TTS module not found')
+
             tts = clazz(tts_lang, tts_config)
             tts.validator.validate()
         except Exception:
@@ -521,10 +618,10 @@ class TTSFactory:
                 LOG.exception('The selected TTS backend couldn\'t be loaded. '
                               'Falling back to Mimic')
                 clazz = TTSFactory.CLASSES.get('mimic')
+                tts_config = config.get('tts', {}).get('mimic', {})
                 tts = clazz(tts_lang, tts_config)
                 tts.validator.validate()
             else:
                 LOG.exception('The TTS could not be loaded.')
                 raise
-
         return tts

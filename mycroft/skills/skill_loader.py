@@ -37,7 +37,7 @@ def remove_submodule_refs(module_name):
     dictionary to bypass loading if a module is already in memory. To make
     sure skills are completely reloaded these references are deleted.
 
-    Arguments:
+    Args:
         module_name: name of skill module.
     """
     submodules = []
@@ -58,7 +58,7 @@ def load_skill_module(path, skill_id):
     This function handles the differences between python 3.4 and 3.5+ as well
     as makes sure the module is inserted into the sys.modules dict.
 
-    Arguments:
+    Args:
         path: Path to the skill main file (__init__.py)
         skill_id: skill_id used as skill identifier in the module list
     """
@@ -73,13 +73,26 @@ def load_skill_module(path, skill_id):
     return mod
 
 
+def _bad_mod_times(mod_times):
+    """Return all entries with modification time in the future.
+
+    Args:
+        mod_times (dict): dict mapping file paths to modification times.
+
+    Returns:
+        List of files with bad modification times.
+    """
+    current_time = time()
+    return [path for path in mod_times if mod_times[path] > current_time]
+
+
 def _get_last_modified_time(path):
     """Get the last modified date of the most recently updated file in a path.
 
     Exclude compiled python files, hidden directories and the settings.json
     file.
 
-    Arguments:
+    Args:
         path: skill directory to check
 
     Returns:
@@ -99,7 +112,15 @@ def _get_last_modified_time(path):
                 all_files.append(os.path.join(root_dir, f))
 
     # check files of interest in the skill root directory
-    return max(os.path.getmtime(f) for f in all_files)
+    mod_times = {f: os.path.getmtime(f) for f in all_files}
+    # Ensure modification times are valid
+    bad_times = _bad_mod_times(mod_times)
+    if bad_times:
+        raise OSError('{} had bad modification times'.format(bad_times))
+    if all_files:
+        return max(os.path.getmtime(f) for f in all_files)
+    else:
+        return 0
 
 
 class SkillLoader:
@@ -114,6 +135,8 @@ class SkillLoader:
         self.instance = None
         self.active = True
         self.config = Configuration.get()
+
+        self.modtime_error_log_written = False
 
     @property
     def is_blacklisted(self):
@@ -132,10 +155,14 @@ class SkillLoader:
         """
         try:
             self.last_modified = _get_last_modified_time(self.skill_directory)
-        except FileNotFoundError as e:
-            LOG.error('Failed to get last_modification time '
-                      '({})'.format(repr(e)))
+        except OSError as err:
             self.last_modified = self.last_loaded
+            if not self.modtime_error_log_written:
+                self.modtime_error_log_written = True
+                LOG.error('Failed to get last_modification time '
+                          '({})'.format(repr(err)))
+        else:
+            self.modtime_error_log_written = False
 
         modified = self.last_modified > self.last_loaded
 

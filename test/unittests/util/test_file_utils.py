@@ -6,8 +6,14 @@ import tempfile
 from unittest import TestCase, mock
 
 from mycroft import MYCROFT_ROOT_PATH
-from mycroft.util import (resolve_resource_file, curate_cache, create_file,
-                          get_cache_directory, read_stripped_lines, read_dict)
+from mycroft.util import (
+    resolve_resource_file,
+    curate_cache,
+    create_file,
+    get_temp_path,
+    get_cache_directory,
+    read_stripped_lines,
+    read_dict)
 
 
 test_config = {
@@ -107,42 +113,72 @@ class TestCache(TestCase):
         self.assertTrue(isdir(expected_path))
 
     @mock.patch('mycroft.util.file_utils.psutil')
-    def test_curate_cache(self, mock_psutil, mock_conf):
-        """Test removal of cache files when disk space is running low."""
+    def test_curate_cache_plenty_space(self, mock_psutil, mock_conf):
+        """Test plenty of space free."""
         mock_conf.get.return_value = test_config
         space = mock.Mock(name='diskspace')
         mock_psutil.disk_usage.return_value = space
 
         cache_dir = get_cache_directory('braveNewWorld')
-        huxley_path, aldous_path = create_cache_files(cache_dir)
         # Create files in the cache directory
+        huxley_path, aldous_path = create_cache_files(cache_dir)
 
-        # Test plenty of space free
         space.percent = 5.0
         space.free = 2 * 1024 * 1024 * 1024  # 2GB
         space.total = 20 * 1024 * 1024 * 1024  # 20GB
-        curate_cache(cache_dir)
+        self.assertEqual(curate_cache(cache_dir), [])
         self.assertTrue(exists(aldous_path))
         self.assertTrue(exists(huxley_path))
 
-        # Free Percentage low but not free space
+    @mock.patch('mycroft.util.file_utils.psutil')
+    def test_curate_cache_percent_low(self, mock_psutil, mock_conf):
+        """Free Percentage low but not free space."""
+        mock_conf.get.return_value = test_config
+        space = mock.Mock(name='diskspace')
+        mock_psutil.disk_usage.return_value = space
+
+        cache_dir = get_cache_directory('braveNewWorld')
+        # Create files in the cache directory
+        huxley_path, aldous_path = create_cache_files(cache_dir)
         space.percent = 96.0
         space.free = 2 * 1024 * 1024 * 1024  # 2GB
-        curate_cache(cache_dir)
+        space.total = 20 * 1024 * 1024 * 1024  # 20GB
+        self.assertEqual(curate_cache(cache_dir), [])
         self.assertTrue(exists(aldous_path))
         self.assertTrue(exists(huxley_path))
 
-        # Free space low, but not percentage
+    @mock.patch('mycroft.util.file_utils.psutil')
+    def test_curate_cache_space_low(self, mock_psutil, mock_conf):
+        """Free space low, but not percentage."""
+        mock_conf.get.return_value = test_config
+        space = mock.Mock(name='diskspace')
+        mock_psutil.disk_usage.return_value = space
+
+        cache_dir = get_cache_directory('braveNewWorld')
+        # Create files in the cache directory
+        huxley_path, aldous_path = create_cache_files(cache_dir)
         space.percent = 95.0
         space.free = 2 * 1024 * 1024  # 2MB
-        curate_cache(cache_dir)
+        space.total = 20 * 1024 * 1024 * 1024  # 20GB
+        self.assertEqual(curate_cache(cache_dir), [])
         self.assertTrue(exists(aldous_path))
         self.assertTrue(exists(huxley_path))
 
-        # Free space and percentage low
+    @mock.patch('mycroft.util.file_utils.psutil')
+    def test_curate_cache_both_low(self, mock_psutil, mock_conf):
+        """Test Free space and percentage low."""
+        mock_conf.get.return_value = test_config
+        space = mock.Mock(name='diskspace')
+        mock_psutil.disk_usage.return_value = space
+
+        cache_dir = get_cache_directory('braveNewWorld')
+        # Create files in the cache directory
+        huxley_path, aldous_path = create_cache_files(cache_dir)
         space.percent = 96.0
         space.free = 2 * 1024 * 1024  # 2MB
-        curate_cache(cache_dir)
+        space.total = 20 * 1024 * 1024 * 1024  # 20GB
+        self.assertEqual(curate_cache(cache_dir),
+                         [aldous_path, huxley_path])
         self.assertFalse(exists(aldous_path))
         self.assertFalse(exists(huxley_path))
 
@@ -164,6 +200,15 @@ class TestCreateFile(TestCase):
         test_path = join(TEST_CREATE_FILE_DIR, 'test_file')
         create_file(test_path)
         self.assertTrue(exists(test_path))
+
+    def test_get_temp_path(self):
+        temp_dir = tempfile.gettempdir()
+        temp_file = get_temp_path('example.txt')
+        self.assertEqual(temp_file, temp_dir + '/example.txt')
+        temp_path = get_temp_path('mycroft', 'audio', 'example.wav')
+        self.assertEqual(temp_path, temp_dir + '/mycroft/audio/example.wav')
+        with self.assertRaises(TypeError):
+            failed_temp_path = get_temp_path(1)
 
     def tearDownClass():
         shutil.rmtree(TEST_CREATE_FILE_DIR, ignore_errors=True)

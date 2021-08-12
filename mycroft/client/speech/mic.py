@@ -79,7 +79,7 @@ class MutableStream:
     def read(self, size, of_exc=False):
         """Read data from stream.
 
-        Arguments:
+        Args:
             size (int): Number of bytes to read
             of_exc (bool): flag determining if the audio producer thread
                            should throw IOError at overflows.
@@ -189,7 +189,7 @@ class MutableMicrophone(Microphone):
     def duration_to_bytes(self, sec):
         """Converts a duration in seconds to number of recorded bytes.
 
-        Arguments:
+        Args:
             sec: number of seconds
 
         Returns:
@@ -209,7 +209,7 @@ class NoiseTracker:
     in one continous sequence) followed by a short period of continous quiet
     audio data to be considered complete.
 
-    Arguments:
+    Args:
         minimum (int): lower noise level will be threshold for "quiet" level
         maximum (int): ceiling of noise level
         sec_per_buffer (float): the length of each buffer used when updating
@@ -262,7 +262,7 @@ class NoiseTracker:
     def update(self, is_loud):
         """Update the tracking. with either a loud chunk or a quiet chunk.
 
-        Arguments:
+        Args:
             is_loud: True if a loud chunk should be registered
                      False if a quiet chunk should be registered
         """
@@ -323,20 +323,11 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
     # before a phrase will be considered complete
     MIN_SILENCE_AT_END = 0.25
 
-    # TODO: Remove in 20.08
-    # The maximum seconds a phrase can be recorded,
-    # provided there is noise the entire time
-    RECORDING_TIMEOUT = 10.0
-
-    # TODO: Remove in 20.08
-    # The maximum time it will continue to record silence
-    # when not enough noise has been detected
-    RECORDING_TIMEOUT_WITH_SILENCE = 3.0
-
     # Time between pocketsphinx checks for the wake word
     SEC_BETWEEN_WW_CHECKS = 0.2
 
-    def __init__(self, wake_word_recognizer):
+    def __init__(self, wake_word_recognizer, watchdog=None):
+        self._watchdog = watchdog or (lambda: None)  # Default to dummy func
         self.config = Configuration.get()
         listener_config = self.config.get('listener')
         self.upload_url = listener_config['wake_word_upload']['url']
@@ -374,13 +365,12 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         # The maximum seconds a phrase can be recorded,
         # provided there is noise the entire time
         self.recording_timeout = listener_config.get('recording_timeout',
-                                                     self.RECORDING_TIMEOUT)
+                                                     10.0)
 
         # The maximum time it will continue to record silence
         # when not enough noise has been detected
         self.recording_timeout_with_silence = listener_config.get(
-            'recording_timeout_with_silence',
-            self.RECORDING_TIMEOUT_WITH_SILENCE)
+            'recording_timeout_with_silence', 3.0)
 
     @property
     def account_id(self):
@@ -474,6 +464,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
 
             # Periodically write the energy level to the mic level file.
             if num_chunks % 10 == 0:
+                self._watchdog()
                 self.write_mic_level(energy, source)
 
         return byte_data
@@ -492,8 +483,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
 
         For example when we are in a dialog with the user.
         """
-        # TODO: remove startListening signal check in 20.02
-        if check_for_signal('startListening') or self._listen_triggered:
+        if self._listen_triggered:
             return True
 
         # Pressing the Mark 1 button can start recording (unless
@@ -532,14 +522,6 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
             'model': str(model_hash)
         }
 
-    def _upload_wake_word(self, audio, metadata):
-        requests.post(
-            self.upload_url, files={
-                'audio': BytesIO(audio.get_wav_data()),
-                'metadata': StringIO(json.dumps(metadata))
-            }
-        )
-
     def trigger_listen(self):
         """Externally trigger listening."""
         LOG.debug('Listen triggered from external source.')
@@ -547,17 +529,21 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
 
     def _upload_wakeword(self, audio, metadata):
         """Upload the wakeword in a background thread."""
-        def upload(audio, metadata):
-            requests.post(self.upload_url,
-                          files={'audio': BytesIO(audio.get_wav_data()),
-                                 'metadata': StringIO(json.dumps(metadata))})
-
-        Thread(target=upload, daemon=True, args=(audio, metadata)).start()
+        LOG.debug(
+            "Wakeword uploading has been disabled. The API endpoint used in "
+            "Mycroft-core v20.2 and below has been deprecated. To contribute "
+            "new wakeword samples please upgrade to v20.8 or above."
+        )
+        # def upload(audio, metadata):
+        #     requests.post(self.upload_url,
+        #                   files={'audio': BytesIO(audio.get_wav_data()),
+        #                          'metadata': StringIO(json.dumps(metadata))})
+        # Thread(target=upload, daemon=True, args=(audio, metadata)).start()
 
     def _send_wakeword_info(self, emitter):
         """Send messagebus message indicating that a wakeword was received.
 
-        Arguments:
+        Args:
             emitter: bus emitter to send information on.
         """
         SessionManager.touch()
@@ -568,7 +554,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
     def _write_wakeword_to_disk(self, audio, metadata):
         """Write wakeword to disk.
 
-        Arguments:
+        Args:
             audio: Audio data to write
             metadata: List of metadata about the captured wakeword
         """
@@ -600,7 +586,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
     def _wait_until_wake_word(self, source, sec_per_buffer):
         """Listen continuously on source until a wake word is spoken
 
-        Arguments:
+        Args:
             source (AudioSource):  Source producing the audio chunks
             sec_per_buffer (float):  Fractional number of seconds in each chunk
         """
@@ -635,6 +621,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         ww_frames = deque(maxlen=7)
 
         said_wake_word = False
+        audio_data = None
         while (not said_wake_word and not self._stop_signaled and
                not self._skip_wake_word()):
             chunk = self.record_sound_chunk(source)
@@ -654,6 +641,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
             # Periodically output energy level stats. This can be used to
             # visualize the microphone input, e.g. a needle on a meter.
             if mic_write_counter % 3:
+                self._watchdog()
                 self.write_mic_level(energy, source)
             mic_write_counter += 1
 

@@ -25,7 +25,7 @@ class ESpeak(TTS):
     def get_tts(self, sentence, wav_file):
         """Generate WAV from sentence, phonemes aren't supported.
 
-        Arguments:
+        Args:
             sentence (str): sentence to generate audio for
             wav_file (str): output file
 

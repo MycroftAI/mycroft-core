@@ -40,6 +40,16 @@ class SkillGUI:
         self.config = Configuration.get()
 
     @property
+    def connected(self):
+        """Returns True if at least 1 gui is connected, else False"""
+        if self.skill.bus:
+            reply = self.skill.bus.wait_for_response(
+                Message("gui.status.request"), "gui.status.request.response")
+            if reply:
+                return reply.data["connected"]
+        return False
+
+    @property
     def remote_url(self):
         """Returns configuration value for url of remote-server."""
         return self.config.get('remote-server')
@@ -59,7 +69,7 @@ class SkillGUI:
         When using the triggerEvent method from Qt
         triggerEvent("event", {"data": "cool"})
 
-        Arguments:
+        Args:
             event (str):    event to catch
             handler:        function to handle the event
         """
@@ -70,7 +80,7 @@ class SkillGUI:
         """Registers a callback function to run when a value is
         changed from the GUI.
 
-        Arguments:
+        Args:
             callback:   Function to call when a value is changed
         """
         self.on_gui_changed_callback = callback
@@ -78,7 +88,7 @@ class SkillGUI:
     def gui_set(self, message):
         """Handler catching variable changes from the GUI.
 
-        Arguments:
+        Args:
             message: Messagebus message
         """
         for key in message.data:
@@ -100,12 +110,20 @@ class SkillGUI:
         """Implements get part of dict-like behaviour with named keys."""
         return self.__session_data[key]
 
+    def get(self, *args, **kwargs):
+        """Implements the get method for accessing dict keys."""
+        return self.__session_data.get(*args, **kwargs)
+
     def __contains__(self, key):
         """Implements the "in" operation."""
         return self.__session_data.__contains__(key)
 
     def clear(self):
-        """Reset the value dictionary, and remove namespace from GUI."""
+        """Reset the value dictionary, and remove namespace from GUI.
+
+        This method does not close the GUI for a Skill. For this purpose see
+        the `release` method.
+        """
         self.__session_data = {}
         self.page = None
         self.skill.bus.emit(Message("gui.clear.namespace",
@@ -114,7 +132,7 @@ class SkillGUI:
     def send_event(self, event_name, params=None):
         """Trigger a gui event.
 
-        Arguments:
+        Args:
             event_name (str): name of event to be triggered
             params: json serializable object containing any parameters that
                     should be sent along with the request.
@@ -125,22 +143,27 @@ class SkillGUI:
                                      "event_name": event_name,
                                      "params": params}))
 
-    def show_page(self, name, override_idle=None):
+    def show_page(self, name, override_idle=None,
+                  override_animations=False):
         """Begin showing the page in the GUI
 
-        Arguments:
+        Args:
             name (str): Name of page (e.g "mypage.qml") to display
             override_idle (boolean, int):
                 True: Takes over the resting page indefinitely
                 (int): Delays resting page for the specified number of
                        seconds.
+            override_animations (boolean):
+                True: Disables showing all platform skill animations.
+                False: 'Default' always show animations.
         """
-        self.show_pages([name], 0, override_idle)
+        self.show_pages([name], 0, override_idle, override_animations)
 
-    def show_pages(self, page_names, index=0, override_idle=None):
+    def show_pages(self, page_names, index=0, override_idle=None,
+                   override_animations=False):
         """Begin showing the list of pages in the GUI.
 
-        Arguments:
+        Args:
             page_names (list): List of page names (str) to display, such as
                                ["Weather.qml", "Forecast.qml", "Details.qml"]
             index (int): Page number (0-based) to show initially.  For the
@@ -149,6 +172,9 @@ class SkillGUI:
                 True: Takes over the resting page indefinitely
                 (int): Delays resting page for the specified number of
                        seconds.
+            override_animations (boolean):
+                True: Disables showing all platform skill animations.
+                False: 'Default' always show animations.
         """
         if not isinstance(page_names, list):
             raise ValueError('page_names must be a list')
@@ -182,12 +208,13 @@ class SkillGUI:
                                     {"page": page_urls,
                                      "index": index,
                                      "__from": self.skill.skill_id,
-                                     "__idle": override_idle}))
+                                     "__idle": override_idle,
+                                     "__animations": override_animations}))
 
     def remove_page(self, page):
         """Remove a single page from the GUI.
 
-        Arguments:
+        Args:
             page (str): Page to remove from the GUI
         """
         return self.remove_pages([page])
@@ -195,7 +222,7 @@ class SkillGUI:
     def remove_pages(self, page_names):
         """Remove a list of pages in the GUI.
 
-        Arguments:
+        Args:
             page_names (list): List of page names (str) to display, such as
                                ["Weather.qml", "Forecast.qml", "Other.qml"]
         """
@@ -205,9 +232,15 @@ class SkillGUI:
         # Convert pages to full reference
         page_urls = []
         for name in page_names:
-            page = self.skill.find_resource(name, 'ui')
+            if name.startswith("SYSTEM"):
+                page = resolve_resource_file(join('ui', name))
+            else:
+                page = self.skill.find_resource(name, 'ui')
             if page:
-                page_urls.append("file://" + page)
+                if self.config.get('remote'):
+                    page_urls.append(self.remote_url + "/" + page)
+                else:
+                    page_urls.append("file://" + page)
             else:
                 raise FileNotFoundError("Unable to find page: {}".format(name))
 
@@ -215,28 +248,32 @@ class SkillGUI:
                                     {"page": page_urls,
                                      "__from": self.skill.skill_id}))
 
-    def show_text(self, text, title=None, override_idle=None):
+    def show_text(self, text, title=None, override_idle=None,
+                  override_animations=False):
         """Display a GUI page for viewing simple text.
 
-        Arguments:
+        Args:
             text (str): Main text content.  It will auto-paginate
             title (str): A title to display above the text content.
             override_idle (boolean, int):
                 True: Takes over the resting page indefinitely
                 (int): Delays resting page for the specified number of
                        seconds.
+            override_animations (boolean):
+                True: Disables showing all platform skill animations.
+                False: 'Default' always show animations.
         """
-        self.clear()
         self["text"] = text
         self["title"] = title
-        self.show_page("SYSTEM_TextFrame.qml", override_idle)
+        self.show_page("SYSTEM_TextFrame.qml", override_idle,
+                       override_animations)
 
     def show_image(self, url, caption=None,
                    title=None, fill=None,
-                   override_idle=None):
+                   override_idle=None, override_animations=False):
         """Display a GUI page for viewing an image.
 
-        Arguments:
+        Args:
             url (str): Pointer to the image
             caption (str): A caption to show under the image
             title (str): A title to display above the image content
@@ -246,20 +283,23 @@ class SkillGUI:
                 True: Takes over the resting page indefinitely
                 (int): Delays resting page for the specified number of
                        seconds.
+            override_animations (boolean):
+                True: Disables showing all platform skill animations.
+                False: 'Default' always show animations.
         """
-        self.clear()
         self["image"] = url
         self["title"] = title
         self["caption"] = caption
         self["fill"] = fill
-        self.show_page("SYSTEM_ImageFrame.qml", override_idle)
+        self.show_page("SYSTEM_ImageFrame.qml", override_idle,
+                       override_animations)
 
     def show_animated_image(self, url, caption=None,
                             title=None, fill=None,
-                            override_idle=None):
+                            override_idle=None, override_animations=False):
         """Display a GUI page for viewing an image.
 
-        Arguments:
+        Args:
             url (str): Pointer to the .gif image
             caption (str): A caption to show under the image
             title (str): A title to display above the image content
@@ -269,43 +309,63 @@ class SkillGUI:
                 True: Takes over the resting page indefinitely
                 (int): Delays resting page for the specified number of
                        seconds.
+            override_animations (boolean):
+                True: Disables showing all platform skill animations.
+                False: 'Default' always show animations.
         """
-        self.clear()
         self["image"] = url
         self["title"] = title
         self["caption"] = caption
         self["fill"] = fill
-        self.show_page("SYSTEM_AnimatedImageFrame.qml", override_idle)
+        self.show_page("SYSTEM_AnimatedImageFrame.qml", override_idle,
+                       override_animations)
 
-    def show_html(self, html, resource_url=None, override_idle=None):
+    def show_html(self, html, resource_url=None, override_idle=None,
+                  override_animations=False):
         """Display an HTML page in the GUI.
 
-        Arguments:
+        Args:
             html (str): HTML text to display
             resource_url (str): Pointer to HTML resources
             override_idle (boolean, int):
                 True: Takes over the resting page indefinitely
                 (int): Delays resting page for the specified number of
                        seconds.
+            override_animations (boolean):
+                True: Disables showing all platform skill animations.
+                False: 'Default' always show animations.
         """
-        self.clear()
         self["html"] = html
         self["resourceLocation"] = resource_url
-        self.show_page("SYSTEM_HtmlFrame.qml", override_idle)
+        self.show_page("SYSTEM_HtmlFrame.qml", override_idle,
+                       override_animations)
 
-    def show_url(self, url, override_idle=None):
+    def show_url(self, url, override_idle=None,
+                 override_animations=False):
         """Display an HTML page in the GUI.
 
-        Arguments:
+        Args:
             url (str): URL to render
             override_idle (boolean, int):
                 True: Takes over the resting page indefinitely
                 (int): Delays resting page for the specified number of
                        seconds.
+            override_animations (boolean):
+                True: Disables showing all platform skill animations.
+                False: 'Default' always show animations.
         """
-        self.clear()
         self["url"] = url
-        self.show_page("SYSTEM_UrlFrame.qml", override_idle)
+        self.show_page("SYSTEM_UrlFrame.qml", override_idle,
+                       override_animations)
+
+    def release(self):
+        """Signal that this skill is no longer using the GUI,
+        allow different platforms to properly handle this event.
+        Also calls self.clear() to reset the state variables
+        Platforms can close the window or go back to previous page"""
+        self.clear()
+        self.skill.bus.emit(Message("mycroft.gui.screen.close",
+                                    {"skill_id": self.skill.skill_id}))
 
     def shutdown(self):
         """Shutdown gui interface.

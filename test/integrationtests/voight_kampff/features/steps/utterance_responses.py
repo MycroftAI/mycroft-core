@@ -30,10 +30,6 @@ from test.integrationtests.voight_kampff import (mycroft_responses, then_wait,
                                                  then_wait_fail)
 
 
-TIMEOUT = 10
-SLEEP_LENGTH = 0.25
-
-
 def find_dialog(skill_path, dialog, lang):
     """Check the usual location for dialogs.
 
@@ -56,7 +52,7 @@ def load_dialog_file(dialog_path):
 def load_dialog_list(skill_path, dialog):
     """Load dialog from files into a single list.
 
-    Arguments:
+    Args:
         skill (MycroftSkill): skill to load dialog from
         dialog (list): Dialog names (str) to load
 
@@ -72,7 +68,7 @@ def load_dialog_list(skill_path, dialog):
 def dialog_from_sentence(sentence, skill_path, lang):
     """Find dialog file from example sentence.
 
-    Arguments:
+    Args:
         sentence (str): Text to match
         skill_path (str): path to skill directory
         lang (str): language code to use
@@ -121,6 +117,20 @@ def _match_dialog_patterns(dialogs, sentence):
 @given('an english speaking user')
 def given_english(context):
     context.lang = 'en-us'
+
+
+@given('a {timeout} seconds timeout')
+@given('a {timeout} second timeout')
+def given_timeout(context, timeout):
+    """Set the timeout for the steps in this scenario."""
+    context.step_timeout = float(timeout)
+
+
+@given('a {timeout} minutes timeout')
+@given('a {timeout} minute timeout')
+def given_timeout(context, timeout):
+    """Set the timeout for the steps in this scenario."""
+    context.step_timeout = float(timeout) * 60
 
 
 @when('the user says "{text}"')
@@ -221,8 +231,14 @@ def then_contains(context, text):
 @then('the user replies "{text}"')
 @then('the user says "{text}"')
 def then_user_follow_up(context, text):
-    time.sleep(2)
+    """Send a user response after being prompted by device.
+
+    The sleep after the device is finished speaking is to address a race
+    condition in the MycroftSkill base class conversational code.  It can
+    be removed when the race condition is addressed.
+    """
     wait_while_speaking()
+    time.sleep(2)
     context.bus.emit(Message('recognizer_loop:utterance',
                              data={'utterances': [text],
                                    'lang': context.lang,
@@ -233,12 +249,10 @@ def then_user_follow_up(context, text):
 
 @then('mycroft should send the message "{message_type}"')
 def then_messagebus_message(context, message_type):
-    cnt = 0
-    while context.bus.get_messages(message_type) == []:
-        if cnt > int(TIMEOUT * (1.0 / SLEEP_LENGTH)):
-            assert False, "Message not found"
-            break
-        else:
-            cnt += 1
+    """Verify a specific message is sent."""
+    def check_dummy(message):
+        """We are just interested in the message data, just the type."""
+        return True, ""
 
-        time.sleep(SLEEP_LENGTH)
+    message_found, _ = then_wait(message_type, check_dummy, context)
+    assert message_found, "No matching message received."

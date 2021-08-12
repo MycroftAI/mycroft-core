@@ -12,24 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import base64
+import json
+import math
+import os
+import re
+from urllib import parse
 
-from .tts import TTS, TTSValidator
-from .remote_tts import RemoteTTSException, RemoteTTSTimeoutException
-from mycroft.util.log import LOG
-from mycroft.tts import cache_handler
-from mycroft.util import get_cache_directory
 from requests_futures.sessions import FuturesSession
 from requests.exceptions import (
     ReadTimeout, ConnectionError, ConnectTimeout, HTTPError
 )
-from urllib import parse
-from .mimic_tts import VISIMES
-import math
-import base64
-import os
-import re
-import json
 
+from mycroft.util.file_utils import get_cache_directory
+from mycroft.util.log import LOG
+from .mimic_tts import VISIMES
+from .tts import TTS, TTSValidator
+from .remote_tts import RemoteTTSException, RemoteTTSTimeoutException
 
 # Heuristic value, caps character length of a chunk of text to be spoken as a
 # work around for current Mimic2 implementation limits.
@@ -39,7 +38,7 @@ _max_sentence_size = 170
 def _break_chunks(l, n):
     """Yield successive n-sized chunks
 
-    Arguments:
+    Args:
         l (list): text (str) to split
         chunk_size (int): chunk size
     """
@@ -50,7 +49,7 @@ def _break_chunks(l, n):
 def _split_by_chunk_size(text, chunk_size):
     """Split text into word chunks by chunk_size size
 
-    Arguments:
+    Args:
         text (str): text to split
         chunk_size (int): chunk size
 
@@ -88,7 +87,7 @@ def _split_by_punctuation(chunks, puncs):
     """Splits text by various punctionations
     e.g. hello, world => [hello, world]
 
-    Arguments:
+    Args:
         chunks (list or str): text (str) to split
         puncs (list): list of punctuations used to split text
 
@@ -129,7 +128,7 @@ def _sentence_chunker(text):
     NOTE: The smaller chunks are needed due to current Mimic2 TTS limitations.
     This stage can be removed once Mimic2 can generate longer sentences.
 
-    Arguments:
+    Args:
         text (str): text to split
         chunk_size (int): size of each chunk
         split_by_punc (bool, optional): Defaults to True.
@@ -169,23 +168,15 @@ def _sentence_chunker(text):
 class Mimic2(TTS):
     """Interface to the Mimic2 TTS."""
     def __init__(self, lang, config):
-        super(Mimic2, self).__init__(
-            lang, config, Mimic2Validator(self)
-        )
-        try:
-            LOG.info("Getting Pre-loaded cache")
-            cache_handler.main(config['preloaded_cache'])
-            LOG.info("Successfully downloaded Pre-loaded cache")
-        except Exception as e:
-            LOG.error("Could not get the pre-loaded cache ({})"
-                      .format(repr(e)))
+        super().__init__(lang, config, Mimic2Validator(self))
+        self.cache.load_persistent_cache()
         self.url = config['url']
         self.session = FuturesSession()
 
     def _requests(self, sentence):
         """Create asynchronous request list
 
-        Arguments:
+        Args:
             chunks (list): list of text to synthesize
 
         Returns:
@@ -198,7 +189,7 @@ class Mimic2(TTS):
     def viseme(self, phonemes):
         """Maps phonemes to appropriate viseme encoding
 
-        Arguments:
+        Args:
             phonemes (list): list of tuples (phoneme, time_start)
 
         Returns:
@@ -225,7 +216,7 @@ class Mimic2(TTS):
     def get_tts(self, sentence, wav_file):
         """Generate (remotely) and play mimic2 WAV audio
 
-        Arguments:
+        Args:
             sentence (str): Phrase to synthesize to audio with mimic2
             wav_file (str): Location to write audio output
         """
@@ -249,7 +240,7 @@ class Mimic2(TTS):
     def save_phonemes(self, key, phonemes):
         """Cache phonemes
 
-        Arguments:
+        Args:
             key:        Hash key for the sentence
             phonemes:   phoneme string to save
         """
@@ -264,7 +255,7 @@ class Mimic2(TTS):
     def load_phonemes(self, key):
         """Load phonemes from cache file.
 
-        Arguments:
+        Args:
             Key:    Key identifying phoneme cache
         """
         pho_file = os.path.join(get_cache_directory("tts/" + self.tts_name),

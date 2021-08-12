@@ -29,10 +29,10 @@ def read_vocab_file(path):
     """ Read voc file.
 
         This reads a .voc file, stripping out empty lines comments and expand
-        parentheses. It retruns each line as a list of all expanded
+        parentheses. It returns each line as a list of all expanded
         alternatives.
 
-        Arguments:
+        Args:
             path (str): path to vocab file.
 
         Returns:
@@ -74,7 +74,7 @@ def load_regex_from_file(path, skill_id):
 def load_vocabulary(basedir, skill_id):
     """Load vocabulary from all files in the specified directory.
 
-    Arguments:
+    Args:
         basedir (str): path of directory to load from (will recurse)
         skill_id: skill the data belongs to
     Returns:
@@ -189,7 +189,7 @@ def read_value_file(filename, delim):
 
     The value file is a simple csv structure with a key and value.
 
-    Arguments:
+    Args:
         filename (str): file to read
         delim (str): csv delimiter
 
@@ -215,7 +215,7 @@ def read_value_file(filename, delim):
 def read_translated_file(filename, data):
     """Read a file inserting data.
 
-    Arguments:
+    Args:
         filename (str): file to read
         data (dict): dictionary with data to insert into file
 

@@ -49,7 +49,7 @@ class MustacheDialogRenderer:
     def load_template_file(self, template_name, filename):
         """Load a template by file name into the templates cache.
 
-        Arguments:
+        Args:
             template_name (str): a unique identifier for a group of templates
             filename (str): a fully qualified filename of a mustache template.
         """
@@ -78,7 +78,7 @@ class MustacheDialogRenderer:
 
         Tries not to let Mycroft say exactly the same thing twice in a row.
 
-        Arguments:
+        Args:
             template_name (str): the name of a template group.
             context (dict): dictionary representing values to be rendered
             index (int): optional, the specific index in the collection of
@@ -120,32 +120,10 @@ class MustacheDialogRenderer:
         return line
 
 
-class DialogLoader:
-    """Loads a collection of dialog files into a renderer implementation.
-
-    TODO: Remove in 20.02
-    """
-
-    def __init__(self, renderer_factory=MustacheDialogRenderer):
-        LOG.warning('Deprecated, use load_dialogs() instead.')
-        self.__renderer = renderer_factory()
-
-    def load(self, dialog_dir):
-        """Load all dialog files within the specified directory.
-
-        Args:
-            dialog_dir (str): directory that contains dialog files
-
-        Returns:
-            a loaded instance of a dialog renderer
-        """
-        return load_dialogs(dialog_dir, self.__renderer)
-
-
 def load_dialogs(dialog_dir, renderer=None):
     """Load all dialog files within the specified directory.
 
-    Arguments:
+    Args:
         dialog_dir (str): directory that contains dialog files
 
     Returns:
@@ -173,7 +151,7 @@ def get(phrase, lang=None, context=None):
     If no file is found, the requested phrase is returned as the string. This
     will use the default language for translations.
 
-    Arguments:
+    Args:
         phrase (str): resource phrase to retrieve/translate
         lang (str): the language to use
         context (dict): values to be inserted into the string

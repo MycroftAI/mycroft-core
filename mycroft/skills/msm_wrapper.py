@@ -27,6 +27,7 @@ from msm import MycroftSkillsManager, SkillRepo
 
 from mycroft.util.combo_lock import ComboLock
 from mycroft.util.log import LOG
+from mycroft.util.file_utils import get_temp_path
 
 MsmConfig = namedtuple(
     'MsmConfig',
@@ -44,7 +45,7 @@ MsmConfig = namedtuple(
 def _init_msm_lock():
     msm_lock = None
     try:
-        msm_lock = ComboLock('/tmp/mycroft-msm.lck')
+        msm_lock = ComboLock(get_temp_path('mycroft-msm.lck'))
         LOG.debug('mycroft-msm combo lock instantiated')
     except Exception:
         LOG.exception('Failed to create msm lock!')
@@ -86,6 +87,11 @@ def create_msm(msm_config: MsmConfig) -> MycroftSkillsManager:
     especially during the boot sequence when this function is called multiple
     times.
     """
+    if msm_config.repo_url != "https://github.com/MycroftAI/mycroft-skills":
+        LOG.warning("You have enabled a third-party skill store.\n"
+                    "Unable to guarantee the safety of skills from "
+                    "sources other than the Mycroft Marketplace.\n"
+                    "Proceed with caution.")
     msm_lock = _init_msm_lock()
     LOG.info('Acquiring lock to instantiate MSM')
     with msm_lock:

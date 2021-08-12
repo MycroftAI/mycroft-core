@@ -29,7 +29,7 @@ class IntentServiceInterface:
 
     This class wraps the messagebus interface of the intent service allowing
     for easier interaction with the service. It wraps both the Adapt and
-    Precise parts of the intent services.
+    Padatious parts of the intent services.
     """
 
     def __init__(self, bus=None):
@@ -57,7 +57,7 @@ class IntentServiceInterface:
     def register_adapt_regex(self, regex):
         """Register a regex with the intent service.
 
-        Arguments:
+        Args:
             regex (str): Regex to be registered, (Adapt extracts keyword
                          reference from named match group.
         """
@@ -75,7 +75,7 @@ class IntentServiceInterface:
     def detach_intent(self, intent_name):
         """Remove an intent from the intent service.
 
-        Arguments:
+        Args:
             intent_name(str): Intent reference
         """
         self.bus.emit(Message("detach_intent", {"intent_name": intent_name}))
@@ -83,7 +83,7 @@ class IntentServiceInterface:
     def set_adapt_context(self, context, word, origin):
         """Set an Adapt context.
 
-        Arguments:
+        Args:
             context (str): context keyword name
             word (str): word to register
             origin (str): original origin of the context (for cross context)
@@ -95,7 +95,7 @@ class IntentServiceInterface:
     def remove_adapt_context(self, context):
         """Remove an active Adapt context.
 
-        Arguments:
+        Args:
             context(str): name of context to remove
         """
         self.bus.emit(Message('remove_context', {'context': context}))
@@ -103,7 +103,7 @@ class IntentServiceInterface:
     def register_padatious_intent(self, intent_name, filename):
         """Register a padatious intent file with Padatious.
 
-        Arguments:
+        Args:
             intent_name(str): intent identifier
             filename(str): complete file path for entity file
         """
@@ -120,7 +120,7 @@ class IntentServiceInterface:
     def register_padatious_entity(self, entity_name, filename):
         """Register a padatious entity file with Padatious.
 
-        Arguments:
+        Args:
             entity_name(str): entity name
             filename(str): complete file path for entity file
         """
@@ -149,7 +149,7 @@ class IntentServiceInterface:
     def get_intent(self, intent_name):
         """Get intent from intent_name.
 
-        Arguments:
+        Args:
             intent_name (str): name to find.
 
         Returns:
@@ -225,8 +225,11 @@ class IntentQueryApi:
         intent = self.get_intent(utterance, lang)
         if not intent:
             return None
+        # theoretically skill_id might be missing
+        if intent.get("skill_id"):
+            return intent["skill_id"]
         # retrieve skill from munged intent name
-        if intent.get("name"):  # padatious
+        if intent.get("intent_name"):  # padatious + adapt
             return intent["name"].split(":")[0]
         if intent.get("intent_type"):  # adapt
             return intent["intent_type"].split(":")[0]
@@ -245,7 +248,7 @@ class IntentQueryApi:
             return None
         return data["skills"]
 
-    def get_active_skills(self):
+    def get_active_skills(self, include_timestamps=False):
         msg = Message("intent.service.active_skills.get",
                       context={"destination": "intent_service",
                                "source": "intent_api"})
@@ -256,7 +259,9 @@ class IntentQueryApi:
         if not data:
             LOG.error("Intent Service timed out!")
             return None
-        return data["skills"]
+        if include_timestamps:
+            return data["skills"]
+        return [s[0] for s in data["skills"]]
 
     def get_adapt_manifest(self):
         msg = Message("intent.service.adapt.manifest.get",

@@ -16,7 +16,8 @@
 ##########################################################################
 
 # Set a default locale to handle output from commands reliably
-export LANG=C
+export LANG=C.UTF-8
+export LANGUAGE=en
 
 # exit on any error
 set -Ee
@@ -127,6 +128,8 @@ function found_exe() {
 
 if found_exe sudo ; then
     SUDO=sudo
+elif found_exe doas ; then
+    SUDO=doas
 elif [[ $opt_allowroot != true ]]; then
     echo 'This script requires "sudo" to install system packages. Please install it, then re-run this script.'
     exit 1
@@ -151,7 +154,7 @@ function get_YN() {
 
 # If tput is available and can handle multiple colors
 if found_exe tput ; then
-    if [[ $(tput colors) != "-1" ]]; then
+    if [[ $(tput colors) != "-1" && -z $CI ]]; then
         GREEN=$(tput setaf 2)
         BLUE=$(tput setaf 4)
         CYAN=$(tput setaf 6)
@@ -171,6 +174,32 @@ This script is designed to make working with Mycroft easy.  During this
 first run of dev_setup we will ask you a few questions to help setup
 your environment.'
     sleep 0.5
+    # The AVX instruction set is an x86 construct
+    # ARM has a range of equivalents, unsure which are (un)supported by TF.
+    if ! grep -q avx /proc/cpuinfo && [[ ! $(uname -m) == 'arm'* ]]; then
+      echo "
+The Precise Wake Word Engine requires the AVX instruction set, which is
+not supported on your CPU. Do you want to fall back to the PocketSphinx
+engine? Advanced users can build the precise engine with an older
+version of TensorFlow (v1.13) if desired and change use_precise to true
+in mycroft.conf.
+  Y)es, I want to use the PocketSphinx engine or my own.
+  N)o, stop the installation."
+      if get_YN ; then
+        if [[ ! -f /etc/mycroft/mycroft.conf ]]; then
+          $SUDO mkdir -p /etc/mycroft
+          $SUDO touch /etc/mycroft/mycroft.conf
+          $SUDO bash -c 'echo "{ \"use_precise\": true }" > /etc/mycroft/mycroft.conf'
+        else
+          $SUDO bash -c 'jq ". + { \"use_precise\": true }" /etc/mycroft/mycroft.conf > tmp.mycroft.conf' 
+          $SUDO mv -f tmp.mycroft.conf /etc/mycroft/mycroft.conf
+        fi
+      else
+        echo -e "$HIGHLIGHT N - quit the installation $RESET"
+        exit 1
+      fi
+      echo
+    fi
     echo "
 Do you want to run on 'master' or against a dev branch?  Unless you are
 a developer modifying mycroft-core itself, you should run on the
@@ -337,7 +366,7 @@ function open_suse_install() {
 
 
 function fedora_install() {
-    $SUDO dnf install -y git python3 python3-devel python3-pip python3-setuptools python3-virtualenv pygobject3-devel libtool libffi-devel openssl-devel autoconf bison swig glib2-devel portaudio-devel mpg123 mpg123-plugins-pulseaudio screen curl pkgconfig libicu-devel automake libjpeg-turbo-devel fann-devel gcc-c++ redhat-rpm-config jq
+    $SUDO dnf install -y git python3 python3-devel python3-pip python3-setuptools python3-virtualenv pygobject3-devel libtool libffi-devel openssl-devel autoconf bison swig glib2-devel portaudio-devel mpg123 mpg123-plugins-pulseaudio screen curl pkgconfig libicu-devel automake libjpeg-turbo-devel fann-devel gcc-c++ redhat-rpm-config jq make
 }
 
 
@@ -373,7 +402,7 @@ function gentoo_install() {
 }
 
 function alpine_install() {
-    $SUDO apk add alpine-sdk git python3 py3-pip py3-setuptools py3-virtualenv mpg123 vorbis-tools pulseaudio-utils fann-dev automake autoconf libtool pcre2-dev pulseaudio-dev alsa-lib-dev swig python3-dev portaudio-dev libjpeg-turbo-dev
+    $SUDO apk add --virtual makedeps-mycroft-core alpine-sdk git python3 py3-pip py3-setuptools py3-virtualenv mpg123 vorbis-tools pulseaudio-utils fann-dev automake autoconf libtool pcre2-dev pulseaudio-dev alsa-lib-dev swig python3-dev portaudio-dev libjpeg-turbo-dev
 }
 
 function install_deps() {
@@ -398,14 +427,14 @@ function install_deps() {
         # Fedora
         echo "$GREEN Installing packages for Fedora...$RESET"
         fedora_install
-    elif found_exe pacman && os_is arch ; then
+    elif found_exe pacman && (os_is arch || os_is_like arch); then
         # Arch Linux
         echo "$GREEN Installing packages for Arch...$RESET"
         arch_install
     elif found_exe emerge && os_is gentoo; then
         # Gentoo Linux
         echo "$GREEN Installing packages for Gentoo Linux ...$RESET"
-        gentoo_install	
+        gentoo_install
     elif found_exe apk && os_is alpine; then
         # Alpine Linux
         echo "$GREEN Installing packages for Alpine Linux...$RESET"
@@ -536,7 +565,7 @@ if ! pip install -r requirements/tests.txt ; then
 fi
 
 SYSMEM=$(free | awk '/^Mem:/ { print $2 }')
-MAXCORES=$(($SYSMEM / 512000))
+MAXCORES=$(($SYSMEM / 2202010))
 MINCORES=1
 CORES=$(nproc)
 
@@ -545,7 +574,7 @@ if [[ $MAXCORES -lt 1 ]] ; then
     MAXCORES=${MINCORES}
 fi
 
-# look for positive integer
+# Be positive!
 if ! [[ $CORES =~ ^[0-9]+$ ]] ; then
     CORES=$MINCORES
 elif [[ $MAXCORES -lt $CORES ]] ; then
@@ -555,9 +584,8 @@ fi
 echo "Building with $CORES cores."
 
 #build and install pocketsphinx
-#cd $TOP
-#${TOP}/scripts/install-pocketsphinx.sh -q
 #build and install mimic
+
 cd "$TOP"
 
 if [[ $build_mimic == 'y' || $build_mimic == 'Y' ]] ; then

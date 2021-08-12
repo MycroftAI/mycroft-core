@@ -181,8 +181,18 @@ class InterceptEmitter(object):
             self.q.put(event)
         self.emitter.emit(event_name, event, *args, **kwargs)
 
-    def wait_for_response(self, event, *args, **kwargs):
-        return None
+    def wait_for_response(self, event, reply_type=None, *args, **kwargs):
+        """Simple single thread implementation of wait_for_response."""
+        message_type = reply_type or event.msg_type + '.response'
+        response = None
+
+        def response_handler(msg):
+            nonlocal response
+            response = msg
+
+        self.emitter.once(message_type, response_handler)
+        self.emitter.emit(event.msg_type, event)
+        return response
 
     def once(self, event, f):
         self.emitter.once(event, f)
@@ -204,12 +214,10 @@ class MockSkillsLoader(object):
         self.skills_root = skills_root
         self.emitter = InterceptEmitter()
         from mycroft.skills.intent_service import IntentService
-        from mycroft.skills.padatious_service import PadatiousService
         self.ih = IntentService(self.emitter)
-        self.ps = PadatiousService(self.emitter, self.ih)
         self.skills = None
         self.emitter.on(
-            'intent_failure',
+            'mycroft.skills.fallback',
             FallbackSkill.make_intent_failure_handler(self.emitter))
 
         def make_response(message):
@@ -221,7 +229,8 @@ class MockSkillsLoader(object):
     def load_skills(self):
         skills, self.load_log = load_skills(self.emitter, self.skills_root)
         self.skills = [s for s in skills if s]
-        self.ps.train(Message('', data=dict(single_thread=True)))
+        self.ih.padatious_service.train(
+            Message('', data=dict(single_thread=True)))
         return self.emitter.emitter  # kick out the underlying emitter
 
     def unload_skills(self):
@@ -255,6 +264,7 @@ class SkillTest(object):
         self.returned_intent = False
         self.test_status = test_status
         self.failure_msg = None
+        self.end_of_skill = False
 
     def run(self, loader):
         """ Execute the test
@@ -268,6 +278,8 @@ class SkillTest(object):
         Args:
             bool: Test results -- only True if all passed
         """
+        self.end_of_skill = False  # Reset to false at beginning of test
+
         s = [s for s in loader.skills if s and s.root_dir == self.skill]
         if s:
             s = s[0]
@@ -375,7 +387,7 @@ class SkillTest(object):
     def execute_test(self, s):
         """ Execute test case.
 
-        Arguments:
+        Args:
             s (MycroftSkill): mycroft skill to test
 
         Returns:
@@ -456,10 +468,14 @@ class SkillTest(object):
 
             evaluation_rule.evaluate(event.data)
             if event.msg_type == 'mycroft.skill.handler.complete':
-                return True
+                self.end_of_skill = True
         except Empty:
             pass
-        return False
+
+        if q.empty() and self.end_of_skill:
+            return True
+        else:
+            return False
 
     def shutdown_emitter(self, s):
         """Shutdown the skill connection to the bus."""

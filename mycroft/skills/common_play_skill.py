@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import re
-from enum import Enum
+from enum import Enum, IntEnum
 from abc import ABC, abstractmethod
 from mycroft.messagebus.message import Message
 from .mycroft_skill import MycroftSkill
@@ -29,6 +29,22 @@ class CPSMatchLevel(Enum):
     GENERIC = 6
 
 
+class CPSTrackStatus(IntEnum):
+    DISAMBIGUATION = 1  # not queued for playback, show in gui
+    PLAYING = 20  # Skill is handling playback internally
+    PLAYING_AUDIOSERVICE = 21  # Skill forwarded playback to audio service
+    PLAYING_GUI = 22  # Skill forwarded playback to gui
+    PLAYING_ENCLOSURE = 23  # Skill forwarded playback to enclosure
+    QUEUED = 30  # Waiting playback to be handled inside skill
+    QUEUED_AUDIOSERVICE = 31  # Waiting playback in audio service
+    QUEUED_GUI = 32  # Waiting playback in gui
+    QUEUED_ENCLOSURE = 33  # Waiting for playback in enclosure
+    PAUSED = 40  # media paused but ready to resume
+    STALLED = 60  # playback has stalled, reason may be unknown
+    BUFFERING = 61  # media is buffering from an external source
+    END_OF_MEDIA = 90  # playback finished, is the default state when CPS loads
+
+
 class CommonPlaySkill(MycroftSkill, ABC):
     """ To integrate with the common play infrastructure of Mycroft
     skills should use this base class and override the two methods
@@ -39,6 +55,7 @@ class CommonPlaySkill(MycroftSkill, ABC):
     mycroft-playback-control skill and no special vocab for starting playback
     is needed.
     """
+
     def __init__(self, name=None, bus=None):
         super().__init__(name, bus)
         self.audioservice = None
@@ -104,7 +121,7 @@ class CommonPlaySkill(MycroftSkill, ABC):
 
         Assume the more of the words that get consumed, the better the match
 
-        Arguments:
+        Args:
             match (str): Matching string
             phrase (str): original input phrase
             level (CPSMatchLevel): match level
@@ -149,6 +166,8 @@ class CommonPlaySkill(MycroftSkill, ABC):
         # "... on the chromecast"
         self.play_service_string = phrase
 
+        self.make_active()
+
         # Invoke derived class to provide playback data
         self.CPS_start(phrase, data)
 
@@ -168,6 +187,8 @@ class CommonPlaySkill(MycroftSkill, ABC):
         if 'utterance' not in kwargs:
             kwargs['utterance'] = self.play_service_string
         self.audioservice.play(*args, **kwargs)
+        self.CPS_send_status(uri=args[0],
+                             status=CPSTrackStatus.PLAYING_AUDIOSERVICE)
 
     def stop(self):
         """Stop anything playing on the audioservice."""
@@ -185,7 +206,7 @@ class CommonPlaySkill(MycroftSkill, ABC):
     def CPS_match_query_phrase(self, phrase):
         """Analyze phrase to see if it is a play-able phrase with this skill.
 
-        Arguments:
+        Args:
             phrase (str): User phrase uttered after "Play", e.g. "some music"
 
         Returns:
@@ -215,10 +236,75 @@ class CommonPlaySkill(MycroftSkill, ABC):
     def CPS_start(self, phrase, data):
         """Begin playing whatever is specified in 'phrase'
 
-        Arguments:
+        Args:
             phrase (str): User phrase uttered after "Play", e.g. "some music"
             data (dict): Callback data specified in match_query_phrase()
         """
         # Derived classes must implement this, e.g.
         # self.CPS_play("http://zoosh.com/stream_music")
         pass
+
+    def CPS_extend_timeout(self, timeout=5):
+        """Request Common Play Framework to wait another {timeout} seconds
+        for an answer from this skill.
+
+        Args:
+            timeout (int): Number of seconds
+        """
+        self.bus.emit(Message('play:query.response',
+                              {"phrase": self.play_service_string,
+                               "searching": True,
+                               "timeout": timeout,
+                               "skill_id": self.skill_id}))
+
+    def CPS_send_status(self, artist='', track='', album='', image='',
+                        uri='', track_length=None, elapsed_time=None,
+                        playlist_position=None,
+                        status=CPSTrackStatus.DISAMBIGUATION, **kwargs):
+        """Inform system of playback status.
+
+        If a skill is handling playback and wants the playback control to be
+        aware of it's current status it can emit this message indicating that
+        it's performing playback and can provide some standard info.
+
+        All parameters are optional so any can be left out. Also if extra
+        non-standard parameters are added, they too will be sent in the message
+        data.
+
+        Args:
+            artist (str): Current track artist
+            track (str): Track name
+            album (str): Album title
+            image (str): url for image to show
+            uri (str): uri for track
+            track_length (float): track length in seconds
+            elapsed_time (float): current offset into track in seconds
+            playlist_position (int): Position in playlist of current track
+        """
+        data = {'skill': self.name,
+                'uri': uri,
+                'artist': artist,
+                'album': album,
+                'track': track,
+                'image': image,
+                'track_length': track_length,
+                'elapsed_time': elapsed_time,
+                'playlist_position': playlist_position,
+                'status': status
+                }
+        data = {**data, **kwargs}  # Merge extra arguments
+        self.bus.emit(Message('play:status', data))
+
+    def CPS_send_tracklist(self, tracklist):
+        """Inform system of playlist track info.
+
+        Provides track data for playlist
+
+        Args:
+            tracklist (list/dict): Tracklist data
+        """
+        tracklist = tracklist or []
+        if not isinstance(tracklist, list):
+            tracklist = [tracklist]
+        for idx, track in enumerate(tracklist):
+            self.CPS_send_status(playlist_position=idx, **track)

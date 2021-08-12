@@ -14,11 +14,12 @@
 #
 import subprocess
 import time
-import sys
 from alsaaudio import Mixer
 from threading import Thread, Timer
 
 import serial
+
+import xdg.BaseDirectory
 
 import mycroft.dialog
 from mycroft.client.enclosure.base import Enclosure
@@ -29,12 +30,13 @@ from mycroft.client.enclosure.mark1.eyes import EnclosureEyes
 from mycroft.client.enclosure.mark1.mouth import EnclosureMouth
 from mycroft.enclosure.display_manager import \
     init_display_manager_bus_connection
-from mycroft.configuration import Configuration, LocalConf, USER_CONFIG
+from mycroft.configuration import LocalConf, USER_CONFIG
 from mycroft.messagebus.message import Message
 from mycroft.util import play_wav, create_signal, connected, check_for_signal
 from mycroft.util.audio_test import record
 from mycroft.util.log import LOG
 from queue import Queue
+from mycroft.util.file_utils import get_temp_path
 
 # The Mark 1 hardware consists of a Raspberry Pi main CPU which is connected
 # to an Arduino over the serial port.  A custom serial protocol sends
@@ -53,9 +55,9 @@ class EnclosureReader(Thread):
     Mycroft Core.
 
     E.g. Mycroft Stop Feature
-        #. Arduino sends a Stop command after a button press on a Mycroft unit
-        #. ``EnclosureReader`` captures the Stop command
-        #. Notify all Mycroft Core processes (e.g. skills) to be stopped
+        # . Arduino sends a Stop command after a button press on a Mycroft unit
+        # . ``EnclosureReader`` captures the Stop command
+        # . Notify all Mycroft Core processes (e.g. skills) to be stopped
 
     Note: A command is identified by a line break
     """
@@ -130,9 +132,9 @@ class EnclosureReader(Thread):
                 'utterance': "I am testing one two three"}))
 
             time.sleep(0.5)  # Prevents recording the loud button press
-            record("/tmp/test.wav", 3.0)
+            record(get_temp_path('test.wav', 3.0))
             mixer.setvolume(prev_vol)
-            play_wav("/tmp/test.wav").communicate()
+            play_wav(get_temp_path('test.wav')).communicate()
 
             # Test audio muting on arduino
             subprocess.call('speaker-test -P 10 -l 0 -s 1', shell=True)
@@ -163,6 +165,10 @@ class EnclosureReader(Thread):
         if "unit.factory-reset" in data:
             self.bus.emit(Message("speak", {
                 'utterance': mycroft.dialog.get("reset to factory defaults")}))
+            subprocess.call(
+                (f'rm {xdg.BaseDirectory.save_config_path("mycroft")}'
+                 '/mycroft/identity/identity2.json'),
+                shell=True)
             subprocess.call(
                 'rm ~/.mycroft/identity/identity2.json',
                 shell=True)
@@ -207,15 +213,15 @@ class EnclosureReader(Thread):
 class EnclosureWriter(Thread):
     """
     Writes data to Serial port.
-        #. Enqueues all commands received from Mycroft enclosures
+        # . Enqueues all commands received from Mycroft enclosures
            implementation
-        #. Process them on the received order by writing on the Serial port
+        # . Process them on the received order by writing on the Serial port
 
     E.g. Displaying a text on Mycroft's Mouth
-        #. ``EnclosureMouth`` sends a text command
-        #. ``EnclosureWriter`` captures and enqueue the command
-        #. ``EnclosureWriter`` removes the next command from the queue
-        #. ``EnclosureWriter`` writes the command to Serial port
+        # . ``EnclosureMouth`` sends a text command
+        # . ``EnclosureWriter`` captures and enqueue the command
+        # . ``EnclosureWriter`` removes the next command from the queue
+        # . ``EnclosureWriter`` writes the command to Serial port
 
     Note: A command has to end with a line break
     """
@@ -337,7 +343,8 @@ class EnclosureMark1(Enclosure):
             LOG.info("Connected to: %s rate: %s timeout: %s" %
                      (self.port, self.rate, self.timeout))
         except Exception:
-            LOG.error("Impossible to connect to serial port: "+str(self.port))
+            LOG.error("Impossible to connect to serial port: " +
+                      str(self.port))
             raise
 
     def __register_events(self):

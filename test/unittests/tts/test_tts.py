@@ -1,3 +1,4 @@
+from pathlib import Path
 from queue import Queue
 import time
 
@@ -7,7 +8,7 @@ from unittest import mock
 import mycroft.tts
 
 mock_phoneme = mock.Mock(name='phoneme')
-mock_audio = mock.Mock(name='audio')
+mock_audio = "/tmp/mock_path"
 mock_viseme = mock.Mock(name='viseme')
 
 
@@ -16,7 +17,7 @@ class MockTTS(mycroft.tts.TTS):
                  phonetic_spelling=True, ssml_tags=None):
         super().__init__(lang, config, validator, audio_ext)
         self.get_tts = mock.Mock()
-        self.get_tts.return_value = (mock_audio, mock_phoneme)
+        self.get_tts.return_value = (mock_audio, "this is a phoneme")
         self.viseme = mock.Mock()
         self.viseme.return_value = mock_viseme
 
@@ -93,10 +94,46 @@ class TestTTS(unittest.TestCase):
 
         tts.queue = mock.Mock()
         with mock.patch('mycroft.tts.tts.open') as mock_open:
+            tts.cache.temporary_cache_dir = Path('/tmp/dummy')
             tts.execute('Oh no, not again', 42)
-        self.assertTrue(tts.get_tts.called)
-        tts.queue.put.assert_called_with(('wav', mock_audio, mock_viseme,
-                                         42, False))
+        tts.get_tts.assert_called_with(
+            'Oh no, not again',
+            '/tmp/dummy/8da7f22aeb16bc3846ad07b644d59359.wav'
+        )
+        tts.queue.put.assert_called_with(
+            (
+                'wav',
+                mock_audio,
+                mock_viseme,
+                42,
+                False
+            )
+        )
+
+    def test_execute_path_returned(self, mock_playback_thread):
+        tts = MockTTS("en-US", {}, MockTTSValidator(None))
+        tts.get_tts.return_value = (Path(mock_audio), mock_viseme)
+        bus_mock = mock.Mock()
+        tts.init(bus_mock)
+        self.assertTrue(tts.bus is bus_mock)
+
+        tts.queue = mock.Mock()
+        with mock.patch('mycroft.tts.tts.open') as mock_open:
+            tts.cache.temporary_cache_dir = Path('/tmp/dummy')
+            tts.execute('Oh no, not again', 42)
+        tts.get_tts.assert_called_with(
+            'Oh no, not again',
+            '/tmp/dummy/8da7f22aeb16bc3846ad07b644d59359.wav'
+        )
+        tts.queue.put.assert_called_with(
+            (
+                'wav',
+                mock_audio,
+                mock_viseme,
+                42,
+                False
+            )
+        )
 
     @mock.patch('mycroft.tts.tts.open')
     def test_phoneme_cache(self, mock_open, _):
@@ -190,7 +227,8 @@ class TestTTSFactory(unittest.TestCase):
     def test_create(self, mock_config):
         config = {
             'tts': {
-                'module': 'mock'
+                'module': 'mock',
+                'mimic': {'mock': True}
             }
         }
 
@@ -217,6 +255,10 @@ class TestTTSFactory(unittest.TestCase):
         mock_tts_class.side_effect = side_effect
         tts_instance = mycroft.tts.TTSFactory.create()
         self.assertEqual(tts_instance, mock_mimic_instance)
+
+        # Check that mimic get's the proper config
+        mimic_conf = mock_mimic.call_args[0][1]
+        self.assertEqual(mimic_conf, config['tts']['mimic'])
 
         # Make sure exception is raised when mimic fails
         mock_mimic.side_effect = side_effect

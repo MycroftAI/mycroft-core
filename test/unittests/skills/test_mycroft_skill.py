@@ -552,6 +552,17 @@ class TestMycroftSkill(unittest.TestCase):
         self.assertFalse(s.voc_match("My hovercraft is full of eels",
                                      "turn_off_test"))
 
+    def test_voc_match_exact(self):
+        s = SimpleSkill1()
+        s.root_dir = abspath(dirname(__file__))
+
+        self.assertTrue(s.voc_match("yes", "yes", exact=True))
+        self.assertFalse(s.voc_match("yes please", "yes", exact=True))
+        self.assertTrue(s.voc_match("switch off", "turn_off_test",
+                                    exact=True))
+        self.assertFalse(s.voc_match("would you please turn off the lights",
+                                     "turn_off_test", exact=True))
+
     def test_translate_locations(self):
         """Assert that the a translatable list can be loaded from dialog and
         locale.
@@ -601,6 +612,13 @@ class TestMycroftSkill(unittest.TestCase):
 
         # Restore lang to en-us
         s.config_core['lang'] = 'en-us'
+
+    def test_speak_dialog_render_not_initialized(self):
+        """Test that non-initialized dialog_renderer won't raise an error."""
+        s = SimpleSkill1()
+        s.bind(self.emitter)
+        s.dialog_renderer = None
+        s.speak_dialog(key='key')
 
 
 class _TestSkill(MycroftSkill):
