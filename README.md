@@ -32,9 +32,10 @@ e de código aberto. Eva é baseada no assistente virtual Mycroft (em língua in
 - [Links](#links)
 ## Começando
 
-Primeiro, pegue o código em seu sistema! O método mais simples é via git ([instruções de instalação do git] (https://gist.github.com/derhuerst/1b15ff4652a867391f03)):
+Primeiro, baixe o código em seu sistema! O método mais simples é via git ([instruções de instalação do git] (https://gist.github.com/derhuerst/1b15ff4652a867391f03)), 
+Digite no terminal:
 - `cd ~ /`
-- `git clone https: // github.com / MycroftAI / mycroft-core.git`
+- `git clone https://github.com/EVA-FMRP/mycroft-core.git`
 - `cd mycroft-core`
 - `bash dev_setup.sh`
 
@@ -43,18 +44,19 @@ Este script configura dependências e um [virtualenv] [about-virtualenv]. Se est
 
 [about-virtualenv]: https: //virtualenv.pypa.io/en/stable/
 
-NOTA: O branch padrão para este repositório é 'dev', que deve ser considerado um trabalho em andamento. Se você quiser clonar uma versão mais estável, mude para o branch 'master'.
+NOTA: O modo padrão para este repositório é 'dev', que deve ser considerado um trabalho em andamento. Se você quiser clonar uma versão mais estável, mude para o branch 'master'.
 
-## Executando Mycroft
+## Executando EVA
 
-Mycroft fornece `start-mycroft.sh` para realizar tarefas comuns. Este script usa um virtualenv criado por `dev_setup.sh`. Supondo que você instalou mycroft-core em seu diretório inicial, execute:
-- `cd ~ / mycroft-core`
+EVA fornece `start-mycroft.sh` para realizar tarefas comuns. Este script usa um virtualenv criado por `dev_setup.sh`. Supondo que você instalou mycroft-core em seu diretório inicial, execute:
+
+- `cd ~/mycroft-core`
 - `./start-mycroft.sh debug`
 
 O comando "debug" iniciará os serviços de segundo plano (ouvinte de microfone, habilidade, messagebus e subsistemas de áudio), bem como exibirá uma Interface de Linha de Comando (CLI) baseada em texto que você pode usar para interagir com Mycroft e ver o conteúdo do vários registros. Alternativamente, você pode executar `./start-mycroft.sh all` para iniciar os serviços sem a interface de linha de comando. Posteriormente, você pode ativar a CLI usando `./start-mycroft.sh cli`.
 
 Os serviços de segundo plano podem ser interrompidos como um grupo com:
-- `. / stop-mycroft.sh`
+- `./stop-mycroft.sh`
 
 ## Usando EVA
 
