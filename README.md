@@ -14,21 +14,21 @@ Eva é uma assistente virtual por comandos de voz em lingua portuguesa, no caso 
 e de código aberto. Eva é baseada no assistente virtual Mycroft (em língua inglesa), tentando ser o mais compatível possível com este.  
 ## Índice
 
-- [Introdução] (#introdução)
-- [Executando EVA] (#running-mycroft)
-- [Usando Mycroft] (#using-mycroft)
-   * [* Home * Device and Account Manager] (#home-device-and-account-manager)
-   * [Habilidades] (# habilidades)
-- [Nos bastidores] (# nos bastidores)
-   * [Informações de emparelhamento] (#informações de emparelhamento)
-   * [Configuração] (# configuração)
-   * [Usando Mycroft sem casa] (#using-mycroft-without-home)
+-[Introdução](#introdução)
+-[Executando EVA](#executando-eva)
+-[Usando EVA](#usando-eva)
+   *[*Home * Device and Account Manager](#home-device-and-account-manager)
+   * [Habilidades](#habilidades)
+- [Rodando no background](#Rodando-no-background)
+   * [Informações de emparelhamento](#informações-de-emparelhamento)
+   * [Configuração] (#configuração)
+   * [Usando EVA somente local](#Usando-EVA-somente-local)
    * [API Key Services] (#api-key-services)
-   * [Usando Mycroft atrás de um proxy] (#using-mycroft-behind-a-proxy)
+   * [Usando EVA por meio de um proxy](#[Usando-EVA-por-meio-de-um-proxy)
      + [Usando Mycroft atrás de um proxy sem autenticação] (# using-mycroft-behind-a-proxy-sem-autenticação)
      + [Usando Mycroft atrás de um proxy autenticado] (# using-mycroft-behind-an-authenticated-proxy)
-- [Envolvimento] (#envolvimento)
-- [Links] (#links)
+- [Envolvimento](#envolvimento)
+- [Links](#links)
 
 ## Introdução
 
@@ -113,7 +113,7 @@ Estas são as chaves usadas atualmente no Mycroft Core por meio do backend Mycro
 - [Wolfram-Alpha Skill] (http://products.wolframalpha.com/api/)
 
 
-### Usando Mycroft atrás de um proxy
+### Usando EVA por meio de um proxy
 
 Muitas escolas, universidades e locais de trabalho executam um `proxy` em sua rede. Se você precisa digitar um nome de usuário e senha para acessar a Internet externa, provavelmente você está atrás de um `proxy`.
 
