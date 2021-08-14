@@ -72,9 +72,13 @@ class MutableStream:
 
     def unmute(self):
         """Start the stream and clear the muted flag."""
+        LOG.info('[Flow Learning]: MutableStream.unmute')
         with self.read_lock:
+            LOG.info('[Flow Learning]: MutableStream.unmute, with self.read_lock')
             self.muted = False
+            LOG.info('[Flow Learning]: MutableStream.unmute, with self.read_lock, before stream.start_stream() is called')
             self.wrapped_stream.start_stream()
+            LOG.info('[Flow Learning]: MutableStream.unmute, with self.read_lock, after stream.start_stream() is called')
 
     def read(self, size, of_exc=False):
         """Read data from stream.
@@ -179,6 +183,7 @@ class MutableMicrophone(Microphone):
             self.stream.mute()
 
     def unmute(self):
+        LOG.info('[Flow Learning] MutableMicrophone.unmute')
         self.muted = False
         if self.stream:
             self.stream.unmute()
@@ -628,6 +633,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         audio_data = None
         while (not said_wake_word and not self._stop_signaled and
                not self._skip_wake_word()):
+            # LOG.info('[Flow Learning] in mycroft.client.speech.mic.py ResponsiveRecognizer.wait_until_wake_word, while')
             chunk = self.record_sound_chunk(source)
             audio_buffer.append(chunk)
             ww_frames.append(chunk)
@@ -700,6 +706,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         Returns:
             AudioData: audio with the user's utterance, minus the wake-up-word
         """
+        LOG.info('[Flow Learning] in mycroft.client.speech.mic.py.ResponsiveRecognizer.listen,=====================')
         LOG.info('[Flow Learning] in mycroft.client.speech.mic.py.ResponsiveRecognizer.listen,')
         assert isinstance(source, AudioSource), "Source must be an AudioSource"
 
@@ -713,9 +720,10 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         #       speech is detected, but there is no code to actually do that.
         self.adjust_for_ambient_noise(source, 1.0)
 
-        LOG.info('[Flow Learning] in mycroft.client.speech.mic.py.ResponsiveRecognizer.listen, Wait_util_wake_word ')
+        LOG.info('[Flow Learning] in mycroft.client.speech.mic.py.ResponsiveRecognizer.listen, after Wait_util_wake_word ')
         LOG.debug("Waiting for wake word...")
         ww_data = self._wait_until_wake_word(source, sec_per_buffer)
+        LOG.info('[Flow Learning] in mycroft.client.speech.mic.py.ResponsiveRecognizer.listen, after Wait_util_wake_word ')
 
         ww_frames = None
         if ww_data.found:

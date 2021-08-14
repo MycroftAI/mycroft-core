@@ -386,7 +386,7 @@ class SkillManager(Thread):
 
     def _update_skills(self):
         """Update skills once an hour if update is enabled"""
-        LOG.info('[Flow Learning]  in skills.skill_manager.py.SkillManger._update_skills')
+        # LOG.info('[Flow Learning]  in skills.skill_manager.py.SkillManger._update_skills')
         do_skill_update = (
             time() >= self.skill_updater.next_download and
             self.skills_config["auto_update"]

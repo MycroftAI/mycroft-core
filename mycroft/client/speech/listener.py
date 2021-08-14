@@ -84,15 +84,23 @@ class AudioProducer(Thread):
             LOG.info('[Flow Learning]: in listener.py.AudioProducer.run, with self.mic as source, state.running =='+str(self.state.running))
             while self.state.running:
                 try:
-                    LOG.info('[Flow Learning]: in the loop of listener.py.AudioProducer.run, before listen')
+                    LOG.info('[Flow Learning]: in the loop of listener.py.AudioProducer.run, before listen ')
+                    LOG.info('[Flow Learning]: in the loop of listener.py.AudioProducer.run, before listen ')
+                    LOG.info('[Flow Learning]: in the loop of listener.py.AudioProducer.run, before listen ')
+                    LOG.info('[Flow Learning]: in the loop of listener.py.AudioProducer.run, before listen ')
+                    LOG.info('[Flow Learning]: in the loop of listener.py.AudioProducer.run, before listen ^^^^^^^^^^^^^^^^^^^^^^^')
                     audio = self.recognizer.listen(source, self.emitter,
                                                    self.stream_handler)
-                    LOG.info('[Flow Learning] in loop of AudioProducer.run, after listen')
                     if audio is not None:
                         LOG.info('[Flow Learning] in loop of AudioProducer.run, after listen, audio is not None, to be put to queue')
                         self.queue.put((AUDIO_DATA, audio))
                     else:
                         LOG.warning("Audio contains no data.")
+                    LOG.info('[Flow Learning] in loop of AudioProducer.run, after listen VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV')
+                    LOG.info('[Flow Learning]: in the loop of listener.py.AudioProducer.run, before listen ')
+                    LOG.info('[Flow Learning]: in the loop of listener.py.AudioProducer.run, before listen ')
+                    LOG.info('[Flow Learning]: in the loop of listener.py.AudioProducer.run, before listen ')
+                    LOG.info('[Flow Learning]: in the loop of listener.py.AudioProducer.run, before listen ')
                 except IOError as e:
                     # IOError will be thrown if the read is unsuccessful.
                     # If self.recognizer.overflow_exc is False (default)
@@ -410,15 +418,18 @@ class RecognizerLoop(EventEmitter):
     def mute(self):
         """Mute microphone and increase number of requests to mute."""
         self.mute_calls += 1
+        LOG.info('[Flow Learning] mycroft.client.speech.listener.py.RecognizerLoop.mute, after mute added, self.mute_calls == ' + str(self.mute_calls))
         if self.microphone:
             self.microphone.mute()
 
     def unmute(self):
         """Unmute mic if as many unmute calls as mute calls have been received.
         """
+        LOG.info('[Flow Learning] mycroft.client.speech.listener.py.RecognizerLoop.unmute, self.mute_calls == ' + str(self.mute_calls))
         if self.mute_calls > 0:
             self.mute_calls -= 1
 
+        LOG.info('[Flow Learning] mycroft.client.speech.listener.py.RecognizerLoop.unmute, after -- self.mute_calls == ' + str(self.mute_calls))
         if self.mute_calls <= 0 and self.microphone:
             self.microphone.unmute()
             self.mute_calls = 0

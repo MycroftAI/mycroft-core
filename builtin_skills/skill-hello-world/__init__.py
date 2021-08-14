@@ -57,10 +57,25 @@ class HelloWorldSkill(MycroftSkill):
         the skills.log file."""
         self.log.info("There are five types of log messages: "
                       "info, debug, warning, error, and exception.")
-        self.speak_dialog("hello.world")
+        self.speak_dialog("hello.world", expect_response=True)
 
     def stop(self):
         pass
+
+    def converse(self, message):
+        """Pass sentence on to the frotz zork interpreter.
+        The commands "quit" and "exit" will immediately exit the game.
+        """
+        utterances = message.data['utterances']
+        if utterances:
+            utterance = utterances[0]
+            if "结束" in utterance or utterance == "结束":
+                self.speak("您说的是" + utterance + "。本技能会话结束", expect_response=False)
+                return True
+            else:
+                self.speak("您说的是" + utterance + "。请说下一句，若要结束，请说结束", expect_response=True)
+                return True
+        return False
 
 
 def create_skill():

@@ -167,6 +167,7 @@ class IntentService:
             lang (str): current language
             message (Message): message containing interaction info.
         """
+        LOG.info('[Flow Learning] in do_converse, ')
         converse_msg = (message.reply("skill.converse.request", {
             "skill_id": skill_id, "utterances": utterances, "lang": lang}))
         result = self.bus.wait_for_response(converse_msg,

@@ -176,6 +176,7 @@ def handle_audio_end(event):
     """
     LOG.info('[Flow learning] Request unmute, if more sources have requested the mic to be muted it will remain muted.')
     if config.get("listener").get("mute_during_output"):
+        LOG.info('[Flow learning] Request unmute, listener.mute_during_output == True, loop.unmute()')
         loop.unmute()  # restore
 
 
