@@ -153,6 +153,7 @@ class SkillLoader:
         Returns:
              bool: if the skill was loaded/reloaded
         """
+        # TODO on ntp sync last_modified needs to be updated
         try:
             self.last_modified = _get_last_modified_time(self.skill_directory)
         except OSError as err:

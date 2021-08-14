@@ -1353,12 +1353,6 @@ class MycroftSkill:
 
         Shuts down known entities and calls skill specific shutdown method.
         """
-        try:
-            self.shutdown()
-        except Exception as e:
-            LOG.error('Skill specific shutdown function encountered '
-                      'an error: {}'.format(repr(e)))
-
         self.settings_change_callback = None
 
         # Store settings
@@ -1376,13 +1370,21 @@ class MycroftSkill:
         self.event_scheduler.shutdown()
         self.events.clear()
 
-        self.bus.emit(
-            Message('detach_skill', {'skill_id': str(self.skill_id) + ':'}))
         try:
             self.stop()
         except Exception:
             LOG.error('Failed to stop skill: {}'.format(self.name),
                       exc_info=True)
+
+        try:
+            self.shutdown()
+        except Exception as e:
+            LOG.error('Skill specific shutdown function encountered '
+                      'an error: {}'.format(repr(e)))
+
+        self.bus.emit(
+            Message('detach_skill', {'skill_id': str(self.skill_id) + ':'}))
+
 
     def schedule_event(self, handler, when, data=None, name=None,
                        context=None):
