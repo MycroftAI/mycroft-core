@@ -37,11 +37,13 @@ class HelloWorldSkill(MycroftSkill):
         # my_setting = self.settings.get('my_setting')
         self.log.info('[Flow Learning] in mycroft.skills.builtinskills.skill-hello-world.__init__.py.HelloWorldSkill.initialize, settings = ' + str(self.settings))
 
+    # Padatious is used to match intent.
     @intent_handler(IntentBuilder('ThankYouIntent').require('ThankYouKeyword'))
     def handle_thank_you_intent(self, message):
         """ This is an Adapt intent handler, it is triggered by a keyword."""
         self.speak_dialog("welcome")
 
+    # Padatious is used to match intent.
     @intent_handler('HowAreYou.intent')
     def handle_how_are_you_intent(self, message):
         """ This is a Padatious intent handler.
