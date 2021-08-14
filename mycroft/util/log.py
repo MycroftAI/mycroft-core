@@ -61,8 +61,14 @@ class LOG:
     """
 
     _custom_name = None
-    handler = None
     level = logging.getLevelName('INFO')
+    log_message_format = (
+        '{asctime} | {levelname:8} | {process:5} | {name} | {message}'
+    )
+    formatter = logging.Formatter(log_message_format, style='{')
+    formatter.default_msec_format = '%s.%03d'
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setFormatter(formatter)
 
     # Copy actual logging methods from logging.Logger
     # Usage: LOG.debug(message)
@@ -77,18 +83,8 @@ class LOG:
         """ Initializes the class, sets the default log level and creates
         the required handlers.
         """
-        log_message_format = (
-            '{asctime} | {levelname:8} | {process:5} | {name} | {message}'
-        )
-
-        formatter = logging.Formatter(log_message_format, style='{')
-        formatter.default_msec_format = '%s.%03d'
-        cls.handler = logging.StreamHandler(sys.stdout)
-        cls.handler.setFormatter(formatter)
-
-        config = mycroft.configuration.Configuration.get(remote=False)
-        cls.level = logging.getLevelName(config.get('log_level', 'INFO'))
-
+        config = mycroft.configuration.Configuration.get()
+        cls.level = logging.getLevelName(config.get('log_level', 'INFO') or 'INFO')
         # Enable logging in external modules
         cls.create_logger('').setLevel(cls.level)
 
