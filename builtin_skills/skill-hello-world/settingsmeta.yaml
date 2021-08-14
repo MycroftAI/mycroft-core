@@ -1,0 +1,8 @@
+skillMetadata:
+   sections:
+      - name: Display
+        fields:
+          - name: show_time
+            type: checkbox
+            label: Show digital clock when idle
+            value: "true"

@@ -13,7 +13,7 @@
 Mycroft is a hackable open source voice assistant.
 
 ## Table of Contents
-
+- [Difference from Main branch](#getting-started)
 - [Getting Started](#getting-started)
 - [Running Mycroft](#running-mycroft)
 - [Using Mycroft](#using-mycroft)
@@ -29,6 +29,10 @@ Mycroft is a hackable open source voice assistant.
     + [Using Mycroft behind an authenticated proxy](#using-mycroft-behind-an-authenticated-proxy)
 - [Getting Involved](#getting-involved)
 - [Links](#links)
+
+## Difference from Main branch
+
+
 
 ## Getting Started
 

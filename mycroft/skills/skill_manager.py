@@ -246,11 +246,17 @@ class SkillManager(Thread):
         LOG.info('[Flow Learing] in mycroft.skills.skill_manager.py. SkillManager.run()')
         self._remove_git_locks()
         self._connected_event.wait()
+        # mycroft-core-zh: only default skills have this treatment ( to see whether installation is needed, it makes sense).
+        # Non-default skills don't have this treatment, because they either have been installed or never installed/used.
         if (not self.skill_updater.defaults_installed() and
                 self.skills_config["auto_update"]):
             LOG.info('Not all default skills are installed, '
                      'performing skill update...')
             self.skill_updater.update_skills()
+
+        if (not self.skill_updater.builtin_skills_installed()):
+            LOG.info('[Flow Learing] in mycroft.skills.skill_manager.py. SkillManager.run() to install builtin skills.')
+            self.skill_updater.install_builtin_skills()
         self._load_on_startup()
 
         # Sync backend and skills.
@@ -263,13 +269,13 @@ class SkillManager(Thread):
         while not self._stop_event.is_set():
             LOG.info("[Flow Learning] in mycroft.skills.skill_manager.py.SkillManager.run, in while not self._stop_event.is_set()")
             try:
-                LOG.info("[Flow Learning] in mycroft.skills.skill_manager.py.SkillManager.run, in while self._unload_removed_skills()")
+                # LOG.info("[Flow Learning] in mycroft.skills.skill_manager.py.SkillManager.run, in while self._unload_removed_skills()")
                 self._unload_removed_skills()
-                LOG.info("[Flow Learning] in mycroft.skills.skill_manager.py.SkillManager.run, in while _reload_modified_skills()")
+                # LOG.info("[Flow Learning] in mycroft.skills.skill_manager.py.SkillManager.run, in while _reload_modified_skills()")
                 self._reload_modified_skills()
-                LOG.info("[Flow Learning] in mycroft.skills.skill_manager.py.SkillManager.run, in while self._load_new_skills()")
+                # LOG.info("[Flow Learning] in mycroft.skills.skill_manager.py.SkillManager.run, in while self._load_new_skills()")
                 self._load_new_skills()
-                LOG.info("[Flow Learning] in mycroft.skills.skill_manager.py.SkillManager.run, in while self._update_skills()")
+                # LOG.info("[Flow Learning] in mycroft.skills.skill_manager.py.SkillManager.run, in while self._update_skills()")
                 self._update_skills()
 
                 # mycroft-core-zh: todo, pairing doesn't support. add the config into mycroft.conf.

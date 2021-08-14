@@ -15,6 +15,7 @@
 """Periodically run by skill manager to update skills and post the manifest."""
 import os
 import sys
+import shutil
 from datetime import datetime
 from time import time
 
@@ -105,7 +106,7 @@ class SkillUpdater:
                 self._installed_skills_file_path = os.path.expanduser(
                     '~/.mycroft/.mycroft-skills'
                 )
-
+        LOG.info('[Flow Learning] installed_skills_file_path == ' + self._installed_skills_file_path)
         return self._installed_skills_file_path
 
     @property
@@ -130,6 +131,10 @@ class SkillUpdater:
 
         return tuple(default_skills)
 
+    @property
+    def builtin_skill_names(self) -> tuple:
+        return None
+
     def _load_installed_skills(self):
         """Load the last known skill listing from a file."""
         if os.path.isfile(self.installed_skills_file_path):
@@ -140,6 +145,7 @@ class SkillUpdater:
 
     def _save_installed_skills(self):
         """Save the skill listing after the download to a file."""
+        LOG.info('[Flow Learning] in _save_installed_skills  installed_skills =' + str(self.installed_skills))
         with open(self.installed_skills_file_path, 'w') as skills_file:
             for skill_name in self.installed_skills:
                 skills_file.write(skill_name + '\n')
@@ -175,6 +181,23 @@ class SkillUpdater:
 
         return success
 
+    # mycroft-core-zh:
+    def install_builtin_skills(self):
+        uninstalled_builtin_skills = [
+            skill for skill in self.msm.builtin_skills.values() if not skill.is_local]
+        for skill in uninstalled_builtin_skills:
+            source_path = self.msm.BUILT_IN_SKILLS_SOURCE + '/' + skill.name
+            target_path = self.msm.DEFAULT_SKILLS_DIR + '/' + skill.name
+            LOG.info('[Flow Learning] in mycroft.skills.skill_updater.py.SkillUpdater.install_builtin_skills, source_path=' + source_path)
+            LOG.info('[Flow Learning] in mycroft.skills.skill_updater.py.SkillUpdater.install_builtin_skills, target_path=' + target_path)
+            if not os.path.exists(target_path):
+                pass
+            else:
+                shutil.rmtree(target_path)
+            shutil.copytree(source_path, target_path, dirs_exist_ok=False)
+            self.installed_skills.add(skill.name)
+        self._save_installed_skills()
+
     def handle_not_connected(self):
         """Notifications of the device not being connected to the internet"""
         LOG.error('msm failed, network connection not available')
@@ -184,6 +207,7 @@ class SkillUpdater:
         """Invoke MSM to install or update a skill."""
         try:
             # Determine if all defaults are installed
+            # mycroft-core_zh: if not, we need to start more threads because default skills are many.
             defaults = all(
                 [s.is_local for s in self.msm.default_skills.values()]
             )
@@ -219,6 +243,8 @@ class SkillUpdater:
         """Install missing defaults and update existing skills"""
         if self._get_device_skill_state(skill.name).get('beta', False):
             skill.sha = None  # Will update to latest head
+        LOG.info('[Flow Learning] self.builtin_skill_names = ' + str(self.builtin_skill_names))
+        LOG.info('[Flow Learning] self.installed_skills = ' + str(self.installed_skills))
         if skill.is_local:
             skill.update()
             if skill.name not in self.installed_skills:
@@ -233,7 +259,11 @@ class SkillUpdater:
                     )
                     self.default_skill_install_error = True
                 raise
+        # mycroft-core-zh:
+        elif skill.name in self.builtin_skill_names:
+            self.msm.install(skill, origin='builtin')
         self.installed_skills.add(skill.name)
+        LOG.info('[Flow Learning] after adding self.installed_skills = ' + str(self.installed_skills))
 
     def defaults_installed(self):
         """Check if all default skills are installed.
@@ -246,6 +276,16 @@ class SkillUpdater:
             if not skill_is_blacklisted(skill):
                 defaults.append(skill)
         return all([skill.is_local for skill in defaults])
+
+    # mycroft-core-zh:
+    def builtin_skills_installed(self):
+        """Check if all the builtin skills are installed.
+        """
+        builtin_skills = []
+        for skill in self.msm.builtin_skills.values():
+            if not skill_is_blacklisted(skill):
+                builtin_skills.append(skill)
+        return all([skill.is_local for skill in builtin_skills])
 
     def _get_device_skill_state(self, skill_name):
         """Get skill data structure from name."""

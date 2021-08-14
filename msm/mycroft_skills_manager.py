@@ -28,6 +28,7 @@ import logging
 from functools import wraps
 from glob import glob
 from multiprocessing.pool import ThreadPool
+import os
 from os import path
 from typing import Dict, List
 
@@ -87,7 +88,8 @@ class MycroftSkillsManager(object):
     SKILL_GROUPS = {'default', 'mycroft_mark_1', 'picroft', 'kde',
                     'respeaker', 'mycroft_mark_2', 'mycroft_mark_2pi'}
     DEFAULT_SKILLS_DIR = "/opt/mycroft/skills"
-    DEFAULT_BUILT_IN_SKILLS_DIR = os.path.abspath(os.path.join(os.getcwd(),"../mycroft/skills/builtinskills")) # mycroft/skills/builtinskills
+    # DEFAULT_BUILT_IN_SKILLS_DIR = path.abspath(path.join(path.dirname(path.abspath(__file__)),"../mycroft/skills/builtinskills")) # mycroft/skills/builtinskills
+    BUILT_IN_SKILLS_SOURCE = path.abspath(path.join(path.dirname(path.abspath(__file__)), "../builtin_skills"))
 
     def __init__(self, platform='default', skills_dir=None, repo=None,
                  versioned=True):
@@ -96,17 +98,21 @@ class MycroftSkillsManager(object):
                 path.expanduser(skills_dir or '') or self.DEFAULT_SKILLS_DIR
         )
         # mycroft-core-zh: todo add built in skills dir
-        LOG.info('Flow Learning: in mycroftSkillsManager, DEFAULT_BUILT_IN_SKILLS_DIR =' + self.DEFAULT_BUILT_IN_SKILLS_DIR)
+        # LOG.info('Flow Learning: in mycroftSkillsManager, DEFAULT_BUILT_IN_SKILLS_DIR =' + self.DEFAULT_BUILT_IN_SKILLS_DIR)
+        '''
         self.built_in_skills_dir = (
                 self.DEFAULT_BUILT_IN_SKILLS_DIR
         )
+        '''
         self.repo = repo or SkillRepo()
         self.versioned = versioned
         self.lock = MsmProcessLock()
 
         # Property placeholders
         self._all_skills = None
+        # mycroft-core-zh
         self._default_skills = None
+        self._builtin_skills = None
         self._local_skills = None
         self._device_skill_state = None
 
@@ -151,8 +157,11 @@ class MycroftSkillsManager(object):
             remote_skills = self._get_remote_skills()
         else:
             LOG.info('[Flow Learning] in msm.mycroft_skills_manager.py.MycroftSkillsManager._get_all_skills, do not get remote skills.')
-        all_skills = self._merge_remote_with_local(remote_skills)
-
+        # mycroft-core-zh
+        builtin_skills = self._get_builtin_skills()
+        LOG.info('[Flow Learning] in msm.mycroft_skills_manager.py, builtin_skills = ' + str(builtin_skills))
+        all_skills = self._merge_remote_with_local_and_builtin(remote_skills, builtin_skills)
+        LOG.info('[Flow Learning] in msm.mycroft_skills_manager.py, all_skills = ' + str(all_skills))
         return all_skills
 
     def list(self):
@@ -196,9 +205,27 @@ class MycroftSkillsManager(object):
 
         return {skill.id: skill for skill in remote_skills}
 
-    def _merge_remote_with_local(self, remote_skills):
+    # mycroft-core-zh:
+    def _get_builtin_skills(self):
+        """Build a dictionary of builtin skills keyed by ?"""
+        # todo:
+        builtin_skills = []
+        LOG.info('[Flow Learning] in msm.mycroft_skills_manager.py, BUILT_IN_SKILLS_SOURCE = ' + str(MycroftSkillsManager.BUILT_IN_SKILLS_SOURCE))
+        for skill_file in glob(path.join(MycroftSkillsManager.BUILT_IN_SKILLS_SOURCE, '*', '__init__.py')):
+            url = ''
+            name = path.dirname(skill_file).rstrip('/').split("/")[-1]
+            skill_dir = SkillEntry.create_path(self.skills_dir, url, name)
+            LOG.info('[Flow Learning] in .venv ... msm.mycroft_skills_mamager.py. MycroftSkillsManager._get_builtin_skills ' + name + ' skill_dir=' + skill_dir + ' url=' + url)
+            sha = ''
+            builtin_skills.append(
+                SkillEntry(name, skill_dir, url, sha, msm=self)
+            )
+        LOG.info('[Flow Learning] in .venv ... msm.mycroft_skills_mamager.py. MycroftSkillsManager._get_builtin_skills')
+        return {skill.id: skill for skill in builtin_skills}
+
+    def _merge_remote_with_local_shore_to_remove(self, remote_skills):
         """Merge the skills found in the repo with those installed locally."""
-        LOG.info('[Flow Learning] in .venv ... msm.mycroft_skills_mamager.py. MycroftSkillsManager._merge_remote_with_local')
+        # LOG.info('[Flow Learning] in .venv ... msm.mycroft_skills_mamager.py. MycroftSkillsManager._merge_remote_with_local')
         all_skills = []
         LOG.info('[Flow Learning] in .venv ... msm.mycroft_skills_mamager.py. MycroftSkillsManager._merge_remote_with_local  skills_dir =' + self.skills_dir)
         for skill_file in glob(path.join(self.skills_dir, '*', '__init__.py')):
@@ -206,24 +233,70 @@ class MycroftSkillsManager(object):
             skill = SkillEntry.from_folder(path.dirname(skill_file), msm=self,
                                         use_cache=False)
 
-            LOG.info('[Flow Learning] in .venv ... msm.mycroft_skills_mamager.py. MycroftSkillsManager._merge_remote_with_local  in for loop2.')
+            # LOG.info('[Flow Learning] in .venv ... msm.mycroft_skills_mamager.py. MycroftSkillsManager._merge_remote_with_local  in for loop2.')
             if skill.id in remote_skills:
-                LOG.info('[Flow Learning] in .venv ... msm.mycroft_skills_mamager.py. MycroftSkillsManager._merge_remote_with_local  in for loop3.')
+                # LOG.info('[Flow Learning] in .venv ... msm.mycroft_skills_mamager.py. MycroftSkillsManager._merge_remote_with_local  in for loop3.')
                 skill.attach(remote_skills.pop(skill.id))
-            LOG.info('[Flow Learning] in .venv ... msm.mycroft_skills_mamager.py. MycroftSkillsManager._merge_remote_with_local  in for loop4.')
+            # LOG.info('[Flow Learning] in .venv ... msm.mycroft_skills_mamager.py. MycroftSkillsManager._merge_remote_with_local  in for loop4.')
             all_skills.append(skill)
 
-        LOG.info('[Flow Learning] in .venv ... msm.mycroft_skills_mamager.py. MycroftSkillsManager._merge_remote_with_local is about to add built-in skills')
+        # LOG.info('[Flow Learning] in .venv ... msm.mycroft_skills_mamager.py. MycroftSkillsManager._merge_remote_with_local is about to add built-in skills')
+        # LOG.info('[Flow Learning] in _merge_remote_with_local, built_in_skills_dir=' + self.built_in_skills_dir)
+        # LOG.info('[Flow Learning] in _merge_remote_with_local, glob = ' + str(glob(path.join(self.built_in_skills_dir, '*', '__init__.py'))))
+        '''
         for skill_file in glob(path.join(self.built_in_skills_dir, '*', '__init__.py')):
-            LOG.info('[Flow Learning] in .venv ... msm.mycroft_skills_mamager.py. MycroftSkillsManager._merge_remote_with_local  in for loop. built-in skills ' + skill_file)
+            # LOG.info('[Flow Learning] in .venv ... msm.mycroft_skills_mamager.py. MycroftSkillsManager._merge_remote_with_local  in for loop. built-in skills ' + skill_file)
             skill = SkillEntry.from_folder(path.dirname(skill_file), msm=self,
                                         use_cache=False)
             if skill.id in remote_skills:
-                LOG.info('[Flow Learning] in .venv ... msm.mycroft_skills_mamager.py. MycroftSkillsManager._merge_remote_with_local  in for loop3. built-in skills')
+                # LOG.info('[Flow Learning] in .venv ... msm.mycroft_skills_mamager.py. MycroftSkillsManager._merge_remote_with_local  in for loop3. built-in skills')
                 skill.attach(remote_skills.pop(skill.id))
-            all_skills.append(skill) 
+            all_skills.append(skill)
+        '''
         if len(remote_skills) > 0:
             all_skills.extend(remote_skills.values())
+        LOG.info('[Flow Learning] after merge, all_skills =' + str(all_skills))
+        return all_skills
+
+    # mycroft-core-zh:
+    def _merge_remote_with_local_and_builtin(self, remote_skills, builtin_skills):
+        """Merge the skills found in the repo with those installed locally."""
+        # LOG.info('[Flow Learning] in .venv ... msm.mycroft_skills_mamager.py. MycroftSkillsManager._merge_remote_with_local')
+        all_skills = []
+        LOG.info('[Flow Learning] in .venv ... msm.mycroft_skills_mamager.py. MycroftSkillsManager._merge_remote_with_local  skills_dir =' + self.skills_dir)
+        for skill_file in glob(path.join(self.skills_dir, '*', '__init__.py')):
+            LOG.info('[Flow Learning] in .venv ... msm.mycroft_skills_mamager.py. MycroftSkillsManager._merge_remote_with_local  in for loop. skill_flie ' + skill_file)
+            skill = SkillEntry.from_folder(path.dirname(skill_file), msm=self,
+                                        use_cache=False)
+
+            # LOG.info('[Flow Learning] in .venv ... msm.mycroft_skills_mamager.py. MycroftSkillsManager._merge_remote_with_local  in for loop2.')
+            # mycroft-core-zh: remove skill from remote_skills because this skill is already installed.
+            if skill.id in remote_skills:
+                # LOG.info('[Flow Learning] in .venv ... msm.mycroft_skills_mamager.py. MycroftSkillsManager._merge_remote_with_local  in for loop3.')
+                skill.attach(remote_skills.pop(skill.id))
+            # mycroft-core-zh:
+            if skill.id in builtin_skills:
+                skill.attach(builtin_skills.pop(skill.id))
+            # LOG.info('[Flow Learning] in .venv ... msm.mycroft_skills_mamager.py. MycroftSkillsManager._merge_remote_with_local  in for loop4.')
+            all_skills.append(skill)
+
+        # LOG.info('[Flow Learning] in .venv ... msm.mycroft_skills_mamager.py. MycroftSkillsManager._merge_remote_with_local is about to add built-in skills')
+        # LOG.info('[Flow Learning] in _merge_remote_with_local, built_in_skills_dir=' + self.built_in_skills_dir)
+        # LOG.info('[Flow Learning] in _merge_remote_with_local, glob = ' + str(glob(path.join(self.built_in_skills_dir, '*', '__init__.py'))))
+        '''
+        for skill_file in glob(path.join(self.built_in_skills_dir, '*', '__init__.py')):
+            # LOG.info('[Flow Learning] in .venv ... msm.mycroft_skills_mamager.py. MycroftSkillsManager._merge_remote_with_local  in for loop. built-in skills ' + skill_file)
+            skill = SkillEntry.from_folder(path.dirname(skill_file), msm=self,
+                                        use_cache=False)
+            if skill.id in remote_skills:
+                # LOG.info('[Flow Learning] in .venv ... msm.mycroft_skills_mamager.py. MycroftSkillsManager._merge_remote_with_local  in for loop3. built-in skills')
+                skill.attach(remote_skills.pop(skill.id))
+            all_skills.append(skill)
+        '''
+        if len(remote_skills) > 0:
+            all_skills.extend(remote_skills.values())
+        if len(builtin_skills) > 0:
+            all_skills.extend(builtin_skills.values())
         LOG.info('[Flow Learning] after merge, all_skills =' + str(all_skills))
         return all_skills
 
@@ -242,6 +315,7 @@ class MycroftSkillsManager(object):
         if self._default_skills is None:
             default_skill_groups = self.list_all_defaults()
             try:
+                # Mycroft-core-zh: group appears here, and it is grouped by different hardware,
                 default_skill_group = default_skill_groups[self.platform]
             except KeyError:
                 LOG.error(
@@ -253,6 +327,16 @@ class MycroftSkillsManager(object):
 
         return self._default_skills
 
+    # mycroft-core-zh:
+    @property
+    def builtin_skills(self):
+        # BUILT_IN_SKILLS_SOURCE = path.abspath(path.join(path.dirname(path.abspath(__file__)),"../builtin_skills")) # /builtinskills
+        if self._builtin_skills is None:
+            self._builtin_skills = self._get_builtin_skills()
+
+        return self._builtin_skills
+
+    # Mycroft-core-zh: group appears here, and it is grouped by different hardware,
     def list_all_defaults(self):  # type: () -> Dict[str, List[SkillEntry]]
         """Generate dictionary of default skills in all default skill groups"""
         all_skills = {skill.name: skill for skill in self.all_skills}
@@ -393,13 +477,22 @@ class MycroftSkillsManager(object):
             write_device_skill_state(data)
             self.device_skill_state_hash = device_skill_state_hash(data)
 
+    '''
+    mycroft-core-zh:
+    param can be an instance of SkillEntry or some other param.
+    origin: can be 'default' means the skill is a default skill.
+    '''
     @save_device_skill_state
     def install(self, param, author=None, constraints=None, origin=''):
         """Install by url or name"""
+        LOG.info('[Flow Learning] in msm.mycroft_skills_manager.py.MycroftSkillsManager.install')
         if isinstance(param, SkillEntry):
+            LOG.info('[Flow Learning] in msm.mycroft_skills_manager.py.MycroftSkillsManager.install, skill = param')
             skill = param
         else:
+            LOG.info('[Flow Learning] in msm.mycroft_skills_manager.py.MycroftSkillsManager.install, skill = self.find_skill')
             skill = self.find_skill(param, author)
+
         skill_state = initialize_skill_state(
             skill.name,
             origin,
@@ -510,6 +603,7 @@ class MycroftSkillsManager(object):
     @save_device_skill_state
     def install_defaults(self):
         """Installs the default skills, updates all others"""
+        LOG.info('[Flow Learning] msm.mycroft_skills_manager.py.MycroftSkillsManager.install_defaults')
 
         def install_or_update_skill(skill):
             if skill.is_local:

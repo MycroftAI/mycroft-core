@@ -1,7 +1,4 @@
-self._get_pairing_status()
-
-2021-08-08 00:06:20.809 | INFO     | 42206 | __main__:main:229 | [Flow Learning] in skills.__main__.py.main() create DevicePrimer()
-
+0. add a skill
 
 1. add token in .conf that mycroft-core-zh doesn't get remote skills (they are based on github) 
 
@@ -11,3 +8,164 @@ Address of the REMOTE server ("url": "https://api.mycroft.ai")
 3. fail to load mplayer
 2021-08-08 18:47:58.630 | INFO     | 14184 | mycroft.audio.audioservice:load_internal_services:134 | Loading mplayer
 2021-08-08 18:47:58.647 | ERROR    | 14184 | audioservice_mplayer:<module>:20 | install py_mplayer with pip install git+https://github.com/JarbasAl/py_mplayer
+
+
+
+
+
+2021-08-09 22:28:57.701 | WARNING  | 11466 | mycroft.configuration.config:__init__:130 | in RemoteConf.init(), should not get conf from remote server. Pairing(connect with web backend server such as https://api.mycroft.ai) is not supported by mycroft-core-zh
+2021-08-09 22:28:57.707 | INFO     | 11466 | mycroft.messagebus.load_config:load_message_bus_config:33 | Loading message bus configs
+2021-08-09 22:28:57.707 | INFO     | 11466 | mycroft_bus_client.client.client | [Flow learning] .venv/lib/python3.8/site-packages/mycroft_blus_client/client/client.py.MessageBusClient
+2021-08-09 22:28:57.710 | INFO     | 11466 | mycroft_bus_client.client.client | Connected
+2021-08-09 22:28:57.711 | INFO     | 11466 | mycroft.util.process_utils:start_message_bus_client:155 | Connected to messagebus
+2021-08-09 22:28:57.712 | INFO     | 11466 | mycroft.skills.intent_service:__init__:80 | [Flow Learning] IntentService is initializing...
+2021-08-09 22:28:57.713 | INFO     | 11466 | __main__:main:224 | [Flow Learning]in skills.__main__.py, call _initialize_skill_manager
+2021-08-09 22:28:57.713 | INFO     | 11466 | __main__:_initialize_skill_manager:276 | [Flow Learning] in mycroft.skills.__main__.py._initialize_skill_manager, is about to get SkillManager
+2021-08-09 22:28:57.714 | INFO     | 11466 | mycroft.skills.skill_updater:__init__:58 | [Flow Learning] update_interval == 3600
+2021-08-09 22:28:57.715 | INFO     | 11466 | mycroft.skills.msm_wrapper:create_msm:96 | Acquiring lock to instantiate MSM
+2021-08-09 22:28:57.715 | INFO     | 11466 | msm.mycroft_skills_manager | Flow Learning: in mycroftSkillsManager, DEFAULT_BUILT_IN_SKILLS_DIR =/home/shore/startup/smartSpeaker/git/mycroftMergeFolder/mycroft-core-zh/mycroft/skills/builtinskills
+2021-08-09 22:28:57.716 | INFO     | 11466 | msm.mycroft_skills_manager | [Flow Learning] .venv/lib/python3.8/site-packages/msm/mycroft_skills_manager.py.MycroftSkillsManager.all_skills()
+2021-08-09 22:28:57.716 | INFO     | 11466 | msm.mycroft_skills_manager | [Flow Learning] .venv/lib/python3.8/site-packages/msm/mycroft_skills_manager.py.MycroftSkillsManager._get_all_skills
+2021-08-09 22:28:57.716 | INFO     | 11466 | msm.mycroft_skills_manager | building SkillEntry objects for all skills
+2021-08-09 22:28:57.716 | INFO     | 11466 | msm.mycroft_skills_manager | [Flow Learning] in msm.mycroft_skills_manager.py.MycroftSkillsManager._get_all_skills, do not get remote skills.
+2021-08-09 22:28:57.716 | INFO     | 11466 | msm.mycroft_skills_manager | [Flow Learning] in .venv ... msm.mycroft_skills_mamager.py. MycroftSkillsManager._merge_remote_with_local  skills_dir =/opt/mycroft/skills
+2021-08-09 22:28:57.716 | INFO     | 11466 | msm.mycroft_skills_manager | [Flow Learning] in .venv ... msm.mycroft_skills_mamager.py. MycroftSkillsManager._merge_remote_with_local  in for loop. skill_flie /opt/mycroft/skills/mycroft-volume.mycroftai/__init__.py
+2021-08-09 22:28:57.716 | INFO     | 11466 | msm.skill_entry | [Flow Learning] in msm.skill_entry.py SKillEntry.from_folder().
+2021-08-09 22:28:57.716 | INFO     | 11466 | msm.skill_entry | [Flow Learning] in msm.skill_entry.py SKillEntry.from_folder().  before if msm.local_skills.values()=
+2021-08-09 22:28:57.716 | INFO     | 11466 | msm.skill_entry | [Flow Learning] in msm.skill_entry.py SKillEntry.from_folder() before cls().
+2021-08-09 22:28:57.716 | INFO     | 11466 | msm.skill_entry | [Flow Learning] in SkillEntry.__init__()
+2021-08-09 22:28:57.716 | INFO     | 11466 | msm.skill_entry | [Flow Learning] in SkillEntry.__init__()2
+2021-08-09 22:28:57.716 | INFO     | 11466 | msm.skill_entry | [Flow Learning] in SkillEntry.__init__()3
+2021-08-09 22:28:57.717 | INFO     | 11466 | msm.skill_entry | [Flow Learning] in SkillEntry.__init__()4
+2021-08-09 22:28:57.717 | INFO     | 11466 | msm.skill_entry | [Flow Learning] in msm.skill_entry.py SKillEntry.from_folder(). after tmpClsmycroft-volume.mycroftai
+2021-08-09 22:28:57.717 | INFO     | 11466 | msm.skill_entry | [Flow Learning] in msm.skill_entry.py SKillEntry.from_folder().
+2021-08-09 22:28:57.717 | INFO     | 11466 | msm.skill_entry | [Flow Learning] in msm.skill_entry.py SKillEntry.from_folder().  before if msm.local_skills.values()=
+2021-08-09 22:28:57.717 | INFO     | 11466 | msm.skill_entry | [Flow Learning] in msm.skill_entry.py SKillEntry.from_folder() before cls().
+2021-08-09 22:28:57.717 | INFO     | 11466 | msm.skill_entry | [Flow Learning] in SkillEntry.__init__()
+2021-08-09 22:28:57.717 | INFO     | 11466 | msm.skill_entry | [Flow Learning] in SkillEntry.__init__()2
+2021-08-09 22:28:57.717 | INFO     | 11466 | msm.skill_entry | [Flow Learning] in SkillEntry.__init__()3
+2021-08-09 22:28:57.717 | INFO     | 11466 | msm.skill_entry | [Flow Learning] in SkillEntry.__init__()4
+2021-08-09 22:28:57.717 | INFO     | 11466 | msm.skill_entry | [Flow Learning] in msm.skill_entry.py SKillEntry.from_folder(). after tmpClsskill-hello-world
+2021-08-09 22:28:57.717 | INFO     | 11466 | msm.mycroft_skills_manager | [Flow Learning] after merge, all_skills =[<SkillEntry name=mycroft-volume.mycroftai author= is_local=True>, <SkillEntry name=skill-hello-world author= is_local=True>]
+2021-08-09 22:28:57.717 | INFO     | 11466 | msm.skill_repo | [Flow Learning] in msm.skill_repo.py.SkillRepo.get_default_skill_names /opt/mycroft/.skills-repoDEFAULT-SKILLS*
+2021-08-09 22:28:57.749 | INFO     | 11466 | mycroft.skills.msm_wrapper:create_msm:112 | Releasing MSM instantiation lock.
+2021-08-09 22:28:57.749 | INFO     | 11466 | mycroft.skills.skill_updater:_determine_next_download_time:83 | [Flow Learning] in SkillUpdater._determine_next_download_time(), msm_files_exist.
+2021-08-09 22:28:57.750 | INFO     | 11466 | mycroft.skills.skill_updater:__init__:61 | [Flow Learning] before calling _log_next_download_time()
+2021-08-09 22:28:57.751 | INFO     | 11466 | mycroft.skills.skill_updater:_log_next_download_time:276 | Next scheduled skill update: 2021-08-09 22:28:45.461190
+2021-08-09 22:28:57.751 | WARNING  | 11466 | mycroft.skills.skill_manager:_define_message_bus_events:171 | The event of mycroft.skills.settings.update will not be handled. Pairing(connect with web backend server such as https://api.mycroft.ai) is not supported by mycroft-core-zh
+2021-08-09 22:28:57.752 | INFO     | 11466 | __main__:_initialize_skill_manager:278 | [Flow Learning] in mycroft.skills.__main__.py._initialize_skill_manager, and then call skill_manager.load_priority
+2021-08-09 22:28:57.752 | INFO     | 11466 | mycroft.skills.skill_manager:load_priority:221 | [Flow Learning] in skills.skill_manager.py.SkillManager.load_priority 
+2021-08-09 22:28:57.753 | INFO     | 11466 | __main__:main:226 | [Flow Learning]in skills.__main__.py, after call _initialize_skill_manager
+2021-08-09 22:28:57.753 | INFO     | 11466 | __main__:on_started:184 | Skills service is starting up.
+2021-08-09 22:28:57.753 | INFO     | 11466 | __main__:main:229 | [Flow Learning]in skills.__main__.py, before  call _wait_for_internet_connection()
+2021-08-09 22:28:57.886 | INFO     | 11466 | mycroft.util.network_utils:connected_baidu:36 | <Response [200]>
+2021-08-09 22:28:57.887 | INFO     | 11466 | __main__:main:231 | [Flow Learning]in skills.__main__.py, after  call _wait_for_internet_connection()
+2021-08-09 22:28:57.888 | INFO     | 11466 | __main__:main:236 | [Flow Learning] in skills.__main__.py.main() create DevicePrimer()
+2021-08-09 22:28:57.892 | INFO     | 11466 | __main__:main:239 | [Flow Learning] in skills.__main__.py.main() is about to skill_manager.start() this will start run() function.
+2021-08-09 22:28:57.895 | INFO     | 11466 | __main__:on_alive:188 | Skills service is alive.
+2021-08-09 22:28:57.895 | INFO     | 11466 | mycroft.skills.skill_manager:run:246 | [Flow Learing] in mycroft.skills.skill_manager.py. SkillManager.run()
+2021-08-09 22:28:57.896 | INFO     | 11466 | mycroft.skills.skill_manager:_load_on_startup:298 | [Flow Learning] in mycroft.skills.skill_manager.py.SkillManager._load_on_startup
+2021-08-09 22:28:57.896 | INFO     | 11466 | mycroft.skills.skill_manager:_load_on_startup:299 | Loading installed skills...
+2021-08-09 22:28:57.897 | INFO     | 11466 | mycroft.skills.skill_manager:_load_new_skills:320 | [Flow Learing] in mycroft.skills.skill_manager.py.SkillManager._load_new_skills
+2021-08-09 22:28:57.897 | INFO     | 11466 | mycroft.skills.skill_manager:_load_new_skills:321 | [Flow Learing] in mycroft.skills.skill_manager.py.SkillManager._load_new_skills, self._get_skill_directories()=['/opt/mycroft/skills/mycroft-volume.mycroftai']
+2021-08-09 22:28:57.898 | INFO     | 11466 | mycroft.skills.skill_manager:_load_skill:329 | [Flow Learing] in mycroft.skills.skill_manager.py.SkillManager._load_skill, skill_directory=/opt/mycroft/skills/mycroft-volume.mycroftai
+2021-08-09 22:28:57.898 | INFO     | 11466 | mycroft.skills.skill_loader:load:185 | ATTEMPTING TO LOAD SKILL: mycroft-volume.mycroftai
+2021-08-09 22:28:57.899 | INFO     | 11466 | mycroft.skills.skill_loader:_load:239 | [Flow Learing] in mycroft.skills.skill_loader.py.SkillLoader._load
+2021-08-09 22:28:57.899 | INFO     | 11466 | mycroft.skills.skill_loader:_load_skill_source:271 | [Flow Learing] in mycroft.skills.skill_loader.py.SkillLoader._load_skill_source, Use Python"s import library to load a skill"s source code.
+2021-08-09 22:28:57.900 | INFO     | 11466 | mycroft.skills.skill_loader:_load_skill_source:273 | [Flow Learing] in mycroft.skills.skill_loader.py.SkillLoader._load_skill_source, main_file_path=/opt/mycroft/skills/mycroft-volume.mycroftai/__init__.py
+2021-08-09 22:28:57.905 | INFO     | 11466 | mycroft.skills.settings:get_local_settings:83 | /home/shore/.config/mycroft/skills/mycroft-volume.mycroftai/settings.json
+2021-08-09 22:28:57.982 | INFO     | 11466 | mycroft.skills.skill_loader:_communicate_load_status:347 | Skill mycroft-volume.mycroftai loaded successfully
+2021-08-09 22:28:57.988 | INFO     | 11466 | mycroft.skills.settings:__init__:148 | Skill settings sync is disabled, settingsmeta will not be uploaded
+2021-08-09 22:28:57.988 | INFO     | 11466 | mycroft.skills.skill_manager:_load_on_startup:301 | Skills all loaded!
+2021-08-09 22:28:57.991 | INFO     | 11466 | mycroft.skills.skill_manager:run:264 | [Flow Learning] in mycroft.skills.skill_manager.py.SkillManager.run, in while not self._stop_event.is_set()
+2021-08-09 22:28:57.996 | INFO     | 11466 | __main__:on_ready:192 | Skills service is ready.
+2021-08-09 22:28:57.997 | INFO     | 11466 | mycroft.skills.skill_manager:_load_new_skills:320 | [Flow Learing] in mycroft.skills.skill_manager.py.SkillManager._load_new_skills
+2021-08-09 22:28:57.997 | INFO     | 11466 | mycroft.skills.skill_manager:_load_new_skills:321 | [Flow Learing] in mycroft.skills.skill_manager.py.SkillManager._load_new_skills, self._get_skill_directories()=['/opt/mycroft/skills/mycroft-volume.mycroftai']
+2021-08-09 22:28:57.998 | INFO     | 11466 | mycroft.skills.skill_manager:_update_skills:383 | [Flow Learning]  in skills.skill_manager.py.SkillManger._update_skills
+2021-08-09 22:28:57.998 | INFO     | 11466 | mycroft.skills.skill_updater:update_skills:153 | Beginning skill update...
+2021-08-09 22:28:58.101 | INFO     | 11466 | mycroft.util.network_utils:connected_baidu:36 | <Response [200]>
+2021-08-09 22:28:58.101 | INFO     | 11466 | msm.mycroft_skills_manager | [Flow Learning] .venv/lib/python3.8/site-packages/msm/mycroft_skills_manager.py.MycroftSkillsManager.list()
+2021-08-09 22:28:58.102 | INFO     | 11466 | msm.mycroft_skills_manager | [Flow Learning] .venv/lib/python3.8/site-packages/msm/mycroft_skills_manager.py.MycroftSkillsManager._get_all_skills
+2021-08-09 22:28:58.102 | INFO     | 11466 | msm.mycroft_skills_manager | building SkillEntry objects for all skills
+2021-08-09 22:28:58.102 | INFO     | 11466 | msm.mycroft_skills_manager | [Flow Learning] in msm.mycroft_skills_manager.py.MycroftSkillsManager._get_all_skills, do not get remote skills.
+2021-08-09 22:28:58.102 | INFO     | 11466 | msm.mycroft_skills_manager | [Flow Learning] in .venv ... msm.mycroft_skills_mamager.py. MycroftSkillsManager._merge_remote_with_local  skills_dir =/opt/mycroft/skills
+2021-08-09 22:28:58.102 | INFO     | 11466 | msm.mycroft_skills_manager | [Flow Learning] in .venv ... msm.mycroft_skills_mamager.py. MycroftSkillsManager._merge_remote_with_local  in for loop. skill_flie /opt/mycroft/skills/mycroft-volume.mycroftai/__init__.py
+2021-08-09 22:28:58.102 | INFO     | 11466 | msm.skill_entry | [Flow Learning] in msm.skill_entry.py SKillEntry.from_folder().
+2021-08-09 22:28:58.102 | INFO     | 11466 | msm.skill_entry | [Flow Learning] in msm.skill_entry.py SKillEntry.from_folder().  before if msm.local_skills.values()=
+2021-08-09 22:28:58.102 | INFO     | 11466 | msm.skill_entry | [Flow Learning] in msm.skill_entry.py SKillEntry.from_folder() before cls().
+2021-08-09 22:28:58.102 | INFO     | 11466 | msm.skill_entry | [Flow Learning] in SkillEntry.__init__()
+2021-08-09 22:28:58.102 | INFO     | 11466 | msm.skill_entry | [Flow Learning] in SkillEntry.__init__()2
+2021-08-09 22:28:58.102 | INFO     | 11466 | msm.skill_entry | [Flow Learning] in SkillEntry.__init__()3
+2021-08-09 22:28:58.102 | INFO     | 11466 | msm.skill_entry | [Flow Learning] in SkillEntry.__init__()4
+2021-08-09 22:28:58.103 | INFO     | 11466 | msm.skill_entry | [Flow Learning] in msm.skill_entry.py SKillEntry.from_folder(). after tmpClsmycroft-volume.mycroftai
+2021-08-09 22:28:58.103 | INFO     | 11466 | msm.skill_entry | [Flow Learning] in msm.skill_entry.py SKillEntry.from_folder().
+2021-08-09 22:28:58.103 | INFO     | 11466 | msm.skill_entry | [Flow Learning] in msm.skill_entry.py SKillEntry.from_folder().  before if msm.local_skills.values()=
+2021-08-09 22:28:58.103 | INFO     | 11466 | msm.skill_entry | [Flow Learning] in msm.skill_entry.py SKillEntry.from_folder() before cls().
+2021-08-09 22:28:58.103 | INFO     | 11466 | msm.skill_entry | [Flow Learning] in SkillEntry.__init__()
+2021-08-09 22:28:58.103 | INFO     | 11466 | msm.skill_entry | [Flow Learning] in SkillEntry.__init__()2
+2021-08-09 22:28:58.103 | INFO     | 11466 | msm.skill_entry | [Flow Learning] in SkillEntry.__init__()3
+2021-08-09 22:28:58.103 | INFO     | 11466 | msm.skill_entry | [Flow Learning] in SkillEntry.__init__()4
+2021-08-09 22:28:58.103 | INFO     | 11466 | msm.skill_entry | [Flow Learning] in msm.skill_entry.py SKillEntry.from_folder(). after tmpClsskill-hello-world
+2021-08-09 22:28:58.103 | INFO     | 11466 | msm.mycroft_skills_manager | [Flow Learning] after merge, all_skills =[<SkillEntry name=mycroft-volume.mycroftai author= is_local=True>, <SkillEntry name=skill-hello-world author= is_local=True>]
+2021-08-09 22:28:58.103 | INFO     | 11466 | msm.mycroft_skills_manager | invalidating skills cache
+2021-08-09 22:28:58.107 | INFO     | 11466 | msm.mycroft_skills_manager | [Flow Learning] .venv/lib/python3.8/site-packages/msm/mycroft_skills_manager.py.MycroftSkillsManager.all_skills()
+2021-08-09 22:28:58.108 | INFO     | 11466 | msm.mycroft_skills_manager | [Flow Learning] .venv/lib/python3.8/site-packages/msm/mycroft_skills_manager.py.MycroftSkillsManager.all_skills()
+2021-08-09 22:28:58.108 | INFO     | 11466 | msm.skill_repo | [Flow Learning] in msm.skill_repo.py.SkillRepo.get_default_skill_names /opt/mycroft/.skills-repoDEFAULT-SKILLS*
+2021-08-09 22:28:58.108 | INFO     | 11466 | msm.skill_repo | [Flow Learning] in msm.skill_repo.py.SkillRepo.get_default_skill_names /opt/mycroft/.skills-repoDEFAULT-SKILLS*
+2021-08-09 22:28:58.156 | INFO     | 11466 | mycroft.skills.intent_services.padatious_service:train:81 | Training... (single_thread=False)
+2021-08-09 22:28:58.159 | INFO     | 11466 | mycroft.skills.intent_services.padatious_service:train:83 | Training complete.
+2021-08-09 22:28:58.233 | ERROR    | 11466 | msm.mycroft_skills_manager | Error running install_or_update on skill-hello-world: SkillModified(Uncommitted changes:
+	 M README.md
+	 M msm/mycroft_skills_manager.py
+	 M mycroft/configuration/mycroft.conf
+	 M mycroft/res/text/en-us/not.loaded.dialog
+	 M mycroft/skills/skill_manager.py
+	 M todoList.txt
+)
+2021-08-09 22:28:59.926 | INFO     | 11466 | msm.skill_entry | Nothing new for mycroft-volume.mycroftai
+2021-08-09 22:28:59.938 | INFO     | 11466 | mycroft.skills.skill_updater:_update_download_time:269 | [Flow Learning] before calling _log_next_download_time()
+2021-08-09 22:28:59.939 | INFO     | 11466 | mycroft.skills.skill_updater:_log_next_download_time:276 | Next scheduled skill update: 2021-08-09 23:28:59.938933
+2021-08-09 22:28:59.939 | INFO     | 11466 | mycroft.skills.skill_updater:update_skills:174 | Skill update complete
+2021-08-09 22:29:01.942 | INFO     | 11466 | mycroft.skills.skill_manager:run:264 | [Flow Learning] in mycroft.skills.skill_manager.py.SkillManager.run, in while not self._stop_event.is_set()
+2021-08-09 22:29:01.953 | INFO     | 11466 | mycroft.skills.skill_manager:_load_new_skills:320 | [Flow Learing] in mycroft.skills.skill_manager.py.SkillManager._load_new_skills
+2021-08-09 22:29:01.954 | INFO     | 11466 | mycroft.skills.skill_manager:_load_new_skills:321 | [Flow Learing] in mycroft.skills.skill_manager.py.SkillManager._load_new_skills, self._get_skill_directories()=['/opt/mycroft/skills/mycroft-volume.mycroftai']
+2021-08-09 22:29:01.954 | INFO     | 11466 | mycroft.skills.skill_manager:_update_skills:383 | [Flow Learning]  in skills.skill_manager.py.SkillManger._update_skills
+2021-08-09 22:29:03.955 | INFO     | 11466 | mycroft.skills.skill_manager:run:264 | [Flow Learning] in mycroft.skills.skill_manager.py.SkillManager.run, in while not self._stop_event.is_set()
+2021-08-09 22:29:03.959 | INFO     | 11466 | mycroft.skills.skill_manager:_load_new_skills:320 | [Flow Learing] in mycroft.skills.skill_manager.py.SkillManager._load_new_skills
+2021-08-09 22:29:03.960 | INFO     | 11466 | mycroft.skills.skill_manager:_load_new_skills:321 | [Flow Learing] in mycroft.skills.skill_manager.py.SkillManager._load_new_skills, self._get_skill_directories()=['/opt/mycroft/skills/mycroft-volume.mycroftai']
+2021-08-09 22:29:03.961 | INFO     | 11466 | mycroft.skills.skill_manager:_update_skills:383 | [Flow Learning]  in skills.skill_manager.py.SkillManger._update_skills
+2021-08-09 22:29:05.963 | INFO     | 11466 | mycroft.skills.skill_manager:run:264 | [Flow Learning] in mycroft.skills.skill_manager.py.SkillManager.run, in while not self._stop_event.is_set()
+2021-08-09 22:29:05.967 | INFO     | 11466 | mycroft.skills.skill_manager:_load_new_skills:320 | [Flow Learing] in mycroft.skills.skill_manager.py.SkillManager._load_new_skills
+2021-08-09 22:29:05.968 | INFO     | 11466 | mycroft.skills.skill_manager:_load_new_skills:321 | [Flow Learing] in mycroft.skills.skill_manager.py.SkillManager._load_new_skills, self._get_skill_directories()=['/opt/mycroft/skills/mycroft-volume.mycroftai']
+2021-08-09 22:29:05.969 | INFO     | 11466 | mycroft.skills.skill_manager:_update_skills:383 | [Flow Learning]  in skills.skill_manager.py.SkillManger._update_skills
+2021-08-09 22:29:07.971 | INFO     | 11466 | mycroft.skills.skill_manager:run:264 | [Flow Learning] in mycroft.skills.skill_manager.py.SkillManager.run, in while not self._stop_event.is_set()
+2021-08-09 22:29:07.975 | INFO     | 11466 | mycroft.skills.skill_manager:_load_new_skills:320 | [Flow Learing] in mycroft.skills.skill_manager.py.SkillManager._load_new_skills
+2021-08-09 22:29:07.976 | INFO     | 11466 | mycroft.skills.skill_manager:_load_new_skills:321 | [Flow Learing] in mycroft.skills.skill_manager.py.SkillManager._load_new_skills, self._get_skill_directories()=['/opt/mycroft/skills/mycroft-volume.mycroftai']
+2021-08-09 22:29:07.976 | INFO     | 11466 | mycroft.skills.skill_manager:_update_skills:383 | [Flow Learning]  in skills.skill_manager.py.SkillManger._update_skills
+2021-08-09 22:29:09.978 | INFO     | 11466 | mycroft.skills.skill_manager:run:264 | [Flow Learning] in mycroft.skills.skill_manager.py.SkillManager.run, in while not self._stop_event.is_set()
+2021-08-09 22:29:09.983 | INFO     | 11466 | mycroft.skills.skill_manager:_load_new_skills:320 | [Flow Learing] in mycroft.skills.skill_manager.py.SkillManager._load_new_skills
+2021-08-09 22:29:09.983 | INFO     | 11466 | mycroft.skills.skill_manager:_load_new_skills:321 | [Flow Learing] in mycroft.skills.skill_manager.py.SkillManager._load_new_skills, self._get_skill_directories()=['/opt/mycroft/skills/mycroft-volume.mycroftai']
+2021-08-09 22:29:09.983 | INFO     | 11466 | mycroft.skills.skill_manager:_update_skills:383 | [Flow Learning]  in skills.skill_manager.py.SkillManger._update_skills
+2021-08-09 22:29:11.986 | INFO     | 11466 | mycroft.skills.skill_manager:run:264 | [Flow Learning] in mycroft.skills.skill_manager.py.SkillManager.run, in while not self._stop_event.is_set()
+2021-08-09 22:29:11.991 | INFO     | 11466 | mycroft.skills.skill_manager:_load_new_skills:320 | [Flow Learing] in mycroft.skills.skill_manager.py.SkillManager._load_new_skills
+2021-08-09 22:29:11.991 | INFO     | 11466 | mycroft.skills.skill_manager:_load_new_skills:321 | [Flow Learing] in mycroft.skills.skill_manager.py.SkillManager._load_new_skills, self._get_skill_directories()=['/opt/mycroft/skills/mycroft-volume.mycroftai']
+2021-08-09 22:29:11.992 | INFO     | 11466 | mycroft.skills.skill_manager:_update_skills:383 | [Flow Learning]  in skills.skill_manager.py.SkillManger._update_skills
+2021-08-09 22:29:13.994 | INFO     | 11466 | mycroft.skills.skill_manager:run:264 | [Flow Learning] in mycroft.skills.skill_manager.py.SkillManager.run, in while not self._stop_event.is_set()
+2021-08-09 22:29:14.002 | INFO     | 11466 | mycroft.skills.skill_manager:_load_new_skills:320 | [Flow Learing] in mycroft.skills.skill_manager.py.SkillManager._load_new_skills
+2021-08-09 22:29:14.003 | INFO     | 11466 | mycroft.skills.skill_manager:_load_new_skills:321 | [Flow Learing] in mycroft.skills.skill_manager.py.SkillManager._load_new_skills, self._get_skill_directories()=['/opt/mycroft/skills/mycroft-volume.mycroftai']
+2021-08-09 22:29:14.003 | INFO     | 11466 | mycroft.skills.skill_manager:_update_skills:383 | [Flow Learning]  in skills.skill_manager.py.SkillManger._update_skills
+2021-08-09 22:29:16.006 | INFO     | 11466 | mycroft.skills.skill_manager:run:264 | [Flow Learning] in mycroft.skills.skill_manager.py.SkillManager.run, in while not self._stop_event.is_set()
+2021-08-09 22:29:16.009 | INFO     | 11466 | mycroft.skills.skill_manager:_load_new_skills:320 | [Flow Learing] in mycroft.skills.skill_manager.py.SkillManager._load_new_skills
+2021-08-09 22:29:16.010 | INFO     | 11466 | mycroft.skills.skill_manager:_load_new_skills:321 | [Flow Learing] in mycroft.skills.skill_manager.py.SkillManager._load_new_skills, self._get_skill_directories()=['/opt/mycroft/skills/mycroft-volume.mycroftai']
+2021-08-09 22:29:16.010 | INFO     | 11466 | mycroft.skills.skill_manager:_update_skills:383 | [Flow Learning]  in skills.skill_manager.py.SkillManger._update_skills
+2021-08-09 22:29:18.013 | INFO     | 11466 | mycroft.skills.skill_manager:run:264 | [Flow Learning] in mycroft.skills.skill_manager.py.SkillManager.run, in while not self._stop_event.is_set()
+2021-08-09 22:29:18.022 | INFO     | 11466 | mycroft.skills.skill_manager:_load_new_skills:320 | [Flow Learing] in mycroft.skills.skill_manager.py.SkillManager._load_new_skills
+2021-08-09 22:29:18.023 | INFO     | 11466 | mycroft.skills.skill_manager:_load_new_skills:321 | [Flow Learing] in mycroft.skills.skill_manager.py.SkillManager._load_new_skills, self._get_skill_directories()=['/opt/mycroft/skills/mycroft-volume.mycroftai']
+2021-08-09 22:29:18.023 | INFO     | 11466 | mycroft.skills.skill_manager:_update_skills:383 | [Flow Learning]  in skills.skill_manager.py.SkillManger._update_skills
+2021-08-09 22:29:20.026 | INFO     | 11466 | mycroft.skills.skill_manager:run:264 | [Flow Learning] in mycroft.skills.skill_manager.py.SkillManager.run, in while not self._stop_event.is_set()
+2021-08-09 22:29:20.034 | INFO     | 11466 | mycroft.skills.skill_manager:_load_new_skills:320 | [Flow Learing] in mycroft.skills.skill_manager.py.SkillManager._load_new_skills
+2021-08-09 22:29:20.035 | INFO     | 11466 | mycroft.skills.skill_manager:_load_new_skills:321 | [Flow Learing] in mycroft.skills.skill_manager.py.SkillManager._load_new_skills, self._get_skill_directories()=['/opt/mycroft/skills/mycroft-volume.mycroftai']
+2021-08-09 22:29:20.036 | INFO     | 11466 | mycroft.skills.skill_manager:_update_skills:383 | [Flow Learning]  in skills.skill_manager.py.SkillManger._update_skills
+2021-08-09 22:29:22.038 | INFO     | 11466 | mycroft.skills.skill_manager:run:264 | [Flow Learning] in mycroft.skills.skill_manager.py.SkillManager.run, in while not self._stop_event.is_set()
+2021-08-09 22:29:22.049 | INFO     | 11466 | mycroft.skills.skill_manager:_load_new_skills:320 | [Flow Learing] in mycroft.skills.skill_manager.py.SkillManager._load_new_skills
+2021-08-09 22:29:22.050 | INFO     | 11466 | mycroft.skills.skill_manager:_load_new_skills:321 | [Flow Learing] in mycroft.skills.skill_manager.py.SkillManager._load_new_skills, self._get_skill_directories()=['/opt/mycroft/skills/mycroft-volume.mycroftai']

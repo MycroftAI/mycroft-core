@@ -113,18 +113,18 @@ class SkillEntry(object):
     }
 
     def __init__(self, name, path, url='', sha='', msm=None):
-        LOG.info('[Flow Learning] in SkillEntry.__init__()')
+        # LOG.info('[Flow Learning] in SkillEntry.__init__()')
         url = url.rstrip('/')
         url = url[:-len('.git')] if url.endswith('.git') else url
         self.path = path
         self.url = url
         self.sha = sha
         self.msm = msm
-        LOG.info('[Flow Learning] in SkillEntry.__init__()2')
+        # LOG.info('[Flow Learning] in SkillEntry.__init__()2')
         # mycroft-core-zh: disable get from remote
         if msm and url != '':
             u = url.lower()
-            LOG.info('[Flow Learning] in SkillEntry.__init__() meta_info ')
+            # LOG.info('[Flow Learning] in SkillEntry.__init__() meta_info ')
             self.meta_info = msm.repo.skills_meta_info.get(u, {})
         else:
             self.meta_info = {}
@@ -135,13 +135,13 @@ class SkillEntry(object):
         else:
             self.name = basename(path)
 
-        LOG.info('[Flow Learning] in SkillEntry.__init__()3')
+        # LOG.info('[Flow Learning] in SkillEntry.__init__()3')
         # TODO: Handle git:// urls as well
         from_github = False
         if url.startswith('https://'):
             url_tokens = url.rstrip("/").split("/")
             from_github = url_tokens[-3] == 'github.com' if url else False
-        LOG.info('[Flow Learning] in SkillEntry.__init__()4')
+        # LOG.info('[Flow Learning] in SkillEntry.__init__()4')
         self.author = self.extract_author(url) if from_github else ''
         self.id = self.extract_repo_id(url) if from_github else self.name
         self.is_local = exists(path)
@@ -196,7 +196,7 @@ class SkillEntry(object):
         return gid
 
     def __str__(self):
-        return self.name
+        return 'name：%s, path：%s, is_local:%s, url:%s' % (self.name, self.path, str(self.is_local), self.url)
 
     def attach(self, remote_entry):
         """Attach a remote entry to a local entry"""
@@ -235,7 +235,11 @@ class SkillEntry(object):
 
     @classmethod
     def create_path(cls, folder, url, name=''):
-        return join(folder, '{}.{}'.format(
+        # mycroft-core-zh
+        if not url:
+            return join(folder, name.lower())
+        else:
+            return join(folder, '{}.{}'.format(
             name or cls.extract_repo_name(url), cls.extract_author(url)
         ).lower())
 
@@ -527,6 +531,10 @@ class SkillEntry(object):
     def update(self):
         if not self.is_local:
             raise NotInstalled('{} is not installed'.format(self.name))
+
+        # mycroft-core-zh:
+        if self.url == '':
+            return
         git = Git(self.path)
 
         with git_to_msm_exceptions():
