@@ -267,7 +267,7 @@ class SkillManager(Thread):
         # Scan the file folder that contains Skills.  If a Skill is updated,
         # unload the existing version from memory and reload from the disk.
         while not self._stop_event.is_set():
-            LOG.info("[Flow Learning] in mycroft.skills.skill_manager.py.SkillManager.run, in while not self._stop_event.is_set()")
+            # LOG.info("[Flow Learning] in mycroft.skills.skill_manager.py.SkillManager.run, in while not self._stop_event.is_set()")
             try:
                 # LOG.info("[Flow Learning] in mycroft.skills.skill_manager.py.SkillManager.run, in while self._unload_removed_skills()")
                 self._unload_removed_skills()
@@ -323,8 +323,8 @@ class SkillManager(Thread):
 
     def _load_new_skills(self):
         """Handle load of skills installed since startup."""
-        LOG.info('[Flow Learing] in mycroft.skills.skill_manager.py.SkillManager._load_new_skills')
-        LOG.info('[Flow Learing] in mycroft.skills.skill_manager.py.SkillManager._load_new_skills, self._get_skill_directories()=' + str(self._get_skill_directories()))
+        # LOG.info('[Flow Learing] in mycroft.skills.skill_manager.py.SkillManager._load_new_skills')
+        # LOG.info('[Flow Learing] in mycroft.skills.skill_manager.py.SkillManager._load_new_skills, self._get_skill_directories()=' + str(self._get_skill_directories()))
         for skill_dir in self._get_skill_directories():
             if skill_dir not in self.skill_loaders:
                 loader = self._load_skill(skill_dir)
