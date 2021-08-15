@@ -20,6 +20,18 @@ from mycroft.messagebus.message import Message
 from mycroft.util import resolve_resource_file
 
 
+class _GUIDict(dict):
+    """ this is an helper dictionay subclass, it ensures that value changed
+    in it are propagated to the GUI service real time"""
+    def __init__(self, gui, **kwargs):
+        self.gui = gui
+        super().__init__(**kwargs)
+
+    def __setitem__(self, key, value):
+        super(_GUIDict, self).__setitem__(key, value)
+        self.gui._sync_data()
+
+
 class SkillGUI:
     """SkillGUI - Interface to the Graphical User Interface
 
@@ -96,15 +108,23 @@ class SkillGUI:
         if self.on_gui_changed_callback:
             self.on_gui_changed_callback()
 
+    def _sync_data(self):
+        data = self.__session_data.copy()
+        data.update({'__from': self.skill.skill_id})
+        self.skill.bus.emit(Message("gui.value.set", data))
+
     def __setitem__(self, key, value):
         """Implements set part of dict-like behaviour with named keys."""
+
+        # cast to helper dict subclass that syncs data
+        if isinstance(value, dict) and not isinstance(value, _GUIDict):
+            value = _GUIDict(self, **value)
+
         self.__session_data[key] = value
 
+        # emit notification (but not needed if page has not been shown yet)
         if self.page:
-            # emit notification (but not needed if page has not been shown yet)
-            data = self.__session_data.copy()
-            data.update({'__from': self.skill.skill_id})
-            self.skill.bus.emit(Message("gui.value.set", data))
+            self._sync_data()
 
     def __getitem__(self, key):
         """Implements get part of dict-like behaviour with named keys."""
