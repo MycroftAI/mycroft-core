@@ -41,7 +41,7 @@ class temperatureMonitorThread(threading.Thread):
         while not self.exit_flag:
             time.sleep(60)
 
-            LOG.info("CPU temperature is %s" % (self.fan_obj.get_cpu_temp(),))
+            LOG.debug("CPU temperature is %s" % (self.fan_obj.get_cpu_temp(),))
 
             # TODO make this ratiometric
             current_temperature = self.fan_obj.get_cpu_temp()
@@ -137,7 +137,7 @@ class chaseLedThread(threading.Thread):
         chase_ctr = 0
         while not self.exit_flag:
             chase_ctr += 1
-            LOG.info("chase thread %s" % (chase_ctr,))
+            LOG.debug("chase thread %s" % (chase_ctr,))
             for x in range(0,10):
                 self.led_obj.set_led(x, self.fgnd_col)
                 time.sleep(self.delay)
