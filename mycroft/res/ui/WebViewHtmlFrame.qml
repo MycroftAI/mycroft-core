@@ -19,6 +19,12 @@ Item {
         }
     }
     
+    RequestHandler {
+        id: interactionBar
+        anchors.top: parent.top
+        z: 1001
+    }
+
     WebEngineView {
         id: webview
         anchors.fill: parent
@@ -47,6 +53,14 @@ Item {
         onJavaScriptDialogRequested: function(request) {
             request.accepted = true;
         }
+        
+        onFeaturePermissionRequested: {
+            interactionBar.setSource("FeatureRequest.qml")
+            interactionBar.interactionItem.securityOrigin = securityOrigin;
+            interactionBar.interactionItem.requestedFeature = feature;
+            interactionBar.isRequested = true;
+        }
+
     }
     
     Popup {

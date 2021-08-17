@@ -56,6 +56,7 @@ class CommonPlaySkill(MycroftSkill, ABC):
     mycroft-playback-control skill and no special vocab for starting playback
     is needed.
     """
+
     def __init__(self, name=None, bus=None):
         super().__init__(name, bus)
         self.audioservice = None
@@ -170,9 +171,13 @@ class CommonPlaySkill(MycroftSkill, ABC):
         # "... on the chromecast"
         self.play_service_string = phrase
 
+<<<<<<< HEAD
         self.bus.emit(Message('active_skill_request', {
                 'skill_id': self.skill_id, 
                 'skill_cat': self.skill_control.category}))
+=======
+        self.make_active()
+>>>>>>> 170ebc44ecf5cf3ceeaf44f282c992754b1bbc1b
 
         # Invoke derived class to provide playback data
         self.CPS_start(phrase, data)

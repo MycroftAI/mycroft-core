@@ -107,29 +107,53 @@ pipeline {
                     sh 'rmdir $HOME/core/$BRANCH_ALIAS'
                     sh (
                         label: 'Publish Report to Web Server',
-                        script: '''scp allure-report.zip root@157.245.127.234:~;
-                            ssh root@157.245.127.234 "unzip -o ~/allure-report.zip";
+                        script: '''
+                            ssh root@157.245.127.234 "mkdir -p ~/allure-reports/core/${BRANCH_ALIAS}";
+                            scp allure-report.zip root@157.245.127.234:~/allure-reports/core/${BRANCH_ALIAS};
+                            ssh root@157.245.127.234 "unzip -o ~/allure-reports/core/${BRANCH_ALIAS}/allure-report.zip -d ~/allure-reports/core/${BRANCH_ALIAS}/";
                             ssh root@157.245.127.234 "rm -rf /var/www/voight-kampff/core/${BRANCH_ALIAS}";
-                            ssh root@157.245.127.234 "mv allure-report /var/www/voight-kampff/core/${BRANCH_ALIAS}"
-                            scp mycroft-logs.zip root@157.245.127.234:~;
+                            ssh root@157.245.127.234 "mv ~/allure-reports/core/${BRANCH_ALIAS}/allure-report /var/www/voight-kampff/core/${BRANCH_ALIAS}"
+                            ssh root@157.245.127.234 "rm ~/allure-reports/core/${BRANCH_ALIAS}/allure-report.zip";
+                            ssh root@157.245.127.234 "rmdir ~/allure-reports/core/${BRANCH_ALIAS}";
+                            ssh root@157.245.127.234 "mkdir -p ~/mycroft-logs/core/${BRANCH_ALIAS}";
+                            scp mycroft-logs.zip root@157.245.127.234:~/mycroft-logs/core/${BRANCH_ALIAS}/;
                             ssh root@157.245.127.234 "mkdir -p /var/www/voight-kampff/core/${BRANCH_ALIAS}/logs"
-                            ssh root@157.245.127.234 "unzip -oj ~/mycroft-logs.zip -d /var/www/voight-kampff/core/${BRANCH_ALIAS}/logs/";
+                            ssh root@157.245.127.234 "unzip -oj ~/mycroft-logs/core/${BRANCH_ALIAS}/mycroft-logs.zip -d /var/www/voight-kampff/core/${BRANCH_ALIAS}/logs/";
+                            ssh root@157.245.127.234 "rm ~/mycroft-logs/core/${BRANCH_ALIAS}/mycroft-logs.zip";
+                            ssh root@157.245.127.234 "rmdir ~/mycroft-logs/core/${BRANCH_ALIAS}";
                         '''
                     )
                     echo 'Report Published'
                 }
                 failure {
                     script {
+                        def comment_text = 'Voight Kampff Integration Test Failed ([Results](https://reports.mycroft.ai/core/' + env.BRANCH_ALIAS + ')). ' +
+                                           '\nMycroft logs are also available: ' +
+                                           '[skills.log](https://reports.mycroft.ai/core/' + env.BRANCH_ALIAS + '/logs/skills.log), ' +
+                                           '[audio.log](https://reports.mycroft.ai/core/' + env.BRANCH_ALIAS + '/logs/audio.log), ' +
+                                           '[voice.log](https://reports.mycroft.ai/core/' + env.BRANCH_ALIAS + '/logs/voice.log), ' +
+                                           '[bus.log](https://reports.mycroft.ai/core/' + env.BRANCH_ALIAS + '/logs/bus.log), ' +
+                                           '[enclosure.log](https://reports.mycroft.ai/core/' + env.BRANCH_ALIAS + '/logs/enclosure.log)'
+
                         // Create comment for Pull Requests
                         if (env.CHANGE_ID) {
-                            echo 'Sending PR comment'
-                            pullRequest.comment('Voight Kampff Integration Test Failed ([Results](https://reports.mycroft.ai/core/' + env.BRANCH_ALIAS + ')). ' +
-                                                '\nMycroft logs are also available: ' +
-                                                '[skills.log](https://reports.mycroft.ai/core/' + env.BRANCH_ALIAS + '/logs/skills.log), ' +
-                                                '[audio.log](https://reports.mycroft.ai/core/' + env.BRANCH_ALIAS + '/logs/audio.log), ' +
-                                                '[voice.log](https://reports.mycroft.ai/core/' + env.BRANCH_ALIAS + '/logs/voice.log), ' +
-                                                '[bus.log](https://reports.mycroft.ai/core/' + env.BRANCH_ALIAS + '/logs/bus.log), ' +
-                                                '[enclosure.log](https://reports.mycroft.ai/core/' + env.BRANCH_ALIAS + '/logs/enclosure.log)')
+                            def found_comment = false
+                            for (comment in pullRequest.comments) {
+                                echo "Author: ${comment.user}"
+                                if (comment.user == "devops-mycroft" &&
+                                    comment.body.contains("Voight Kampff")) {
+                                    echo "Updating comment..."
+                                    found_comment = true
+                                    pullRequest.editComment(
+                                        comment.id,
+                                        comment_text
+                                    )
+                                }
+                            } 
+                            if (!found_comment) {
+                                echo 'Sending PR comment'
+                                pullRequest.comment(comment_text)
+                            }
                         }
                     }
                     // Send failure email containing a link to the Jenkins build
@@ -184,8 +208,25 @@ pipeline {
                 success {
                     script {
                         if (env.CHANGE_ID) {
-                            echo 'Sending PR comment'
-                            pullRequest.comment('Voight Kampff Integration Test Succeeded  ([Results](https://reports.mycroft.ai/core/' + env.BRANCH_ALIAS + '))')
+                            def comment_text = 'Voight Kampff Integration Test Succeeded  ([Results](https://reports.mycroft.ai/core/' + env.BRANCH_ALIAS + '))'
+                            def found_comment = false
+                            for (comment in pullRequest.comments) {
+                                echo "Author: ${comment.user}"
+                                if (comment.user == "devops-mycroft" &&
+                                    comment.body.contains("Voight Kampff")) {
+                                    echo "Updating comment!"
+                                    found_comment = true
+                                    pullRequest.editComment(
+                                        comment.id,
+                                        comment_text
+                                    )
+                                    break
+                                }
+                            } 
+                            if (!found_comment) {
+                                echo 'Sending PR comment'
+                                pullRequest.comment(comment_text)
+                            }
                         }
                     }
                     // Send success email containing a link to the Jenkins build
