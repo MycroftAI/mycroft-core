@@ -88,10 +88,10 @@ function restore_init_scripts() {
     sudo sh -c 'cat /etc/init.d/mycroft-admin-service.original > /etc/init.d/mycroft-admin-service'
     sudo rm /etc/init.d/*.original
     chown mycroft:mycroft /home/mycroft/.mycroft/identity/identity2.json
-    sudo chown -Rvf mycroft:mycroft /var/log/mycroft*
-    sudo chown -Rvf mycroft:mycroft /tmp/mycroft
-    sudo chown -Rvf mycroft:mycroft /var/run/mycroft*
-    sudo chown -Rvf mycroft:mycroft /opt/mycroft
+    sudo chown -R mycroft:mycroft /var/log/mycroft*
+    sudo chown -R mycroft:mycroft /tmp/mycroft
+    sudo chown -R mycroft:mycroft /var/run/mycroft*
+    sudo chown -R mycroft:mycroft /opt/mycroft
     sudo chown mycroft:mycroft /var/tmp/mycroft_web_cache.json
 
     # reload daemon scripts
@@ -144,10 +144,10 @@ function github_init_scripts() {
             sudo ln -s /home/mycroft/.mycroft/identity ${HOME}/.mycroft/
         fi
 
-        sudo chown -Rvf ${user}:${user} /var/log/mycroft*
-        sudo chown -Rvf ${user}:${user} /var/run/mycroft*
-        sudo chown -Rvf ${user}:${user} /tmp/mycroft
-        sudo chown -Rvf ${user}:${user} /var/tmp/mycroft_web_cache.json
+        sudo chown -R ${user}:${user} /var/log/mycroft*
+        sudo chown -R ${user}:${user} /var/run/mycroft*
+        sudo chown -R ${user}:${user} /tmp/mycroft
+        sudo chown -R ${user}:${user} /var/tmp/mycroft_web_cache.json
 
         # reload daemon scripts
         sudo systemctl daemon-reload
