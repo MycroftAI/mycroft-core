@@ -37,7 +37,17 @@ class HelloWorldSkill(MycroftSkill):
         # my_setting = self.settings.get('my_setting')
         self.log.info('[Flow Learning] in mycroft.skills.builtinskills.skill-hello-world.__init__.py.HelloWorldSkill.initialize, settings = ' + str(self.settings))
 
-    # Padatious is used to match intent.
+    # Adapt is used to match intent.
+    @intent_handler(IntentBuilder('HelloWorldIntent')
+                    .require('HelloWorldKeyword'))
+    def handle_hello_world_intent(self, message):
+        """ Skills can log useful information. These will appear in the CLI and
+        the skills.log file."""
+        self.log.info("There are five types of log messages: "
+                      "info, debug, warning, error, and exception.")
+        self.speak_dialog("hello.world", expect_response=True)
+
+    # Adapt is used to match intent.
     @intent_handler(IntentBuilder('ThankYouIntent').require('ThankYouKeyword'))
     def handle_thank_you_intent(self, message):
         """ This is an Adapt intent handler, it is triggered by a keyword."""
@@ -50,21 +60,12 @@ class HelloWorldSkill(MycroftSkill):
         It is triggered using a list of sample phrases."""
         self.speak_dialog("how.are.you")
 
-    @intent_handler(IntentBuilder('HelloWorldIntent')
-                    .require('HelloWorldKeyword'))
-    def handle_hello_world_intent(self, message):
-        """ Skills can log useful information. These will appear in the CLI and
-        the skills.log file."""
-        self.log.info("There are five types of log messages: "
-                      "info, debug, warning, error, and exception.")
-        self.speak_dialog("hello.world", expect_response=True)
-
     def stop(self):
         pass
 
     def converse(self, message):
-        """Pass sentence on to the frotz zork interpreter.
-        The commands "quit" and "exit" will immediately exit the game.
+        """
+        The commands "结束" will immediately exit the skill.
         """
         utterances = message.data['utterances']
         if utterances:

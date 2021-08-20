@@ -117,6 +117,13 @@ class IntentServiceInterface:
         self.bus.emit(Message("padatious:register_intent", data))
         self.registered_intents.append((intent_name.split(':')[-1], data))
 
+    # mycroft-core-zh: baidu intent.
+    def register_baidu_intent(self, intent_name):
+        LOG.info('[Flow Learning] in intent_service_interface.py IntentServiceInterface.register_baidu_intent, ')
+        data = {"name": intent_name}
+        self.bus.emit(Message("baidu:register_intent", data))
+        self.registered_intents.append((intent_name.split(':')[-1], data))
+
     def register_padatious_entity(self, entity_name, filename):
         """Register a padatious entity file with Padatious.
 

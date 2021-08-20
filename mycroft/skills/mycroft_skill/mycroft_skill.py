@@ -974,6 +974,15 @@ class MycroftSkill:
             self.add_event(intent_parser.name, handler,
                            'mycroft.skill.handler')
 
+    # mycroft-core-zh:
+    def _register_baidu_intent(self, intent_name, handler):
+        LOG.info('[Flow Learning] MyscroftSkill._register_baidu_intent, ')
+        self.intent_service.register_baidu_intent(intent_name)
+        if handler:
+            LOG.info('[Flow Learning] MyscroftSkill._register_baidu_intent, add_event intent_name, handler, event ==' + intent_name + ', ' + str(handler) + ', mycroft.skill.handler')
+            self.add_event(intent_name, handler,
+                           'mycroft.skill.handler')
+
     def register_intent(self, intent_parser, handler):
         """Register an Intent with the intent service.
 
@@ -982,11 +991,17 @@ class MycroftSkill:
                            file to parse utterance for the handler.
             handler (func): function to register with intent
         """
+        LOG.info('[Flow Learning] MycroftSkill.register_intent')
         if isinstance(intent_parser, IntentBuilder):
             intent_parser = intent_parser.build()
         if (isinstance(intent_parser, str) and
                 intent_parser.endswith('.intent')):
             return self.register_intent_file(intent_parser, handler)
+        # mycroft-core-zh:
+        if (isinstance(intent_parser, str) and
+                intent_parser.endswith('.baidu')):
+            LOG.info('[Flow Learning] Register intent for Baidu NLU based skill.')
+            return self._register_baidu_intent(intent_parser, handler)
         elif not isinstance(intent_parser, Intent):
             raise ValueError('"' + str(intent_parser) + '" is not an Intent')
 

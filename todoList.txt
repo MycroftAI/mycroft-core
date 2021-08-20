@@ -1,4 +1,5 @@
-0. add a skill
+0. install precise
+https://github.com/MycroftAI/precise-data/raw/dist/{arch}/latest
 
 1. add token in .conf that mycroft-core-zh doesn't get remote skills (they are based on github) 
 

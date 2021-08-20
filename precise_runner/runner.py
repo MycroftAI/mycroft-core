@@ -15,6 +15,7 @@
 import atexit
 from subprocess import PIPE, Popen
 from threading import Thread, Event
+from mycroft.util.log import LOG
 
 
 class Engine(object):
@@ -44,6 +45,7 @@ class PreciseEngine(Engine):
     """
 
     def __init__(self, exe_file, model_file, chunk_size=2048):
+        LOG.info('[Flow Learning] in precise_runner.runner.py PreciseEngine.__init__')
         Engine.__init__(self, chunk_size)
         self.exe_args = exe_file if isinstance(exe_file, list) else [exe_file]
         self.exe_args += [model_file, str(self.chunk_size)]

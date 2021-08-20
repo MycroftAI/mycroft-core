@@ -21,7 +21,7 @@ from mycroft.util.log import LOG
 from mycroft.util.parse import normalize
 from mycroft.metrics import report_timing, Stopwatch
 from .intent_services import (
-    AdaptService, AdaptIntent, FallbackService, PadatiousService, IntentMatch
+    AdaptService, AdaptIntent, FallbackService, PadatiousService, BaiduIntentMatchService, IntentMatch
 )
 from .intent_service_interface import open_intent_envelope
 
@@ -83,6 +83,10 @@ class IntentService:
 
         self.skill_names = {}
         config = Configuration.get()
+        # mycroft-core-zh:
+        self.baidu_intent_match_service = None
+        if True:
+            self.baidu_intent_match_service = BaiduIntentMatchService(config['baidu_nlu'])
         self.adapt_service = AdaptService(config.get('context', {}))
         try:
             self.padatious_service = PadatiousService(bus, config['padatious'])
@@ -93,6 +97,8 @@ class IntentService:
 
         self.bus.on('register_vocab', self.handle_register_vocab)
         self.bus.on('register_intent', self.handle_register_intent)
+        # mycroft-core-zh:
+        self.bus.on('baidu:register_intent', self.handle_register_baidu_intent)
         self.bus.on('recognizer_loop:utterance', self.handle_utterance)
         self.bus.on('detach_intent', self.handle_detach_intent)
         self.bus.on('detach_skill', self.handle_detach_skill)
@@ -259,6 +265,7 @@ class IntentService:
 
         Utterances then work through this sequence to be handled:
         1) Active skills attempt to handle using converse()
+        1.5) Baidu NLU somehow match intents -- used for mycroft-core-zh
         2) Padatious high match intents (conf > 0.95)
         3) Adapt intent handlers
         5) High Priority Fallbacks
@@ -286,7 +293,7 @@ class IntentService:
             # List of functions to use to match the utterance with intent.
             # These are listed in priority order.
             match_funcs = [
-                self._converse, self.padatious_service.match_high,
+                self._converse, self.baidu_intent_match_service.match_intent, self.padatious_service.match_high,
                 self.adapt_service.match_intent, self.fallback.high_prio,
                 self.padatious_service.match_medium, self.fallback.medium_prio,
                 self.padatious_service.match_low, self.fallback.low_prio
@@ -300,7 +307,7 @@ class IntentService:
                     if match:
                         break
             if match:
-                LOG.info('[Flow Learning] A skill or handle is matched.')
+                LOG.info('[Flow Learning] A skill or handle is matched. match.skill_id = ' + str(match.skill_id) + ', match.intent_type = ' + str(match.intent_type))
                 if match.skill_id:
                     self.add_active_skill(match.skill_id)
                     # If the service didn't report back the skill_id it
@@ -331,14 +338,17 @@ class IntentService:
         Returns:
             IntentMatch if handled otherwise None.
         """
+        LOG.info('[Flow learning] in intent_service.py._converse ')
         utterances = [item for tup in utterances for item in tup]
         # check for conversation time-out
         self.active_skills = [skill for skill in self.active_skills
                               if time.time() - skill[
                                   1] <= self.converse_timeout * 60]
+        LOG.info('[Flow learning] in intent_service.py._converse active skills = ' + str(self.active_skills))
 
         # check if any skill wants to handle utterance
         for skill in copy(self.active_skills):
+            LOG.info('[Flow learning] in intent_service.py._converse in loop, active skills = ' + str(skill))
             if self.do_converse(utterances, skill[0], lang, message):
                 # update timestamp, or there will be a timeout where
                 # intent stops conversing whether its being used or not
@@ -368,6 +378,7 @@ class IntentService:
                                           alias_of, regex_str)
         self.registered_vocab.append(message.data)
 
+    # mycroft-core-zh: register the intent into adapt's engine, so that engine can work.
     def handle_register_intent(self, message):
         """Register adapt intent.
 
@@ -376,6 +387,11 @@ class IntentService:
         """
         intent = open_intent_envelope(message)
         self.adapt_service.register_intent(intent)
+
+    # mycroft-core-zh
+    def handle_register_baidu_intent(self, message):
+        LOG.info('[Flow Learning] in intent_service.py handle_register_baidu_intent, no need to do anything. ')
+        pass
 
     def handle_detach_intent(self, message):
         """Remover adapt intent.
@@ -436,6 +452,7 @@ class IntentService:
         Args:
             message (Message): message containing utterance
         """
+        LOG.info('[Flow Learning] in handle_get_intent !!!!!!!!!!   intent.service.intent.get message is used!!')
         utterance = message.data["utterance"]
         lang = message.data.get("lang", "en-us")
         combined = _normalize_all_utterances([utterance])

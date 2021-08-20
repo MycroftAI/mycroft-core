@@ -196,7 +196,8 @@ class PreciseHotword(HotWordEngine):
         local_conf = LocalConf(USER_CONFIG)
         if not local_conf.get('precise', {}).get('use_precise', True):
             raise PreciseUnavailable
-        if (local_conf.get('precise', {}).get('dist_url') ==
+        # mycroft-core-zh: disable git connection
+        if (False and local_conf.get('precise', {}).get('dist_url') ==
                 'http://bootstrap.mycroft.ai/artifacts/static/daily/'):
             del local_conf['precise']['dist_url']
             local_conf.store()
@@ -207,7 +208,13 @@ class PreciseHotword(HotWordEngine):
         self.show_download_progress = Timer(0, lambda: None)
         precise_config = Configuration.get()['precise']
 
-        precise_exe = self.update_precise(precise_config)
+        # mycroft-core-zh: disable git connection
+        precise_exe = None
+        if True:
+            # precise_exe
+            LOG.info('[Flow Learning] self.install_destination: ' + self.install_destination)
+        else:
+            precise_exe = self.update_precise(precise_config)
 
         local_model = self.config.get('local_model_file')
         if local_model:
