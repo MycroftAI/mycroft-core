@@ -127,6 +127,7 @@ class BaiduNLUService:
             return None
 
     def get_reply(self, response, intent):
+        reply_for_error = '技能出错，无法正确回复'
         if response is not None and 'result' in response and \
             'response_list' in response['result']:
             response_list = response['result']['response_list']
@@ -135,7 +136,7 @@ class BaiduNLUService:
                     return response_list[0]['action_list'][0]['say']
                 except Exception as e:
                     LOG.warning(e)
-                    return ''
+                    return reply_for_error
             for response in response_list:
                 if 'schema' in response and \
                 'intent' in response['schema'] and \
@@ -144,10 +145,10 @@ class BaiduNLUService:
                         return response['action_list'][0]['say']
                     except Exception as e:
                         LOG.warning(e)
-                        return ''
-            return ''
+                        return reply_for_error
+            return reply_for_error
         else:
-            return ''
+            return reply_for_error
 
     def get_intent(self, response):
         # result.response_list[0].schema['intent']
@@ -164,8 +165,31 @@ class BaiduNLUService:
     def get_slots(self, response):
         pass
 
-    def are_all_slots_met(self, response):
-        return False
+    def are_all_slots_satisfied(self, response, intent):
+        reply_for_error = '技能出错，无法正确回复'
+        str_satisfy = "satisfy"
+        if response is not None and 'result' in response and \
+            'response_list' in response['result']:
+            response_list = response['result']['response_list']
+            if intent == '':
+                try:
+                    return response_list[0]['action_list'][0]['type'] == str_satisfy
+                except Exception as e:
+                    LOG.warning(e)
+                    return False
+            for response in response_list:
+                if 'schema' in response and \
+                'intent' in response['schema'] and \
+                        response['schema']['intent'] == intent:
+                    try:
+                        LOG.info('[Flow Learning] response["action_list"][0]["type"] =' + response['action_list'][0]['type'])
+                        return response['action_list'][0]['type'] == str_satisfy
+                    except Exception as e:
+                        LOG.warning(e)
+                        return reply_for_error
+            return False
+        else:
+            return False
 
     def get_id_from_intent_str(self, intent_str):
         if intent_str == 'WEATHER':

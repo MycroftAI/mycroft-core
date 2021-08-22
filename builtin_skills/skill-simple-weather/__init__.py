@@ -67,8 +67,10 @@ class SimpleWeatherSkill(MycroftSkill):
             reply = self.nlu_service.get_reply(response, 'WEATHER')
             LOG.info('[Flow Learning] in SimpleWeatherSkill.converse, reply = ' + str(reply))
             if reply:
-                if self.nlu_service.are_all_slots_met(response):
+                if self.nlu_service.are_all_slots_satisfied(response, 'WEATHER'):
+                    LOG.info('[Flow Learning] slots have been satisfied.')
                     self.speak(reply, expect_response=False)
+                    return True
                 else:
                     self.speak(reply, expect_response=True)
                 return True
