@@ -30,3 +30,5 @@ lazy==1.4
 PyGithub==1.55
 GitPython==3.1.18
 gitdb2==2.0.6
+
+pvporcupine==1.9.5
