@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 
+from mycroft_bus_client.message import Message
 from mycroft.skills.intent_services.baidu_intent_match_service import BaiduNLUService
 from adapt.intent import IntentBuilder
 from mycroft import MycroftSkill, intent_handler
@@ -70,6 +71,7 @@ class SimpleWeatherSkill(MycroftSkill):
                 if self.nlu_service.are_all_slots_satisfied(response, 'WEATHER'):
                     LOG.info('[Flow Learning] slots have been satisfied.')
                     self.speak(reply, expect_response=False)
+                    self.deactive()
                     return True
                 else:
                     self.speak(reply, expect_response=True)
@@ -79,6 +81,11 @@ class SimpleWeatherSkill(MycroftSkill):
                 self.speak('抱歉，好像哪里出故障了', expect_response=False)
                 return True
         return False
+
+    def deactive(self):
+        LOG.info('[Flow Learning] skill_id =' + str(self.skill_id))
+        self.bus.emit(Message('deactive_skill_request',
+                              {'skill_id': self.skill_id}))
 
 
 def create_skill():

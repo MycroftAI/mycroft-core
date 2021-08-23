@@ -112,11 +112,20 @@ class IntentService:
         self.bus.on('mycroft.skills.loaded', self.update_skill_name_dict)
 
         def add_active_skill_handler(message):
+            LOG.info('[Flow Learning] in add_active_skill_handler, to call add_active_skill')
             self.add_active_skill(message.data['skill_id'])
 
         self.bus.on('active_skill_request', add_active_skill_handler)
+
+        # mycroft-core-zh
+        def deactive_skill_handler(message):
+            LOG.info('[Flow Learning] in deactive_skill_handler, message.data["skill_id"]=' + str(message.data['skill_id']))
+            self.deactive_skill(message.data['skill_id'])
+        self.bus.on('deactive_skill_request', deactive_skill_handler)
         self.active_skills = []  # [skill_id , timestamp]
         self.converse_timeout = 5  # minutes to prune active_skills
+        # mycroft-core-zh:
+        self.deactive_skill_indicator = -1
 
         # Intents API
         self.registered_vocab = []
@@ -205,9 +214,38 @@ class IntentService:
         Args:
             skill_id (str): skill to remove
         """
+        LOG.info('[Flow Learning] active_skills before removal' + str(self.active_skills))
         for skill in self.active_skills:
             if skill[0] == skill_id:
+                LOG.info('[Flow Learning] remove skill_id : ' + skill_id)
                 self.active_skills.remove(skill)
+        LOG.info('[Flow Learning] active_skills after removal' + str(self.active_skills))
+
+    # mycroft-core-zh:
+    # only deactive the skill but not remove it from the list of active_skills.
+    def deactive_skill(self, skill_id):
+        LOG.info('[Flow Learning] active_skills before deactive' + str(self.active_skills))
+        for skill in self.active_skills:
+            if skill[0] == skill_id:
+                LOG.info('[Flow Learning] deactive skill_id : ' + skill_id)
+                skill[1] = self.deactive_skill_indicator
+        LOG.info('[Flow Learning] active_skills after deactive' + str(self.active_skills))
+
+    # mycroft-core-zh:
+    # The purpose is to create helper function to handle the scenario when the skill ends.
+    # if skill has been deactived, then remove the skill
+    # if skill is not in active_skills, then add it in by calling add_active_skill
+    # if skill is active and in active_skills, then refresh it by calling add_active_skill
+    def refresh_active_skill(self, skill_id):
+        whetherRemoveSkill = False
+        for skill in self.active_skills:
+            if skill[0] == skill_id and skill[1] == self.deactive_skill_indicator:
+                LOG.info('[Flow Learning] remove_skill is to be called, skill_id : ' + skill_id)
+                whetherRemoveSkill = True
+        if whetherRemoveSkill:
+            self.remove_active_skill(skill_id)
+        else:
+            self.add_active_skill(skill_id)
 
     def add_active_skill(self, skill_id):
         """Add a skill or update the position of an active skill.
@@ -220,6 +258,7 @@ class IntentService:
         """
         # search the list for an existing entry that already contains it
         # and remove that reference
+        LOG.info('[Flow Learning] in add_active_skill, skill_id = ' + str(skill_id))
         if skill_id != '':
             self.remove_active_skill(skill_id)
             # add skill with timestamp to start of skill_list
@@ -281,11 +320,13 @@ class IntentService:
             message (Message): The messagebus data
         """
         LOG.info('[Flow Learning] in mycroft.skills.intent_service.py.IntentService.handle_utterance, try to match utterance with Mycroft skills or some handle.')
+        LOG.info('[Flow Learning] in mycroft.skills.intent_service.py.IntentService.handle_utterance, active_skills = ' + str(self.active_skills))
         try:
             lang = _get_message_lang(message)
             set_default_lf_lang(lang)
 
             utterances = message.data.get('utterances', [])
+            LOG.info('[Flow Learning] in mycroft.skills.intent_service.py.IntentService.handle_utterance, utterances= ' + str(utterances))
             combined = _normalize_all_utterances(utterances)
 
             stopwatch = Stopwatch()
@@ -309,7 +350,9 @@ class IntentService:
             if match:
                 LOG.info('[Flow Learning] A skill or handle is matched. match.skill_id = ' + str(match.skill_id) + ', match.intent_type = ' + str(match.intent_type))
                 if match.skill_id:
-                    self.add_active_skill(match.skill_id)
+                    LOG.info('[Flow Learning] matched and is about to add_active_skill, skill_id ==' + match.skill_id)
+                    # mycroft-core-zh: change this for the scenario that skill ends.
+                    self.refresh_active_skill(match.skill_id)
                     # If the service didn't report back the skill_id it
                     # takes on the responsibility of making the skill "active"
 

@@ -698,6 +698,7 @@ class MycroftSkill:
         This enables converse method to be called even without skill being
         used in last 5 minutes.
         """
+        LOG.info('[Flow Learning] make_active.')
         self.bus.emit(Message('active_skill_request',
                               {'skill_id': self.skill_id}))
 
