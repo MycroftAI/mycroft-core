@@ -22,7 +22,7 @@ from .log import LOG
 def find_plugins(plug_type):
     """Finds all plugins matching specific entrypoint type.
 
-    Arguments:
+    Args:
         plug_type (str): plugin entrypoint string to retrieve
 
     Returns:
@@ -38,7 +38,7 @@ def find_plugins(plug_type):
 def load_plugin(plug_type, plug_name):
     """Load a specific plugin from a specific plugin type.
 
-    Arguments:
+    Args:
         plug_type: (str) plugin type name. Ex. "mycroft.plugin.tts".
         plug_name: (str) specific plugin name
 

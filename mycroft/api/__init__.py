@@ -20,8 +20,6 @@ import requests
 from requests import HTTPError, RequestException
 
 from mycroft.configuration import Configuration
-from mycroft.configuration.config import DEFAULT_CONFIG, SYSTEM_CONFIG, \
-    USER_CONFIG
 from mycroft.identity import IdentityManager, identity_lock
 from mycroft.version import VersionManager
 from mycroft.util import get_arch, connected, LOG
@@ -49,12 +47,9 @@ class Api:
     def __init__(self, path):
         self.path = path
 
-        # Load the config, skipping the REMOTE_CONFIG since we are
+        # Load the config, skipping the remote config since we are
         # getting the info needed to get to it!
-        config = Configuration.get([DEFAULT_CONFIG,
-                                    SYSTEM_CONFIG,
-                                    USER_CONFIG],
-                                   cache=False)
+        config = Configuration.get(cache=False, remote=False)
         config_server = config.get("server")
         self.url = config_server.get("url")
         self.version = config_server.get("version")
@@ -113,7 +108,7 @@ class Api:
         The method handles Etags and will return a cached response value
         if nothing has changed on the remote.
 
-        Arguments:
+        Args:
             params (dict): request parameters
             no_refresh (bool): optional parameter to disable refreshs of token
 
@@ -156,9 +151,10 @@ class Api:
 
         Will try to refresh the access token if it's expired.
 
-        Arguments:
+        Args:
             response (requests Response object): Response to parse
             no_refresh (bool): Disable refreshing of the token
+
         Returns:
             data fetched from server
         """
@@ -238,9 +234,7 @@ class DeviceApi(Api):
         platform_build = ""
 
         # load just the local configs to get platform info
-        config = Configuration.get([SYSTEM_CONFIG,
-                                    USER_CONFIG],
-                                   cache=False)
+        config = Configuration.get(cache=False, remote=False)
         if "enclosure" in config:
             platform = config.get("enclosure").get("platform", "unknown")
             platform_build = config.get("enclosure").get("platform_build", "")
@@ -262,9 +256,7 @@ class DeviceApi(Api):
         platform_build = ""
 
         # load just the local configs to get platform info
-        config = Configuration.get([SYSTEM_CONFIG,
-                                    USER_CONFIG],
-                                   cache=False)
+        config = Configuration.get(cache=False, remote=False)
         if "enclosure" in config:
             platform = config.get("enclosure").get("platform", "unknown")
             platform_build = config.get("enclosure").get("platform_build", "")
@@ -373,7 +365,7 @@ class DeviceApi(Api):
     def upload_skill_metadata(self, settings_meta):
         """Upload skill metadata.
 
-        Arguments:
+        Args:
             settings_meta (dict): skill info and settings in JSON format
         """
         return self.request({
@@ -386,7 +378,7 @@ class DeviceApi(Api):
         """ Upload skills.json file. This file contains a manifest of installed
         and failed installations for use with the Marketplace.
 
-        Arguments:
+        Args:
              data: dictionary with skills data from msm
         """
         if not isinstance(data, dict):
@@ -512,7 +504,7 @@ def is_paired(ignore_errors=True):
 def check_remote_pairing(ignore_errors):
     """Check that a basic backend endpoint accepts our pairing.
 
-    Arguments:
+    Args:
         ignore_errors (bool): True if errors should be ignored when
 
     Returns:

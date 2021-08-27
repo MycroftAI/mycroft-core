@@ -528,8 +528,8 @@ class CommonIoTSkill(MycroftSkill, ABC):
         An IoTRequest contains several properties (see the
         documentation for that class). This method should return
         True if and only if this skill can take the appropriate
-        'action' when considering _all other properties
-        of the request_. In other words, a partial match, one in which
+        'action' when considering all other properties
+        of the request. In other words, a partial match, one in which
         any piece of the IoTRequest is not known to this skill,
         and is not None, this should return (False, None).
 

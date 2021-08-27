@@ -108,7 +108,7 @@ def handle_speak(event):
 def mute_and_speak(utterance, ident, listen=False):
     """Mute mic and start speaking the utterance using selected tts backend.
 
-    Arguments:
+    Args:
         utterance:  The sentence to be spoken
         ident:      Ident tying the utterance to the source query
     """
@@ -152,7 +152,7 @@ def _get_mimic_fallback():
 def mimic_fallback_tts(utterance, ident, listen):
     """Speak utterance using fallback TTS if connection is lost.
 
-    Arguments:
+    Args:
         utterance (str): sentence to speak
         ident (str): interaction id for metrics
         listen (bool): True if interaction should end with mycroft listening
@@ -177,7 +177,7 @@ def handle_stop(event):
 def init(messagebus):
     """Start speech related handlers.
 
-    Arguments:
+    Args:
         messagebus: Connection to the Mycroft messagebus
     """
 

@@ -37,7 +37,7 @@ def remove_submodule_refs(module_name):
     dictionary to bypass loading if a module is already in memory. To make
     sure skills are completely reloaded these references are deleted.
 
-    Arguments:
+    Args:
         module_name: name of skill module.
     """
     submodules = []
@@ -58,7 +58,7 @@ def load_skill_module(path, skill_id):
     This function handles the differences between python 3.4 and 3.5+ as well
     as makes sure the module is inserted into the sys.modules dict.
 
-    Arguments:
+    Args:
         path: Path to the skill main file (__init__.py)
         skill_id: skill_id used as skill identifier in the module list
     """
@@ -76,7 +76,7 @@ def load_skill_module(path, skill_id):
 def _bad_mod_times(mod_times):
     """Return all entries with modification time in the future.
 
-    Arguments:
+    Args:
         mod_times (dict): dict mapping file paths to modification times.
 
     Returns:
@@ -92,7 +92,7 @@ def _get_last_modified_time(path):
     Exclude compiled python files, hidden directories and the settings.json
     file.
 
-    Arguments:
+    Args:
         path: skill directory to check
 
     Returns:

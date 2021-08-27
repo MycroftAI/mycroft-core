@@ -1,6 +1,8 @@
-mycroft.audio package
+mycroft.audio
 ====================
 
-wait_while_speaking
--------------------
-.. autofunction:: mycroft.audio.wait_while_speaking
+.. automodule:: mycroft.audio
+  :members:
+    is_speaking,
+    stop_speaking,
+    wait_while_speaking

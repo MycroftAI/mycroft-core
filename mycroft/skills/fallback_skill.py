@@ -116,7 +116,7 @@ class FallbackSkill(MycroftSkill):
         Lower priority gets run first
         0 for high priority 100 for low priority
 
-        Arguments:
+        Args:
             handler (callable): original handler, used as a reference when
                                 removing
             wrapper (callable): wrapped version of handler
@@ -146,7 +146,7 @@ class FallbackSkill(MycroftSkill):
     def _remove_registered_handler(cls, wrapper_to_del):
         """Remove a registered wrapper.
 
-        Arguments:
+        Args:
             wrapper_to_del (callable): wrapped handler to be removed
 
         Returns:
@@ -166,7 +166,7 @@ class FallbackSkill(MycroftSkill):
     def remove_fallback(cls, handler_to_del):
         """Remove a fallback handler.
 
-        Arguments:
+        Args:
             handler_to_del: reference to handler
         Returns:
             (bool) True if at least one handler was removed, otherwise False

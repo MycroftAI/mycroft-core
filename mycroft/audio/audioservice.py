@@ -91,10 +91,11 @@ def get_services(services_folder):
 def setup_service(service_module, config, bus):
     """Run the appropriate setup function and return created service objects.
 
-    Arguments:
+    Args:
         service_module: Python module to run
         config (dict): Mycroft configuration dict
         bus (MessageBusClient): Messagebus interface
+
     Returns:
         (list) List of created services.
     """
@@ -110,17 +111,19 @@ def setup_service(service_module, config, bus):
         except Exception as e:
             LOG.error('Failed to load service. ' + repr(e))
     else:
+        LOG.error('Failed to load service. loading function not found')
         return None
 
 
 def load_internal_services(config, bus, path=None):
     """Load audio services included in Mycroft-core.
 
-    Arguments:
+    Args:
         config: configuration dict for the audio backends.
         bus: Mycroft messagebus
         path: (default None) optional path for builtin audio service
               implementations
+
     Returns:
         List of started services
     """
@@ -150,7 +153,7 @@ def load_internal_services(config, bus, path=None):
 def load_plugins(config, bus):
     """Load installed audioservice plugins.
 
-    Arguments:
+    Args:
         config: configuration dict for the audio backends.
         bus: Mycroft messagebus
 
@@ -158,9 +161,10 @@ def load_plugins(config, bus):
         List of started services
     """
     plugin_services = []
-    plugins = find_plugins('mycroft.plugin.audioservice')
-    for plug in plugins:
-        service = setup_service(plug, config, bus)
+    found_plugins = find_plugins('mycroft.plugin.audioservice')
+    for plugin_name, plugin_module in found_plugins.items():
+        LOG.info(f'Loading audio service plugin: {plugin_name}')
+        service = setup_service(plugin_module, config, bus)
         if service:
             plugin_services += service
     return plugin_services
@@ -173,7 +177,7 @@ def load_services(config, bus, path=None):
     parameter) for services and plugins registered with the
     "mycroft.plugin.audioservice" entrypoint group.
 
-    Arguments:
+    Args:
         config: configuration dict for the audio backends.
         bus: Mycroft messagebus
         path: (default None) optional path for builtin audio service
@@ -261,7 +265,7 @@ class AudioService:
     def wait_for_load(self, timeout=3 * MINUTES):
         """Wait for services to be loaded.
 
-        Arguments:
+        Args:
             timeout (float): Seconds to wait (default 3 minutes)
         Returns:
             (bool) True if loading completed within timeout, else False.

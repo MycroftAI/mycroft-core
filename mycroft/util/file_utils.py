@@ -22,6 +22,7 @@ import os
 import psutil
 from stat import S_ISREG, ST_MTIME, ST_MODE, ST_SIZE
 import tempfile
+import xdg.BaseDirectory
 
 import mycroft.configuration
 from .log import LOG
@@ -33,21 +34,25 @@ def resolve_resource_file(res_name):
     Resource names are in the form: 'filename.ext'
     or 'path/filename.ext'
 
-    The system wil look for ~/.mycroft/res_name first, and
-    if not found will look at /opt/mycroft/res_name,
-    then finally it will look for res_name in the 'mycroft/res'
-    folder of the source code package.
+    The system wil look for $XDG_DATA_DIRS/mycroft/res_name first
+    (defaults to ~/.local/share/mycroft/res_name), and if not found will
+    look at /opt/mycroft/res_name, then finally it will look for res_name
+    in the 'mycroft/res' folder of the source code package.
 
     Example:
-    With mycroft running as the user 'bob', if you called
-        resolve_resource_file('snd/beep.wav')
-    it would return either '/home/bob/.mycroft/snd/beep.wav' or
-    '/opt/mycroft/snd/beep.wav' or '.../mycroft/res/snd/beep.wav',
-    where the '...' is replaced by the path where the package has
-    been installed.
+        With mycroft running as the user 'bob', if you called
+        ``resolve_resource_file('snd/beep.wav')``
+        it would return either:
+        '$XDG_DATA_DIRS/mycroft/beep.wav',
+        '/home/bob/.mycroft/snd/beep.wav' or
+        '/opt/mycroft/snd/beep.wav' or
+        '.../mycroft/res/snd/beep.wav'
+        where the '...' is replaced by the path
+        where the package has been installed.
 
-    Arguments:
+    Args:
         res_name (str): a resource path/name
+
     Returns:
         (str) path to resource or None if no resource found
     """
@@ -57,8 +62,14 @@ def resolve_resource_file(res_name):
     if os.path.isfile(res_name):
         return res_name
 
-    # Now look for ~/.mycroft/res_name (in user folder)
-    filename = os.path.expanduser("~/.mycroft/" + res_name)
+    # Now look for XDG_DATA_DIRS
+    for conf_dir in xdg.BaseDirectory.load_data_paths('mycroft'):
+        filename = os.path.join(conf_dir, res_name)
+        if os.path.isfile(filename):
+            return filename
+
+    # Now look in the old user location
+    filename = os.path.join(os.path.expanduser('~'), '.mycroft', res_name)
     if os.path.isfile(filename):
         return filename
 
@@ -80,7 +91,7 @@ def resolve_resource_file(res_name):
 def read_stripped_lines(filename):
     """Read a file and return a list of stripped lines.
 
-    Arguments:
+    Args:
         filename (str): path to file to read.
 
     Returns:
@@ -106,7 +117,7 @@ def read_dict(filename, div='='):
         'baz': 'bog'
     }
 
-    Arguments:
+    Args:
         filename (str):   path to file
         div (str): deviders between dict keys and values
 
@@ -124,7 +135,7 @@ def read_dict(filename, div='='):
 def mb_to_bytes(size):
     """Takes a size in MB and returns the number of bytes.
 
-    Arguments:
+    Args:
         size(int/float): size in Mega Bytes
 
     Returns:
@@ -136,7 +147,7 @@ def mb_to_bytes(size):
 def _get_cache_entries(directory):
     """Get information tuple for all regular files in directory.
 
-    Arguments:
+    Args:
         directory (str): path to directory to check
 
     Returns:
@@ -153,7 +164,7 @@ def _get_cache_entries(directory):
 def _delete_oldest(entries, bytes_needed):
     """Delete files with oldest modification date until space is freed.
 
-    Arguments:
+    Args:
         entries (tuple): file + file stats tuple
         bytes_needed (int): disk space that needs to be freed
 
@@ -183,7 +194,7 @@ def curate_cache(directory, min_free_percent=5.0, min_free_disk=50):
     is below the limit. This assumes all the files in the directory can be
     deleted as freely.
 
-    Arguments:
+    Args:
         directory (str): directory path that holds cached files
         min_free_percent (float): percentage (0.0-100.0) of drive to keep free,
                                   default is 5% if not specified.
@@ -221,7 +232,7 @@ def get_cache_directory(domain=None):
     uses these cached files must be able to fallback and regenerate
     the file.
 
-    Arguments:
+    Args:
         domain (str): The cache domain.  Basically just a subdirectory.
 
     Returns:
@@ -238,7 +249,7 @@ def get_cache_directory(domain=None):
 def ensure_directory_exists(directory, domain=None, permissions=0o777):
     """Create a directory and give access rights to all
 
-    Arguments:
+    Args:
         directory (str): Root directory
         domain (str): Domain. Basically a subdirectory to prevent things like
                       overlapping signal filenames.
@@ -269,7 +280,7 @@ def ensure_directory_exists(directory, domain=None, permissions=0o777):
 def create_file(filename):
     """Create the file filename and create any directories needed
 
-    Arguments:
+    Args:
         filename: Path to the file to be created
     """
     ensure_directory_exists(os.path.dirname(filename), permissions=0o775)

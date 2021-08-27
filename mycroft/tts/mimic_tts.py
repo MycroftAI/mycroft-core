@@ -32,19 +32,35 @@ from mycroft.util.log import LOG
 
 from .tts import TTS, TTSValidator
 
-CONFIG = Configuration.get().get("tts").get("mimic")
-DATA_DIR = expanduser(Configuration.get()['data_dir'])
 
-BIN = CONFIG.get("path",
-                 os.path.join(MYCROFT_ROOT_PATH, 'mimic', 'bin', 'mimic'))
+def get_mimic_binary():
+    """Find the mimic binary, either from config or from PATH.
 
-if not os.path.isfile(BIN):
-    # Search for mimic on the path
-    import distutils.spawn
+    Returns:
+        (str) path of mimic executable
+    """
+    config = Configuration.get().get("tts", {}).get("mimic")
 
-    BIN = distutils.spawn.find_executable("mimic")
+    bin_ = config.get("path",
+                      os.path.join(MYCROFT_ROOT_PATH, 'mimic', 'bin', 'mimic'))
 
-SUBSCRIBER_VOICES = {'trinity': join(DATA_DIR, 'voices/mimic_tn')}
+    if not os.path.isfile(bin_):
+        # Search for mimic on the path
+        import distutils.spawn
+
+        bin_ = distutils.spawn.find_executable("mimic")
+
+    return bin_
+
+
+def get_subscriber_voices():
+    """Get dict of mimic voices exclusive to subscribers.
+
+    Returns:
+        (dict) map of voices to custom Mimic executables.
+    """
+    data_dir = expanduser(Configuration.get()['data_dir'])
+    return {'trinity': join(data_dir, 'voices/mimic_tn')}
 
 
 def download_subscriber_voices(selected_voice):
@@ -52,6 +68,7 @@ def download_subscriber_voices(selected_voice):
 
     The function starts with the currently selected if applicable
     """
+    subscriber_voices = get_subscriber_voices()
 
     def make_executable(dest):
         """Call back function to make the downloaded file executable."""
@@ -61,7 +78,7 @@ def download_subscriber_voices(selected_voice):
         os.chmod(dest, file_stat.st_mode | stat.S_IEXEC)
 
     # First download the selected voice if needed
-    voice_file = SUBSCRIBER_VOICES.get(selected_voice)
+    voice_file = subscriber_voices.get(selected_voice)
     if voice_file is not None and not exists(voice_file):
         LOG.info('Voice doesn\'t exist, downloading')
         url = DeviceApi().get_subscriber_voice_url(selected_voice)
@@ -76,8 +93,8 @@ def download_subscriber_voices(selected_voice):
                       .format(selected_voice))
 
     # Download the rest of the subsciber voices as needed
-    for voice in SUBSCRIBER_VOICES:
-        voice_file = SUBSCRIBER_VOICES[voice]
+    for voice in subscriber_voices:
+        voice_file = subscriber_voices[voice]
         if not exists(voice_file):
             url = DeviceApi().get_subscriber_voice_url(voice)
             # Check we got an url
@@ -111,9 +128,12 @@ class Mimic(TTS):
             lang, config, MimicValidator(self), 'wav',
             ssml_tags=["speak", "ssml", "phoneme", "voice", "audio", "prosody"]
         )
+        self.default_binary = get_mimic_binary()
+
         self.clear_cache()
 
         # Download subscriber voices if needed
+        self.subscriber_voices = get_subscriber_voices()
         self.is_subscriber = DeviceApi().is_subscriber
         if self.is_subscriber:
             trd = Thread(target=download_subscriber_voices, args=[self.voice])
@@ -137,18 +157,19 @@ class Mimic(TTS):
     @property
     def args(self):
         """Build mimic arguments."""
-        if (self.voice in SUBSCRIBER_VOICES and
-                exists(SUBSCRIBER_VOICES[self.voice]) and self.is_subscriber):
+        subscriber_voices = self.subscriber_voices
+        if (self.voice in subscriber_voices and
+                exists(subscriber_voices[self.voice]) and self.is_subscriber):
             # Use subscriber voice
-            mimic_bin = SUBSCRIBER_VOICES[self.voice]
+            mimic_bin = subscriber_voices[self.voice]
             voice = self.voice
-        elif self.voice in SUBSCRIBER_VOICES:
+        elif self.voice in subscriber_voices:
             # Premium voice but bin doesn't exist, use ap while downloading
-            mimic_bin = BIN
+            mimic_bin = self.default_binary
             voice = 'ap'
         else:
             # Normal case use normal binary and selected voice
-            mimic_bin = BIN
+            mimic_bin = self.default_binary
             voice = self.voice
 
         args = [mimic_bin, '-voice', voice, '-psdur', '-ssml']
@@ -161,7 +182,7 @@ class Mimic(TTS):
     def get_tts(self, sentence, wav_file):
         """Generate WAV and phonemes.
 
-        Arguments:
+        Args:
             sentence (str): sentence to generate audio for
             wav_file (str): output file
 
@@ -175,7 +196,7 @@ class Mimic(TTS):
     def viseme(self, phoneme_pairs):
         """Convert phoneme string to visemes.
 
-        Arguments:
+        Args:
             phoneme_pairs (list): Phoneme output from mimic
 
         Returns:
@@ -195,11 +216,12 @@ class MimicValidator(TTSValidator):
 
     def validate_connection(self):
         """Check that Mimic executable is found and works."""
+        mimic_bin = get_mimic_binary()
         try:
-            subprocess.call([BIN, '--version'])
+            subprocess.call([mimic_bin, '--version'])
         except Exception as err:
-            if BIN:
-                LOG.error('Failed to find mimic at: {}'.format(BIN))
+            if mimic_bin:
+                LOG.error('Failed to find mimic at: {}'.format(mimic_bin))
             else:
                 LOG.error('Mimic executable not found')
             raise Exception(

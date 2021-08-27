@@ -3,8 +3,9 @@ import stat
 import unittest
 from unittest import mock
 
-from mycroft.tts.mimic_tts import (Mimic, download_subscriber_voices, BIN,
-                                   SUBSCRIBER_VOICES)
+from mycroft.tts.mimic_tts import (Mimic, download_subscriber_voices,
+                                   get_mimic_binary,
+                                   get_subscriber_voices)
 
 
 device_instance_mock = mock.Mock(name='device_api_instance')
@@ -55,15 +56,17 @@ class TestMimic(unittest.TestCase):
     @mock.patch('mycroft.tts.mimic_tts.Thread')
     def test_subscriber(self, mock_thread, _, mock_device_api):
         mock_device_api.return_value = subscribed_device
-
+        default_mimic = get_mimic_binary()
+        trinity_mimic = get_subscriber_voices()['trinity']
         m = Mimic('en-US', {'voice': 'trinity'})
         mock_thread.assert_called_with(target=download_subscriber_voices,
                                        args=['trinity'])
         self.assertTrue(m.is_subscriber)
-        self.assertEqual(m.args, [BIN, '-voice', 'ap', '-psdur', '-ssml'])
+        self.assertEqual(m.args,
+                         [default_mimic, '-voice', 'ap', '-psdur', '-ssml'])
         with mock.patch('mycroft.tts.mimic_tts.exists') as mock_exists:
             mock_exists.return_value = True
-            self.assertEqual(m.args, [SUBSCRIBER_VOICES['trinity'], '-voice',
+            self.assertEqual(m.args, [trinity_mimic, '-voice',
                                       'trinity', '-psdur', '-ssml'])
 
     @mock.patch('mycroft.tts.mimic_tts.sleep')

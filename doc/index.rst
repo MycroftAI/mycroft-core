@@ -1,4 +1,5 @@
 .. Mycroft documentation master file
+
 Mycroft-core technical documentation
 ====================================
 

@@ -26,13 +26,15 @@ import tempfile
 from threading import Timer, Thread
 from time import time, sleep
 from urllib.error import HTTPError
+import xdg.BaseDirectory
 
 from petact import install_package
 import requests
 
-from mycroft.configuration import Configuration, LocalConf, USER_CONFIG
-from mycroft.util.monotonic_event import MonotonicEvent
+from mycroft.configuration import Configuration, LocalConf
+from mycroft.configuration.locations import OLD_USER_CONFIG
 from mycroft.util.log import LOG
+from mycroft.util.monotonic_event import MonotonicEvent
 from mycroft.util.plugins import load_plugin
 
 RECOGNIZER_DIR = join(abspath(dirname(__file__)), "recognizer")
@@ -47,10 +49,14 @@ class NoModelAvailable(Exception):
     pass
 
 
+class PreciseUnavailable(Exception):
+    pass
+
+
 def msec_to_sec(msecs):
     """Convert milliseconds to seconds.
 
-    Arguments:
+    Args:
         msecs: milliseconds
 
     Returns:
@@ -62,7 +68,7 @@ def msec_to_sec(msecs):
 class HotWordEngine:
     """Hotword/Wakeword base class to be implemented by all wake word plugins.
 
-    Arguments:
+    Args:
         key_phrase (str): string representation of the wake word
         config (dict): Configuration block for the specific wake word
         lang (str): language code (BCP-47)
@@ -89,7 +95,7 @@ class HotWordEngine:
         Checks if the wake word has been found. Should reset any internal
         tracking of the wake word state.
 
-        Arguments:
+        Args:
             frame_data (binary data): Deprecated. Audio data for large chunk
                                       of audio to be processed. This should not
                                       be used to detect audio data instead
@@ -104,7 +110,7 @@ class HotWordEngine:
 
         The engine should process the data and update internal trigger state.
 
-        Arguments:
+        Args:
             chunk (bytes): Chunk of audio data to process
         """
 
@@ -189,7 +195,31 @@ class PreciseHotword(HotWordEngine):
         from precise_runner import (
             PreciseRunner, PreciseEngine, ReadWriteStream
         )
-        local_conf = LocalConf(USER_CONFIG)
+
+        # We need to save to a writeable location, but the key we need
+        # might be stored in a different, unwriteable, location
+        # Make sure we pick the key we need from wherever it's located,
+        # but save to a writeable location only
+        local_conf = LocalConf(
+            join(xdg.BaseDirectory.save_config_path('mycroft'), 'mycroft.conf')
+        )
+
+        for conf_dir in xdg.BaseDirectory.load_config_paths('mycroft'):
+            conf = LocalConf(join(conf_dir, 'mycroft.conf'))
+            # If the current config contains the precise key use it,
+            # otherwise continue to the next file
+            if conf.get('precise', None) is not None:
+                local_conf['precise'] = conf.get('precise', None)
+                break
+
+        # If the key is not found yet, it might still exist on the old
+        # (deprecated) location
+        if local_conf.get('precise', None) is None:
+            local_conf = LocalConf(OLD_USER_CONFIG)
+
+        if not local_conf.get('precise', {}).get('use_precise', True):
+            raise PreciseUnavailable
+
         if (local_conf.get('precise', {}).get('dist_url') ==
                 'http://bootstrap.mycroft.ai/artifacts/static/daily/'):
             del local_conf['precise']['dist_url']
@@ -247,7 +277,10 @@ class PreciseHotword(HotWordEngine):
 
     @property
     def folder(self):
-        return join(expanduser('~'), '.mycroft', 'precise')
+        old_path = join(expanduser('~'), '.mycroft', 'precise')
+        if os.path.isdir(old_path):
+            return old_path
+        return xdg.BaseDirectory.save_data_path('mycroft', 'precise')
 
     @property
     def install_destination(self):
@@ -403,7 +436,7 @@ class PorcupineHotWord(HotWordEngine):
     def update(self, chunk):
         """Update detection state from a chunk of audio data.
 
-        Arguments:
+        Args:
             chunk (bytes): Audio data to parse
         """
         pcm = struct.unpack_from("h" * (len(chunk)//2), chunk)
@@ -443,7 +476,7 @@ class PorcupineHotWord(HotWordEngine):
 def load_wake_word_plugin(module_name):
     """Wrapper function for loading wake word plugin.
 
-    Arguments:
+    Args:
         (str) Mycroft wake word module name from config
     """
     return load_plugin('mycroft.plugin.wake_word', module_name)
@@ -486,6 +519,10 @@ class HotWordFactory:
                 LOG.warning('Could not found find model for {} on {}.'.format(
                     hotword, module
                 ))
+                instance = None
+            except PreciseUnavailable:
+                LOG.warning('Settings prevent Precise Engine use, '
+                            'falling back to default.')
                 instance = None
             except Exception:
                 LOG.exception(

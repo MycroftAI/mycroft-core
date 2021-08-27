@@ -174,6 +174,32 @@ This script is designed to make working with Mycroft easy.  During this
 first run of dev_setup we will ask you a few questions to help setup
 your environment.'
     sleep 0.5
+    # The AVX instruction set is an x86 construct
+    # ARM has a range of equivalents, unsure which are (un)supported by TF.
+    if ! grep -q avx /proc/cpuinfo && [[ ! $(uname -m) == 'arm'* ]]; then
+      echo "
+The Precise Wake Word Engine requires the AVX instruction set, which is
+not supported on your CPU. Do you want to fall back to the PocketSphinx
+engine? Advanced users can build the precise engine with an older
+version of TensorFlow (v1.13) if desired and change use_precise to true
+in mycroft.conf.
+  Y)es, I want to use the PocketSphinx engine or my own.
+  N)o, stop the installation."
+      if get_YN ; then
+        if [[ ! -f /etc/mycroft/mycroft.conf ]]; then
+          $SUDO mkdir -p /etc/mycroft
+          $SUDO touch /etc/mycroft/mycroft.conf
+          $SUDO bash -c 'echo "{ \"use_precise\": true }" > /etc/mycroft/mycroft.conf'
+        else
+          $SUDO bash -c 'jq ". + { \"use_precise\": true }" /etc/mycroft/mycroft.conf > tmp.mycroft.conf' 
+          $SUDO mv -f tmp.mycroft.conf /etc/mycroft/mycroft.conf
+        fi
+      else
+        echo -e "$HIGHLIGHT N - quit the installation $RESET"
+        exit 1
+      fi
+      echo
+    fi
     echo "
 Do you want to run on 'master' or against a dev branch?  Unless you are
 a developer modifying mycroft-core itself, you should run on the
@@ -340,7 +366,7 @@ function open_suse_install() {
 
 
 function fedora_install() {
-    $SUDO dnf install -y git python3 python3-devel python3-pip python3-setuptools python3-virtualenv pygobject3-devel libtool libffi-devel openssl-devel autoconf bison swig glib2-devel portaudio-devel mpg123 mpg123-plugins-pulseaudio screen curl pkgconfig libicu-devel automake libjpeg-turbo-devel fann-devel gcc-c++ redhat-rpm-config jq make
+    $SUDO dnf install -y git python3 python3-devel python3-pip python3-setuptools python3-virtualenv pygobject3-devel libtool libffi-devel openssl-devel autoconf bison swig glib2-devel portaudio-devel mpg123 mpg123-plugins-pulseaudio screen curl pkgconfig libicu-devel automake libjpeg-turbo-devel fann-devel gcc-c++ redhat-rpm-config jq make pulseaudio-utils
 }
 
 
