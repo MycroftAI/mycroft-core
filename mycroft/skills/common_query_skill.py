@@ -11,10 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import time
 
 from enum import IntEnum
 from abc import ABC, abstractmethod
 from .mycroft_skill import MycroftSkill
+
+from mycroft.configuration import Configuration
 
 
 class CQSMatchLevel(IntEnum):
@@ -52,6 +55,26 @@ class CommonQuerySkill(MycroftSkill, ABC):
     def __init__(self, name=None, bus=None):
         super().__init__(name, bus)
 
+        data_dir = Configuration.get().get('data_dir')
+        save_root_dir = self.root_dir
+        self.root_dir = data_dir + '/mycroft/'
+        noise_words_filename = self.find_resource('noise_words' + '.list', 'res/text')
+        self.root_dir = save_root_dir
+        self.translated_noise_words = []
+        try:
+            with open(noise_words_filename) as f:
+                self.translated_noise_words = f.read().strip()
+            self.translated_noise_words = self.translated_noise_words.split()
+        except Exception as e:
+            self.log.error("Missing noise_words.list file in res/text/lang")
+
+        # these should probably be configurable
+        self.level_confidence = {
+                CQSMatchLevel.EXACT:0.9, 
+                CQSMatchLevel.CATEGORY:0.6, 
+                CQSMatchLevel.GENERAL:0.5
+                }
+
     def bind(self, bus):
         """Overrides the default bind method of MycroftSkill.
 
@@ -80,7 +103,7 @@ class CommonQuerySkill(MycroftSkill, ABC):
             level = result[1]
             answer = result[2]
             callback = result[3] if len(result) > 3 else None
-            confidence = self.__calc_confidence(match, search_phrase, level)
+            confidence = self.__calc_confidence(match, search_phrase, level, answer)
             self.bus.emit(message.response({"phrase": search_phrase,
                                             "skill_id": self.skill_id,
                                             "answer": answer,
@@ -92,11 +115,22 @@ class CommonQuerySkill(MycroftSkill, ABC):
                                             "skill_id": self.skill_id,
                                             "searching": False}))
 
-    def __calc_confidence(self, match, phrase, level):
+    def remove_noise(self, phrase):
+        # remove noise to produce essence
+        phrase = ' ' + phrase + ' '
+        for word in self.translated_noise_words:
+            mtch = ' ' + word + ' '
+            if phrase.find(mtch) > -1:
+                phrase = phrase.replace(word,"")
+        phrase = ' '.join(phrase.split())
+        return phrase.strip()
+
+    def __calc_confidence(self, match, phrase, level, answer):
         # Assume the more of the words that get consumed, the better the match
         consumed_pct = len(match.split()) / len(phrase.split())
         if consumed_pct > 1.0:
             consumed_pct = 1.0
+        consumed_pct /= 10
 
         # Add bonus if match has visuals and the device supports them.
         platform = self.config_core.get('enclosure', {}).get('platform')
@@ -105,14 +139,26 @@ class CommonQuerySkill(MycroftSkill, ABC):
         else:
             bonus = 0
 
-        if int(level) == int(CQSMatchLevel.EXACT):
-            return 0.9 + (consumed_pct / 10) + bonus
-        elif int(level) == int(CQSMatchLevel.CATEGORY):
-            return 0.6 + (consumed_pct / 10) + bonus
-        elif int(level) == int(CQSMatchLevel.GENERAL):
-            return 0.5 + (consumed_pct / 10) + bonus
-        else:
-            return 0.0  # should never happen
+        # extract topic
+        topic = self.remove_noise(match)
+
+        # calculate relevance
+        matches = 0
+        for word in topic:
+            if answer.find(word) > -1:
+                matches += 1
+
+        answer_size = len( answer.split(" " ) )
+        relevance = 0.0
+        if answer_size > 0:
+            relevance = float( float(matches) / float(answer_size) )
+
+        # extra credit for more words
+        wc_mod = float( float(answer_size) / float(100) )
+
+        confidence = self.level_confidence[level] + consumed_pct + bonus + relevance + wc_mod
+
+        return confidence
 
     def __handle_query_action(self, message):
         """Message handler for question:action.
