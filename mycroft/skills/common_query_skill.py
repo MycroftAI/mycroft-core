@@ -128,7 +128,7 @@ class CommonQuerySkill(MycroftSkill, ABC):
         for word in self.translated_noise_words:
             mtch = ' ' + word + ' '
             if phrase.find(mtch) > -1:
-                phrase = phrase.replace(word,"")
+                phrase = phrase.replace(mtch, " ")
         phrase = ' '.join(phrase.split())
         return phrase.strip()
 
