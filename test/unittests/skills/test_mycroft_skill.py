@@ -563,6 +563,18 @@ class TestMycroftSkill(unittest.TestCase):
         self.assertFalse(s.voc_match("would you please turn off the lights",
                                      "turn_off_test", exact=True))
 
+    def test_remove_voc(self):
+        s = SimpleSkill1()
+        s.root_dir = abspath(dirname(__file__))
+        self.assertEqual(s.remove_voc("yes", "yes"), "")
+        self.assertEqual(s.remove_voc("yes please", "yes"), " ")
+        self.assertEqual(s.remove_voc("yes thank you", "yes"), " thank you")
+        self.assertEqual(s.remove_voc("I would like the last option", "last"),
+                         "I would like the ")
+        self.assertEqual(s.remove_voc("Never forget that",
+                         "cancel"), "Never forget that")
+        self.assertEqual(s.remove_voc("Never Forget it", "cancel"), "Never ")
+
     def test_translate_locations(self):
         """Assert that the a translatable list can be loaded from dialog and
         locale.
