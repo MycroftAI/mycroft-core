@@ -1,3 +1,20 @@
+
+-1. install behave for test
+Collecting git+https://github.com/behave/behave@v1.2.7.dev1 (from -r requirements/tests.txt (line 8))
+  Cloning https://github.com/behave/behave (to revision v1.2.7.dev1) to /tmp/pip-req-build-5st78mz5
+  Running command git clone -q https://github.com/behave/behave /tmp/pip-req-build-5st78mz5
+  fatal: unable to access 'https://github.com/behave/behave/': GnuTLS recv error (-110): The TLS connection was non-properly terminated.
+ERROR: Command errored out with exit status 128: git clone -q https://github.com/behave/behave /tmp/pip-req-build-5st78mz5 Check the logs for full command output.
+
+
+-0.5 integrate mimic
+WARNING: The following can take a long time to run!
+Cloning into 'mimic'...
+fatal: unable to access 'https://github.com/MycroftAI/mimic.git/': GnuTLS recv error (-54): Error in the pull function.
+shore@shor
+
+
+
 0. install precise
 https://github.com/MycroftAI/precise-data/raw/dist/{arch}/latest
 
