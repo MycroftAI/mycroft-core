@@ -93,7 +93,7 @@ class InterceptAllBusClient(MessageBusClient):
     def clear_messages(self):
         """Clear all messages that has been fetched atleast once."""
         with self.message_lock:
-            self.messages = self.messages[:self._processed_messages]
+            self.messages = self.messages[self._processed_messages:]
             self._processed_messages = 0
 
     def clear_all_messages(self):
