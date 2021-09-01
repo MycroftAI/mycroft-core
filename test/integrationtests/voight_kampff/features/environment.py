@@ -38,9 +38,9 @@ def create_voight_kampff_logger():
 
 
 class InterceptAllBusClient(MessageBusClient):
-    """Bus Client storing all messages recieved.
+    """Bus Client storing all messages received.
 
-    This allows readback of older messages and non-event-driven operation.
+    This allows read back of older messages and non-event-driven operation.
     """
     def __init__(self):
         super().__init__()
@@ -50,7 +50,7 @@ class InterceptAllBusClient(MessageBusClient):
         self._processed_messages = 0
 
     def on_message(self, message):
-        """Extends normal operation by storing the recieved message.
+        """Extends normal operation by storing the received message.
 
         Args:
             message (Message): message from the Mycroft bus
@@ -64,7 +64,7 @@ class InterceptAllBusClient(MessageBusClient):
         """Get messages from received list of messages.
 
         Args:
-            msg_type (None,str): string filter for messagetype to extract.
+            msg_type (None,str): string filter for the message type to extract.
                                  if None all messages will be returned.
         """
         with self.message_lock:
@@ -91,7 +91,7 @@ class InterceptAllBusClient(MessageBusClient):
             self.messages.remove(msg)
 
     def clear_messages(self):
-        """Clear all messages that has been fetched atleast once."""
+        """Clear all messages that has been fetched at least once."""
         with self.message_lock:
             self.messages = self.messages[self._processed_messages:]
             self._processed_messages = 0
