@@ -12,19 +12,141 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
 """Common tools to use when creating step files for behave tests."""
 
+from threading import Event
 import time
 
+from mycroft.audio.utils import wait_while_speaking
 from mycroft.messagebus import Message
 
 
-TIMEOUT = 10
+DEFAULT_TIMEOUT = 10
+
+
+class CriteriaWaiter:
+    """Wait for a message to meet a certain criteria.
+
+    Args:
+        msg_type: message type to watch
+        criteria_func: Function to determine if a message fulfilling the
+                    test case has been found.
+        context: behave context
+    """
+    def __init__(self, msg_type, criteria_func, context):
+        self.msg_type = msg_type
+        self.criteria_func = criteria_func
+        self.context = context
+        self.result = Event()
+
+    def reset(self):
+        """Reset the wait state."""
+        self.result.clear()
+
+    # TODO: Remove in 21.08
+    def wait_unspecific(self, timeout):
+        """
+        Wait for a specified time for criteria to be fulfilled by any message.
+
+        This use case is deprecated and only for backward compatibility
+
+        Args:
+            timeout: Time allowance for a message fulfilling the criteria, if
+                    provided will override the normal normal step timeout.
+
+        Returns:
+            tuple (bool, str) test status and debug output
+        """
+        timeout = timeout or self.context.step_timeout
+        start_time = time.monotonic()
+        debug = ''
+        while time.monotonic() < start_time + timeout:
+            for message in self.context.bus.get_messages(None):
+                status, test_dbg = self.criteria_func(message)
+                debug += test_dbg
+                if status:
+                    self.context.matched_message = message
+                    self.context.bus.remove_message(message)
+                    return True, debug
+            self.context.bus.new_message_available.wait(0.5)
+        # Timed out return debug from test
+        return False, debug
+
+    def _check_historical_messages(self):
+        """Search through the already received messages for a match.
+
+        Returns:
+            tuple (bool, str) test status and debug output
+
+        """
+        debug = ''
+        for message in self.context.bus.get_messages(self.msg_type):
+            status, test_dbg = self.criteria_func(message)
+            debug += test_dbg
+            if status:
+                self.context.matched_message = message
+                self.context.bus.remove_message(message)
+                self.result.set()
+                break
+        return debug
+
+    def wait_specific(self, timeout=None):
+        """Wait for a specific message type to fullfil a criteria.
+
+        Uses an event-handler to not repeatedly loop.
+
+        Args:
+            timeout: Time allowance for a message fulfilling the criteria, if
+                    provided will override the normal normal step timeout.
+
+        Returns:
+            tuple (bool, str) test status and debug output
+        """
+        timeout = timeout or self.context.step_timeout
+
+        debug = ''
+
+        def on_message(message):
+            nonlocal debug
+            status, test_dbg = self.criteria_func(message)
+            debug += test_dbg
+            if status:
+                self.context.matched_message = message
+                self.result.set()
+
+        self.context.bus.on(self.msg_type, on_message)
+        # Check historical messages
+        historical_debug = self._check_historical_messages()
+
+        # If no matching message was already caught, wait for it
+        if not self.result.is_set():
+            self.result.wait(timeout=timeout)
+        self.context.bus.remove(self.msg_type, on_message)
+        return self.result.is_set(), historical_debug + debug
+
+    def wait(self, timeout=None):
+        """Wait for a specific message type to fullfil a criteria.
+
+        Uses an event-handler to not repeatedly loop.
+
+        Args:
+            timeout: Time allowance for a message fulfilling the criteria, if
+                    provided will override the normal normal step timeout.
+
+        Returns:
+            (result (bool), debug (str)) Result containing status and debug
+            message.
+        """
+        if self.msg_type is None:
+            return self.wait_unspecific(timeout)
+        else:
+            return self.wait_specific(timeout)
 
 
 def then_wait(msg_type, criteria_func, context, timeout=None):
-    """Wait for a specified time for criteria to be fulfilled.
+    """Wait for a specific message type to fullfil a criteria.
+
+    Uses an event-handler to not repeatedly loop.
 
     Args:
         msg_type: message type to watch
@@ -35,22 +157,11 @@ def then_wait(msg_type, criteria_func, context, timeout=None):
                  provided will override the normal normal step timeout.
 
     Returns:
-        tuple (bool, str) test status and debug output
+        (result (bool), debug (str)) Result containing status and debug
+        message.
     """
-    timeout = timeout or context.step_timeout
-    start_time = time.monotonic()
-    debug = ''
-    while time.monotonic() < start_time + timeout:
-        for message in context.bus.get_messages(msg_type):
-            status, test_dbg = criteria_func(message)
-            debug += test_dbg
-            if status:
-                context.matched_message = message
-                context.bus.remove_message(message)
-                return True, debug
-        context.bus.new_message_available.wait(0.5)
-    # Timed out return debug from test
-    return False, debug
+    waiter = CriteriaWaiter(msg_type, criteria_func, context)
+    return waiter.wait(timeout)
 
 
 def then_wait_fail(msg_type, criteria_func, context, timeout=None):
@@ -67,7 +178,7 @@ def then_wait_fail(msg_type, criteria_func, context, timeout=None):
         tuple (bool, str) test status and debug output
     """
     status, debug = then_wait(msg_type, criteria_func, context, timeout)
-    return (not status, debug)
+    return not status, debug
 
 
 def mycroft_responses(context):
@@ -95,15 +206,50 @@ def print_mycroft_responses(context):
     print(mycroft_responses(context))
 
 
-def emit_utterance(bus, utt):
-    """Emit an utterance on the bus.
+def format_dialog_match_error(potential_matches, speak_messages):
+    """Format error message to be displayed when an expected
+
+    This is similar to the mycroft_responses function above.  The difference
+    is that here the expected responses are passed in instead of making
+    a second loop through message bus messages.
+
+    Args:
+        potential_matches (list): one of the dialog files in this list were
+            expected to be spoken
+        speak_messages (list): "speak" event messages from the message bus
+            that don't match the list of potential matches.
+
+    Returns: (str) Message detailing the error to the user
+    """
+    error_message = (
+        'Expected Mycroft to respond with one of:\n'
+        f"\t{', '.join(potential_matches)}\n"
+        "Actual response(s):\n"
+    )
+    if speak_messages:
+        for message in speak_messages:
+            meta = message.data.get("meta")
+            if meta is not None:
+                if 'dialog' in meta:
+                    error_message += f"\tDialog: {meta['dialog']}"
+                if 'skill' in meta:
+                    error_message += f" (from {meta['skill']} skill)\n"
+            error_message += f"\t\tUtterance: {message.data['utterance']}\n"
+    else:
+        error_message += "\tMycroft didn't respond"
+
+    return error_message
+
+
+def emit_utterance(bus, utterance):
+    """Emit an utterance event on the message bus.
 
     Args:
         bus (InterceptAllBusClient): Bus instance to listen on
-        dialogs (list): list of acceptable dialogs
+        utterance (str): list of acceptable dialogs
     """
     bus.emit(Message('recognizer_loop:utterance',
-                     data={'utterances': [utt],
+                     data={'utterances': [utterance],
                            'lang': 'en-us',
                            'session': '',
                            'ident': time.time()},
@@ -121,18 +267,45 @@ def wait_for_dialog(bus, dialogs, context=None, timeout=None):
                        provided by context or 10 seconds
     """
     if context:
-        timeout = timeout or context.step_timeout
+        timeout_duration = timeout or context.step_timeout
     else:
-        timeout = timeout or TIMEOUT
-    start_time = time.monotonic()
-    while time.monotonic() < start_time + timeout:
+        timeout_duration = timeout or DEFAULT_TIMEOUT
+    wait_for_dialog_match(bus, dialogs, timeout_duration)
+
+
+def wait_for_dialog_match(bus, dialogs, timeout=DEFAULT_TIMEOUT):
+    """Match dialogs spoken to the specified list of expected dialogs.
+
+    Only one of the dialogs in the provided list need to match for this
+    check to be successful.
+
+    Args:
+        bus (InterceptAllBusClient): Bus instance to listen on
+        dialogs (list): list of acceptable dialogs
+        timeout (int): how long to wait for the message, defaults to timeout
+                       provided by context or 10 seconds
+
+    Returns:
+        A boolean indicating if a match was found and the list of "speak"
+        events found on the message bus during the matching process.
+    """
+    match_found = False
+    speak_messages = list()
+    timeout_time = time.monotonic() + timeout
+    while time.monotonic() < timeout_time:
         for message in bus.get_messages('speak'):
+            speak_messages.append(message)
             dialog = message.data.get('meta', {}).get('dialog')
             if dialog in dialogs:
-                bus.clear_messages()
-                return
-        bus.new_message_available.wait(0.5)
-    bus.clear_messages()
+                wait_while_speaking()
+                match_found = True
+                break
+        bus.clear_messages()
+        if match_found:
+            break
+        time.sleep(1)
+
+    return match_found, speak_messages
 
 
 def wait_for_audio_service(context, message_type):
@@ -148,7 +321,7 @@ def wait_for_audio_service(context, message_type):
     msg_type = 'mycroft.audio.service.{}'.format(message_type)
 
     def check_for_msg(message):
-        return (message.msg_type == msg_type, '')
+        return message.msg_type == msg_type, ''
 
     passed, debug = then_wait(msg_type, check_for_msg, context)
 

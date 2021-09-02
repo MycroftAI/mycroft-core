@@ -14,10 +14,18 @@
 import os
 from os.path import join, dirname, expanduser, exists
 
+import xdg.BaseDirectory
+
 DEFAULT_CONFIG = join(dirname(__file__), 'mycroft.conf')
 SYSTEM_CONFIG = os.environ.get('MYCROFT_SYSTEM_CONFIG',
                                '/etc/mycroft/mycroft.conf')
-USER_CONFIG = join(expanduser('~'), '.mycroft/mycroft.conf')
+# TODO: remove in 22.02
+# Make sure we support the old location still
+# Deprecated and will be removed eventually
+OLD_USER_CONFIG = join(expanduser('~'), '.mycroft/mycroft.conf')
+USER_CONFIG = join(xdg.BaseDirectory.save_config_path('mycroft'),
+                   'mycroft.conf')
+
 REMOTE_CONFIG = "mycroft.ai"
 WEB_CONFIG_CACHE = os.environ.get('MYCROFT_WEB_CACHE',
                                   '/var/tmp/mycroft_web_cache.json')

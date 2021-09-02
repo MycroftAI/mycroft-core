@@ -52,12 +52,12 @@ pipeline {
                     --label build=${JOB_NAME} \
                     -t voight-kampff-mark-1:${BRANCH_ALIAS} .'
                 echo 'Running Mark I Voight-Kampff Test Suite'
-                timeout(time: 60, unit: 'MINUTES')
+                timeout(time: 90, unit: 'MINUTES')
                 {
                     sh 'mkdir -p $HOME/core/$BRANCH_ALIAS/allure'
                     sh 'mkdir -p $HOME/core/$BRANCH_ALIAS/mycroft-logs'
                     sh 'docker run \
-                        -v "$HOME/voight-kampff/identity:/root/.mycroft/identity" \
+                        -v "$HOME/voight-kampff/identity:/root/.config/mycroft/identity" \
                         -v "$HOME/core/$BRANCH_ALIAS/allure:/root/allure" \
                         -v "$HOME/core/$BRANCH_ALIAS/mycroft-logs:/var/log/mycroft" \
                         --label build=${JOB_NAME} \
@@ -107,13 +107,20 @@ pipeline {
                     sh 'rmdir $HOME/core/$BRANCH_ALIAS'
                     sh (
                         label: 'Publish Report to Web Server',
-                        script: '''scp allure-report.zip root@157.245.127.234:~;
-                            ssh root@157.245.127.234 "unzip -o ~/allure-report.zip";
+                        script: '''
+                            ssh root@157.245.127.234 "mkdir -p ~/allure-reports/core/${BRANCH_ALIAS}";
+                            scp allure-report.zip root@157.245.127.234:~/allure-reports/core/${BRANCH_ALIAS};
+                            ssh root@157.245.127.234 "unzip -o ~/allure-reports/core/${BRANCH_ALIAS}/allure-report.zip -d ~/allure-reports/core/${BRANCH_ALIAS}/";
                             ssh root@157.245.127.234 "rm -rf /var/www/voight-kampff/core/${BRANCH_ALIAS}";
-                            ssh root@157.245.127.234 "mv allure-report /var/www/voight-kampff/core/${BRANCH_ALIAS}"
-                            scp mycroft-logs.zip root@157.245.127.234:~;
+                            ssh root@157.245.127.234 "mv ~/allure-reports/core/${BRANCH_ALIAS}/allure-report /var/www/voight-kampff/core/${BRANCH_ALIAS}"
+                            ssh root@157.245.127.234 "rm ~/allure-reports/core/${BRANCH_ALIAS}/allure-report.zip";
+                            ssh root@157.245.127.234 "rmdir ~/allure-reports/core/${BRANCH_ALIAS}";
+                            ssh root@157.245.127.234 "mkdir -p ~/mycroft-logs/core/${BRANCH_ALIAS}";
+                            scp mycroft-logs.zip root@157.245.127.234:~/mycroft-logs/core/${BRANCH_ALIAS}/;
                             ssh root@157.245.127.234 "mkdir -p /var/www/voight-kampff/core/${BRANCH_ALIAS}/logs"
-                            ssh root@157.245.127.234 "unzip -oj ~/mycroft-logs.zip -d /var/www/voight-kampff/core/${BRANCH_ALIAS}/logs/";
+                            ssh root@157.245.127.234 "unzip -oj ~/mycroft-logs/core/${BRANCH_ALIAS}/mycroft-logs.zip -d /var/www/voight-kampff/core/${BRANCH_ALIAS}/logs/";
+                            ssh root@157.245.127.234 "rm ~/mycroft-logs/core/${BRANCH_ALIAS}/mycroft-logs.zip";
+                            ssh root@157.245.127.234 "rmdir ~/mycroft-logs/core/${BRANCH_ALIAS}";
                         '''
                     )
                     echo 'Report Published'
