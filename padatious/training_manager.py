@@ -74,7 +74,7 @@ class TrainingManager(object):
             self.train_data.add_lines(name, lines)
 
     def load(self, name, file_name, reload_cache=False):
-        with open(file_name) as f:
+        with open(file_name, 'r', encoding='utf8') as f:
             self.add(name, f.read().split('\n'), reload_cache)
 
     def remove(self, name):

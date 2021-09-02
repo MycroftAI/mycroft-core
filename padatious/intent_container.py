@@ -147,7 +147,7 @@ class IntentContainer(object):
        """
         Entity.verify_name(name)
         self.entities.load(Entity.wrap_name(name), file_name, reload_cache)
-        with open(file_name) as f:
+        with open(file_name, encoding='utf8') as f:
             self.padaos.add_entity(name, f.read().split('\n'))
         self.must_train = must_train
 
@@ -173,7 +173,7 @@ class IntentContainer(object):
             must_train (bool): Whether to dismiss model if present and train from scratch again
         """
         self.intents.load(name, file_name, reload_cache)
-        with open(file_name) as f:
+        with open(file_name, encoding='utf8') as f:
             self.padaos.add_intent(name, f.read().split('\n'))
         self.must_train = must_train
 
