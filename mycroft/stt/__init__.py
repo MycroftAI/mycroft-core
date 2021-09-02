@@ -20,13 +20,10 @@ from speech_recognition import Recognizer
 from queue import Queue
 from threading import Thread
 
-import http.client
-
 from mycroft.api import STTApi, HTTPError
 from mycroft.configuration import Configuration
 from mycroft.util.log import LOG
 from mycroft.util.plugins import load_plugin
-from http.client import HTTPException
 
 
 class STT(metaclass=ABCMeta):
