@@ -19,8 +19,8 @@ import sys
 import re
 import traceback
 from itertools import chain
-from os import walk
-from os.path import join, abspath, dirname, basename, exists
+from os import walk, listdir
+from os.path import join, abspath, dirname, basename, exists, isdir
 from pathlib import Path
 from threading import Event, Timer
 
@@ -256,6 +256,37 @@ class MycroftSkill:
         files. This provides initial support for multilingual input"""
         return [l for l in self.config_core.get('secondary_langs', [])
                 if l != self.lang]
+
+    def _get_language_dir(self, base_path, lang=None):
+        """ checks for all language variations and returns best path
+        eg, if lang is set to pt-pt but only pt-br resources exist,
+        those will be loaded instead of failing, or en-gb vs en-us and so on
+        """
+        # NOTE this should not be private, but for backwards compat with
+        # mycroft-core it is, dont want skills to call it directly
+        lang = lang or self._dig_for_lang()
+        lang_path = join(base_path, lang)
+
+        # base_path/en-us
+        if isdir(lang_path):
+            return lang_path
+        if "-" in lang:
+            lang2 = lang.split("-")[0]
+            # base_path/en
+            general_lang_path = join(base_path, lang2)
+            if isdir(general_lang_path):
+                return general_lang_path
+        else:
+            lang2 = lang
+
+        # base_path/en-uk, base_path/en-au...
+        if isdir(base_path):
+            # TODO how to choose best local dialect?
+            for path in [join(base_path, f)
+                          for f in listdir(base_path) if f.startswith(lang2)]:
+                if isdir(path):
+                    return path
+        return join(base_path, lang)
 
     def bind(self, bus):
         """Register messagebus emitter with skill.
@@ -863,7 +894,9 @@ class MycroftSkill:
         """
         if res_dirname:
             # Try the old translated directory (dialog/vocab/regex)
-            path = join(self.root_dir, res_dirname, lang, res_name)
+            lang_path = self._get_language_dir(
+                join(self.root_dir, res_dirname), lang)
+            path = join(lang_path, res_name)
             if exists(path):
                 return path
 
@@ -873,7 +906,7 @@ class MycroftSkill:
                 return path
 
         # New scheme:  search for res_name under the 'locale' folder
-        root_path = join(self.root_dir, 'locale', lang)
+        root_path = self._get_language_dir(join(self.root_dir, 'locale'), lang)
         for path, _, files in walk(root_path):
             if res_name in files:
                 return join(path, res_name)
@@ -1338,12 +1371,14 @@ class MycroftSkill:
     def _load_dialog_files(self, root_directory, lang):
         # If "<skill>/dialog/<lang>" exists, load from there.  Otherwise
         # load dialog from "<skill>/locale/<lang>"
-        dialog_dir = join(root_directory, 'dialog', lang)
+        dialog_dir = self._get_language_dir(join(root_directory, 'dialog'),
+                                           lang)
+        locale_dir = self._get_language_dir(join(root_directory, 'locale'),
+                                            lang)
         if exists(dialog_dir):
             self.dialog_renderers[lang] = load_dialogs(dialog_dir)
-        elif exists(join(root_directory, 'locale', lang)):
-            locale_path = join(root_directory, 'locale', lang)
-            self.dialog_renderers[lang] = load_dialogs(locale_path)
+        elif exists(locale_dir):
+            self.dialog_renderers[lang] = load_dialogs(locale_dir)
         else:
             LOG.debug(f'No dialog loaded for {lang}')
 
@@ -1365,8 +1400,10 @@ class MycroftSkill:
 
     def _load_vocab_files(self, root_directory, lang):
         keywords = []
-        vocab_dir = join(root_directory, 'vocab', lang)
-        locale_dir = join(root_directory, 'locale', lang)
+        vocab_dir = self._get_language_dir(join(root_directory, 'vocab'), lang)
+        locale_dir = self._get_language_dir(join(root_directory, 'locale'),
+                                            lang)
+
         if exists(vocab_dir):
             keywords = load_vocabulary(vocab_dir, self.skill_id)
         elif exists(locale_dir):
@@ -1400,8 +1437,9 @@ class MycroftSkill:
             root_directory (str): root folder to use when loading files
         """
         regexes = []
-        regex_dir = join(root_directory, 'regex', lang)
-        locale_dir = join(root_directory, 'locale', lang)
+        regex_dir = self._get_language_dir(join(root_directory, 'regex'), lang)
+        locale_dir = self._get_language_dir(join(root_directory, 'locale'), lang)
+
         if exists(regex_dir):
             regexes = load_regex(regex_dir, self.skill_id)
         elif exists(locale_dir):
