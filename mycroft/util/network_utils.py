@@ -1,8 +1,8 @@
-import requests
 import socket
-from urllib.request import urlopen
 from urllib.error import URLError
+from urllib.request import urlopen
 
+import requests
 from mycroft.util.log import LOG
 
 
@@ -11,7 +11,13 @@ def _get_network_tests_config():
     # Wrapped to avoid circular import errors.
     from mycroft.configuration import Configuration
     config = Configuration.get()
-    return config.get('network_tests', {})
+    return config.get('network_tests', {
+        "dns_primary": "8.8.8.8",
+        "dns_secondary": "8.8.4.4",
+        "web_url": "https://www.google.com",
+        "ncsi_endpoint": "http://www.msftncsi.com/ncsi.txt",
+        "ncsi_expected_text": "Microsoft NCSI"
+    })
 
 
 def connected():
@@ -36,8 +42,9 @@ def _connected_ncsi():
         True if internet connection can be detected
     """
     config = _get_network_tests_config()
-    ncsi_endpoint = config.get('ncsi_endpoint')
-    expected_text = config.get('ncsi_expected_text')
+    ncsi_endpoint = config.get('ncsi_endpoint',
+                               "http://www.msftncsi.com/ncsi.txt")
+    expected_text = config.get('ncsi_expected_text', "Microsoft NCSI")
     try:
         r = requests.get(ncsi_endpoint)
         if r.text == expected_text:
@@ -59,7 +66,7 @@ def _connected_dns(host=None, port=53, timeout=3):
     # Service: domain (DNS/TCP)
     config = _get_network_tests_config()
     if host is None:
-        host = config.get('dns_primary')
+        host = config.get('dns_primary', "8.8.8.8")
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.settimeout(timeout)
@@ -71,7 +78,7 @@ def _connected_dns(host=None, port=53, timeout=3):
         try:
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             s.settimeout(timeout)
-            dns_secondary = config.get('dns_secondary')
+            dns_secondary = config.get('dns_secondary', "8.8.4.4")
             s.connect((dns_secondary, port))
             return True
         except IOError:
@@ -86,7 +93,7 @@ def _connected_google():
     """
     connect_success = False
     config = _get_network_tests_config()
-    url = config.get('web_url')
+    url = config.get('web_url', "https://www.google.com")
     try:
         urlopen(url, timeout=3)
     except URLError as ue:
