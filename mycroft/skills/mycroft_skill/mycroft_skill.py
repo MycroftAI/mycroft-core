@@ -134,6 +134,7 @@ class MycroftSkill:
         self.bind(bus)
         #: Mycroft global configuration. (dict)
         self.config_core = Configuration.get()
+        self.lang = self.config_core.get('lang', 'en-us')
 
         self.settings = None
         self.settings_write_path = None
@@ -146,7 +147,7 @@ class MycroftSkill:
         #: include any logic needed to handle the updated settings.
         self.settings_change_callback = None
 
-        self.dialog_renderer = None
+        self.dialog_renderers = {}
 
         #: Filesystem access to skill specific folder.
         #: See mycroft.filesystem for details.
@@ -240,9 +241,12 @@ class MycroftSkill:
         return None
 
     @property
-    def lang(self):
+    def supported_langs(self):
         """Get the configured language."""
-        return self.config_core.get('lang')
+        supported_langs = self.config_core.get('supported_langs', [self.lang])
+        if self.lang not in supported_langs:
+            supported_langs.append(self.lang)
+        return supported_langs
 
     def bind(self, bus):
         """Register messagebus emitter with skill.
@@ -482,9 +486,10 @@ class MycroftSkill:
             fail_data = data.copy()
             fail_data['utterance'] = utterance
             if on_fail:
-                return self.dialog_renderer.render(on_fail, fail_data)
+                return self.dialog_renderers[self.lang].render(
+                    on_fail, fail_data)
             else:
-                return self.dialog_renderer.render(dialog, data)
+                return self.dialog_renderers[self.lang].render(dialog, data)
 
         def is_cancel(utterance):
             return self.voc_match(utterance, 'cancel')
@@ -497,7 +502,7 @@ class MycroftSkill:
         validator = validator or validator_default
 
         # Speak query and wait for user response
-        dialog_exists = self.dialog_renderer.render(dialog, data)
+        dialog_exists = self.dialog_renderers[self.lang].render(dialog, data)
         if dialog_exists:
             self.speak_dialog(dialog, data, expect_response=True, wait=True)
         else:
@@ -636,7 +641,7 @@ class MycroftSkill:
             utt (str): Utterance to be tested
             voc_filename (str): Name of vocabulary file (e.g. 'yes' for
                                 'res/text/en-us/yes.voc')
-            lang (str): Language code, defaults to self.long
+            lang (str): Language code, defaults to self.lang
             exact (bool): Whether the vocab must exactly match the utterance
 
         Returns:
@@ -768,9 +773,9 @@ class MycroftSkill:
         Returns:
             str: A randomly chosen string from the file
         """
-        return self.dialog_renderer.render(text, data or {})
+        return self.dialog_renderers[self.lang].render(text, data or {})
 
-    def find_resource(self, res_name, res_dirname=None):
+    def find_resource(self, res_name, res_dirname=None, lang=None):
         """Find a resource file.
 
         Searches for the given filename using this scheme:
@@ -798,12 +803,13 @@ class MycroftSkill:
         Returns:
             string: The full path to the resource file or None if not found
         """
-        result = self._find_resource(res_name, self.lang, res_dirname)
-        if not result and self.lang != 'en-us':
+        lang = lang or self.lang
+        result = self._find_resource(res_name, lang, res_dirname)
+        if not result and lang != 'en-us':
             # when resource not found try fallback to en-us
             LOG.warning(
                 "Resource '{}' for lang '{}' not found: trying 'en-us'"
-                .format(res_name, self.lang)
+                .format(res_name, lang)
             )
             result = self._find_resource(res_name, 'en-us', res_dirname)
         return result
@@ -900,6 +906,16 @@ class MycroftSkill:
         filename = self.find_resource(name, 'dialog')
         return read_translated_file(filename, data)
 
+    def handler_set_temporary_lang(self, handler):
+        def bypass_handle(message):
+            try:
+                self.lang = message.data.get('lang', self.lang)
+                handler(message)
+            except Exception:
+                LOG.debug('message contains no lang field')
+            self.lang = self.config_core.get('lang', 'en-us')
+        return bypass_handle
+
     def add_event(self, name, handler, handler_info=None, once=False):
         """Create event handler for executing intent or other event.
 
@@ -911,6 +927,7 @@ class MycroftSkill:
             once (bool, optional): Event handler will be removed after it has
                                    been run once.
         """
+        handler = self.handler_set_temporary_lang(handler)
         skill_data = {'name': get_handler_name(handler)}
 
         def on_error(e):
@@ -1016,11 +1033,16 @@ class MycroftSkill:
             handler:     function to register with intent
         """
         name = '{}:{}'.format(self.skill_id, intent_file)
-        filename = self.find_resource(intent_file, 'vocab')
-        if not filename:
-            raise FileNotFoundError('Unable to find "{}"'.format(intent_file))
-        self.intent_service.register_padatious_intent(name, filename)
-        if handler:
+        found = False
+        for lang in self.supported_langs:
+            filename = self.find_resource(intent_file, 'vocab', lang=lang)
+            if not filename:
+                LOG.Error(
+                    'Unable to find "{}" ("{}")'.format(intent_file, lang))
+            else:
+                self.intent_service.register_padatious_intent(name, filename)
+                found = True
+        if handler and found:
             self.add_event(name, handler, 'mycroft.skill.handler')
 
     def register_entity_file(self, entity_file):
@@ -1042,12 +1064,14 @@ class MycroftSkill:
         """
         if entity_file.endswith('.entity'):
             entity_file = entity_file.replace('.entity', '')
-        filename = self.find_resource(entity_file + ".entity", 'vocab')
-        if not filename:
-            raise FileNotFoundError('Unable to find "{}"'.format(entity_file))
-
         name = '{}:{}'.format(self.skill_id, entity_file)
-        self.intent_service.register_padatious_entity(name, filename)
+        for lang in self.supported_langs:
+            filename = self.find_resource(
+                entity_file + ".entity", 'vocab', lang=lang)
+            if not filename:
+                LOG.Error('Unable to find "{}"'.format(entity_file))
+            else:
+                self.intent_service.register_padatious_entity(name, filename)
 
     def handle_enable_intent(self, message):
         """Listener to enable a registered intent if it belongs to this skill.
@@ -1200,7 +1224,8 @@ class MycroftSkill:
         self.enclosure.register(self.name)
         data = {'utterance': utterance,
                 'expect_response': expect_response,
-                'meta': meta}
+                'meta': meta,
+                'lang': self.lang}
         message = dig_for_message()
         m = message.forward("speak", data) if message \
             else Message("speak", data)
@@ -1222,10 +1247,10 @@ class MycroftSkill:
             wait (bool):            set to True to block while the text
                                     is being spoken.
         """
-        if self.dialog_renderer:
+        if self.dialog_renderers[self.lang]:
             data = data or {}
             self.speak(
-                self.dialog_renderer.render(key, data),
+                self.dialog_renderers[self.lang].render(key, data),
                 expect_response, wait, meta={'dialog': key, 'data': data}
             )
         else:
@@ -1255,14 +1280,15 @@ class MycroftSkill:
     def init_dialog(self, root_directory):
         # If "<skill>/dialog/<lang>" exists, load from there.  Otherwise
         # load dialog from "<skill>/locale/<lang>"
-        dialog_dir = join(root_directory, 'dialog', self.lang)
-        if exists(dialog_dir):
-            self.dialog_renderer = load_dialogs(dialog_dir)
-        elif exists(join(root_directory, 'locale', self.lang)):
-            locale_path = join(root_directory, 'locale', self.lang)
-            self.dialog_renderer = load_dialogs(locale_path)
-        else:
-            LOG.debug('No dialog loaded')
+        for lang in self.supported_langs:
+            dialog_dir = join(root_directory, 'dialog', lang)
+            if exists(dialog_dir):
+                self.dialog_renderers[lang] = load_dialogs(dialog_dir)
+            elif exists(join(root_directory, 'locale', lang)):
+                locale_path = join(root_directory, 'locale', lang)
+                self.dialog_renderers[lang] = load_dialogs(locale_path)
+            else:
+                LOG.debug('No dialog loaded')
 
     def load_data_files(self, root_directory=None):
         """Called by the skill loader to load intents, dialogs, etc.
@@ -1281,24 +1307,25 @@ class MycroftSkill:
         Args:
             root_directory (str): root folder to use when loading files
         """
-        keywords = []
-        vocab_dir = join(root_directory, 'vocab', self.lang)
-        locale_dir = join(root_directory, 'locale', self.lang)
-        if exists(vocab_dir):
-            keywords = load_vocabulary(vocab_dir, self.skill_id)
-        elif exists(locale_dir):
-            keywords = load_vocabulary(locale_dir, self.skill_id)
-        else:
-            LOG.debug('No vocab loaded')
+        for lang in self.supported_langs:
+            keywords = []
+            vocab_dir = join(root_directory, 'vocab', lang)
+            locale_dir = join(root_directory, 'locale', lang)
+            if exists(vocab_dir):
+                keywords = load_vocabulary(vocab_dir, self.skill_id)
+            elif exists(locale_dir):
+                keywords = load_vocabulary(locale_dir, self.skill_id)
+            else:
+                LOG.debug('No vocab loaded')
 
-        # For each found intent register the default along with any aliases
-        for vocab_type in keywords:
-            for line in keywords[vocab_type]:
-                entity = line[0]
-                aliases = line[1:]
-                self.intent_service.register_adapt_keyword(vocab_type,
-                                                           entity,
-                                                           aliases)
+            # For each found intent register the default along with any aliases
+            for vocab_type in keywords:
+                for line in keywords[vocab_type]:
+                    entity = line[0]
+                    aliases = line[1:]
+                    self.intent_service.register_adapt_keyword(vocab_type,
+                                                               entity,
+                                                               aliases, lang)
 
     def load_regex_files(self, root_directory):
         """ Load regex files found under the skill directory.
@@ -1306,16 +1333,17 @@ class MycroftSkill:
         Args:
             root_directory (str): root folder to use when loading files
         """
-        regexes = []
-        regex_dir = join(root_directory, 'regex', self.lang)
-        locale_dir = join(root_directory, 'locale', self.lang)
-        if exists(regex_dir):
-            regexes = load_regex(regex_dir, self.skill_id)
-        elif exists(locale_dir):
-            regexes = load_regex(locale_dir, self.skill_id)
+        for lang in self.supported_langs:
+            regexes = []
+            regex_dir = join(root_directory, 'regex', lang)
+            locale_dir = join(root_directory, 'locale', lang)
+            if exists(regex_dir):
+                regexes = load_regex(regex_dir, self.skill_id)
+            elif exists(locale_dir):
+                regexes = load_regex(locale_dir, self.skill_id)
 
-        for regex in regexes:
-            self.intent_service.register_adapt_regex(regex)
+            for regex in regexes:
+                self.intent_service.register_adapt_regex(regex, lang)
 
     def __handle_stop(self, _):
         """Handler for the "mycroft.stop" signal. Runs the user defined

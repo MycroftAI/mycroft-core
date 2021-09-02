@@ -199,8 +199,11 @@ def main(alive_hook=on_alive, started_hook=on_started, ready_hook=on_ready,
     # Create PID file, prevent multiple instances of this service
     mycroft.lock.Lock('skills')
     config = Configuration.get()
-    lang_code = config.get("lang", "en-us")
-    load_languages([lang_code, "en-us"])
+    lang = config.get("lang", "en-us")
+    supported_langs = config.get('supported_langs', [lang])
+    if lang not in supported_langs:
+        supported_langs.append(lang)
+    load_languages([*supported_langs, "en-us"])
 
     # Connect this process to the Mycroft message bus
     bus = start_message_bus_client("SKILLS")

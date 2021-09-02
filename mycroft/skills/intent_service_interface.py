@@ -39,7 +39,8 @@ class IntentServiceInterface:
     def set_bus(self, bus):
         self.bus = bus
 
-    def register_adapt_keyword(self, vocab_type, entity, aliases=None):
+    def register_adapt_keyword(self, vocab_type, entity,
+                               aliases=None, lang=None):
         """Send a message to the intent service to add an Adapt keyword.
 
             vocab_type(str): Keyword reference
@@ -48,20 +49,26 @@ class IntentServiceInterface:
         """
         aliases = aliases or []
         self.bus.emit(Message("register_vocab",
-                              {'start': entity, 'end': vocab_type}))
+                              {'start': entity,
+                               'end': vocab_type,
+                               'lang': lang}))
         for alias in aliases:
             self.bus.emit(Message("register_vocab", {
-                'start': alias, 'end': vocab_type, 'alias_of': entity
+                'start': alias,
+                'end': vocab_type,
+                'alias_of': entity,
+                'lang': lang
             }))
 
-    def register_adapt_regex(self, regex):
+    def register_adapt_regex(self, regex, lang):
         """Register a regex with the intent service.
 
         Args:
             regex (str): Regex to be registered, (Adapt extracts keyword
                          reference from named match group.
         """
-        self.bus.emit(Message("register_vocab", {'regex': regex}))
+        self.bus.emit(Message("register_vocab",
+                      {'regex': regex, 'lang': lang}))
 
     def register_adapt_intent(self, name, intent_parser):
         """Register an Adapt intent parser object.
@@ -363,8 +370,10 @@ class IntentQueryApi:
                     lines = f.read().replace("(", "").replace(")", "").split(
                         "\n")
                 samples = []
-                for l in lines:
-                    samples += [a.strip() for a in l.split("|") if a.strip()]
+                for line in lines:
+                    samples += [a.strip()
+                                for a in line.split("|")
+                                if a.strip()]
                 entities.append({"name": ent["name"], "samples": samples})
         return entities
 

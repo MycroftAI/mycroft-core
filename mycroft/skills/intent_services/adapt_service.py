@@ -20,6 +20,9 @@ from adapt.context import ContextManagerFrame
 from adapt.engine import IntentDeterminationEngine
 from adapt.intent import IntentBuilder
 
+from os import path
+
+from mycroft.configuration import Configuration
 from mycroft.util.log import LOG
 from .base import IntentMatch
 
@@ -168,9 +171,16 @@ class ContextManager:
 
 class AdaptService:
     """Intent service wrapping the Apdapt intent Parser."""
+
     def __init__(self, config):
         self.config = config
-        self.engine = IntentDeterminationEngine()
+        self.lang = Configuration.get().get('lang', 'en-us')
+        self.supported_langs = Configuration.get().get('supported_langs', [
+            self.lang])
+        if self.lang not in self.supported_langs:
+            self.supported_langs.append(self.lang)
+        self.engines = {lang: IntentDeterminationEngine()
+                        for lang in self.supported_langs}
         # Context related intializations
         self.context_keywords = self.config.get('keywords', [])
         self.context_max_frames = self.config.get('max_frames', 3)
@@ -198,7 +208,7 @@ class AdaptService:
             elif context_entity['data'][0][1] in self.context_keywords:
                 self.context_manager.inject_context(context_entity)
 
-    def match_intent(self, utterances, _=None, __=None):
+    def match_intent(self, utterances, lang=None, __=None):
         """Run the Adapt engine to search for an matching intent.
 
         Args:
@@ -212,6 +222,9 @@ class AdaptService:
         Returns:
             Intent structure, or None if no match was found.
         """
+        lang = lang or self.lang
+        if lang not in self.supported_langs:
+            return
         best_intent = {}
 
         def take_best(intent, utt):
@@ -226,7 +239,7 @@ class AdaptService:
         for utt_tup in utterances:
             for utt in utt_tup:
                 try:
-                    intents = [i for i in self.engine.determine_intent(
+                    intents = [i for i in self.engines[lang].determine_intent(
                         utt, 100,
                         include_tags=True,
                         context_manager=self.context_manager)]
@@ -249,14 +262,21 @@ class AdaptService:
             ret = None
         return ret
 
-    def register_vocab(self, start_concept, end_concept, alias_of, regex_str):
+    def get_file_lang(self, file_name):
+        _path, _ = path.split(file_name)
+        _, _name = path.split(_path)
+        return _name
+
+    def register_vocab(self, start_concept,
+                       end_concept, alias_of, regex_str, lang):
         """Register vocabulary."""
-        with self.lock:
-            if regex_str:
-                self.engine.register_regex_entity(regex_str)
-            else:
-                self.engine.register_entity(
-                    start_concept, end_concept, alias_of=alias_of)
+        if lang in self.supported_langs:
+            with self.lock:
+                if regex_str:
+                    self.engines[lang].register_regex_entity(regex_str)
+                else:
+                    self.engines[lang].register_entity(
+                        start_concept, end_concept, alias_of=alias_of)
 
     def register_intent(self, intent):
         """Register new intent with adapt engine.
@@ -264,8 +284,9 @@ class AdaptService:
         Args:
             intent (IntentParser): IntentParser to register
         """
-        with self.lock:
-            self.engine.register_intent_parser(intent)
+        for lang in self.supported_langs:
+            with self.lock:
+                self.engines[lang].register_intent_parser(intent)
 
     def detach_skill(self, skill_id):
         """Remove all intents for skill.
@@ -274,11 +295,12 @@ class AdaptService:
             skill_id (str): skill to process
         """
         with self.lock:
-            skill_parsers = [
-                p.name for p in self.engine.intent_parsers if
-                p.name.startswith(skill_id)
-            ]
-            self.engine.drop_intent_parser(skill_parsers)
+            for lang in self.supported_langs:
+                skill_parsers = [
+                    p.name for p in self.engines[lang].intent_parsers if
+                    p.name.startswith(skill_id)
+                ]
+                self.engines[lang].drop_intent_parser(skill_parsers)
             self._detach_skill_keywords(skill_id)
             self._detach_skill_regexes(skill_id)
 
@@ -293,7 +315,8 @@ class AdaptService:
         def match_skill_entities(data):
             return data and data[1].startswith(skill_id)
 
-        self.engine.drop_entity(match_func=match_skill_entities)
+        for lang in self.supported_langs:
+            self.engines[lang].drop_entity(match_func=match_skill_entities)
 
     def _detach_skill_regexes(self, skill_id):
         """Detach all regexes registered with a particular skill.
@@ -307,7 +330,9 @@ class AdaptService:
             return any([r.startswith(skill_id)
                         for r in regexp.groupindex.keys()])
 
-        self.engine.drop_regex_entity(match_func=match_skill_regexes)
+        for lang in self.supported_langs:
+            self.engines[lang].drop_regex_entity(
+                match_func=match_skill_regexes)
 
     def detach_intent(self, intent_name):
         """Detatch a single intent
@@ -315,7 +340,8 @@ class AdaptService:
         Args:
             intent_name (str): Identifier for intent to remove.
         """
-        new_parsers = [
-            p for p in self.engine.intent_parsers if p.name != intent_name
-        ]
-        self.engine.intent_parsers = new_parsers
+        for lang in self.supported_langs:
+            new_parsers = [p
+                           for p in self.engines[lang].intent_parsers
+                           if p.name != intent_name]
+            self.engines[lang].intent_parsers = new_parsers

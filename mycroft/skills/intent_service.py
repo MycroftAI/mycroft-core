@@ -304,6 +304,8 @@ class IntentService:
 
                 # Launch skill if not handled by the match function
                 if match.intent_type:
+                    if 'lang' not in match.intent_data:
+                        match.intent_data['lang'] = lang
                     reply = message.reply(match.intent_type, match.intent_data)
                     self.bus.emit(reply)
 
@@ -358,8 +360,9 @@ class IntentService:
         end_concept = message.data.get('end')
         regex_str = message.data.get('regex')
         alias_of = message.data.get('alias_of')
+        lang = message.data.get('lang')
         self.adapt_service.register_vocab(start_concept, end_concept,
-                                          alias_of, regex_str)
+                                          alias_of, regex_str, lang)
         self.registered_vocab.append(message.data)
 
     def handle_register_intent(self, message):
