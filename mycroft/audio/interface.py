@@ -14,7 +14,7 @@
 #
 from os.path import abspath
 
-from mycroft.messagebus.message import Message
+from mycroft.messagebus.message import Message, dig_for_message
 
 
 def ensure_uri(s):
@@ -50,6 +50,21 @@ class AudioService:
     def __init__(self, bus):
         self.bus = bus
 
+    def _format_msg(self, msg_type, msg_data=None):
+        # this method ensures all skills are .forward from the utterance
+        # that triggered the skill, this ensures proper routing and metadata
+        msg_data = msg_data or {}
+        msg = dig_for_message()
+        if msg:
+            msg = msg.forward(msg_type, msg_data)
+        else:
+            msg = Message(msg_type, msg_data)
+        # at this stage source == skills, lets indicate audio service took over
+        sauce = msg.context.get("source")
+        if sauce == "skills":
+            msg.context["source"] = "audio_service"
+        return msg
+
     def queue(self, tracks=None):
         """Queue up a track to playing playlist.
 
@@ -64,8 +79,9 @@ class AudioService:
         elif not isinstance(tracks, list):
             raise ValueError
         tracks = [ensure_uri(t) for t in tracks]
-        self.bus.emit(Message('mycroft.audio.service.queue',
-                              data={'tracks': tracks}))
+        msg = self._format_msg('mycroft.audio.service.queue',
+                               {'tracks': tracks})
+        self.bus.emit(msg)
 
     def play(self, tracks=None, utterance=None, repeat=None):
         """Start playback.
@@ -86,30 +102,36 @@ class AudioService:
         elif not isinstance(tracks, list):
             raise ValueError
         tracks = [ensure_uri(t) for t in tracks]
-        self.bus.emit(Message('mycroft.audio.service.play',
-                              data={'tracks': tracks,
-                                    'utterance': utterance,
-                                    'repeat': repeat}))
+        msg = self._format_msg('mycroft.audio.service.play',
+                               {'tracks': tracks,
+                                'utterance': utterance,
+                                'repeat': repeat})
+        self.bus.emit(msg)
 
     def stop(self):
         """Stop the track."""
-        self.bus.emit(Message('mycroft.audio.service.stop'))
+        msg = self._format_msg('mycroft.audio.service.stop')
+        self.bus.emit(msg)
 
     def next(self):
         """Change to next track."""
-        self.bus.emit(Message('mycroft.audio.service.next'))
+        msg = self._format_msg('mycroft.audio.service.next')
+        self.bus.emit(msg)
 
     def prev(self):
         """Change to previous track."""
-        self.bus.emit(Message('mycroft.audio.service.prev'))
+        msg = self._format_msg('mycroft.audio.service.prev')
+        self.bus.emit(msg)
 
     def pause(self):
         """Pause playback."""
-        self.bus.emit(Message('mycroft.audio.service.pause'))
+        msg = self._format_msg('mycroft.audio.service.pause')
+        self.bus.emit(msg)
 
     def resume(self):
         """Resume paused playback."""
-        self.bus.emit(Message('mycroft.audio.service.resume'))
+        msg = self._format_msg('mycroft.audio.service.resume')
+        self.bus.emit(msg)
 
     def seek(self, seconds=1):
         """Seek X seconds.
@@ -128,8 +150,9 @@ class AudioService:
         Args:
             seconds (int): number of seconds to skip
         """
-        self.bus.emit(Message('mycroft.audio.service.seek_forward',
-                              {"seconds": seconds}))
+        msg = self._format_msg('mycroft.audio.service.seek_forward',
+                               {"seconds": seconds})
+        self.bus.emit(msg)
 
     def seek_backward(self, seconds=1):
         """Rewind X seconds
@@ -137,8 +160,9 @@ class AudioService:
          Args:
             seconds (int): number of seconds to rewind
         """
-        self.bus.emit(Message('mycroft.audio.service.seek_backward',
-                              {"seconds": seconds}))
+        msg = self._format_msg('mycroft.audio.service.seek_backward',
+                               {"seconds": seconds})
+        self.bus.emit(msg)
 
     def track_info(self):
         """Request information of current playing track.
@@ -146,9 +170,9 @@ class AudioService:
         Returns:
             Dict with track info.
         """
+        msg = self._format_msg('mycroft.audio.service.track_info')
         info = self.bus.wait_for_response(
-            Message('mycroft.audio.service.track_info'),
-            reply_type='mycroft.audio.service.track_info_reply',
+            msg, reply_type='mycroft.audio.service.track_info_reply',
             timeout=1)
         return info.data if info else {}
 
@@ -158,7 +182,7 @@ class AudioService:
         Returns:
             dict with backend names as keys
         """
-        msg = Message('mycroft.audio.service.list_backends')
+        msg = self._format_msg('mycroft.audio.service.list_backends')
         response = self.bus.wait_for_response(msg)
         return response.data if response else {}
 
