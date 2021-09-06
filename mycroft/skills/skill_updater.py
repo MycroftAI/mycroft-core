@@ -194,7 +194,7 @@ class SkillUpdater:
                 pass
             else:
                 shutil.rmtree(target_path)
-            shutil.copytree(source_path, target_path, dirs_exist_ok=False)
+            shutil.copytree(source_path, target_path)
             self.installed_skills.add(skill.name)
         self._save_installed_skills()
 

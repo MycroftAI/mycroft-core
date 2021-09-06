@@ -749,6 +749,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         # Notify system of recording start
         emitter.emit("recognizer_loop:record_begin")
 
+        LOG.info('[Flow Learning] in mycroft.client.speech.mic.py.ResponsiveRecognizer.listen, recording...  self._record_phrase is called.')
         frame_data = self._record_phrase(
             source,
             sec_per_buffer,
@@ -765,6 +766,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
                 self.saved_utterances_dir,
                 stamp
             )
+            LOG.info('[Flow Learning] in mycroft.client.speech.mic.py.ResponsiveRecognizer.listen, record is saved at ' + str(filename))
             with open(filename, 'wb') as filea:
                 filea.write(audio_data.get_wav_data())
             LOG.debug("Thinking...")
