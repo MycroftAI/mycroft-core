@@ -67,6 +67,7 @@ class CommonQuerySkill(MycroftSkill, ABC):
     This class works in conjunction with skill-query which collects
     answers from several skills presenting the best one available.
     """
+
     def __init__(self, name=None, bus=None):
         super().__init__(name, bus)
         noise_words_filepath = "text/%s/noise_words.list" % (self.lang,)
@@ -81,10 +82,10 @@ class CommonQuerySkill(MycroftSkill, ABC):
 
         # these should probably be configurable
         self.level_confidence = {
-                CQSMatchLevel.EXACT:0.9, 
-                CQSMatchLevel.CATEGORY:0.6, 
-                CQSMatchLevel.GENERAL:0.5
-                }
+            CQSMatchLevel.EXACT: 0.9,
+            CQSMatchLevel.CATEGORY: 0.6,
+            CQSMatchLevel.GENERAL: 0.5
+        }
 
     def bind(self, bus):
         """Overrides the default bind method of MycroftSkill.
@@ -114,7 +115,8 @@ class CommonQuerySkill(MycroftSkill, ABC):
             level = result[1]
             answer = result[2]
             callback = result[3] if len(result) > 3 else None
-            confidence = self.__calc_confidence(match, search_phrase, level, answer)
+            confidence = self.__calc_confidence(
+                match, search_phrase, level, answer)
             self.bus.emit(message.response({"phrase": search_phrase,
                                             "skill_id": self.skill_id,
                                             "answer": answer,
@@ -144,7 +146,7 @@ class CommonQuerySkill(MycroftSkill, ABC):
         consumed_pct /= 10
 
         # bonus for more sentences
-        num_sentences = float( float(len(answer.split("."))) / float(10) )
+        num_sentences = float(float(len(answer.split("."))) / float(10))
 
         # Add bonus if match has visuals and the device supports them.
         platform = self.config_core.get("enclosure", {}).get("platform")
@@ -167,14 +169,15 @@ class CommonQuerySkill(MycroftSkill, ABC):
 
         relevance = 0.0
         if answer_size > 0:
-            relevance = float( float(matches) / float(answer_size) )
+            relevance = float(float(matches) / float(answer_size))
 
         relevance = relevance * RELEVANCE_MULTIPLIER
 
         # extra credit for more words up to a point
-        wc_mod = float( float(answer_size) / float(WORD_COUNT_DIVISOR) ) * 2
+        wc_mod = float(float(answer_size) / float(WORD_COUNT_DIVISOR)) * 2
 
-        confidence = self.level_confidence[level] + consumed_pct + bonus + num_sentences + relevance + wc_mod
+        confidence = self.level_confidence[level] + \
+            consumed_pct + bonus + num_sentences + relevance + wc_mod
 
         return confidence
 
