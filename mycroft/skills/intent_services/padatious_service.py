@@ -137,11 +137,6 @@ class PadatiousService:
         for i in remove_list:
             self.__detach_intent(i)
 
-    def get_file_lang(self, file_name):
-        _path, _ = path.split(file_name)
-        _, _name = path.split(_path)
-        return _name
-
     def _register_object(self, message, object_name, register_func):
         """Generic method for registering a padatious object.
 
@@ -168,7 +163,7 @@ class PadatiousService:
         Args:
             message (Message): message triggering action
         """
-        lang = self.get_file_lang(message.data['file_name'])
+        lang = message.data['lang']
         if lang in self.supported_langs:
             if message.data['name'] not in self.registered_intents:
                 self.registered_intents.append(message.data['name'])
@@ -181,7 +176,7 @@ class PadatiousService:
         Args:
             message (Message): message triggering action
         """
-        lang = self.get_file_lang(message.data['file_name'])
+        lang = message.data['lang']
         if lang in self.supported_langs:
             self.registered_entities.append(message.data)
             self._register_object(

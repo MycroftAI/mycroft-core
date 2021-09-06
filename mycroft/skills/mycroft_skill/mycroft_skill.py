@@ -1040,7 +1040,8 @@ class MycroftSkill:
                 LOG.Error(
                     'Unable to find "{}" ("{}")'.format(intent_file, lang))
             else:
-                self.intent_service.register_padatious_intent(name, filename)
+                self.intent_service.register_padatious_intent(
+                    name, filename, lang)
                 found = True
         if handler and found:
             self.add_event(name, handler, 'mycroft.skill.handler')
@@ -1071,7 +1072,8 @@ class MycroftSkill:
             if not filename:
                 LOG.Error('Unable to find "{}"'.format(entity_file))
             else:
-                self.intent_service.register_padatious_entity(name, filename)
+                self.intent_service.register_padatious_entity(
+                    name, filename, lang)
 
     def handle_enable_intent(self, message):
         """Listener to enable a registered intent if it belongs to this skill.
@@ -1193,7 +1195,9 @@ class MycroftSkill:
             entity_type:    Intent handler entity to tie the word to
         """
         self.bus.emit(Message('register_vocab', {
-            'start': entity, 'end': to_alnum(self.skill_id) + entity_type
+            'start': entity,
+            'end': to_alnum(self.skill_id) + entity_type,
+            'lang': self.lang
         }))
 
     def register_regex(self, regex_str):

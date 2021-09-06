@@ -107,7 +107,7 @@ class IntentServiceInterface:
         """
         self.bus.emit(Message('remove_context', {'context': context}))
 
-    def register_padatious_intent(self, intent_name, filename):
+    def register_padatious_intent(self, intent_name, filename, lang):
         """Register a padatious intent file with Padatious.
 
         Args:
@@ -120,11 +120,12 @@ class IntentServiceInterface:
             raise FileNotFoundError('Unable to find "{}"'.format(filename))
 
         data = {"file_name": filename,
-                "name": intent_name}
+                "name": intent_name,
+                "lang": lang}
         self.bus.emit(Message("padatious:register_intent", data))
         self.registered_intents.append((intent_name.split(':')[-1], data))
 
-    def register_padatious_entity(self, entity_name, filename):
+    def register_padatious_entity(self, entity_name, filename, lang):
         """Register a padatious entity file with Padatious.
 
         Args:
@@ -138,7 +139,8 @@ class IntentServiceInterface:
 
         self.bus.emit(Message('padatious:register_entity', {
             'file_name': filename,
-            'name': entity_name
+            'name': entity_name,
+            "lang": lang
         }))
 
     def __iter__(self):
