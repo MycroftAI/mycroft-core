@@ -331,6 +331,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         self._watchdog = watchdog or (lambda: None)  # Default to dummy func
         self.config = Configuration.get()
         listener_config = self.config.get('listener')
+        self.instant_listen = listener_config.get("instant_listen", False)
         self.upload_url = listener_config['wake_word_upload']['url']
         self.upload_disabled = listener_config['wake_word_upload']['disable']
         self.wake_word_name = wake_word_recognizer.key_phrase
@@ -672,9 +673,14 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         audio_file = resolve_resource_file(
             self.config.get('sounds').get('start_listening'))
         if audio_file:
-            source.mute()
-            play_wav(audio_file).wait()
-            source.unmute()
+            if self.instant_listen:
+                # keep recording while playing sound
+                # assume STT can handle it
+                play_wav(audio_file)
+            else:
+                source.mute()
+                play_wav(audio_file).wait()
+                source.unmute()
             return True
         else:
             return False
@@ -727,9 +733,10 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         # indicate recording has begun.
         if self.config.get('confirm_listening'):
             if self.mute_and_confirm_listening(source):
-                # Clear frames from wakeword detctions since they're
+                # Clear frames from wakeword detections since they're
                 # irrelevant after mute - play wav - unmute sequence
-                ww_frames = None
+                if not self.instant_listen:
+                    ww_frames = None
 
         # Notify system of recording start
         emitter.emit("recognizer_loop:record_begin")
