@@ -86,6 +86,8 @@ def _play_cmd(cmd, uri, config, environment):
     environment = environment or _get_pulse_environment(config)
     cmd_elements = str(cmd).split(" ")
     cmdline = [e if e != '%1' else uri for e in cmd_elements]
+    LOG.info('[Flow Learning] in audio_utils.py, cmdline, env :' + str(cmdline) + ', ' + str(environment))
+    LOG.info('[Flow Learning] in audio_utils.py, subprocess.Popen()')
     return subprocess.Popen(cmdline, env=environment)
 
 
@@ -104,6 +106,7 @@ def play_wav(uri, environment=None):
     """
     config = mycroft.configuration.Configuration.get()
     play_wav_cmd = config['play_wav_cmdline']
+    LOG.info('[Flow Learning] in audio_utils.py.play_wav(), play_wav_cmd, uri ' + str(play_wav_cmd) + ', ' + str(uri))
     try:
         return _play_cmd(play_wav_cmd, uri, config, environment)
     except FileNotFoundError as e:
@@ -129,6 +132,7 @@ def play_mp3(uri, environment=None):
     """
     config = mycroft.configuration.Configuration.get()
     play_mp3_cmd = config.get("play_mp3_cmdline")
+    LOG.info('[Flow Learning] in audio_utils.py.play_wav(), play_mp3_cmd, uri ' + str(play_mp3_cmd) + str(uri))
     try:
         return _play_cmd(play_mp3_cmd, uri, config, environment)
     except FileNotFoundError as e:
