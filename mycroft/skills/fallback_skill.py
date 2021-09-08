@@ -18,8 +18,7 @@ utterances not handled by the intent system.
 import operator
 from mycroft.metrics import report_timing, Stopwatch
 from mycroft.util.log import LOG
-
-
+from mycroft.skills.permissions import FallbackMode
 from mycroft.skills.mycroft_skill import MycroftSkill, get_handler_name
 
 
@@ -52,16 +51,20 @@ class FallbackSkill(MycroftSkill):
 
     def __init__(self, name=None, bus=None, use_settings=True):
         super().__init__(name, bus, use_settings)
-
         #  list of fallback handlers registered by this instance
         self.instance_fallback_handlers = []
+
+        # "skill_id": priority (int)  overrides
+        self.fallback_config = self.config_core["skills"].get("fallbacks", {})
 
     @classmethod
     def make_intent_failure_handler(cls, bus):
         """Goes through all fallback handlers until one returns True"""
 
         def handler(message):
-            start, stop = message.data.get('fallback_range', (0, 101))
+            # No hard limit to 100, while not officially supported
+            # mycroft-lib can handle fallback priorities up to 999
+            start, stop = message.data.get('fallback_range', (0, 1000))
             # indicate fallback handling start
             LOG.debug('Checking fallbacks in range '
                       '{} - {}'.format(start, stop))
@@ -132,6 +135,21 @@ class FallbackSkill(MycroftSkill):
         """Register a fallback with the list of fallback handlers and with the
         list of handlers registered by this instance
         """
+        opmode = self.fallback_config.get("fallback_mode",
+                                          FallbackMode.ACCEPT_ALL)
+        priority_overrides = self.fallback_config.get("fallback_priorities", {})
+        fallback_blacklist = self.fallback_config.get("fallback_blacklist", [])
+        fallback_whitelist = self.fallback_config.get("fallback_whitelist", [])
+
+        if opmode == FallbackMode.BLACKLIST and \
+                self.skill_id in fallback_blacklist:
+            return
+        if opmode == FallbackMode.WHITELIST and \
+                self.skill_id not in fallback_whitelist:
+            return
+
+        # check if .conf is overriding the priority for this skill
+        priority = priority_overrides.get(self.skill_id, priority)
 
         def wrapper(*args, **kwargs):
             if handler(*args, **kwargs):
