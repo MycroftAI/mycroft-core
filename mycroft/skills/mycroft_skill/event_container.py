@@ -67,7 +67,10 @@ def create_wrapper(handler, skill_id, on_start, on_end, on_error):
 
         except Exception as e:
             if on_error:
-                on_error(e)
+                if len(signature(on_error).parameters) == 2:
+                    on_error(e, message)
+                else:
+                    on_error(e)
         finally:
             if on_end:
                 on_end(message)

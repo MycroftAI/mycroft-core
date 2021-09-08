@@ -404,6 +404,7 @@ class CommonIoTSkill(MycroftSkill, ABC):
         if can_handle:
             data.update({"skill_id": self.skill_id,
                          "callback_data": callback_data})
+            message.context["skill_id"] = self.skill_id
             self.bus.emit(message.response(data))
 
     @_track_request
@@ -423,6 +424,7 @@ class CommonIoTSkill(MycroftSkill, ABC):
     def speak(self, utterance, *args, **kwargs):
         if self._current_iot_request:
             message = dig_for_message()
+            message.context["skill_id"] = self.skill_id
             self.bus.emit(message.forward(_BusKeys.SPEAK,
                                           data={"skill_id": self.skill_id,
                                                 IOT_REQUEST_ID:
@@ -459,7 +461,8 @@ class CommonIoTSkill(MycroftSkill, ABC):
             self.bus.emit(Message(_BusKeys.REGISTER,
                                   data={"skill_id": self.skill_id,
                                         "type": word_type,
-                                        "words": list(words)}))
+                                        "words": list(words)},
+                                  context={"skill_id": self.skill_id}))
 
     def register_entities_and_scenes(self):
         """

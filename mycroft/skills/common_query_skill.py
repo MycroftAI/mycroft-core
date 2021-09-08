@@ -100,7 +100,7 @@ class CommonQuerySkill(MycroftSkill, ABC):
 
     def __handle_question_query(self, message):
         search_phrase = message.data["phrase"]
-
+        message.context["skill_id"] = self.skill_id
         # First, notify the requestor that we are attempting to handle
         # (this extends a timeout while this skill looks for a match)
         self.bus.emit(message.response({"phrase": search_phrase,

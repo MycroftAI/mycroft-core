@@ -281,7 +281,7 @@ class EventSchedulerInterface:
     """Interface for accessing the event scheduler over the message bus."""
     def __init__(self, name, sched_id=None, bus=None):
         self.name = name
-        self.sched_id = sched_id
+        self.sched_id = sched_id or self.__class__.__name__
         self.bus = bus
         self.events = EventContainer(bus)
 
@@ -335,7 +335,7 @@ class EventSchedulerInterface:
         data = data or {}
 
         def on_error(e):
-            LOG.exception('An error occured executing the scheduled event '
+            LOG.exception('An error occurred executing the scheduled event '
                           '{}'.format(repr(e)))
 
         wrapped = create_basic_wrapper(handler, on_error)
@@ -344,6 +344,8 @@ class EventSchedulerInterface:
                       'event': unique_name,
                       'repeat': repeat_interval,
                       'data': data}
+        context = context or {}
+        context["skill_id"] = self.sched_id
         self.bus.emit(Message('mycroft.scheduler.schedule_event',
                               data=event_data, context=context))
 
@@ -406,7 +408,7 @@ class EventSchedulerInterface:
             'data': data
         }
         self.bus.emit(Message('mycroft.schedule.update_event',
-                              data=data))
+                              data=data, context={"skill_id": self.sched_id}))
 
     def cancel_scheduled_event(self, name):
         """Cancel a pending event. The event will no longer be scheduled
@@ -421,7 +423,8 @@ class EventSchedulerInterface:
             self.scheduled_repeats.remove(name)
         if self.events.remove(unique_name):
             self.bus.emit(Message('mycroft.scheduler.remove_event',
-                                  data=data))
+                                  data=data,
+                                  context={"skill_id": self.sched_id}))
 
     def get_scheduled_event_status(self, name):
         """Get scheduled event data and return the amount of time left
@@ -439,7 +442,8 @@ class EventSchedulerInterface:
         data = {'name': event_name}
 
         reply_name = 'mycroft.event_status.callback.{}'.format(event_name)
-        msg = Message('mycroft.scheduler.get_event', data=data)
+        msg = Message('mycroft.scheduler.get_event', data=data,
+                      context={"skill_id": self.sched_id})
         status = self.bus.wait_for_response(msg, reply_type=reply_name)
 
         if status:

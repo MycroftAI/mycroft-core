@@ -86,7 +86,7 @@ class CommonPlaySkill(MycroftSkill, ABC):
     def __handle_play_query(self, message):
         """Query skill if it can start playback from given phrase."""
         search_phrase = message.data["phrase"]
-
+        message.context["skill_id"] = self.skill_id
         # First, notify the requestor that we are attempting to handle
         # (this extends a timeout while this skill looks for a match)
         self.bus.emit(message.response({"phrase": search_phrase,
@@ -160,6 +160,7 @@ class CommonPlaySkill(MycroftSkill, ABC):
         # Stop any currently playing audio
         if self.audioservice.is_playing:
             self.audioservice.stop()
+        message.context["skill_id"] = self.skill_id
         self.bus.emit(message.forward("mycroft.stop"))
 
         # Save for CPS_play() later, e.g. if phrase includes modifiers like

@@ -254,6 +254,7 @@ class MycroftSkill:
             self._bus = bus
             self.events.set_bus(bus)
             self.intent_service.set_bus(bus)
+            self.intent_service.set_id(self.skill_id)
             self.event_scheduler.set_bus(bus)
             self.event_scheduler.set_id(self.skill_id)
             self._enclosure = EnclosureAPI(bus, self.name)
@@ -276,6 +277,7 @@ class MycroftSkill:
             """Boiler plate for returning the response to the sender."""
             def wrapper(message):
                 result = func(*message.data['args'], **message.data['kwargs'])
+                message.context["skill_id"] = self.skill_id
                 self.bus.emit(message.response(data={'result': result}))
 
             return wrapper
@@ -378,6 +380,7 @@ class MycroftSkill:
 
     def _send_public_api(self, message):
         """Respond with the skill's public api."""
+        message.context["skill_id"] = self.skill_id
         self.bus.emit(message.response(data=self.public_api))
 
     def get_intro_message(self):
@@ -504,7 +507,10 @@ class MycroftSkill:
         if dialog:
             self.speak_dialog(dialog, data, expect_response=True, wait=True)
         else:
-            self.bus.emit(Message('mycroft.mic.listen'))
+            msg = dig_for_message()
+            msg = msg.reply('mycroft.mic.listen') if msg else \
+                  Message('mycroft.mic.listen', context={"skill_id": self.skill_id})
+            self.bus.emit(msg)
         return self._wait_response(is_cancel, validator, on_fail_fn,
                                    num_retries)
 
@@ -518,6 +524,11 @@ class MycroftSkill:
             on_fail (callable): function handling retries
 
         """
+        msg = dig_for_message()
+        msg = msg.reply('mycroft.mic.listen') if msg else \
+              Message('mycroft.mic.listen',
+                      context={"skill_id": self.skill_id})
+
         num_fails = 0
         while True:
             response = self.__get_response()
@@ -543,7 +554,7 @@ class MycroftSkill:
             if line:
                 self.speak(line, expect_response=True)
             else:
-                self.bus.emit(Message('mycroft.mic.listen'))
+                self.bus.emit(msg)
 
     def ask_yesno(self, prompt, data=None):
         """Read prompt and wait for a yes/no answer
@@ -697,18 +708,23 @@ class MycroftSkill:
         This enables converse method to be called even without skill being
         used in last 5 minutes.
         """
-        self.bus.emit(Message('active_skill_request',
-                              {'skill_id': self.skill_id}))
+        msg = dig_for_message() or Message("")
+        if "skill_id" not in msg.context:
+            msg.context["skill_id"] = self.skill_id
+        self.bus.emit(msg.forward('active_skill_request',
+                                  {'skill_id': self.skill_id}))
 
-    def _handle_collect_resting(self, _=None):
+    def _handle_collect_resting(self, message=None):
         """Handler for collect resting screen messages.
 
         Sends info on how to trigger this skills resting page.
         """
         self.log.info('Registering resting screen')
-        message = Message(
+        msg = message or Message("")
+        message = msg.reply(
             'mycroft.mark2.register_idle',
-            data={'name': self.resting_name, 'id': self.skill_id}
+            data={'name': self.resting_name, 'id': self.skill_id},
+            context={"skill_id": self.skill_id}
         )
         self.bus.emit(message)
 
@@ -808,7 +824,7 @@ class MycroftSkill:
             # when resource not found try fallback to en-us
             LOG.warning(
                 "Resource '{}' for lang '{}' not found: trying 'en-us'"
-                .format(res_name, self.lang)
+                    .format(res_name, self.lang)
             )
             result = self._find_resource(res_name, 'en-us', res_dirname)
         return result
@@ -918,22 +934,29 @@ class MycroftSkill:
         """
         skill_data = {'name': get_handler_name(handler)}
 
-        def on_error(e):
+        def on_error(error, message):
             """Speak and log the error."""
             # Convert "MyFancySkill" to "My Fancy Skill" for speaking
             handler_name = camel_case_split(self.name)
             msg_data = {'skill': handler_name}
-            msg = dialog.get('skill.error', self.lang, msg_data)
-            self.speak(msg)
-            LOG.exception(msg)
+            speech = dialog.get('skill.error', self.lang, msg_data)
+            self.speak(speech)
+            LOG.exception(error)
             # append exception information in message
-            skill_data['exception'] = repr(e)
+            skill_data['exception'] = repr(error)
+            if handler_info:
+                # Indicate that the skill handler errored
+                msg_type = handler_info + '.error'
+                message = message or Message("")
+                message.context["skill_id"] = self.skill_id
+                self.bus.emit(message.forward(msg_type, skill_data))
 
         def on_start(message):
             """Indicate that the skill handler is starting."""
             if handler_info:
                 # Indicate that the skill handler is starting if requested
                 msg_type = handler_info + '.start'
+                message.context["skill_id"] = self.skill_id
                 self.bus.emit(message.forward(msg_type, skill_data))
 
         def on_end(message):
@@ -944,6 +967,7 @@ class MycroftSkill:
                 self._initial_settings = deepcopy(self.settings)
             if handler_info:
                 msg_type = handler_info + '.complete'
+                message.context["skill_id"] = self.skill_id
                 self.bus.emit(message.forward(msg_type, skill_data))
 
         wrapper = create_wrapper(handler, self.skill_id, on_start, on_end,
@@ -1148,7 +1172,10 @@ class MycroftSkill:
             context:    Keyword
             word:       word connected to keyword
         """
-        self.bus.emit(Message('mycroft.skill.set_cross_context',
+        msg = dig_for_message() or Message("")
+        if "skill_id" not in msg.context:
+            msg.context["skill_id"] = self.skill_id
+        self.bus.emit(msg.forward('mycroft.skill.set_cross_context',
                               {'context': context, 'word': word,
                                'origin': self.skill_id}))
 
@@ -1156,7 +1183,10 @@ class MycroftSkill:
         """Tell all skills to remove a keyword from the context manager."""
         if not isinstance(context, str):
             raise ValueError('context should be a string')
-        self.bus.emit(Message('mycroft.skill.remove_cross_context',
+        msg = dig_for_message() or Message("")
+        if "skill_id" not in msg.context:
+            msg.context["skill_id"] = self.skill_id
+        self.bus.emit(msg.forward('mycroft.skill.remove_cross_context',
                               {'context': context}))
 
     def remove_context(self, context):
@@ -1208,6 +1238,7 @@ class MycroftSkill:
         message = dig_for_message()
         m = message.forward("speak", data) if message \
             else Message("speak", data)
+        m.context["skill_id"] = self.skill_id
         self.bus.emit(m)
 
         if wait:
@@ -1321,15 +1352,15 @@ class MycroftSkill:
         for regex in regexes:
             self.intent_service.register_adapt_regex(regex)
 
-    def __handle_stop(self, _):
+    def __handle_stop(self, message):
         """Handler for the "mycroft.stop" signal. Runs the user defined
         `stop()` method.
         """
         try:
             if self.stop():
-                self.bus.emit(Message("mycroft.stop.handled",
-                                      {"by": "skill:" + self.skill_id},
-                                      {"skill_id": self.skill_id}))
+                self.bus.emit(message.reply("mycroft.stop.handled",
+                                            {"by": "skill:" + self.skill_id},
+                                            {"skill_id": self.skill_id}))
         except Exception as e:
             LOG.exception(e)
             LOG.error(f'Failed to stop skill: {self.name}')
@@ -1382,8 +1413,8 @@ class MycroftSkill:
                       'an error: {}'.format(repr(e)))
 
         self.bus.emit(
-            Message('detach_skill', {'skill_id': str(self.skill_id) + ':'}))
-
+            Message('detach_skill', {'skill_id': str(self.skill_id) + ':'},
+                    {"skill_id": self.skill_id}))
 
     def schedule_event(self, handler, when, data=None, name=None,
                        context=None):
@@ -1405,6 +1436,7 @@ class MycroftSkill:
         """
         message = dig_for_message()
         context = context or message.context if message else {}
+        context["skill_id"] = self.skill_id
         return self.event_scheduler.schedule_event(handler, when, data, name,
                                                    context=context)
 
@@ -1427,6 +1459,7 @@ class MycroftSkill:
         """
         message = dig_for_message()
         context = context or message.context if message else {}
+        context["skill_id"] = self.skill_id
         return self.event_scheduler.schedule_repeating_event(
             handler,
             when,

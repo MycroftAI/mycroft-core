@@ -462,6 +462,7 @@ class SkillManager(Thread):
         try:
             for skill_loader in self.skill_loaders.values():
                 if message.data['skill'] == skill_loader.skill_id:
+                    LOG.info("Deactivating skill: " + skill_loader.skill_id)
                     skill_loader.deactivate()
         except Exception:
             LOG.exception('Failed to deactivate ' + message.data['skill'])
