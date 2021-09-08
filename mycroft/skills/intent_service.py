@@ -305,7 +305,8 @@ class IntentService:
                 # Launch skill if not handled by the match function
                 if match.intent_type:
                     reply = message.reply(match.intent_type, match.intent_data)
-                    reply.data["utterances"] = utterances  # Add back original utterances for intent handlers
+                    # Add back original utterances for intent handlers
+                    reply.data["utterances"] = utterances
                     self.bus.emit(reply)
 
             else:
