@@ -306,6 +306,7 @@ class IntentService:
                 if match.intent_type:
                     reply = message.reply(match.intent_type, match.intent_data)
                     # Add back original utterances for intent handlers
+                    # match.intent_data only includes the utterance with the highest confidence
                     reply.data["utterances"] = utterances
                     self.bus.emit(reply)
 
