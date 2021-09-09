@@ -281,11 +281,15 @@ class RecognizerLoop(EventEmitter):
                   operational status.
     """
 
-    def __init__(self, watchdog=None):
+    def __init__(self, watchdog=None, stt=None):
         super(RecognizerLoop, self).__init__()
         self._watchdog = watchdog
         self.mute_calls = 0
         self._load_config()
+        self._stt = stt
+
+    def bind(self, stt):
+        self._stt = stt
 
     def _load_config(self):
         """Load configuration parameters from configuration."""
@@ -369,7 +373,10 @@ class RecognizerLoop(EventEmitter):
     def start_async(self):
         """Start consumer and producer threads."""
         self.state.running = True
-        stt = STTFactory.create()
+        if self._stt:
+            stt = self._stt
+        else:
+            stt = STTFactory.create()
         queue = Queue()
         stream_handler = None
         if stt.can_stream:
