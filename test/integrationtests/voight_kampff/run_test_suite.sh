@@ -9,6 +9,10 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
 # Start pulseaudio if running in CI environment
 if [[ -v CI ]]; then
+    # Ensure pulseaudio is stateless on start up
+    # This stops the daemon from randomly failing on startup
+    # See https://superuser.com/a/1545361 for more info
+    rm -rf /root/.config/pulse
     pulseaudio -D
 fi
 # Start all mycroft core services.
