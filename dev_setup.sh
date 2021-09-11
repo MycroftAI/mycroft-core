@@ -62,6 +62,7 @@ Options:
     -p arg, --python arg    Sets the python version to use
     -r, --allow-root        Allow to be run as root (e.g. sudo)
     -sm                     Skip mimic build
+    --skip                  Skip interactive setup
 '
 }
 
@@ -70,6 +71,7 @@ opt_forcemimicbuild=false
 opt_allowroot=false
 opt_skipmimicbuild=false
 opt_python=python3
+opt_skip=false
 param=''
 
 for var in "$@" ; do
@@ -93,7 +95,10 @@ for var in "$@" ; do
             exit 1
         fi
     fi
-    
+
+    if [[ $var == '--skip' ]] ; then
+        opt_skip=true
+    fi
 
     if [[ $var == '-r' || $var == '--allow-root' ]] ; then
         opt_allowroot=true
@@ -165,157 +170,161 @@ if found_exe tput ; then
 fi
 
 # Run a setup wizard the very first time that guides the user through some decisions
-if [[ ! -f .dev_opts.json && -z $CI ]] ; then
-    echo "
-$CYAN                    Welcome to Mycroft!  $RESET"
-    sleep 0.5
-    echo '
-This script is designed to make working with Mycroft easy.  During this
-first run of dev_setup we will ask you a few questions to help setup
-your environment.'
-    sleep 0.5
-    # The AVX instruction set is an x86 construct
-    # ARM has a range of equivalents, unsure which are (un)supported by TF.
-    if ! grep -q avx /proc/cpuinfo && [[ ! $(uname -m) == 'arm'* ]]; then
+if [[ $opt_skip == false && $opt_skip == false ]] ; then
+  if [[ ! -f .dev_opts.json && -z $CI ]] ; then
       echo "
-The Precise Wake Word Engine requires the AVX instruction set, which is
-not supported on your CPU. Do you want to fall back to the PocketSphinx
-engine? Advanced users can build the precise engine with an older
-version of TensorFlow (v1.13) if desired and change use_precise to true
-in mycroft.conf.
-  Y)es, I want to use the PocketSphinx engine or my own.
-  N)o, stop the installation."
-      if get_YN ; then
-        if [[ ! -f /etc/mycroft/mycroft.conf ]]; then
-          $SUDO mkdir -p /etc/mycroft
-          $SUDO touch /etc/mycroft/mycroft.conf
-          $SUDO bash -c 'echo "{ \"use_precise\": true }" > /etc/mycroft/mycroft.conf'
-        else
-          $SUDO bash -c 'jq ". + { \"use_precise\": true }" /etc/mycroft/mycroft.conf > tmp.mycroft.conf' 
-          $SUDO mv -f tmp.mycroft.conf /etc/mycroft/mycroft.conf
-        fi
-      else
-        echo -e "$HIGHLIGHT N - quit the installation $RESET"
-        exit 1
-      fi
-      echo
-    fi
-    echo "
-Do you want to run on 'master' or against a dev branch?  Unless you are
-a developer modifying mycroft-core itself, you should run on the
-'master' branch.  It is updated bi-weekly with a stable release.
-  Y)es, run on the stable 'master' branch
-  N)o, I want to run unstable branches"
-    if get_YN ; then
-        echo -e "$HIGHLIGHT Y - using 'master' branch $RESET"
-        branch=master
-        git checkout ${branch}
-    else
-        echo -e "$HIGHLIGHT N - using an unstable branch $RESET"
-        branch=dev
-    fi
-
-    sleep 0.5
-    echo "
-Mycroft is actively developed and constantly evolving.  It is recommended
-that you update regularly.  Would you like to automatically update
-whenever launching Mycroft?  This is highly recommended, especially for
-those running against the 'master' branch.
-  Y)es, automatically check for updates
-  N)o, I will be responsible for keeping Mycroft updated."
-    if get_YN ; then
-        echo -e "$HIGHLIGHT Y - update automatically $RESET"
-        autoupdate=true
-    else
-        echo -e "$HIGHLIGHT N - update manually using 'git pull' $RESET"
-        autoupdate=false
-    fi
-
-    #  Pull down mimic source?  Most will be happy with just the package
-    if [[ $opt_forcemimicbuild == false && $opt_skipmimicbuild == false ]] ; then
-        sleep 0.5
-        echo '
-Mycroft uses its Mimic technology to speak to you.  Mimic can run both
-locally and from a server.  The local Mimic is more robotic, but always
-available regardless of network connectivity.  It will act as a fallback
-if unable to contact the Mimic server.
-
-However, building the local Mimic is time consuming -- it can take hours
-on slower machines.  This can be skipped, but Mycroft will be unable to
-talk if you lose network connectivity.  Would you like to build Mimic
-locally?'
-        if get_YN ; then
-            echo -e "$HIGHLIGHT Y - Mimic will be built $RESET"
-        else
-            echo -e "$HIGHLIGHT N - skip Mimic build $RESET"
-            opt_skipmimicbuild=true
-        fi
-    fi
-
-    echo
-    # Add mycroft-core/bin to the .bashrc PATH?
-    sleep 0.5
-    echo '
-There are several Mycroft helper commands in the bin folder.  These
-can be added to your system PATH, making it simpler to use Mycroft.
-Would you like this to be added to your PATH in the .profile?'
-    if get_YN ; then
-        echo -e "$HIGHLIGHT Y - Adding Mycroft commands to your PATH $RESET"
-
-        if [[ ! -f ~/.profile_mycroft ]] ; then
-            # Only add the following to the .profile if .profile_mycroft
-            # doesn't exist, indicating this script has not been run before
-            echo '' >> ~/.profile
-            echo '# include Mycroft commands' >> ~/.profile
-            echo 'source ~/.profile_mycroft' >> ~/.profile
-        fi
-
+  $CYAN                    Welcome to Mycroft!  $RESET"
+      sleep 0.5
+      echo '
+  This script is designed to make working with Mycroft easy.  During this
+  first run of dev_setup we will ask you a few questions to help setup
+  your environment.'
+      sleep 0.5
+      # The AVX instruction set is an x86 construct
+      # ARM has a range of equivalents, unsure which are (un)supported by TF.
+      if ! grep -q avx /proc/cpuinfo && [[ ! $(uname -m) == 'arm'* ]]; then
         echo "
-# WARNING: This file may be replaced in future, do not customize.
-# set path so it includes Mycroft utilities
-if [ -d \"${TOP}/bin\" ] ; then
-    PATH=\"\$PATH:${TOP}/bin\"
-fi" > ~/.profile_mycroft
-        echo -e "Type ${CYAN}mycroft-help$RESET to see available commands."
-    else
-        echo -e "$HIGHLIGHT N - PATH left unchanged $RESET"
-    fi
+  The Precise Wake Word Engine requires the AVX instruction set, which is
+  not supported on your CPU. Do you want to fall back to the PocketSphinx
+  engine? Advanced users can build the precise engine with an older
+  version of TensorFlow (v1.13) if desired and change use_precise to true
+  in mycroft.conf.
+    Y)es, I want to use the PocketSphinx engine or my own.
+    N)o, stop the installation."
+        if get_YN ; then
+          if [[ ! -f /etc/mycroft/mycroft.conf ]]; then
+            $SUDO mkdir -p /etc/mycroft
+            $SUDO touch /etc/mycroft/mycroft.conf
+            $SUDO bash -c 'echo "{ \"use_precise\": true }" > /etc/mycroft/mycroft.conf'
+          else
+            $SUDO bash -c 'jq ". + { \"use_precise\": true }" /etc/mycroft/mycroft.conf > tmp.mycroft.conf'
+            $SUDO mv -f tmp.mycroft.conf /etc/mycroft/mycroft.conf
+          fi
+        else
+          echo -e "$HIGHLIGHT N - quit the installation $RESET"
+          exit 1
+        fi
+        echo
+      fi
+      echo "
+  Do you want to run on 'master' or against a dev branch?  Unless you are
+  a developer modifying mycroft-core itself, you should run on the
+  'master' branch.  It is updated bi-weekly with a stable release.
+    Y)es, run on the stable 'master' branch
+    N)o, I want to run unstable branches"
+      if get_YN ; then
+          echo -e "$HIGHLIGHT Y - using 'master' branch $RESET"
+          branch=master
+          git checkout ${branch}
+      else
+          echo -e "$HIGHLIGHT N - using an unstable branch $RESET"
+          branch=dev
+      fi
 
-    # Create a link to the 'skills' folder.
-    sleep 0.5
-    echo
-    echo 'The standard location for Mycroft skills is under /opt/mycroft/skills.'
-    if [[ ! -d /opt/mycroft/skills ]] ; then
-        echo 'This script will create that folder for you.  This requires sudo'
-        echo 'permission and might ask you for a password...'
-        setup_user=$USER
-        setup_group=$(id -gn $USER)
-        $SUDO mkdir -p /opt/mycroft/skills
-        $SUDO chown -R ${setup_user}:${setup_group} /opt/mycroft
-        echo 'Created!'
-    fi
-    if [[ ! -d skills ]] ; then
-        ln -s /opt/mycroft/skills skills
-        echo "For convenience, a soft link has been created called 'skills' which leads"
-        echo 'to /opt/mycroft/skills.'
-    fi
+      sleep 0.5
+      echo "
+  Mycroft is actively developed and constantly evolving.  It is recommended
+  that you update regularly.  Would you like to automatically update
+  whenever launching Mycroft?  This is highly recommended, especially for
+  those running against the 'master' branch.
+    Y)es, automatically check for updates
+    N)o, I will be responsible for keeping Mycroft updated."
+      if get_YN ; then
+          echo -e "$HIGHLIGHT Y - update automatically $RESET"
+          autoupdate=true
+      else
+          echo -e "$HIGHLIGHT N - update manually using 'git pull' $RESET"
+          autoupdate=false
+      fi
 
-    # Add PEP8 pre-commit hook
-    sleep 0.5
-    echo '
-(Developer) Do you want to automatically check code-style when submitting code.
-If unsure answer yes.
-'
-    if get_YN ; then
-        echo 'Will install PEP8 pre-commit hook...'
-        INSTALL_PRECOMMIT_HOOK=true
-    fi
+      #  Pull down mimic source?  Most will be happy with just the package
+      if [[ $opt_forcemimicbuild == false && $opt_skipmimicbuild == false ]] ; then
+          sleep 0.5
+          echo '
+  Mycroft uses its Mimic technology to speak to you.  Mimic can run both
+  locally and from a server.  The local Mimic is more robotic, but always
+  available regardless of network connectivity.  It will act as a fallback
+  if unable to contact the Mimic server.
 
-    # Save options
-    echo '{"use_branch": "'$branch'", "auto_update": '$autoupdate'}' > .dev_opts.json
+  However, building the local Mimic is time consuming -- it can take hours
+  on slower machines.  This can be skipped, but Mycroft will be unable to
+  talk if you lose network connectivity.  Would you like to build Mimic
+  locally?'
+          if get_YN ; then
+              echo -e "$HIGHLIGHT Y - Mimic will be built $RESET"
+          else
+              echo -e "$HIGHLIGHT N - skip Mimic build $RESET"
+              opt_skipmimicbuild=true
+          fi
+      fi
 
-    echo -e '\nInteractive portion complete, now installing dependencies...\n'
-    sleep 5
+      echo
+      # Add mycroft-core/bin to the .bashrc PATH?
+      sleep 0.5
+      echo '
+  There are several Mycroft helper commands in the bin folder.  These
+  can be added to your system PATH, making it simpler to use Mycroft.
+  Would you like this to be added to your PATH in the .profile?'
+      if get_YN ; then
+          echo -e "$HIGHLIGHT Y - Adding Mycroft commands to your PATH $RESET"
+
+          if [[ ! -f ~/.profile_mycroft ]] ; then
+              # Only add the following to the .profile if .profile_mycroft
+              # doesn't exist, indicating this script has not been run before
+              echo '' >> ~/.profile
+              echo '# include Mycroft commands' >> ~/.profile
+              echo 'source ~/.profile_mycroft' >> ~/.profile
+          fi
+
+          echo "
+  # WARNING: This file may be replaced in future, do not customize.
+  # set path so it includes Mycroft utilities
+  if [ -d \"${TOP}/bin\" ] ; then
+      PATH=\"\$PATH:${TOP}/bin\"
+  fi" > ~/.profile_mycroft
+          echo -e "Type ${CYAN}mycroft-help$RESET to see available commands."
+      else
+          echo -e "$HIGHLIGHT N - PATH left unchanged $RESET"
+      fi
+
+      # Create a link to the 'skills' folder.
+      sleep 0.5
+      echo
+      echo 'The standard location for Mycroft skills is under /opt/mycroft/skills.'
+      if [[ ! -d /opt/mycroft/skills ]] ; then
+          echo 'This script will create that folder for you.  This requires sudo'
+          echo 'permission and might ask you for a password...'
+          setup_user=$USER
+          setup_group=$(id -gn $USER)
+          $SUDO mkdir -p /opt/mycroft/skills
+          $SUDO chown -R ${setup_user}:${setup_group} /opt/mycroft
+          echo 'Created!'
+      fi
+      if [[ ! -d skills ]] ; then
+          ln -s /opt/mycroft/skills skills
+          echo "For convenience, a soft link has been created called 'skills' which leads"
+          echo 'to /opt/mycroft/skills.'
+      fi
+
+      # Add PEP8 pre-commit hook
+      sleep 0.5
+      echo '
+  (Developer) Do you want to automatically check code-style when submitting code.
+  If unsure answer yes.
+  '
+      if get_YN ; then
+          echo 'Will install PEP8 pre-commit hook...'
+          INSTALL_PRECOMMIT_HOOK=true
+      fi
+
+      # Save options
+      echo '{"use_branch": "'$branch'", "auto_update": '$autoupdate'}' > .dev_opts.json
+
+      echo -e '\nInteractive portion complete, now installing dependencies...\n'
+      sleep 5
+  fi
+else
+  echo -e '\nSkipping interactive setup\n'
 fi
 
 function os_is() {
