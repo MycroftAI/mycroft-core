@@ -246,8 +246,12 @@ class MycroftSkill:
 
     @property
     def lang(self):
-        """Get the configured language."""
-        return self.config_core.get('lang')
+        """Get the current language."""
+        message = dig_for_message()
+        core_lang = Configuration.get().get("lang", "en-us")
+        if message:
+            return message.data.get("lang") or core_lang
+        return core_lang
 
     @property
     def secondary_langs(self):
@@ -264,7 +268,7 @@ class MycroftSkill:
         """
         # NOTE this should not be private, but for backwards compat with
         # mycroft-core it is, dont want skills to call it directly
-        lang = lang or self._dig_for_lang()
+        lang = lang or self.lang
         lang_path = join(base_path, lang)
 
         # base_path/en-us
@@ -488,12 +492,6 @@ class MycroftSkill:
         self.converse = default_converse
         return converse.response
 
-    def _dig_for_lang(self):
-        message = dig_for_message()
-        if message:
-            return message.data.get("lang") or self.lang
-        return self.lang
-
     def get_response(self, dialog='', data=None, validator=None,
                      on_fail=None, num_retries=-1):
         """Get response from user.
@@ -531,9 +529,7 @@ class MycroftSkill:
         """
         data = data or {}
 
-        lang = self._dig_for_lang()
-        renderer = self.dialog_renderers.get(lang) or \
-                   self.dialog_renderers.get(self.lang)
+        renderer = self.dialog_renderers.get(self.lang)
 
         def on_fail_default(utterance):
             fail_data = data.copy()
@@ -841,9 +837,7 @@ class MycroftSkill:
         Returns:
             str: A randomly chosen string from the file
         """
-        lang = self._dig_for_lang()
-        renderer = self.dialog_renderers.get(lang) or \
-                   self.dialog_renderers.get(self.lang)
+        renderer = self.dialog_renderers.get(self.lang)
         if not renderer:
             return ""
         return renderer.render(text, data or {})
@@ -878,7 +872,7 @@ class MycroftSkill:
         Returns:
             string: The full path to the resource file or None if not found
         """
-        lang = lang or self._dig_for_lang()
+        lang = lang or self.lang
         result = self._find_resource(res_name, lang, res_dirname)
         if not result and lang != 'en-us':
             # when resource not found try fallback to en-us
@@ -1316,7 +1310,7 @@ class MycroftSkill:
         m = message.forward("speak", data) if message \
             else Message("speak", data)
         m.context["skill_id"] = self.skill_id
-        m.data["lang"] = self._dig_for_lang()
+        m.data["lang"] = self.lang
         self.bus.emit(m)
 
         if wait:
@@ -1335,9 +1329,7 @@ class MycroftSkill:
             wait (bool):            set to True to block while the text
                                     is being spoken.
         """
-        lang = self._dig_for_lang()
-        renderer = self.dialog_renderers.get(lang) or \
-                   self.dialog_renderers.get(self.lang)
+        renderer = self.dialog_renderers.get(self.lang)
         if renderer:
             data = data or {}
             self.speak(
