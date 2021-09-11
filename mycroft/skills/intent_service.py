@@ -444,8 +444,9 @@ class IntentService:
         entity_type = message.data.get('entity_type')
         regex_str = message.data.get('regex')
         alias_of = message.data.get('alias_of')
+        lang = message.data.get('lang')
         self.adapt_service.register_vocabulary(entity_value, entity_type,
-                                               alias_of, regex_str)
+                                               alias_of, regex_str, lang)
         self.registered_vocab.append(message.data)
 
     def handle_register_intent(self, message):

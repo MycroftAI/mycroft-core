@@ -65,8 +65,11 @@ def load_regex_from_file(path, skill_id):
                 regex = munge_regex(line.strip(), skill_id)
                 LOG.debug('regex post-munge: ' + regex)
                 # Raise error if regex can't be compiled
-                re.compile(regex)
-                regexes.append(regex)
+                try:
+                    re.compile(regex)
+                    regexes.append(regex)
+                except Exception as e:
+                    LOG.warning(f'Failed to compile regex {regex}: {e}')
 
     return regexes
 

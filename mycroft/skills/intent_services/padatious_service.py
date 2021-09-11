@@ -18,6 +18,7 @@ from subprocess import call
 from threading import Event
 from time import time as get_time, sleep
 
+from os import path
 from os.path import expanduser, isfile
 
 from mycroft.configuration import Configuration
@@ -36,10 +37,17 @@ class PadatiousService:
         intent_cache = expanduser(self.padatious_config['intent_cache'])
         self._padaos = self.padatious_config.get("padaos_only", False)
 
+        self.lang = Configuration.get().get("lang", "en-us")
+        langs = Configuration.get().get('secondary_langs') or []
+        if self.lang not in langs:
+            langs.append(self.lang)
+
         try:
             if not self._padaos:
                 from padatious import IntentContainer
-                self.container = IntentContainer(intent_cache)
+                self.containers = {
+                    lang: IntentContainer(path.join(intent_cache, lang))
+                    for lang in langs}
         except ImportError:
             LOG.error('Padatious not installed. Falling back to Padaos, pure regex alternative')
             try:
@@ -52,7 +60,8 @@ class PadatiousService:
         if self._padaos:
             LOG.warning('using padaos instead of padatious. Some intents may '
                         'be hard to trigger')
-            self.container = PadaosIntentContainer()
+            self.containers = {lang: PadaosIntentContainer()
+                               for lang in langs}
 
         self.bus.on('padatious:register_intent', self.register_intent)
         self.bus.on('padatious:register_entity', self.register_entity)
@@ -85,7 +94,8 @@ class PadatiousService:
                 single_thread = message.data.get('single_thread',
                                                  padatious_single_thread)
             LOG.info('Training... (single_thread={})'.format(single_thread))
-            self.container.train(single_thread=single_thread)
+            for lang in self.containers:
+                self.containers[lang].train(single_thread=single_thread)
             LOG.info('Training complete.')
 
         self.finished_training_event.set()
@@ -113,7 +123,8 @@ class PadatiousService:
         """
         if intent_name in self.registered_intents:
             self.registered_intents.remove(intent_name)
-            self.container.remove_intent(intent_name)
+            for lang in self.containers:
+                self.containers[lang].remove_intent(intent_name)
 
     def handle_detach_intent(self, message):
         """Messagebus handler for detaching padatious intent.
@@ -167,11 +178,15 @@ class PadatiousService:
         Args:
             message (Message): message triggering action
         """
-        self.registered_intents.append(message.data['name'])
-        if self._padaos:
-            self._register_object(message, 'intent', self.container.add_intent)
-        else:
-            self._register_object(message, 'intent', self.container.load_intent)
+        lang = message.data.get('lang', self.lang)
+        if lang in self.containers:
+            self.registered_intents.append(message.data['name'])
+            if self._padaos:
+                self._register_object(
+                    message, 'intent', self.containers[lang].add_intent)
+            else:
+                self._register_object(
+                    message, 'intent', self.containers[lang].load_intent)
 
     def register_entity(self, message):
         """Messagebus handler for registering entities.
@@ -179,13 +194,17 @@ class PadatiousService:
         Args:
             message (Message): message triggering action
         """
-        self.registered_entities.append(message.data)
-        if self._padaos:
-            self._register_object(message, 'intent', self.container.add_entity)
-        else:
-            self._register_object(message, 'entity', self.container.load_entity)
+        lang = message.data.get('lang', self.lang)
+        if lang in self.containers:
+            self.registered_entities.append(message.data)
+            if self._padaos:
+                self._register_object(
+                    message, 'intent', self.containers[lang].add_entity)
+            else:
+                self._register_object(
+                    message, 'entity', self.containers[lang].load_entity)
 
-    def _match_level(self, utterances, limit):
+    def _match_level(self, utterances, limit, lang=None):
         """Match intent and make sure a certain level of confidence is reached.
 
         Args:
@@ -193,11 +212,12 @@ class PadatiousService:
                                          with optional normalized version.
             limit (float): required confidence level.
         """
+        lang = lang or self.lang
         padatious_intent = None
         LOG.debug('Padatious Matching confidence > {}'.format(limit))
         for utt in utterances:
             for variant in utt:
-                intent = self.calc_intent(variant)
+                intent = self.calc_intent(variant, lang)
                 if self._padaos:
                     if not intent.get("name"):
                         continue
@@ -225,35 +245,35 @@ class PadatiousService:
             ret = None
         return ret
 
-    def match_high(self, utterances, _=None, __=None):
+    def match_high(self, utterances, lang=None, __=None):
         """Intent matcher for high confidence.
 
         Args:
             utterances (list of tuples): Utterances to parse, originals paired
                                          with optional normalized version.
         """
-        return self._match_level(utterances, 0.95)
+        return self._match_level(utterances, 0.95, lang)
 
-    def match_medium(self, utterances, _=None, __=None):
+    def match_medium(self, utterances, lang=None, __=None):
         """Intent matcher for medium confidence.
 
         Args:
             utterances (list of tuples): Utterances to parse, originals paired
                                          with optional normalized version.
         """
-        return self._match_level(utterances, 0.8)
+        return self._match_level(utterances, 0.8, lang)
 
-    def match_low(self, utterances, _=None, __=None):
+    def match_low(self, utterances, lang=None, __=None):
         """Intent matcher for low confidence.
 
         Args:
             utterances (list of tuples): Utterances to parse, originals paired
                                          with optional normalized version.
         """
-        return self._match_level(utterances, 0.5)
+        return self._match_level(utterances, 0.5, lang)
 
     @lru_cache(maxsize=2)  # 2 catches both raw and normalized utts in cache
-    def calc_intent(self, utt):
+    def calc_intent(self, utt, lang=None):
         """Cached version of container calc_intent.
 
         This improves speed when called multiple times for different confidence
@@ -266,4 +286,6 @@ class PadatiousService:
         Args:
             utt (str): utterance to calculate best intent for
         """
-        return self.container.calc_intent(utt)
+        lang = lang or self.lang
+        if lang in self.containers:
+            return self.containers[lang].calc_intent(utt)
