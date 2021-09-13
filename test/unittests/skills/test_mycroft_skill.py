@@ -567,13 +567,13 @@ class TestMycroftSkill(unittest.TestCase):
         s = SimpleSkill1()
         s.root_dir = abspath(dirname(__file__))
         self.assertEqual(s.remove_voc("yes", "yes"), "")
-        self.assertEqual(s.remove_voc("yes please", "yes"), " ")
-        self.assertEqual(s.remove_voc("yes thank you", "yes"), " thank you")
+        self.assertEqual(s.remove_voc("yes please", "yes"), "")
+        self.assertEqual(s.remove_voc("yes thank you", "yes"), "thank you")
         self.assertEqual(s.remove_voc("I would like the last option", "last"),
-                         "I would like the ")
+                         "I would like the")
         self.assertEqual(s.remove_voc("Never forget that",
                          "cancel"), "Never forget that")
-        self.assertEqual(s.remove_voc("Never Forget it", "cancel"), "Never ")
+        self.assertEqual(s.remove_voc("Never Forget it", "cancel"), "Never")
 
     def test_translate_locations(self):
         """Assert that the a translatable list can be loaded from dialog and
