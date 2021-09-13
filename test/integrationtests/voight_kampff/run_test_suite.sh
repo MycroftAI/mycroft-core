@@ -22,8 +22,10 @@ ${SCRIPT_DIR}/../../../start-mycroft.sh all
 echo "Running behave with the arguments \"$@\""
 behave $@
 RESULT=$?
-# Stop all mycroft core services.
-${SCRIPT_DIR}/../../../stop-mycroft.sh all
+if [[ -v CI ]]; then
+    # Stop all mycroft core services if running in CI environment.
+    ${SCRIPT_DIR}/../../../stop-mycroft.sh all
+fi
 
 # Reort the result of the behave test as exit status
 exit $RESULT
