@@ -322,7 +322,7 @@ class RecognizerLoop(EventEmitter):
             device_index = find_input_device(device_name)
 
         LOG.debug('Using microphone (None = default): '+str(device_index))
-        LOG.info('[Flow Learning] Using microphone (None = default): '+str(device_index))
+        LOG.info('[Flow Learning] Using microphone (None = default): '+str(device_index) + ' device_name = ' + str(device_name))
 
         self.microphone = MutableMicrophone(device_index, rate,
                                             mute=self.mute_calls > 0)

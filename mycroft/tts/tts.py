@@ -382,6 +382,7 @@ class TTS(metaclass=ABCMeta):
                 #  API of the get_tts method in each engine.
                 audio_file = self.cache.define_audio_file(sentence_hash)
                 # TODO 21.08: remove mutation of audio_file.path.
+                LOG.info('[Flow Learning] in TTS._execute(), to get audio by calling get_tts')
                 returned_file, phonemes = self.get_tts(
                     sentence, str(audio_file.path))
                 # Convert to Path as needed
@@ -406,6 +407,7 @@ class TTS(metaclass=ABCMeta):
                     audio_file, phoneme_file
                 )
             viseme = self.viseme(phonemes) if phonemes else None
+            LOG.info('[Flow Learning] in TTS._execute(), put message for TTS audio into the queue, ')
             self.queue.put(
                 (self.audio_ext, str(audio_file.path), viseme, ident, l)
             )
