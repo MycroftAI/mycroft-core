@@ -20,6 +20,9 @@ import os
 import pyaudio
 import re
 import subprocess
+import platform
+# mycroft-zh: todo
+import pydub
 
 import mycroft.configuration
 from .log import LOG
@@ -114,6 +117,10 @@ def play_wav(uri, environment=None):
     return None
 
 
+def play_wav_sync(uri):
+    pass
+
+
 def play_mp3(uri, environment=None):
     """Play a mp3-file.
 
@@ -137,6 +144,23 @@ def play_mp3(uri, environment=None):
     except Exception:
         LOG.exception("Failed to launch MP3: {}".format(play_mp3_cmd))
     return None
+
+
+def play_mp3_sync(uri):
+    pass
+
+
+# mycroft-zh
+@staticmethod
+def isWithinPlatforms(platforms):
+    """ check whether current platform is within the platforms.
+    """
+    platformStr = platform.platform().lower()
+    LOG.info('[Flow Learning] in audio_utils.py, isWithinPlatforms(), platformStr = ' + platformStr)
+    for currItem in platforms:
+        if currItem.lower() in platformStr:
+            return True
+    return False
 
 
 def play_ogg(uri, environment=None):

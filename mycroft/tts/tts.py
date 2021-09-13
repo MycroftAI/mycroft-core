@@ -16,6 +16,7 @@ from copy import deepcopy
 import os
 import random
 import re
+import platform
 from abc import ABCMeta, abstractmethod
 from pathlib import Path
 from threading import Thread
@@ -31,7 +32,7 @@ from mycroft.configuration import Configuration
 from mycroft.messagebus.message import Message
 from mycroft.metrics import report_timing, Stopwatch
 from mycroft.util import (
-    play_wav, play_mp3, check_for_signal, create_signal, resolve_resource_file
+    play_wav, play_mp3, check_for_signal, create_signal, resolve_resource_file, play_wav_sync, play_mp3_sync, isWithinPlatforms
 )
 from mycroft.util.file_utils import get_temp_path
 from mycroft.util.log import LOG
@@ -104,10 +105,18 @@ class PlaybackThread(Thread):
 
                 stopwatch = Stopwatch()
                 with stopwatch:
-                    if snd_type == 'wav':
-                        self.p = play_wav(data, environment=self.pulse_env)
-                    elif snd_type == 'mp3':
-                        self.p = play_mp3(data, environment=self.pulse_env)
+                    platformStr = platform.platform()
+                    # mycroft-zh
+                    if isWithinPlatforms(['debian', 'ubuntu']):
+                        if snd_type == 'wav':
+                            play_wav_sync(data)
+                        elif snd_type == 'mp3':
+                            play_mp3_sync(data)
+                    else:
+                        if snd_type == 'wav':
+                            self.p = play_wav(data, environment=self.pulse_env)
+                        elif snd_type == 'mp3':
+                            self.p = play_mp3(data, environment=self.pulse_env)
                     if visemes:
                         self.show_visemes(visemes)
                     if self.p:
