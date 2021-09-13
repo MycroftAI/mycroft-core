@@ -373,5 +373,5 @@ class SkillGUI:
         Clear pages loaded through this interface and remove the skill
         reference to make ref counting warning more precise.
         """
-        self.clear()
+        self.release()
         self.skill = None
