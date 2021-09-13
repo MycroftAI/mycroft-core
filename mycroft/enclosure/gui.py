@@ -46,20 +46,32 @@ class SkillGUI:
 
     def __init__(self, skill):
         self.__session_data = {}  # synced to GUI for use by this skill's pages
-        self.page = None  # the active GUI page (e.g. QML template) to show
+        self.pages = []
+        self.current_page_idx = -1
         self.skill = skill
         self.on_gui_changed_callback = None
         self.config = Configuration.get()
 
     @property
+    def bus(self):
+        if self.skill:
+            return self.skill.bus
+        return None
+
+    @property
     def connected(self):
         """Returns True if at least 1 gui is connected, else False"""
-        if self.skill.bus:
-            reply = self.skill.bus.wait_for_response(
+        if self.bus:
+            reply = self.bus.wait_for_response(
                 Message("gui.status.request"), "gui.status.request.response")
             if reply:
                 return reply.data["connected"]
         return False
+
+    @property
+    def page(self):
+        # the active GUI page (e.g. QML template) to show
+        return self.pages[self.current_page_idx] if len(self.pages) else None
 
     @property
     def remote_url(self):
@@ -111,7 +123,8 @@ class SkillGUI:
     def _sync_data(self):
         data = self.__session_data.copy()
         data.update({'__from': self.skill.skill_id})
-        self.skill.bus.emit(Message("gui.value.set", data))
+        if self.bus:
+            self.bus.emit(Message("gui.value.set", data))
 
     def __setitem__(self, key, value):
         """Implements set part of dict-like behaviour with named keys."""
@@ -145,9 +158,10 @@ class SkillGUI:
         the `release` method.
         """
         self.__session_data = {}
-        self.page = None
-        if self.skill.bus:
-            self.skill.bus.emit(Message("gui.clear.namespace",
+        self.pages = []
+        self.current_page_idx = -1
+        if self.bus:
+            self.bus.emit(Message("gui.clear.namespace",
                                         {"__from": self.skill.skill_id}))
 
     def send_event(self, event_name, params=None):
@@ -159,11 +173,33 @@ class SkillGUI:
                     should be sent along with the request.
         """
         params = params or {}
-        self.skill.bus.emit(Message("gui.event.send",
+        if self.bus:
+            self.bus.emit(Message("gui.event.send",
                                     {"__from": self.skill.skill_id,
                                      "event_name": event_name,
                                      "params": params}))
 
+    def _pages2uri(self, page_names):
+        # Convert pages to full reference
+        page_urls = []
+        for name in page_names:
+            if name.startswith("SYSTEM"):
+                page = resolve_resource_file(join('ui', name))
+            else:
+                page = self.skill.find_resource(name, 'ui')
+            if page:
+                if self.remote_url:
+                    page_urls.append(self.remote_url + "/" + page)
+                elif page.startswith("file://"):
+                    page_urls.append(page)
+                else:
+                    page_urls.append("file://" + page)
+            else:
+                raise FileNotFoundError("Unable to find page: {}".format(name))
+
+        return page_urls
+
+    # base gui interactions
     def show_page(self, name, override_idle=None,
                   override_animations=False):
         """Begin showing the page in the GUI
@@ -197,35 +233,28 @@ class SkillGUI:
                 True: Disables showing all platform skill animations.
                 False: 'Default' always show animations.
         """
+        if isinstance(page_names, str):
+            page_names = [page_names]
         if not isinstance(page_names, list):
             raise ValueError('page_names must be a list')
 
         if index > len(page_names):
-            raise ValueError('Default index is larger than page list length')
+            LOG.error('Default index is larger than page list length')
+            index = len(page_names) - 1
 
-        self.page = page_names[index]
+        self.pages = page_names
+        self.current_page_idx = index
 
         # First sync any data...
         data = self.__session_data.copy()
         data.update({'__from': self.skill.skill_id})
-        self.skill.bus.emit(Message("gui.value.set", data))
+        if self.bus:
+            self.bus.emit(Message("gui.value.set", data))
 
         # Convert pages to full reference
-        page_urls = []
-        for name in page_names:
-            if name.startswith("SYSTEM"):
-                page = resolve_resource_file(join('ui', name))
-            else:
-                page = self.skill.find_resource(name, 'ui')
-            if page:
-                if self.config.get('remote'):
-                    page_urls.append(self.remote_url + "/" + page)
-                else:
-                    page_urls.append("file://" + page)
-            else:
-                raise FileNotFoundError("Unable to find page: {}".format(name))
-
-        self.skill.bus.emit(Message("gui.page.show",
+        page_urls = self._pages2uri(page_names)
+        if self.bus:
+            self.bus.emit(Message("gui.page.show",
                                     {"page": page_urls,
                                      "index": index,
                                      "__from": self.skill.skill_id,
@@ -248,26 +277,12 @@ class SkillGUI:
                                ["Weather.qml", "Forecast.qml", "Other.qml"]
         """
         if not isinstance(page_names, list):
-            raise ValueError('page_names must be a list')
-
-        # Convert pages to full reference
-        page_urls = []
-        for name in page_names:
-            if name.startswith("SYSTEM"):
-                page = resolve_resource_file(join('ui', name))
-            else:
-                page = self.skill.find_resource(name, 'ui')
-            if page:
-                if self.config.get('remote'):
-                    page_urls.append(self.remote_url + "/" + page)
-                else:
-                    page_urls.append("file://" + page)
-            else:
-                raise FileNotFoundError("Unable to find page: {}".format(name))
-
-        self.skill.bus.emit(Message("gui.page.delete",
-                                    {"page": page_urls,
-                                     "__from": self.skill.skill_id}))
+            page_names = [page_names]
+        page_urls = self._pages2uri(page_names)
+        if self.bus:
+            self.bus.emit(Message("gui.page.delete",
+                                        {"page": page_urls,
+                                         "__from": self.skill.skill_id}))
 
     def show_text(self, text, title=None, override_idle=None,
                   override_animations=False):
@@ -384,8 +399,9 @@ class SkillGUI:
         allow different platforms to properly handle this event.
         Also calls self.clear() to reset the state variables
         Platforms can close the window or go back to previous page"""
-        self.clear()
-        self.skill.bus.emit(Message("mycroft.gui.screen.close",
+        if self.bus:
+            self.clear()
+            self.bus.emit(Message("mycroft.gui.screen.close",
                                     {"skill_id": self.skill.skill_id}))
 
     def shutdown(self):
