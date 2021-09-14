@@ -82,7 +82,7 @@ class InterceptAllBusClient(MessageBusClient):
         """
         with self.message_lock:
             if msg not in self.messages:
-                raise ValueError(f'{msg} was not found in '
+                raise ValueError(f'{msg.msg_type} was not found in '
                                  'the list of messages.')
             # Update processed message count if a read message was removed
             if self.messages.index(msg) < self._processed_messages:
