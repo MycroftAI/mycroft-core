@@ -126,7 +126,9 @@ class VoightKampffDialogMatcher(VoightKampffEventMatcher):
                     if 'dialog' in meta:
                         self.error_message += f"\tDialog: {meta['dialog']}"
                     if 'skill' in meta:
-                        self.error_message += f" (from {meta['skill']} skill)\n"
+                        self.error_message += (
+                            f" (from {meta['skill']} skill)\n"
+                        )
         else:
             self.error_message += "\tMycroft didn't respond"
 
