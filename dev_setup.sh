@@ -176,7 +176,7 @@ your environment.'
     sleep 0.5
     # The AVX instruction set is an x86 construct
     # ARM has a range of equivalents, unsure which are (un)supported by TF.
-    if ! grep -q avx /proc/cpuinfo && [[ ! $(uname -m) == 'arm'* ]]; then
+    if ! grep -q avx /proc/cpuinfo && ! [[ $(uname -m) == 'arm'* || $(uname -m) == 'aarch64' ]]; then
       echo "
 The Precise Wake Word Engine requires the AVX instruction set, which is
 not supported on your CPU. Do you want to fall back to the PocketSphinx
