@@ -1,3 +1,4 @@
+# This dependency list has been deprecated!
 requests>=2.20.0
 gTTS>=2.2.2
 PyAudio==0.2.11

@@ -1,0 +1,28 @@
+name: Run Build Tests
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build_tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          ref: ${{ github.head_ref }}
+      - name: Setup Python
+        uses: actions/setup-python@v1
+        with:
+          python-version: 3.8
+      - name: Install Build Tools
+        run: |
+          python -m pip install build wheel
+      - name: Install System Dependencies
+        run: |
+          sudo apt install python3-dev swig libssl-dev libfann-dev portaudio19-dev
+      - name: Build Distribution Packages
+        run: |
+          python setup.py bdist_wheel
+      - name: Install core repo
+        run: |
+          pip install .[audio-backend,mark1,stt,tts,skills_minimal,skills,default_skills,enclosure,bus,all]
