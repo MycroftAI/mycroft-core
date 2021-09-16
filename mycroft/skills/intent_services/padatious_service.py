@@ -29,6 +29,83 @@ from mycroft.skills.intent_services.base import IntentMatch
 from padaos import IntentContainer as PadaosIntentContainer
 
 
+class PadatiousMatcher:
+    """Matcher class to avoid redundancy in padatious intent matching."""
+    def __init__(self, service):
+        self.service = service
+        self.has_result = False
+        self.ret = None
+        self.conf = None
+
+    def _match_level(self, utterances, limit, lang=None):
+        """Match intent and make sure a certain level of confidence is reached.
+
+        Args:
+            utterances (list of tuples): Utterances to parse, originals paired
+                                         with optional normalized version.
+            limit (float): required confidence level.
+        """
+        if not self.has_result:
+            lang = lang or self.service.lang
+            padatious_intent = None
+            LOG.debug('Padatious Matching confidence > {}'.format(limit))
+            for utt in utterances:
+                for variant in utt:
+                    intent = self.service.calc_intent(variant, lang)
+                    if self.service._padaos:
+                        if not intent.get("name"):
+                            continue
+                        # exact matches only
+                        return IntentMatch(
+                            'Padaos',
+                            intent["name"],
+                            intent["entities"],
+                            intent["name"].split(':')[0]
+                        )
+
+                    if intent:
+                        best = padatious_intent.conf if padatious_intent else 0.0
+                        if best < intent.conf:
+                            padatious_intent = intent
+                            padatious_intent.matches['utterance'] = utt[0]
+            if padatious_intent:
+                skill_id = padatious_intent.name.split(':')[0]
+                self.ret = IntentMatch(
+                    'Padatious', padatious_intent.name,
+                    padatious_intent.matches, skill_id)
+                self.conf = padatious_intent.conf
+            self.has_result = True
+        if self.conf and self.conf > limit:
+            return self.ret
+
+    def match_high(self, utterances, lang=None, __=None):
+        """Intent matcher for high confidence.
+
+        Args:
+            utterances (list of tuples): Utterances to parse, originals paired
+                                         with optional normalized version.
+        """
+        return self._match_level(utterances, 0.95, lang)
+
+    def match_medium(self, utterances, lang=None, __=None):
+        """Intent matcher for medium confidence.
+
+        Args:
+            utterances (list of tuples): Utterances to parse, originals paired
+                                         with optional normalized version.
+        """
+        return self._match_level(utterances, 0.8, lang)
+
+    def match_low(self, utterances, lang=None, __=None):
+        """Intent matcher for low confidence.
+
+        Args:
+            utterances (list of tuples): Utterances to parse, originals paired
+                                         with optional normalized version.
+        """
+        return self._match_level(utterances, 0.5, lang)
+
+
 class PadatiousService:
     """Service class for padatious intent matching."""
     def __init__(self, bus, config):
@@ -204,75 +281,6 @@ class PadatiousService:
                 self._register_object(
                     message, 'entity', self.containers[lang].load_entity)
 
-    def _match_level(self, utterances, limit, lang=None):
-        """Match intent and make sure a certain level of confidence is reached.
-
-        Args:
-            utterances (list of tuples): Utterances to parse, originals paired
-                                         with optional normalized version.
-            limit (float): required confidence level.
-        """
-        lang = lang or self.lang
-        padatious_intent = None
-        LOG.debug('Padatious Matching confidence > {}'.format(limit))
-        for utt in utterances:
-            for variant in utt:
-                intent = self.calc_intent(variant, lang)
-                if self._padaos:
-                    if not intent.get("name"):
-                        continue
-                    # exact matches only
-                    return IntentMatch(
-                        'Padaos',
-                        intent["name"],
-                        intent["entities"],
-                        intent["name"].split(':')[0]
-                    )
-
-                if intent:
-                    best = padatious_intent.conf if padatious_intent else 0.0
-                    if best < intent.conf:
-                        padatious_intent = intent
-                        padatious_intent.matches['utterance'] = utt[0]
-
-        if padatious_intent and padatious_intent.conf > limit:
-            skill_id = padatious_intent.name.split(':')[0]
-            ret = IntentMatch(
-                'Padatious', padatious_intent.name, padatious_intent.matches,
-                skill_id
-            )
-        else:
-            ret = None
-        return ret
-
-    def match_high(self, utterances, lang=None, __=None):
-        """Intent matcher for high confidence.
-
-        Args:
-            utterances (list of tuples): Utterances to parse, originals paired
-                                         with optional normalized version.
-        """
-        return self._match_level(utterances, 0.95, lang)
-
-    def match_medium(self, utterances, lang=None, __=None):
-        """Intent matcher for medium confidence.
-
-        Args:
-            utterances (list of tuples): Utterances to parse, originals paired
-                                         with optional normalized version.
-        """
-        return self._match_level(utterances, 0.8, lang)
-
-    def match_low(self, utterances, lang=None, __=None):
-        """Intent matcher for low confidence.
-
-        Args:
-            utterances (list of tuples): Utterances to parse, originals paired
-                                         with optional normalized version.
-        """
-        return self._match_level(utterances, 0.5, lang)
-
-    @lru_cache(maxsize=2)  # 2 catches both raw and normalized utts in cache
     def calc_intent(self, utt, lang=None):
         """Cached version of container calc_intent.
 

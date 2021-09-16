@@ -301,6 +301,7 @@ class AdaptService:
         for lang in self.engines:
             with self.lock:
                 self.engines[lang].register_intent_parser(intent)
+
     def detach_skill(self, skill_id):
         """Remove all intents for skill.
 
