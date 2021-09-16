@@ -237,7 +237,6 @@ class PadatiousService:
         self.registered_entities.append(message.data)
         self._register_object(message, 'entity', self.container.load_entity)
 
-    @lru_cache(maxsize=2)  # 2 catches both raw and normalized utts in cache
     def calc_intent(self, utt):
         """Cached version of container calc_intent.
 
