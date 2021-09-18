@@ -24,7 +24,7 @@ import mycroft.audio
 from mycroft.util.format import nice_number
 from .string_utils import camel_case_split
 from .audio_utils import (play_audio_file, play_wav, play_ogg, play_mp3,
-                          record, find_input_device)
+                          record, find_input_device, play_wav_sync, play_mp3_sync)
 from .file_utils import (
     resolve_resource_file,
     read_stripped_lines,

@@ -338,14 +338,12 @@ function redhat_common_install() {
 
 }
 
-#mycroft-zh: the last line of APT_PACKAGE_LIST is to install dependency for pydub.
 function debian_install() {
     APT_PACKAGE_LIST="git python3 python3-dev python3-setuptools libtool \
         libffi-dev libssl-dev autoconf automake bison swig libglib2.0-dev \
         portaudio19-dev mpg123 screen flac curl libicu-dev pkg-config \
         libjpeg-dev libfann-dev build-essential jq pulseaudio \
-        pulseaudio-utils \
-        ffmpeg libavcodec-extra"
+        pulseaudio-utils"
 
     if dpkg -V libjack-jackd2-0 > /dev/null 2>&1 && [[ -z ${CI} ]] ; then
         echo "
