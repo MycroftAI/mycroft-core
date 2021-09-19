@@ -119,8 +119,23 @@ class IntentService:
 
         # mycroft-core-zh
         def deactive_skill_handler(message):
-            LOG.info('[Flow Learning] in deactive_skill_handler, message.data["skill_id"]=' + str(message.data['skill_id']))
-            self.deactive_skill(message.data['skill_id'])
+            LOG.info(
+                '[Flow Learning] in deactive_skill_handler, message.data'
+                + '["skill_id"]='
+                + str(message.data['skill_id']))
+            deactived = self.deactive_skill(message.data['skill_id'])
+
+            message_data = {'result': deactived}
+            LOG.info(
+                '[Flow Learning]'
+                + ' in deactive_skill_handler to send message_data='
+                + str(message_data))
+            message_response = message.reply('deactive_skill_request.response',
+                                             data=message_data)
+            LOG.info('[Flow Learning] in deactive_skill_handler ' +
+                     str(message_response))
+            self.bus.emit(message_response)
+
         self.bus.on('deactive_skill_request', deactive_skill_handler)
         self.active_skills = []  # [skill_id , timestamp]
         self.converse_timeout = 5  # minutes to prune active_skills
@@ -224,12 +239,17 @@ class IntentService:
     # mycroft-core-zh:
     # only deactive the skill but not remove it from the list of active_skills.
     def deactive_skill(self, skill_id):
-        LOG.info('[Flow Learning] active_skills before deactive' + str(self.active_skills))
+        LOG.info('[Flow Learning] active_skills before deactive' +
+                 str(self.active_skills))
+        deactived = False
         for skill in self.active_skills:
             if skill[0] == skill_id:
                 LOG.info('[Flow Learning] deactive skill_id : ' + skill_id)
                 skill[1] = self.deactive_skill_indicator
-        LOG.info('[Flow Learning] active_skills after deactive' + str(self.active_skills))
+                deactived = True
+        LOG.info('[Flow Learning] active_skills after deactive' +
+                 str(self.active_skills))
+        return deactived
 
     # mycroft-core-zh:
     # The purpose is to create helper function to handle the scenario when the skill ends.
@@ -243,8 +263,10 @@ class IntentService:
                 LOG.info('[Flow Learning] remove_skill is to be called, skill_id : ' + skill_id)
                 whetherRemoveSkill = True
         if whetherRemoveSkill:
+            LOG.info('[Flow Learning] in refresh_active_skill, remove_skill is to be called, skill_id : ' + skill_id)
             self.remove_active_skill(skill_id)
         else:
+            LOG.info('[Flow Learning] in refresh_active_skill, add_active_skill is to be called, skill_id : ' + skill_id)
             self.add_active_skill(skill_id)
 
     def add_active_skill(self, skill_id):

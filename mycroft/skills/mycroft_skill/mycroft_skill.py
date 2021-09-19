@@ -1492,3 +1492,29 @@ class MycroftSkill:
     def cancel_all_repeating_events(self):
         """Cancel any repeating events started by the skill."""
         return self.event_scheduler.cancel_all_repeating_events()
+
+    # mycroft-zh: added by mycroft-zh
+    def deactive(self):
+        """ deactive a skill after the skill has been been used.
+        """
+        LOG.info('[Flow Learning] in .deactive  , skill_id =' +
+                 str(self.skill_id))
+        deactive_message = Message('deactive_skill_request',
+                                   {'skill_id': self.skill_id})
+        LOG.info('[Flow Learning] deactive_message.type = ' +
+                 deactive_message.msg_type)
+        result = self.bus.wait_for_response(
+            message=deactive_message,
+            reply_type='deactive_skill_request.response')
+        LOG.info(
+            '[Flow Learning] in EchoSkill.deactive after wait_for_response, result ='
+            + str(result))
+        if result and 'error' in result.data:
+            # self.handle_converse_error(result)
+            LOG.info('[Flow Learning] to do, error handling!')
+            ret = False
+        elif result is not None:
+            ret = result.data.get('result', False)
+        else:
+            ret = False
+        return ret

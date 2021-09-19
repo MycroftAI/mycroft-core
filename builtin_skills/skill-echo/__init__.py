@@ -65,11 +65,6 @@ class EchoSkill(MycroftSkill):
                 return True
         return False
 
-    def deactive(self):
-        LOG.info('[Flow Learning] skill_id =' + str(self.skill_id))
-        self.bus.emit(Message('deactive_skill_request',
-                              {'skill_id': self.skill_id}))
-
 
 def create_skill():
     return EchoSkill()
