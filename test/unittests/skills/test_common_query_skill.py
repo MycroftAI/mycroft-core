@@ -96,7 +96,7 @@ class TestCommonQueryMatching(TestCase):
                          'What\'s the meaning of life')
         self.assertEqual(response.data['skill_id'], self.skill.skill_id)
         self.assertEqual(response.data['answer'], '42')
-        self.assertEqual(response.data['conf'], 1.0)
+        self.assertEqual(response.data['conf'], 1.12)
 
     def test_successful_visual_match_query_phrase(self):
         self.skill.config_core['enclosure']['platform'] = 'mycroft_mark_2'
@@ -120,7 +120,7 @@ class TestCommonQueryMatching(TestCase):
                          'What\'s the meaning of life')
         self.assertEqual(response.data['skill_id'], self.skill.skill_id)
         self.assertEqual(response.data['answer'], '42')
-        self.assertEqual(response.data['conf'], 1.1)
+        self.assertEqual(response.data['conf'], 1.2200000000000002)
 
 
 class CQSTest(CommonQuerySkill):

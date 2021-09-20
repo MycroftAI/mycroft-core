@@ -11,10 +11,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import time
 
 from enum import IntEnum
 from abc import ABC, abstractmethod
 from .mycroft_skill import MycroftSkill
+
+from mycroft.configuration import Configuration
+from mycroft.util.file_utils import resolve_resource_file
 
 
 class CQSMatchLevel(IntEnum):
@@ -34,6 +38,20 @@ def is_CQSVisualMatchLevel(match_level):
 
 VISUAL_DEVICES = ['mycroft_mark_2']
 
+"""these are for the confidence calculation"""
+# how much each topic word is worth
+# when found in the answer
+TOPIC_MATCH_RELEVANCE = 5
+
+# elevate relevance above all else
+RELEVANCE_MULTIPLIER = 2
+
+# we like longer articles but only so much
+MAX_ANSWER_LEN_FOR_CONFIDENCE = 50
+
+# higher number - less bias for word length
+WORD_COUNT_DIVISOR = 100
+
 
 def handles_visuals(platform):
     return platform in VISUAL_DEVICES
@@ -49,8 +67,25 @@ class CommonQuerySkill(MycroftSkill, ABC):
     This class works in conjunction with skill-query which collects
     answers from several skills presenting the best one available.
     """
+
     def __init__(self, name=None, bus=None):
         super().__init__(name, bus)
+        noise_words_filepath = "text/%s/noise_words.list" % (self.lang,)
+        noise_words_filename = resolve_resource_file(noise_words_filepath)
+        self.translated_noise_words = []
+        try:
+            with open(noise_words_filename) as f:
+                self.translated_noise_words = f.read().strip()
+            self.translated_noise_words = self.translated_noise_words.split()
+        except FileNotFoundError:
+            self.log.warning("Missing noise_words.list file in res/text/lang")
+
+        # these should probably be configurable
+        self.level_confidence = {
+            CQSMatchLevel.EXACT: 0.9,
+            CQSMatchLevel.CATEGORY: 0.6,
+            CQSMatchLevel.GENERAL: 0.5
+        }
 
     def bind(self, bus):
         """Overrides the default bind method of MycroftSkill.
@@ -80,7 +115,8 @@ class CommonQuerySkill(MycroftSkill, ABC):
             level = result[1]
             answer = result[2]
             callback = result[3] if len(result) > 3 else None
-            confidence = self.__calc_confidence(match, search_phrase, level)
+            confidence = self.__calc_confidence(
+                match, search_phrase, level, answer)
             self.bus.emit(message.response({"phrase": search_phrase,
                                             "skill_id": self.skill_id,
                                             "answer": answer,
@@ -92,27 +128,58 @@ class CommonQuerySkill(MycroftSkill, ABC):
                                             "skill_id": self.skill_id,
                                             "searching": False}))
 
-    def __calc_confidence(self, match, phrase, level):
+    def remove_noise(self, phrase):
+        """remove noise to produce essence of question"""
+        phrase = ' ' + phrase + ' '
+        for word in self.translated_noise_words:
+            mtch = ' ' + word + ' '
+            if phrase.find(mtch) > -1:
+                phrase = phrase.replace(mtch, " ")
+        phrase = ' '.join(phrase.split())
+        return phrase.strip()
+
+    def __calc_confidence(self, match, phrase, level, answer):
         # Assume the more of the words that get consumed, the better the match
         consumed_pct = len(match.split()) / len(phrase.split())
         if consumed_pct > 1.0:
             consumed_pct = 1.0
+        consumed_pct /= 10
+
+        # bonus for more sentences
+        num_sentences = float(float(len(answer.split("."))) / float(10))
 
         # Add bonus if match has visuals and the device supports them.
-        platform = self.config_core.get('enclosure', {}).get('platform')
+        platform = self.config_core.get("enclosure", {}).get("platform")
+        bonus = 0.0
         if is_CQSVisualMatchLevel(level) and handles_visuals(platform):
             bonus = 0.1
-        else:
-            bonus = 0
 
-        if int(level) == int(CQSMatchLevel.EXACT):
-            return 0.9 + (consumed_pct / 10) + bonus
-        elif int(level) == int(CQSMatchLevel.CATEGORY):
-            return 0.6 + (consumed_pct / 10) + bonus
-        elif int(level) == int(CQSMatchLevel.GENERAL):
-            return 0.5 + (consumed_pct / 10) + bonus
-        else:
-            return 0.0  # should never happen
+        # extract topic
+        topic = self.remove_noise(match)
+
+        # calculate relevance
+        answer = answer.lower()
+        matches = 0
+        for word in topic.split(' '):
+            if answer.find(word) > -1:
+                matches += TOPIC_MATCH_RELEVANCE
+
+        answer_size = len(answer.split(" "))
+        answer_size = min(MAX_ANSWER_LEN_FOR_CONFIDENCE, answer_size)
+
+        relevance = 0.0
+        if answer_size > 0:
+            relevance = float(float(matches) / float(answer_size))
+
+        relevance = relevance * RELEVANCE_MULTIPLIER
+
+        # extra credit for more words up to a point
+        wc_mod = float(float(answer_size) / float(WORD_COUNT_DIVISOR)) * 2
+
+        confidence = self.level_confidence[level] + \
+            consumed_pct + bonus + num_sentences + relevance + wc_mod
+
+        return confidence
 
     def __handle_query_action(self, message):
         """Message handler for question:action.
