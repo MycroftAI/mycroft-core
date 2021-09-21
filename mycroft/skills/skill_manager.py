@@ -21,7 +21,7 @@ from inspect import signature
 
 from mycroft.api import is_paired
 from mycroft.enclosure.api import EnclosureAPI
-from mycroft.configuration import Configuration
+from mycroft.configuration import Configuration, BASE_FOLDER
 from mycroft.messagebus.message import Message
 from mycroft.util.log import LOG
 from mycroft.util import connected
@@ -31,6 +31,8 @@ from mycroft.skills.settings import SkillSettingsDownloader
 from mycroft.skills.skill_loader import SkillLoader
 from mycroft.skills.skill_updater import SkillUpdater
 from mycroft.messagebus import MessageBusClient
+import xdg.BaseDirectory
+
 
 SKILL_MAIN_MODULE = '__init__.py'
 
@@ -110,6 +112,23 @@ def _shutdown_skill(instance):
     except Exception:
         LOG.exception('Failed to shut down skill: '
                       '{}'.format(instance.skill_id))
+
+
+def _get_skill_locations(conf=None):
+    # next load all valid XDG paths
+    # NOTE: skills are actually code, but treated as user data!
+    # they should be considered applets rather than applications
+    xdg_paths = list(reversed(
+        [os.path.join(p, "skills")
+         for p in xdg.BaseDirectory.load_data_paths(BASE_FOLDER)]
+    ))
+
+    # the highest priority folder to load is the old hardcoded
+    # /opt/mycroft/skills folder
+    default = get_skills_directory(conf)
+    if default not in xdg_paths:
+        xdg_paths.append(default)
+    return xdg_paths
 
 
 class SkillManager(Thread):
@@ -332,10 +351,11 @@ class SkillManager(Thread):
 
     def _remove_git_locks(self):
         """If git gets killed from an abrupt shutdown it leaves lock files."""
-        lock_path = os.path.join(get_skills_directory(), '*/.git/index.lock')
-        for i in glob(lock_path):
-            LOG.warning('Found and removed git lock file: ' + i)
-            os.remove(i)
+        for skill_folder in _get_skill_locations():
+            lock_path = os.path.join(skill_folder, '*/.git/index.lock')
+            for i in glob(lock_path):
+                LOG.warning('Found and removed git lock file: ' + i)
+                os.remove(i)
 
     def _load_on_startup(self):
         """Handle initial skill load."""
@@ -361,6 +381,19 @@ class SkillManager(Thread):
     def _load_new_skills(self):
         """Handle load of skills installed since startup."""
         for skill_dir in self._get_skill_directories():
+            replaced_skills = []
+            # by definition skill_id == folder name
+            skill_id = os.path.basename(skill_dir)
+            for old_skill_dir, skill_loader in self.skill_loaders.items():
+                if old_skill_dir != skill_dir and \
+                    skill_loader.skill_id == skill_id:
+                    # a higher priority equivalent has been detected!
+                    replaced_skills.append(old_skill_dir)
+
+            for old_skill_dir in replaced_skills:
+                # unload the old skill
+                self._unload_skill(old_skill_dir)
+
             if skill_dir not in self.skill_loaders:
                 loader = self._load_skill(skill_dir)
                 if loader:
@@ -388,14 +421,33 @@ class SkillManager(Thread):
 
         return skill_loader if load_status else None
 
+    def _unload_skill(self, skill_dir):
+        if skill_dir in self.skill_loaders:
+            skill = self.skill_loaders[skill_dir]
+            LOG.info(f'removing {skill.skill_id}')
+            try:
+                skill.unload()
+            except Exception:
+                LOG.exception('Failed to shutdown skill ' + skill.id)
+            del self.skill_loaders[skill_dir]
+
     def _get_skill_directories(self):
-        skill_glob = glob(os.path.join(get_skills_directory(), '*/'))
-        skill_directories = []
-        for skill_dir in skill_glob:
+        # let's scan all valid directories, if a skill folder name exists in
+        # more than one of these then it should override the previous
+        skillmap = {}
+        for skills_dir in _get_skill_locations():
+            if not os.path.isdir(skills_dir):
+                continue
+            for skill_id in os.listdir(skills_dir):
+                skill = os.path.join(skills_dir, skill_id)
+                # NOTE: empty folders mean the skill should NOT be loaded
+                if os.path.isdir(skill):
+                    skillmap[skill_id] = skill
+
+        for skill_id, skill_dir in skillmap.items():
             # TODO: all python packages must have __init__.py!  Better way?
             # check if folder is a skill (must have __init__.py)
             if SKILL_MAIN_MODULE in os.listdir(skill_dir):
-                skill_directories.append(skill_dir.rstrip('/'))
                 if skill_dir in self.empty_skill_dirs:
                     self.empty_skill_dirs.discard(skill_dir)
             else:
@@ -404,7 +456,7 @@ class SkillManager(Thread):
                     LOG.debug('Found skills directory with no skill: ' +
                               skill_dir)
 
-        return skill_directories
+        return skillmap.values()
 
     def _unload_removed_skills(self):
         """Shutdown removed skills."""
@@ -414,13 +466,7 @@ class SkillManager(Thread):
             s for s in self.skill_loaders.keys() if s not in skill_dirs
         ]
         for skill_dir in removed_skills:
-            skill = self.skill_loaders[skill_dir]
-            LOG.info('removing {}'.format(skill.skill_id))
-            try:
-                skill.unload()
-            except Exception:
-                LOG.exception('Failed to shutdown skill ' + skill.id)
-            del self.skill_loaders[skill_dir]
+            self._unload_skill(skill_dir)
 
         # If skills were removed make sure to update the manifest on the
         # mycroft backend.
