@@ -48,8 +48,8 @@ class TrainingManager(object):
 
     def add(self, name, lines, reload_cache=False, must_train=True):
 
-                # special case: load persisted (aka. cached) resource (i.e.
-                # entity or intent) from file into memory data structures
+        # special case: load persisted (aka. cached) resource (i.e.
+        # entity or intent) from file into memory data structures
         if not must_train:
             self.objects.append(
                 self.cls.from_file(
@@ -74,7 +74,9 @@ class TrainingManager(object):
             self.train_data.add_lines(name, lines)
 
     def load(self, name, file_name, reload_cache=False):
-        with open(file_name) as f:
+        # mycroft-zh: fix charset issue.
+        # with open(file_name) as f:
+        with open(file_name, 'r', encoding='utf8') as f:
             self.add(name, f.read().split('\n'), reload_cache)
 
     def remove(self, name):
