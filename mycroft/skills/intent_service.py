@@ -358,12 +358,18 @@ class IntentService:
         Args:
             message (Message): message containing vocab info
         """
-        start_concept = message.data.get('start')
-        end_concept = message.data.get('end')
+        # TODO: 22.02 Remove backwards compatibility
+        if _is_old_style_keyword_message(message):
+            LOG.warning('Deprecated: Registering keywords with old message. '
+                        'This will be removed in v22.02.')
+            _update_keyword_message(message)
+
+        entity_value = message.data.get('entity_value')
+        entity_type = message.data.get('entity_type')
         regex_str = message.data.get('regex')
         alias_of = message.data.get('alias_of')
-        self.adapt_service.register_vocab(start_concept, end_concept,
-                                          alias_of, regex_str)
+        self.adapt_service.register_vocabulary(entity_value, entity_type,
+                                               alias_of, regex_str)
         self.registered_vocab.append(message.data)
 
     def handle_register_intent(self, message):
@@ -554,3 +560,29 @@ class IntentService:
         self.bus.emit(message.reply(
             "intent.service.padatious.entities.manifest",
             {"entities": self.padatious_service.registered_entities}))
+
+
+def _is_old_style_keyword_message(message):
+    """Simple check that the message is not using the updated format.
+
+    TODO: Remove in v22.02
+
+    Args:
+        message (Message): Message object to check
+
+    Returns:
+        (bool) True if this is an old messagem, else False
+    """
+    return ('entity_value' not in message.data and 'start' in message.data)
+
+
+def _update_keyword_message(message):
+    """Make old style keyword registration message compatible.
+
+    Copies old keys in message data to new names.
+
+    Args:
+        message (Message): Message to update
+    """
+    message.data['entity_value'] = message.data['start']
+    message.data['entity_type'] = message.data['end']
