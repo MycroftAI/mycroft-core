@@ -25,5 +25,5 @@ from .tools import (
     wait_for_dialog_match,
     VoightKampffCriteriaMatcher,
     VoightKampffDialogMatcher,
-    VoightKampffEventMatcher
+    VoightKampffMessageMatcher
 )

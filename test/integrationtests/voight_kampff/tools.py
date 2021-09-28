@@ -24,8 +24,15 @@ from mycroft.messagebus import Message
 DEFAULT_TIMEOUT = 10
 
 
-class VoightKampffEventMatcher:
+class VoightKampffMessageMatcher:
     """Matches a specified message type to messages emitted on the bus.
+
+    Usage:
+        Intended for use in a single test condition.
+
+        matcher = VoightKampffMessageMatcher(message_type, context)
+        match_found, error_message = matcher.match
+        assert match_found, error_message
 
     Attributes:
         message_type: identifier of the message to search for on the bus
@@ -38,8 +45,11 @@ class VoightKampffEventMatcher:
         self.message_type = message_type
         self.context = context
         self.match_event = Event()
-        self.match_found = False
         self.error_message = ""
+
+    @property
+    def match_found(self):
+        return self.match_event.is_set()
 
     def match(self, timeout: int = None):
         """Attempts to match the requested message type to emitted bus events.
@@ -58,15 +68,16 @@ class VoightKampffEventMatcher:
         if not self.match_event.is_set():
             self.match_event.wait(timeout=timeout)
         self.context.bus.remove(self.message_type, self.handle_message)
-        self.match_found = self.match_event.is_set()
         if not self.match_found:
             self._build_error_message()
+
+        return self.match_found, self.error_message
 
     def _check_historical_messages(self):
         """Searches messages emitted before the event handler was defined."""
         for message in self.context.bus.get_messages(self.message_type):
             self.handle_message(message)
-            if self.match_event.is_set():
+            if self.match_found:
                 break
         self.context.bus.clear_messages()
 
@@ -86,8 +97,15 @@ class VoightKampffEventMatcher:
         )
 
 
-class VoightKampffDialogMatcher(VoightKampffEventMatcher):
+class VoightKampffDialogMatcher(VoightKampffMessageMatcher):
     """Variation of VoightKampffEventMatcher for matching dialogs.
+
+    Usage:
+        Intended for use in a single test condition.
+
+        matcher = VoightKampffDialogMatcher(context, dialogs)
+        match_found, error_message = matcher.match
+        assert match_found, error_message
 
     Attributes:
         dialogs: one or more dialog names that will constitute a match
@@ -133,12 +151,21 @@ class VoightKampffDialogMatcher(VoightKampffEventMatcher):
             self.error_message += "\tMycroft didn't respond"
 
 
-class VoightKampffCriteriaMatcher(VoightKampffEventMatcher):
+class VoightKampffCriteriaMatcher(VoightKampffMessageMatcher):
     """Variation of VoightKampffEventMatcher for matching event data.
 
     In some cases, matching the message type is not enough.  The test
     requires data in the message payload to match a specified criteria
     to pass.
+
+    Usage:
+        Intended for use in a single test condition.
+
+        matcher = VoightKampffCriteriaMatcher(
+        message_type, context, criteria_matcher
+        )
+        match_found, error_message = matcher.match
+        assert match_found, error_message
 
     Attributes:
         criteria_matcher: Function to determine if a message contains
@@ -304,9 +331,9 @@ def then_wait(msg_type: str, criteria_func: Callable, context: Any,
         The success of the match attempt and an error message.
     """
     matcher = VoightKampffCriteriaMatcher(msg_type, context, criteria_func)
-    matcher.match(timeout)
+    match_found, error_message = matcher.match(timeout)
 
-    return matcher.match_found, matcher.error_message
+    return match_found, error_message
 
 
 def then_wait_fail(msg_type: str, criteria_func: Callable, context: Any,
@@ -323,8 +350,9 @@ def then_wait_fail(msg_type: str, criteria_func: Callable, context: Any,
     Returns:
         tuple (bool, str) test status and debug output
     """
-    status, debug = then_wait(msg_type, criteria_func, context, timeout)
-    return not status, debug
+    match_found, error_message = then_wait(msg_type, criteria_func,
+                                           context, timeout)
+    return not match_found, error_message
 
 
 # TODO: remove in 21.08
@@ -473,7 +501,7 @@ def wait_for_audio_service(context: Any, message_type: str):
         AssertionError if no match is found.
     """
     msg_type = 'mycroft.audio.service.{}'.format(message_type)
-    event_matcher = VoightKampffEventMatcher(msg_type, context)
-    event_matcher.match()
+    event_matcher = VoightKampffMessageMatcher(msg_type, context)
+    match_found, error_message = event_matcher.match()
 
-    assert event_matcher.match_found, event_matcher.error_message
+    assert match_found, error_message
