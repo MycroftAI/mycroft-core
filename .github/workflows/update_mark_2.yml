@@ -45,10 +45,6 @@ jobs:
         if [[ ${{ matrix.python-version }} != 3.9 ]]; then ./dev_setup.sh -sm; fi
       env:
         CI: true
-    - name: Linting and code style
-      run: |
-        pycodestyle mycroft test
-        flake8 mycroft test --count --select=E9,F63,F7,F82 --show-source --statistics
     - name: Run unit tests
       # Only generate the html report for one of the versions, others should not differ
       run: |
