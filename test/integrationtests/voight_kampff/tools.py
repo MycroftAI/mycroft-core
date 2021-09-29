@@ -31,7 +31,7 @@ class VoightKampffMessageMatcher:
         Intended for use in a single test condition.
 
         matcher = VoightKampffMessageMatcher(message_type, context)
-        match_found, error_message = matcher.match
+        match_found, error_message = matcher.match()
         assert match_found, error_message
 
     Attributes:
@@ -41,7 +41,7 @@ class VoightKampffMessageMatcher:
         error_message: message that can be used by the test to communicate
             the reason for a failed match to the tester.
     """
-    def __init__(self, message_type: str, context: Any):
+    def __init__(self, context: Any, message_type: str):
         self.message_type = message_type
         self.context = context
         self.match_event = Event()
@@ -104,7 +104,7 @@ class VoightKampffDialogMatcher(VoightKampffMessageMatcher):
         Intended for use in a single test condition.
 
         matcher = VoightKampffDialogMatcher(context, dialogs)
-        match_found, error_message = matcher.match
+        match_found, error_message = matcher.match()
         assert match_found, error_message
 
     Attributes:
@@ -113,7 +113,7 @@ class VoightKampffDialogMatcher(VoightKampffMessageMatcher):
             in the matching process
     """
     def __init__(self, context: Any, dialogs: List[str]):
-        super().__init__(message_type="speak", context=context)
+        super().__init__(context, message_type="speak")
         self.dialogs = dialogs
         self.speak_messages = list()
 
@@ -164,16 +164,16 @@ class VoightKampffCriteriaMatcher(VoightKampffMessageMatcher):
         matcher = VoightKampffCriteriaMatcher(
         message_type, context, criteria_matcher
         )
-        match_found, error_message = matcher.match
+        match_found, error_message = matcher.match()
         assert match_found, error_message
 
     Attributes:
         criteria_matcher: Function to determine if a message contains
             the data necessary for the test case to pass
     """
-    def __init__(self, message_type: str, context: Any,
+    def __init__(self, context: Any, message_type: str,
                  criteria_matcher: Callable):
-        super().__init__(message_type, context)
+        super().__init__(context, message_type)
         self.criteria_matcher = criteria_matcher
         self.error_message = ""
 
@@ -330,7 +330,7 @@ def then_wait(msg_type: str, criteria_func: Callable, context: Any,
     Returns:
         The success of the match attempt and an error message.
     """
-    matcher = VoightKampffCriteriaMatcher(msg_type, context, criteria_func)
+    matcher = VoightKampffCriteriaMatcher(context, msg_type, criteria_func)
     match_found, error_message = matcher.match(timeout)
 
     return match_found, error_message
@@ -501,7 +501,7 @@ def wait_for_audio_service(context: Any, message_type: str):
         AssertionError if no match is found.
     """
     msg_type = 'mycroft.audio.service.{}'.format(message_type)
-    event_matcher = VoightKampffMessageMatcher(msg_type, context)
+    event_matcher = VoightKampffMessageMatcher(context, msg_type)
     match_found, error_message = event_matcher.match()
 
     assert match_found, error_message
