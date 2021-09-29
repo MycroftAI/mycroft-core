@@ -65,8 +65,6 @@ jobs:
     needs: build
     steps:
     - name: Clone mycroft-mark-ii repo
-      env:
-        SSH_KEY: ${{ secets.SSH_KEY }}
       run: |
         echo "SUCCESS"
         exit 0
