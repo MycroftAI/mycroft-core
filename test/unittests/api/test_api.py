@@ -167,7 +167,7 @@ class TestDeviceApi(ApiTestBase):
         pairing_code = device.get_code('state')
         self.assertEqual(pairing_code, '123ABC')
         self._check_api_request(
-            '/v1/device/code?state=state&packaging=pantacor', 'GET'
+            '/v1/device/code?state=state', 'GET'
         )
 
     def test_device_get_settings(self):
