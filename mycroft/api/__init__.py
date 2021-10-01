@@ -13,9 +13,9 @@
 # limitations under the License.
 #
 import os
+import subprocess
 import time
 from copy import copy, deepcopy
-from subprocess import run
 
 import requests
 from requests import HTTPError, RequestException
@@ -46,7 +46,9 @@ def _get_pantacor_device_id():
     """Quick hack to read a file owned by root on a pantacor device."""
     # TODO: replace this with reading a file accessible by the mycroft user
     cmd = ['sudo', 'cat', '/pantavisor/device-id']
-    result = run(cmd, capture_output=True)
+    # result = run(cmd, capture_output=True)
+    # capture_output arg does not exist in Python3.6
+    result = subprocess.run(cmd, stdout=subprocess.PIPE)
     pantacor_device_id = result.stdout.decode().strip()
 
     return pantacor_device_id
