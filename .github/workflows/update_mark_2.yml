@@ -20,52 +20,59 @@ jobs:
       uses: actions/setup-python@v2
       with:
         python-version: ${{ matrix.python-version }}
-    - name: Cache pip packages
-      uses: actions/cache@v2
-      env:
-        cache-name: cache-pypi-modules
-      with:
-        # pip cache files are stored in `~/.cache/pip` on Linux
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('requirements/requirements.txt', 'requirements/tests.txt') }}
-        restore-keys: |
-          ${{ runner.os }}-build-${{ env.cache-name }}-
-          ${{ runner.os }}-build-
-          ${{ runner.os }}-
-    - name: Install compilers
-      run: |
-        sudo apt-get update -qq
-        sudo apt-get install -y gcc g++
-    - name: Install Python packages for testing
-      run: pip install -r requirements/tests.txt
-    - name: Setup mycroft core
-      # Only build mimic for one Python version; others should not differ
-      run: |
-        if [[ ${{ matrix.python-version }} == 3.9 ]]; then ./dev_setup.sh; fi
-        if [[ ${{ matrix.python-version }} != 3.9 ]]; then ./dev_setup.sh -sm; fi
-      env:
-        CI: true
-    - name: Run unit tests
-      # Only generate the html report for one of the versions, others should not differ
-      run: |
-        if [[ ${{ matrix.python-version }} == 3.9 ]]; then ./start-mycroft.sh unittest --cov-report html; fi
-        if [[ ${{ matrix.python-version }} != 3.9 ]]; then ./start-mycroft.sh unittest; fi
-    - name: Upload code coverage
-      # Only upload the report for the Python version that generated it
-      run: if [[ ${{ matrix.python-version }} == 3.9 ]]; then bash <(curl -s https://codecov.io/bash); fi
-      env:
-        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+    # - name: Cache pip packages
+    #   uses: actions/cache@v2
+    #   env:
+    #     cache-name: cache-pypi-modules
+    #   with:
+    #     # pip cache files are stored in `~/.cache/pip` on Linux
+    #     path: ~/.cache/pip
+    #     key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('requirements/requirements.txt', 'requirements/tests.txt') }}
+    #     restore-keys: |
+    #       ${{ runner.os }}-build-${{ env.cache-name }}-
+    #       ${{ runner.os }}-build-
+    #       ${{ runner.os }}-
+    # - name: Install compilers
+    #   run: |
+    #     sudo apt-get update -qq
+    #     sudo apt-get install -y gcc g++
+    # - name: Install Python packages for testing
+    #   run: pip install -r requirements/tests.txt
+    # - name: Setup mycroft core
+    #   # Only build mimic for one Python version; others should not differ
+    #   run: |
+    #     if [[ ${{ matrix.python-version }} == 3.9 ]]; then ./dev_setup.sh; fi
+    #     if [[ ${{ matrix.python-version }} != 3.9 ]]; then ./dev_setup.sh -sm; fi
+    #   env:
+    #     CI: true
+    # - name: Run unit tests
+    #   # Only generate the html report for one of the versions, others should not differ
+    #   run: |
+    #     if [[ ${{ matrix.python-version }} == 3.9 ]]; then ./start-mycroft.sh unittest --cov-report html; fi
+    #     if [[ ${{ matrix.python-version }} != 3.9 ]]; then ./start-mycroft.sh unittest; fi
+    # - name: Upload code coverage
+    #   # Only upload the report for the Python version that generated it
+    #   run: if [[ ${{ matrix.python-version }} == 3.9 ]]; then bash <(curl -s https://codecov.io/bash); fi
+    #   env:
+    #     CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   update-mark-ii:
     runs-on: ubuntu-latest
     needs: build
     steps:
+    - name: Install SSH key
+      uses: shimataro/ssh-key-action@v2
+      with:
+        key: ${{ secrets.MARK_II_GITLAB_SSH_KEY }}
+        name: mark-ii-github-action_id_rsa
+        known_hosts: ${{ secrets.MARK_II_GITLAB_KNOWN_HOSTS }}
+        if_key_exists: fail # replace / ignore / fail; optional (defaults to fail)
     - name: Clone mycroft-mark-ii repo
       run: |
+        git clone git@gitlab.com:pantace/mycroft/mycroft-mark-ii.git
+        cd mycroft-mark-ii/mycroft-core
         echo "SUCCESS"
         exit 0
-        # git clone https://gitlab.com/pantace/mycroft/mycroft-mark-ii
-        # cd mycroft-mark-ii/mycroft-core
         # git submodule update
         # git pull
         # cd ..
