@@ -72,11 +72,11 @@ jobs:
       run: |
         git clone git@gitlab.com:pantace/mycroft/mycroft-mark-ii.git
         cd mycroft-mark-ii
-        git checkout -b "testing"
+        git checkout -b testing
         git submodule init mycroft-core
         git submodule update mycroft-core
         cd mycroft-core
-        git pull
+        git pull origin feature/mark-2
         cd ..
         git add mycroft-core
         git commit -m "Auto-update mycroft-core"
