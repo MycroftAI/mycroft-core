@@ -71,8 +71,8 @@ jobs:
     - name: Clone mycroft-mark-ii repo
       run: |
         git clone git@gitlab.com:pantace/mycroft/mycroft-mark-ii.git
-        git checkout -b "testing"
         cd mycroft-mark-ii
+        git checkout -b "testing"
         git submodule init mycroft-core
         git submodule update mycroft-core
         cd mycroft-core
