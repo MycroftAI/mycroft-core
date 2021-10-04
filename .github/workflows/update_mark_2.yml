@@ -70,6 +70,8 @@ jobs:
         if_key_exists: fail # replace / ignore / fail; optional (defaults to fail)
     - name: Clone mycroft-mark-ii repo
       run: |
+        git config --global user.email "dev@mycroft.ai"
+        git config --global user.name "Mycroft Bot"
         git clone git@gitlab.com:pantace/mycroft/mycroft-mark-ii.git
         cd mycroft-mark-ii
         git checkout -b testing
