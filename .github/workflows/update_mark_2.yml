@@ -69,7 +69,7 @@ jobs:
         if_key_exists: fail # replace / ignore / fail; optional (defaults to fail)
     - name: Clone mycroft-mark-ii repo
       run: |
-        ssh -Tvvv git@gitlab.com
+        ssh -Tvvv git@gitlab.com -i .ssh/mark-ii-github-action_id_rsa
         echo "Connected to gitlab via SSH"
         git clone git@gitlab.com:pantace/mycroft/mycroft-mark-ii.git
         cd mycroft-mark-ii/mycroft-core
