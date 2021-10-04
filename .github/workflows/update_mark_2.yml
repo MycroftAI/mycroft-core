@@ -66,12 +66,10 @@ jobs:
         key: ${{ secrets.MARK_II_GITLAB_SSH_KEY }}
         name: mark-ii-github-action_id_rsa
         known_hosts: ${{ secrets.MARK_II_GITLAB_KNOWN_HOSTS }}
+        config: ${{ secrets.MARK_II_GITLAB_SSH_CONFIG }}
         if_key_exists: fail # replace / ignore / fail; optional (defaults to fail)
     - name: Clone mycroft-mark-ii repo
       run: |
-        ls /home/runner/.ssh
-        ssh -Tvvv git@gitlab.com -i /home/runner/.ssh/mark-ii-github-action_id_rsa
-        echo "Connected to gitlab via SSH"
         git clone git@gitlab.com:pantace/mycroft/mycroft-mark-ii.git
         cd mycroft-mark-ii/mycroft-core
         echo "SUCCESS"
