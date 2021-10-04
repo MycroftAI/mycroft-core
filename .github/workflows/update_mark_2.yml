@@ -71,12 +71,13 @@ jobs:
     - name: Clone mycroft-mark-ii repo
       run: |
         git clone git@gitlab.com:pantace/mycroft/mycroft-mark-ii.git
-        cd mycroft-mark-ii/mycroft-core
-        echo "SUCCESS"
-        exit 0
-        # git submodule update
-        # git pull
-        # cd ..
-        # git add mycroft-core
-        # git commit -m "Auto-update mycroft-core"
-        # git push
+        git checkout -b "testing"
+        cd mycroft-mark-ii
+        git submodule init mycroft-core
+        git submodule update mycroft-core
+        cd mycroft-core
+        git pull
+        cd ..
+        git add mycroft-core
+        git commit -m "Auto-update mycroft-core"
+        git push origin testing
