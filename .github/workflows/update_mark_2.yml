@@ -5,7 +5,7 @@ name: Update Mark II
 on:
   push:
     branches:
-      - feature/mark-2-cd
+      - feature/mark-2
 
 jobs:
   build:
