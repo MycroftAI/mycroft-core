@@ -1,6 +1,5 @@
 from inspect import signature
 
-from mycroft.messagebus import Message
 from mycroft.metrics import Stopwatch, report_timing
 from mycroft.util.log import LOG
 
@@ -15,7 +14,7 @@ def unmunge_message(message, skill_id):
     Returns:
         Message without clear keywords
     """
-    if isinstance(message, Message) and isinstance(message.data, dict):
+    if hasattr(message, "data") and isinstance(message.data, dict):
         skill_id = to_alnum(skill_id)
         for key in list(message.data.keys()):
             if key.startswith(skill_id):
