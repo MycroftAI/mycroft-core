@@ -253,10 +253,11 @@ class MycroftSkill:
     @property
     def lang(self):
         """Get the current language."""
+        lang = self._core_lang
         message = dig_for_message()
         if message:
-            return message.data.get("lang") or self._core_lang
-        return self._core_lang
+            lang = message.data.get("lang") or lang
+        return lang.lower()
 
     @property
     def _core_lang(self):
@@ -264,7 +265,7 @@ class MycroftSkill:
         NOTE: this should be public, but since if a skill uses this it wont
         work in regular mycroft-core it was made private! Equivalent PRs in
         mycroft-core have been rejected/abandoned"""
-        return Configuration.get().get("lang", "en-us")
+        return Configuration.get().get("lang", "en-us").lower()
 
     @property
     def _secondary_langs(self):
@@ -275,7 +276,7 @@ class MycroftSkill:
         work in regular mycroft-core it was made private! Equivalent PRs in
         mycroft-core have been rejected/abandoned
         """
-        return [l for l in self.config_core.get('secondary_langs', [])
+        return [l.lower() for l in self.config_core.get('secondary_langs', [])
                 if l != self._core_lang]
 
     def _get_language_dir(self, base_path, lang=None):
