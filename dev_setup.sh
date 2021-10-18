@@ -189,7 +189,7 @@ in mycroft.conf.
             if [[ ! -f /etc/mycroft/mycroft.conf ]]; then
                 $SUDO mkdir -p /etc/mycroft
                 $SUDO touch /etc/mycroft/mycroft.conf
-                $SUDO bash -c 'echo "{ \"use_precise\": true }" > /etc/mycroft/mycroft.conf'
+                $SUDO bash -c 'echo "{ \"use_precise\": false }" > /etc/mycroft/mycroft.conf'
             else
                 # Ensure dependency installed to merge configs
                 disable_precise_later=true
@@ -469,7 +469,7 @@ install_deps
 
 # It's later. Update existing config with jq.
 if [ $disable_precise_later == true ]; then
-    $SUDO bash -c 'jq ". + { \"use_precise\": true }" /etc/mycroft/mycroft.conf > tmp.mycroft.conf' 
+    $SUDO bash -c 'jq ". + { \"use_precise\": false }" /etc/mycroft/mycroft.conf > tmp.mycroft.conf' 
                     $SUDO mv -f tmp.mycroft.conf /etc/mycroft/mycroft.conf
 fi
 
