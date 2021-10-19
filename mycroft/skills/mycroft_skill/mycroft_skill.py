@@ -1066,9 +1066,7 @@ class MycroftSkill:
         """Listener to enable a registered intent if it belongs to this skill.
         """
         intent_name = message.data['intent_name']
-        for (name, _) in self.intent_service.detached_intents:
-            if name == intent_name:
-                return self.enable_intent(intent_name)
+        return self.enable_intent(intent_name)
 
     def handle_disable_intent(self, message):
         """Listener to disable a registered intent if it belongs to this skill.
@@ -1107,7 +1105,7 @@ class MycroftSkill:
             bool: True if enabled, False if it wasn't registered
         """
         intent = self.intent_service.get_intent(intent_name)
-        if intent:
+        if intent and self.intent_service.intent_is_detached(intent_name):
             if ".intent" in intent_name:
                 self.register_intent_file(intent_name, None)
             else:
@@ -1115,10 +1113,13 @@ class MycroftSkill:
                 self.register_intent(intent, None)
             LOG.debug('Enabling intent {}'.format(intent_name))
             return True
+        elif intent:
+            LOG.error(f'Could not enable {intent_name}, '
+                      'it\'s not detached')
         else:
             LOG.error('Could not enable '
                       '{}, it hasn\'t been registered.'.format(intent_name))
-            return False
+        return False
 
     def set_context(self, context, word='', origin=''):
         """Add context to intent service

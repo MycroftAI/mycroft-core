@@ -104,6 +104,21 @@ class IntentServiceInterface:
             self.registered_intents = [pair for pair in self.registered_intents
                                        if pair[0] != name]
 
+    def intent_is_detached(self, intent_name):
+        """Determine if an intent is detached.
+
+        Args:
+            intent_name(str): Intent reference
+
+        Returns:
+            (bool) True if intent is found, else False.
+        """
+        for (name, _) in self.detached_intents:
+            if name == intent_name:
+                return True
+
+        return False
+
     def set_adapt_context(self, context, word, origin):
         """Set an Adapt context.
 
