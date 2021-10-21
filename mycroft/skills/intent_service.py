@@ -28,6 +28,7 @@ from mycroft.skills.intent_services import (
 )
 from mycroft.skills.intent_service_interface import open_intent_envelope
 from mycroft.skills.permissions import ConverseMode, ConverseActivationMode
+from mycroft.messagebus.message import Message
 
 
 def _get_message_lang(message):
@@ -110,6 +111,11 @@ class IntentService:
         self.bus.on('mycroft.speech.recognition.unknown', self.reset_converse)
         self.bus.on('mycroft.skills.loaded', self.update_skill_name_dict)
 
+        self.bus.on('intent.service.skills.activate',
+                    self.handle_activate_skill_request)
+        self.bus.on('intent.service.skills.deactivate',
+                    self.handle_deactivate_skill_request)
+        # TODO backwards compat, deprecate
         self.bus.on('active_skill_request', self.handle_activate_skill_request)
 
         self.active_skills = []  # [skill_id , timestamp]
@@ -211,6 +217,21 @@ class IntentService:
         self.add_active_skill(skill_id)
         self._consecutive_activations[skill_id] += 1
 
+        # converse handling
+
+    def handle_activate_skill_request(self, message):
+        self.add_active_skill(message.data['skill_id'])
+
+    def handle_deactivate_skill_request(self, message):
+        # TODO imperfect solution - only a skill can deactivate itself
+        # someone can forge this message and emit it raw, but in ovos-core all
+        # skill message should have skill_id in context, so let's make sure
+        # this doesnt happen accidentally
+        skill_id = message.data['skill_id']
+        source_skill = message.context.get("skill_id") or skill_id
+        if skill_id == source_skill:
+            self.remove_active_skill(message.data['skill_id'])
+
     def reset_converse(self, message):
         """Let skills know there was a problem with speech recognition"""
         lang = _get_message_lang(message)
@@ -273,6 +294,9 @@ class IntentService:
         for skill in self.active_skills:
             if skill[0] == skill_id:
                 self.active_skills.remove(skill)
+                self.bus.emit(
+                    Message("intent.service.skills.deactivated",
+                            {"skill_id": skill_id}))
                 if skill_id in self._consecutive_activations:
                     self._consecutive_activations[skill_id] = 0
 
@@ -288,9 +312,15 @@ class IntentService:
         # search the list for an existing entry that already contains it
         # and remove that reference
         if skill_id != '':
-            self.remove_active_skill(skill_id)
+            # do not call remove method to not send deactivate bus event!
+            for skill in self.active_skills:
+                if skill[0] == skill_id:
+                    self.active_skills.remove(skill)
             # add skill with timestamp to start of skill_list
             self.active_skills.insert(0, [skill_id, time.time()])
+            self.bus.emit(
+                Message("intent.service.skills.activated",
+                        {"skill_id": skill_id}))
         else:
             LOG.warning('Skill ID was empty, won\'t add to list of '
                         'active skills.')

@@ -412,6 +412,14 @@ class MycroftSkill:
             'mycroft.skills.settings.changed',
             self.handle_settings_change
         )
+        self.events.add(f"{self.skill_id}.deactivate",
+                        self.handle_deactivate)
+        self.events.add("intent.service.skills.deactivated",
+                        self._handle_skill_deactivated)
+        self.events.add(f"{self.skill_id}.activate",
+                        self.handle_activate)
+        self.events.add("intent.service.skills.activated",
+                        self._handle_skill_activated)
 
     def handle_settings_change(self, message):
         """Update settings if the remote settings changes apply to this skill.
@@ -462,6 +470,50 @@ class MycroftSkill:
         """
         return None
 
+    # converse handling
+    def _handle_skill_activated(self, message):
+        """ intent service activated a skill
+        if it was this skill fire the skill activation event"""
+        if message.data.get("skill_id") == self.skill_id:
+            self.bus.emit(message.forward(f"{self.skill_id}.activate"))
+
+    def handle_activate(self, message):
+        """ skill is now considered active by the intent service
+        converse method will be called, skills might want to prepare/resume
+        """
+
+    def _handle_skill_deactivated(self, message):
+        """ intent service deactivated a skill
+        if it was this skill fire the skill deactivation event"""
+        if message.data.get("skill_id") == self.skill_id:
+            self.bus.emit(message.forward(f"{self.skill_id}.deactivate"))
+
+    def handle_deactivate(self, message):
+        """ skill is no longer considered active by the intent service
+        converse method will not be called, skills might want to reset state here
+        """
+
+    def activate(self):
+        """Bump skill to active_skill list in intent_service.
+        This enables converse method to be called even without skill being
+        used in last 5 minutes.
+        """
+        msg = dig_for_message() or Message("")
+        if "skill_id" not in msg.context:
+            msg.context["skill_id"] = self.skill_id
+        self.bus.emit(msg.forward("intent.service.skills.activate",
+                              data={"skill_id": self.skill_id}))
+
+    def deactivate(self):
+        """remove skill from active_skill list in intent_service.
+        This stops converse method from being called
+        """
+        msg = dig_for_message() or Message("")
+        if "skill_id" not in msg.context:
+            msg.context["skill_id"] = self.skill_id
+        self.bus.emit(msg.forward(f"intent.service.skills.deactivate",
+                              data={"skill_id": self.skill_id}))
+
     def converse(self, message=None):
         """Handle conversation.
 
@@ -505,7 +557,7 @@ class MycroftSkill:
             return True
 
         # install a temporary conversation handler
-        self.make_active()
+        self.activate()
         converse.response = None
         default_converse = self.converse
         self.converse = converse
@@ -776,12 +828,11 @@ class MycroftSkill:
 
         This enables converse method to be called even without skill being
         used in last 5 minutes.
+
+        deprecated: use self.activate() instead
         """
-        msg = dig_for_message() or Message("")
-        if "skill_id" not in msg.context:
-            msg.context["skill_id"] = self.skill_id
-        self.bus.emit(msg.forward('active_skill_request',
-                                  {'skill_id': self.skill_id}))
+        # TODO deprecate, backwards compat
+        self.activate()
 
     def _handle_collect_resting(self, message=None):
         """Handler for collect resting screen messages.

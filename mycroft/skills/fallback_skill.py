@@ -153,7 +153,7 @@ class FallbackSkill(MycroftSkill):
 
         def wrapper(*args, **kwargs):
             if handler(*args, **kwargs):
-                self.make_active()
+                self.activate()
                 return True
             return False
 
