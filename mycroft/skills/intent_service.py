@@ -21,7 +21,10 @@ from mycroft.util.log import LOG
 from mycroft.util.parse import normalize
 from mycroft.metrics import report_timing, Stopwatch
 from .intent_services import (
-    AdaptService, AdaptIntent, FallbackService, PadatiousService, IntentMatch
+    AdaptService, AdaptIntent,
+    FallbackService,
+    PadatiousService, PadatiousMatcher,
+    IntentMatch
 )
 from .intent_service_interface import open_intent_envelope
 
@@ -280,13 +283,16 @@ class IntentService:
 
             stopwatch = Stopwatch()
 
+            # Create matchers
+            padatious_matcher = PadatiousMatcher(self.padatious_service)
+
             # List of functions to use to match the utterance with intent.
             # These are listed in priority order.
             match_funcs = [
-                self._converse, self.padatious_service.match_high,
+                self._converse, padatious_matcher.match_high,
                 self.adapt_service.match_intent, self.fallback.high_prio,
-                self.padatious_service.match_medium, self.fallback.medium_prio,
-                self.padatious_service.match_low, self.fallback.low_prio
+                padatious_matcher.match_medium, self.fallback.medium_prio,
+                padatious_matcher.match_low, self.fallback.low_prio
             ]
 
             match = None
@@ -444,17 +450,20 @@ class IntentService:
         lang = message.data.get("lang", "en-us")
         combined = _normalize_all_utterances([utterance])
 
+        # Create matchers
+        padatious_matcher = PadatiousMatcher(self.padatious_service)
+
         # List of functions to use to match the utterance with intent.
         # These are listed in priority order.
         # TODO once we have a mechanism for checking if a fallback will
         #  trigger without actually triggering it, those should be added here
         match_funcs = [
-            self.padatious_service.match_high,
+            padatious_matcher.match_high,
             self.adapt_service.match_intent,
             # self.fallback.high_prio,
-            self.padatious_service.match_medium,
+            padatious_matcher.match_medium,
             # self.fallback.medium_prio,
-            self.padatious_service.match_low,
+            padatious_matcher.match_low,
             # self.fallback.low_prio
         ]
         # Loop through the matching functions until a match is found.
