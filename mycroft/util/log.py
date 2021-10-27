@@ -81,12 +81,13 @@ class LOG:
             '{asctime} | {levelname:8} | {process:5} | {name} | {message}'
         )
 
-        formatter = logging.Formatter(log_message_format, style='{')
+        config = mycroft.configuration.Configuration.get(remote=False)
+        formatter = logging.Formatter(
+            config.get('log_format', log_message_format), style='{')
         formatter.default_msec_format = '%s.%03d'
         cls.handler = logging.StreamHandler(sys.stdout)
         cls.handler.setFormatter(formatter)
 
-        config = mycroft.configuration.Configuration.get(remote=False)
         cls.level = logging.getLevelName(config.get('log_level', 'INFO'))
 
         # Enable logging in external modules
