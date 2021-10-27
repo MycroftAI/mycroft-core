@@ -81,12 +81,15 @@ class LOG:
             '{asctime} | {levelname:8} | {process:5} | {name} | {message}'
         )
 
-        config = mycroft.configuration.Configuration.get(remote=False)
-        formatter = logging.Formatter(
-            config.get('log_format', log_message_format), style='{')
+        formatter = logging.Formatter(log_message_format, style='{')
         formatter.default_msec_format = '%s.%03d'
         cls.handler = logging.StreamHandler(sys.stdout)
         cls.handler.setFormatter(formatter)
+
+        config = mycroft.configuration.Configuration.get(remote=False)
+        if config.get('log_format'):
+            formatter = logging.Formatter(config.get('log_format'), style='{')
+            cls.handler.setFormatter(formatter)
 
         cls.level = logging.getLevelName(config.get('log_level', 'INFO'))
 
