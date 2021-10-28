@@ -21,4 +21,4 @@ DIR="$( dirname "$SOURCE" )"
 source "$DIR/../venv-activate.sh" -q
 
 # Invoke the Mycroft Skills Manager (msm) within the venv
-msm $@
+msm "$@"
