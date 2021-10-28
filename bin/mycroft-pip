@@ -21,4 +21,4 @@ DIR="$( dirname "$SOURCE" )"
 source "$DIR/../venv-activate.sh" -q
 
 # Install pip packages within the Mycroft venv
-pip $@
+pip "$@"
