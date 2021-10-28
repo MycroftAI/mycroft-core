@@ -493,7 +493,7 @@ class GUIWebsocketHandler(WebSocketHandler):
         LOG.info('New Connection opened!')
         self.synchronize()
 
-    def on_close(self):
+    def on_close(self, _):
         LOG.info('Closing {}'.format(id(self)))
         GUIWebsocketHandler.clients.remove(self)
 
@@ -525,7 +525,7 @@ class GUIWebsocketHandler(WebSocketHandler):
                            })
             namespace_pos += 1
 
-    def on_message(self, message):
+    def on_message(self, _, message):
         LOG.info("Received: {}".format(message))
         msg = json.loads(message)
         if (msg.get('type') == "mycroft.events.triggered" and
