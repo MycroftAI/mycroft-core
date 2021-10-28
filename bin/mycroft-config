@@ -212,10 +212,10 @@ function set_config() {
         value=".${value}"
     fi
 
-    jq "${value} = \"$2\"" ~/.mycroft/mycroft.conf > "${TEMP}/~mycroft.conf"
+    jq "${value} = \"$2\"" $_conf_file > "${TEMP}/~mycroft.conf"
     if [ $? -eq 0 ] ; then
         # Successful update, replace the config file
-        mv "${TEMP}/~mycroft.conf" ~/.mycroft/mycroft.conf
+        mv "${TEMP}/~mycroft.conf" $_conf_file
         signal_reload_config
     fi
 }
