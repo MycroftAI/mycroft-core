@@ -374,6 +374,8 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         self.recording_timeout_with_silence = listener_config.get(
             'recording_timeout_with_silence', 3.0)
 
+        self.mic_meter_ipc_enabled = listener_config.get("mic_meter_ipc", True)
+
     @property
     def account_id(self):
         """Fetch account from backend when needed.
@@ -472,13 +474,14 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         return byte_data
 
     def write_mic_level(self, energy, source):
-        with open(self.mic_level_file, 'w') as f:
-            f.write('Energy:  cur={} thresh={:.3f} muted={}'.format(
-                energy,
-                self.energy_threshold,
-                int(source.muted)
+        if self.mic_meter_ipc_enabled:
+            with open(self.mic_level_file, 'w') as f:
+                f.write('Energy:  cur={} thresh={:.3f} muted={}'.format(
+                    energy,
+                    self.energy_threshold,
+                    int(source.muted)
+                    )
                 )
-            )
 
     def _skip_wake_word(self):
         """Check if told programatically to skip the wake word
