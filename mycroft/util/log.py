@@ -87,6 +87,10 @@ class LOG:
         cls.handler.setFormatter(formatter)
 
         config = mycroft.configuration.Configuration.get(remote=False)
+        if config.get('log_format'):
+            formatter = logging.Formatter(config.get('log_format'), style='{')
+            cls.handler.setFormatter(formatter)
+
         cls.level = logging.getLevelName(config.get('log_level', 'INFO'))
 
         # Enable logging in external modules
