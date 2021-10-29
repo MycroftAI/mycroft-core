@@ -95,13 +95,13 @@ function validate_config_file() {
     return $result
 }
 
-_conf_file="~/.mycroft/mycroft.conf"
+_conf_file="${XDG_CONFIG_HOME:-$HOME/.config}/mycroft/mycroft.conf"
 function name_to_path() {
     case ${1} in
         "system")     _conf_file="/etc/mycroft/mycroft.conf" ;;
-        "user")       _conf_file=$(readlink -f ~/.mycroft/mycroft.conf) ;;
+        "user")       _conf_file=$(readlink -f ${XDG_CONFIG_HOME:-$HOME/.config}/mycroft/mycroft.conf) ;;
         "default")    _conf_file="$DIR/../mycroft/configuration/mycroft.conf" ;;
-        "remote")     _conf_file="/var/tmp/mycroft_web_cache.json" ;;
+        "remote")     _conf_file="$HOME/.cache/mycroft/web_cache.json" ;;
 
         *)
             echo "ERROR: Unknown name '${1}'."
@@ -212,10 +212,10 @@ function set_config() {
         value=".${value}"
     fi
 
-    jq "${value} = \"$2\"" ~/.mycroft/mycroft.conf > "${TEMP}/~mycroft.conf"
+    jq "${value} = \"$2\"" $_conf_file > "${TEMP}/~mycroft.conf"
     if [ $? -eq 0 ] ; then
         # Successful update, replace the config file
-        mv "${TEMP}/~mycroft.conf" ~/.mycroft/mycroft.conf
+        mv "${TEMP}/~mycroft.conf" $_conf_file
         signal_reload_config
     fi
 }

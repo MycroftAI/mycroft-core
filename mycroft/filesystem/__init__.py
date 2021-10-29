@@ -13,7 +13,9 @@
 # limitations under the License.
 #
 import os
+import shutil
 from os.path import join, expanduser, isdir
+import xdg.BaseDirectory
 
 
 class FileSystemAccess:
@@ -31,7 +33,16 @@ class FileSystemAccess:
     def __init_path(path):
         if not isinstance(path, str) or len(path) == 0:
             raise ValueError("path must be initialized as a non empty string")
-        path = join(expanduser('~'), '.mycroft', path)
+
+        old_path = join(expanduser('~'), '.mycroft', path)
+        path = join(xdg.BaseDirectory.save_config_path('mycroft'), path)
+
+        # Migrate from the old location if it still exists
+        # TODO: remove in 22.02
+        if isdir(old_path):
+            if isdir(path):
+                shutil.rmtree(path)
+            shutil.move(old_path, path)
 
         if not isdir(path):
             os.makedirs(path)

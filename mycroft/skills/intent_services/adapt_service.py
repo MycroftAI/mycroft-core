@@ -202,8 +202,12 @@ class AdaptService:
         """Run the Adapt engine to search for an matching intent.
 
         Args:
-            utterances (iterable): iterable of utterances, expected order
-                                   [raw, normalized, other]
+            utterances (iterable): utterances for consideration in intent
+            matching. As a practical matter, a single utterance will be
+            passed in most cases.  But there are instances, such as
+            streaming STT that could pass multiple.  Each utterance
+            is represented as a tuple containing the raw, normalized, and
+            possibly other variations of the utterance.
 
         Returns:
             Intent structure, or None if no match was found.
@@ -227,7 +231,10 @@ class AdaptService:
                         include_tags=True,
                         context_manager=self.context_manager)]
                     if intents:
-                        take_best(intents[0], utt_tup[0])
+                        utt_best = max(
+                            intents, key=lambda x: x.get('confidence', 0.0)
+                        )
+                        take_best(utt_best, utt_tup[0])
 
                 except Exception as err:
                     LOG.exception(err)
@@ -242,14 +249,35 @@ class AdaptService:
             ret = None
         return ret
 
+    # TODO 22.02: Remove this deprecated method
     def register_vocab(self, start_concept, end_concept, alias_of, regex_str):
-        """Register vocabulary."""
+        """Register Vocabulary. DEPRECATED
+
+        This method should not be used, it has been replaced by
+        register_vocabulary().
+        """
+        self.register_vocabulary(start_concept, end_concept,
+                                 alias_of, regex_str)
+
+    def register_vocabulary(self, entity_value, entity_type,
+                            alias_of, regex_str):
+        """Register skill vocabulary as adapt entity.
+
+        This will handle both regex registration and registration of normal
+        keywords. if the "regex_str" argument is set all other arguments will
+        be ignored.
+
+        Argument:
+            entity_value: the natural langauge word
+            entity_type: the type/tag of an entity instance
+            alias_of: entity this is an alternative for
+        """
         with self.lock:
             if regex_str:
                 self.engine.register_regex_entity(regex_str)
             else:
                 self.engine.register_entity(
-                    start_concept, end_concept, alias_of=alias_of)
+                    entity_value, entity_type, alias_of=alias_of)
 
     def register_intent(self, intent):
         """Register new intent with adapt engine.

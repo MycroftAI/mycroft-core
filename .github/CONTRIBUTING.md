@@ -46,11 +46,11 @@ git push -f
 ```
   10. If possible, create unit tests for your changes
       * [Unit Tests for most contributions](https://github.com/MycroftAI/mycroft-core/tree/dev/test)
-      * [Intent Tests for new skills](https://mycroft-ai.gitbook.io/docs/#testing-your-skill)
+      * [Intent Tests for new skills](https://mycroft-ai.gitbook.io/docs/skill-development/voight-kampff)
       * We utilize TRAVIS-CI, which will test each pull request. To test locally you can run: `./start-mycroft.sh unittest`
-  11. Once everything is okay, you can finally [create a Pull Request (PR)](https://help.github.com/articles/using-pull-requests/) on [MycroftAi/mycroft-core](https://github.com/MycroftAI/mycroft-core/pulls) to have your code reviewed and merged.
+  11. Once everything is okay, you can [create a Pull Request (PR)](https://help.github.com/articles/using-pull-requests/) on [MycroftAi/mycroft-core](https://github.com/MycroftAI/mycroft-core/pulls) to have your code reviewed and merged.
 
-**Note**: Even if you have write access to the master branch, do not work directly on master!
+**Note**: Do not work directly on the Master branch. All changes must be merged into dev, and will be automatically pushed to Master in the next release.
 
 ## Submit Changes
 
