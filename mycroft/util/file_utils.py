@@ -76,8 +76,9 @@ def resolve_resource_file(res_name):
         return filename
 
     # Next look for /opt/mycroft/res/res_name
-    data_dir = os.path.join(os.path.expanduser(config['data_dir']), 'res')
-    filename = os.path.expanduser(os.path.join(data_dir, res_name))
+    data_dir = config.get('data_dir', xdg.BaseDirectory.save_data_path(mycroft.configuration.BASE_FOLDER))
+    res_dir = os.path.join(data_dir, 'res')
+    filename = os.path.expanduser(os.path.join(res_dir, res_name))
     if os.path.isfile(filename):
         return filename
 

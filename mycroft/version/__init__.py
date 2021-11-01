@@ -47,8 +47,6 @@ OVOS_VERSION_STR = '.'.join(map(str, OVOS_VERSION_TUPLE))
 class VersionManager:
     @staticmethod
     def get():
-        data_dir = expanduser(Configuration.get().get('data_dir',
-                                                      "/opt/mycroft"))
         return {"coreVersion": CORE_VERSION_STR,
                 "OpenVoiceOSVersion": OVOS_VERSION_STR,
                 "enclosureVersion": None}

@@ -11,9 +11,7 @@ XDG locations are then merged over the select default config (if found)
 Examples config:
 
 {
-   // check xdg directories OR only check old style hardcoded paths
-   // the default value is False so the default behaviour is the same as mycroft-core
-   // once MycroftAI/mycroft-core/pull/2794 is merged the default value will change to True
+   // check xdg directories OR only check old style hardcoded paths 
    "xdg": true,
 
    // the "name of the core",
@@ -120,4 +118,4 @@ def get_ovos_config():
 
 
 def is_using_xdg():
-    return get_ovos_config().get("xdg", False)
+    return get_ovos_config().get("xdg", True)

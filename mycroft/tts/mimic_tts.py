@@ -60,7 +60,7 @@ def get_subscriber_voices():
     Returns:
         (dict) map of voices to custom Mimic executables.
     """
-    data_dir = expanduser(Configuration.get()['data_dir'])
+    data_dir = Configuration.get().get('data_dir', xdg.BaseDirectory.save_data_path(BASE_FOLDER))
     old_path = join(data_dir, 'voices/mimic_tn')
     if exists(old_path):
         return {'trinity': old_path}

@@ -66,8 +66,8 @@ class EventScheduler(Thread):
         self.is_running = True
 
         core_conf = Configuration.get(remote=False)
-        old_schedule_path = join(expanduser(core_conf['data_dir']),
-                                 schedule_file)
+        data_dir = core_conf.get('data_dir', xdg.BaseDirectory.save_data_path(BASE_FOLDER))
+        old_schedule_path = join(expanduser(data_dir), schedule_file)
 
         self.schedule_file = old_schedule_path
         if is_using_xdg():

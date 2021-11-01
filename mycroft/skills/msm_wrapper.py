@@ -75,8 +75,12 @@ def get_skills_directory(conf=None):
     else:
         skills_folder = xdg.BaseDirectory.save_data_path(BASE_FOLDER + '/skills')
     # create folder if needed
-    if not path.exists(skills_folder):
-        makedirs(skills_folder)
+    try:
+        makedirs(skills_folder, exist_ok=True)
+    except PermissionError: # old style /opt/mycroft/skills not available
+        skills_folder = xdg.BaseDirectory.save_data_path(BASE_FOLDER + '/skills')
+        makedirs(skills_folder, exist_ok=True)
+
     return path.expanduser(skills_folder)
 
 
@@ -104,7 +108,7 @@ def build_msm_config(device_config: dict) -> MsmConfig:
     msm_config = device_config['skills'].get('msm', {})
     msm_repo_config = msm_config.get('repo', {})
     enclosure_config = device_config.get('enclosure', {})
-    data_dir = path.expanduser(device_config.get('data_dir', "/opt/mycroft"))
+    data_dir = path.expanduser(device_config.get('data_dir', xdg.BaseDirectory.save_data_path(BASE_FOLDER)))
     skills_dir = get_skills_directory(device_config)
     old_skills_dir = path.join(data_dir, msm_config.get('directory', "skills"))
 
