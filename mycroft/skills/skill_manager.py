@@ -115,20 +115,30 @@ def _shutdown_skill(instance):
 
 
 def _get_skill_locations(conf=None):
-    # next load all valid XDG paths
+    # the contents of each skills directory must be individual skill folders
+    # we are still dependent on the mycroft-core structure of skill_id/__init__.py
+
+    conf = conf or Configuration.get(remote=False)
+    # load all valid XDG paths
     # NOTE: skills are actually code, but treated as user data!
-    # they should be considered applets rather than applications
-    xdg_paths = list(reversed(
+    # they should be considered applets rather than full applications
+    skill_locations = list(reversed(
         [os.path.join(p, "skills")
          for p in xdg.BaseDirectory.load_data_paths(BASE_FOLDER)]
     ))
 
-    # the highest priority folder to load is the old hardcoded
-    # /opt/mycroft/skills folder
+    # load the old hardcoded /opt/mycroft/skills folder
+    # needed for integration with msm, assume external tools will install skills here!
     default = get_skills_directory(conf)
-    if default not in xdg_paths:
-        xdg_paths.append(default)
-    return xdg_paths
+    if default not in skill_locations:
+        skill_locations.append(default)
+
+    # load additional explicitly configured directories
+    conf = conf.get("skills") or {}
+    # extra_directories is a list of directories containing skill subdirectories
+    # NOT a list of individual skill folders
+    skill_locations += conf.get("extra_directories") or []
+    return skill_locations
 
 
 class SkillManager(Thread):

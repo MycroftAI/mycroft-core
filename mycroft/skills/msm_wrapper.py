@@ -65,6 +65,9 @@ def get_skills_directory(conf=None):
     path_override = conf["skills"].get("directory_override")
     # if .conf wants to use a specific path, use it!
     if path_override:
+        LOG.warning("'directory_override' is deprecated!\n"
+                    "It will no longer be supported after version 0.0.3\n"
+                    "add the new path to 'extra_directories' instead")
         skills_folder = path_override
     # if xdg is disabled, ignore it!
     elif not is_using_xdg():
