@@ -7,8 +7,9 @@ import sys
 from threading import Event, Thread
 from time import sleep
 
-from .log import LOG
+from mycroft.util.log import LOG
 
+from ovos_utils import create_daemon, wait_for_exit_signal
 
 def reset_sigint_handler():
     """Reset the sigint handler to the default.
@@ -18,22 +19,6 @@ def reset_sigint_handler():
     """
     sig.signal(sig.SIGINT, sig.default_int_handler)
 
-
-def create_daemon(target, args=(), kwargs=None):
-    """Helper to quickly create and start a thread with daemon = True"""
-    t = Thread(target=target, args=args, kwargs=kwargs)
-    t.daemon = True
-    t.start()
-    return t
-
-
-def wait_for_exit_signal():
-    """Blocks until KeyboardInterrupt is received."""
-    try:
-        while True:
-            sleep(100)
-    except KeyboardInterrupt:
-        pass
 
 
 _log_all_bus_messages = False
