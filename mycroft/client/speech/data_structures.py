@@ -75,6 +75,9 @@ class CyclicAudioBuffer:
         # Get at most size bytes from the end of the initial data
         self._buffer = initial_data[-size:]
 
+    def clear(self):
+       self._buffer = b'\0' * self.size
+
     def append(self, data):
         """Add new data to the buffer, and slide out data if the buffer is full
 

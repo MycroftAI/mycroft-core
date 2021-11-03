@@ -44,7 +44,7 @@ STREAM_DATA = 2
 STREAM_STOP = 3
 
 
-class AudioStreamHandler(object):
+class AudioStreamHandler:
     def __init__(self, queue):
         self.queue = queue
 
@@ -64,26 +64,24 @@ class AudioProducer(Thread):
     mic for potential speech chunks and pushes them onto the queue.
     """
 
-    def __init__(self, state, queue, mic, recognizer, emitter, stream_handler):
+    def __init__(self, loop):
         super(AudioProducer, self).__init__()
         self.daemon = True
-        self.state = state
-        self.queue = queue
-        self.mic = mic
-        self.recognizer = recognizer
-        self.emitter = emitter
-        self.stream_handler = stream_handler
+        self.loop = loop
+        self.stream_handler = None
+        if self.loop.stt.can_stream:
+            self.stream_handler = AudioStreamHandler(self.loop.queue)
 
     def run(self):
         restart_attempts = 0
-        with self.mic as source:
-            self.recognizer.adjust_for_ambient_noise(source)
-            while self.state.running:
+        with self.loop.microphone as source:
+            self.loop.responsive_recognizer.adjust_for_ambient_noise(source)
+            while self.loop.state.running:
                 try:
-                    audio = self.recognizer.listen(source, self.emitter,
-                                                   self.stream_handler)
+                    audio, lang = self.loop.responsive_recognizer.listen(
+                        source, self.stream_handler)
                     if audio is not None:
-                        self.queue.put((AUDIO_DATA, audio))
+                        self.loop.queue.put((AUDIO_DATA, audio, lang))
                     else:
                         LOG.warning("Audio contains no data.")
                 except IOError as e:
@@ -116,8 +114,8 @@ class AudioProducer(Thread):
 
     def stop(self):
         """Stop producer thread."""
-        self.state.running = False
-        self.recognizer.stop()
+        self.loop.state.running = False
+        self.loop.responsive_recognizer.stop()
 
 
 class AudioConsumer(Thread):
@@ -128,97 +126,95 @@ class AudioConsumer(Thread):
     # In seconds, the minimum audio size to be sent to remote STT
     MIN_AUDIO_SIZE = 0.5
 
-    def __init__(self, state, queue, emitter, stt,
-                 wakeup_recognizer, wakeword_recognizer):
+    def __init__(self, loop):
         super(AudioConsumer, self).__init__()
         self.daemon = True
-        self.queue = queue
-        self.state = state
-        self.emitter = emitter
-        self.stt = stt
-        self.wakeup_recognizer = wakeup_recognizer
-        self.wakeword_recognizer = wakeword_recognizer
-        self.metrics = MetricsAggregator()
+        self.loop = loop
+
+    @property
+    def wakeup_engines(self):
+        """ wake from sleep mode """
+        return [(ww, w["engine"]) for ww, w in self.loop.engines.items()
+                if w["wakeup"]]
 
     def run(self):
-        while self.state.running:
+        while self.loop.state.running:
             self.read()
 
     def read(self):
         try:
-            message = self.queue.get(timeout=0.5)
+            message = self.loop.queue.get(timeout=0.5)
         except Empty:
             return
 
         if message is None:
             return
 
-        tag, data = message
+        tag, data, lang = message
 
         if tag == AUDIO_DATA:
             if data is not None:
-                if self.state.sleeping:
+                if self.loop.state.sleeping:
                     self.wake_up(data)
                 else:
                     self.process(data)
         elif tag == STREAM_START:
-            self.stt.stream_start()
+            self.loop.stt.stream_start()
         elif tag == STREAM_DATA:
-            self.stt.stream_data(data)
+            self.loop.stt.stream_data(data)
         elif tag == STREAM_STOP:
-            self.stt.stream_stop()
+            self.loop.stt.stream_stop()
         else:
             LOG.error("Unknown audio queue type %r" % message)
 
-    # TODO: Localization
     def wake_up(self, audio):
-        if self.wakeup_recognizer.found_wake_word(audio.frame_data):
-            SessionManager.touch()
-            self.state.sleeping = False
-            self.emitter.emit('recognizer_loop:awoken')
-            self.metrics.increment("mycroft.wakeup")
+        for ww, wakeup_recognizer in self.wakeup_engines:
+            if wakeup_recognizer.found_wake_word(audio.frame_data):
+                self.loop.state.sleeping = False
+                self.loop.emit('recognizer_loop:awoken')
+                break
 
     @staticmethod
     def _audio_length(audio):
         return float(len(audio.frame_data)) / (
             audio.sample_rate * audio.sample_width)
 
-    # TODO: Localization
-    def process(self, audio):
+    def process(self, audio, lang=None):
+        if audio is None:
+            return
 
-        if self._audio_length(audio) >= self.MIN_AUDIO_SIZE:
+        if self._audio_length(audio) < self.MIN_AUDIO_SIZE:
+            LOG.warning("Audio too short to be processed")
+        else:
             stopwatch = Stopwatch()
             with stopwatch:
-                transcription = self.transcribe(audio)
+                transcription = self.transcribe(audio, lang)
             if transcription:
                 ident = str(stopwatch.timestamp) + str(hash(transcription))
                 # STT succeeded, send the transcribed speech on for processing
                 payload = {
                     'utterances': [transcription],
-                    'lang': self.stt.lang,
+                    'lang': self.loop.stt.lang,
                     'session': SessionManager.get().session_id,
                     'ident': ident
                 }
-                self.emitter.emit("recognizer_loop:utterance", payload)
-                self.metrics.attr('utterances', [transcription])
+                self.loop.emit("recognizer_loop:utterance", payload)
 
                 # Report timing metrics
                 report_timing(ident, 'stt', stopwatch,
                               {'transcription': transcription,
-                               'stt': self.stt.__class__.__name__})
+                               'stt': self.loop.stt.__class__.__name__})
             else:
                 ident = str(stopwatch.timestamp)
-        else:
-            LOG.warning("Audio too short to be processed")
 
-    def transcribe(self, audio):
+    def transcribe(self, audio, lang):
         def send_unknown_intent():
             """ Send message that nothing was transcribed. """
-            self.emitter.emit('recognizer_loop:speech.recognition.unknown')
+            self.loop.emit('recognizer_loop:speech.recognition.unknown')
 
         try:
             # Invoke the STT engine on the audio clip
-            text = self.stt.execute(audio)
+            text = self.loop.stt.execute(audio, language=lang)
             if text is not None:
                 text = text.lower().strip()
                 LOG.debug("STT: " + text)
@@ -226,32 +222,11 @@ class AudioConsumer(Thread):
                 send_unknown_intent()
                 LOG.info('no words were transcribed')
             return text
-        except sr.RequestError as e:
-            LOG.error("Could not request Speech Recognition {0}".format(e))
-        except ConnectionError as e:
-            LOG.error("Connection Error: {0}".format(e))
-
-            self.emitter.emit("recognizer_loop:no_internet")
-        except RequestException as e:
-            LOG.error(e.__class__.__name__ + ': ' + str(e))
         except Exception as e:
             send_unknown_intent()
             LOG.error(e)
             LOG.error("Speech Recognition could not understand audio")
             return None
-
-        if connected():
-            dialog_name = 'backend.down'
-        else:
-            dialog_name = 'not connected to the internet'
-        self.emitter.emit('speak', {'utterance': dialog.get(dialog_name)})
-
-    def __speak(self, utterance):
-        payload = {
-            'utterance': utterance,
-            'session': SessionManager.get().session_id
-        }
-        self.emitter.emit("speak", payload)
 
 
 class RecognizerLoopState:
@@ -277,19 +252,30 @@ class RecognizerLoop(EventEmitter):
     Local wake word recognizer and remote general speech recognition.
 
     Args:
+        bus (MessageBusClient): mycroft messagebus connection
         watchdog: (callable) function to call periodically indicating
                   operational status.
+        stt (STT): stt plugin to be used for inference
+                (optional, can be set later via self.bind )
     """
 
-    def __init__(self, watchdog=None, stt=None):
+    def __init__(self, bus, watchdog=None, stt=None):
         super(RecognizerLoop, self).__init__()
         self._watchdog = watchdog
         self.mute_calls = 0
+        self.stt = stt
+        self.bus = bus
+        self.engines = {}
+        self.stt = None
+        self.queue = None
+        self.audio_consumer = None
+        self.audio_producer = None
+        self.responsive_recognizer = None
+
         self._load_config()
-        self._stt = stt
 
     def bind(self, stt):
-        self._stt = stt
+        self.stt = stt
 
     def _load_config(self):
         """Load configuration parameters from configuration."""
@@ -309,93 +295,70 @@ class RecognizerLoop(EventEmitter):
 
         self.microphone = MutableMicrophone(device_index, rate,
                                             mute=self.mute_calls > 0)
-
-        self.wakeword_recognizer = self.create_wake_word_recognizer()
-        # TODO - localization
-        self.wakeup_recognizer = self.create_wakeup_recognizer()
-        self.responsive_recognizer = ResponsiveRecognizer(
-            self.wakeword_recognizer, self._watchdog)
+        self.create_hotword_engines()
         self.state = RecognizerLoopState()
+        self.responsive_recognizer = ResponsiveRecognizer(self)
 
-    def create_wake_word_recognizer(self):
-        """Create a local recognizer to hear the wakeup word
+    def create_hotword_engines(self):
+        LOG.info("creating hotword engines")
+        hot_words = self.config_core.get("hotwords", {})
+        global_listen = self.config_core.get("confirm_listening")
+        global_sounds = self.config_core.get("sounds", {})
+        for word in hot_words:
+            try:
+                data = hot_words[word]
+                sound = data.get("sound")
+                utterance = data.get("utterance")
+                listen = data.get("listen", False)
+                wakeup = data.get("wake_up", False)
+                trigger = data.get("trigger", False)
+                lang = data.get("stt_lang", self.lang)
+                enabled = data.get("active", True)
+                event = data.get("bus_event")
+                # global listening sound
+                if not sound and listen and global_listen:
+                    sound = global_sounds.get("start_listening")
 
-        For example 'Hey Mycroft'.
-
-        The method uses the hotword entry for the selected wakeword, if
-        one is missing it will fall back to the old phoneme and threshold in
-        the listener entry in the config.
-
-        If the hotword entry doesn't include phoneme and threshold values these
-        will be patched in using the defaults from the config listnere entry.
-        """
-        LOG.info('Creating wake word engine')
-        word = self.config.get('wake_word', 'hey mycroft')
-
-        # TODO remove this, only for server settings compatibility
-        phonemes = self.config.get('phonemes')
-        thresh = self.config.get('threshold')
-
-        # Since we're editing it for server backwards compatibility
-        # use a copy so we don't alter the hash of the config and
-        # trigger a reload.
-        config = deepcopy(self.config_core.get('hotwords', {}))
-        if word not in config:
-            # Fallback to using config from "listener" block
-            LOG.warning('Wakeword doesn\'t have an entry falling back'
-                        'to old listener config')
-            config[word] = {'module': 'precise'}
-            if phonemes:
-                config[word]['phonemes'] = phonemes
-            if thresh:
-                config[word]['threshold'] = thresh
-            if phonemes is None or thresh is None:
-                config = None
-        else:
-            LOG.info('Using hotword entry for {}'.format(word))
-            if 'phonemes' not in config[word]:
-                #LOG.warning('Phonemes are missing falling back to listeners '
-                #            'configuration')
-                config[word]['phonemes'] = phonemes
-            if 'threshold' not in config[word]:
-                #LOG.warning('Threshold is missing falling back to listeners '
-                #            'configuration')
-                config[word]['threshold'] = thresh
-
-        return HotWordFactory.create_hotword(word, config, self.lang,
-                                             loop=self)
-
-    def create_wakeup_recognizer(self):
-        LOG.info("creating stand up word engine")
-        word = self.config.get("stand_up_word", "wake up")
-        return HotWordFactory.create_hotword(word, lang=self.lang, loop=self)
+                if not enabled:
+                    continue
+                engine = HotWordFactory.create_hotword(word,
+                                                       lang=lang,
+                                                       loop=self)
+                if engine is not None:
+                    if hasattr(engine, "bind"):
+                        engine.bind(self.bus)
+                        # not all plugins implement this
+                    self.engines[word] = {"engine": engine,
+                                          "sound": sound,
+                                          "bus_event": event,
+                                          "trigger": trigger,
+                                          "utterance": utterance,
+                                          "stt_lang": lang,
+                                          "listen": listen,
+                                          "wakeup": wakeup}
+            except Exception as e:
+                LOG.error("Failed to load hotword: " + word)
 
     def start_async(self):
         """Start consumer and producer threads."""
         self.state.running = True
-        if self._stt:
-            stt = self._stt
-        else:
-            stt = STTFactory.create()
-        queue = Queue()
-        stream_handler = None
-        if stt.can_stream:
-            stream_handler = AudioStreamHandler(queue)
-        self.producer = AudioProducer(self.state, queue, self.microphone,
-                                      self.responsive_recognizer, self,
-                                      stream_handler)
-        self.producer.start()
-        self.consumer = AudioConsumer(self.state, queue, self,
-                                      stt, self.wakeup_recognizer,
-                                      self.wakeword_recognizer)
-        self.consumer.start()
+        if not self.stt:
+            self.stt = STTFactory.create()
+        self.queue = Queue()
+        self.audio_consumer = AudioConsumer(self)
+        self.audio_consumer.start()
+        self.audio_producer = AudioProducer(self)
+        self.audio_producer.start()
 
     def stop(self):
         self.state.running = False
-        self.producer.stop()
+        self.audio_producer.stop()
+        # stop wake word detectors
+        for ww, hotword in self.engines.items():
+            hotword["engine"].stop()
         # wait for threads to shutdown
-        self.producer.join()
-        self.consumer.join()
+        self.audio_producer.join()
+        self.audio_consumer.join()
 
     def mute(self):
         """Mute microphone and increase number of requests to mute."""
@@ -462,7 +425,6 @@ class RecognizerLoop(EventEmitter):
     def reload(self):
         """Reload configuration and restart consumer and producer."""
         self.stop()
-        self.wakeword_recognizer.stop()
         # load config
         self._load_config()
         # restart
