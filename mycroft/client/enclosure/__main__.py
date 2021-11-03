@@ -64,9 +64,14 @@ def main(ready_hook=on_ready, error_hook=on_error, stopping_hook=on_stopping):
     """Launch one of the available enclosure implementations.
 
     This depends on the configured platform and can currently either be
-    mycroft_mark_1 or mycroft_mark_2, if unconfigured a generic enclosure with
-    only the GUI bus will be started.
+    mycroft_mark_1 or mycroft_mark_2, if unconfigured a generic enclosure will be started.
+
+    NOTE: in ovos-core the GUI protocol is handled in it's own service and not part of the enclosure like in mycroft-core!
+          You need to also run mycroft.gui process separately, it has been extracted into it's own module
     """
+    LOG.warning("mycroft.client.enclosure is in the process of being deprecated in ovos-core!")
+    LOG.warning("You need to also run mycroft.gui process separately, it has been extracted into it's own module")
+
     # Read the system configuration
     config = Configuration.get(remote=False)
     platform = config.get("enclosure", {}).get("platform")

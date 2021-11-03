@@ -81,7 +81,8 @@ setup(
             'mycroft-echo-observer=mycroft.messagebus.client.ws:echo',
             'mycroft-audio-test=mycroft.util.audio_test:main',
             'mycroft-enclosure-client=mycroft.client.enclosure.__main__:main',
-            'mycroft-cli-client=mycroft.client.text.__main__:main'
+            'mycroft-cli-client=mycroft.client.text.__main__:main',
+            'mycroft-gui-service=mycroft.gui.__main__:main'
         ]
     }
 )

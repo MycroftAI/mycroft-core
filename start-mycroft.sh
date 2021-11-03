@@ -33,6 +33,7 @@ function help() {
     echo "  bus                      the messagebus service"
     echo "  skills                   the skill service"
     echo "  voice                    voice capture service"
+    echo "  gui                      gui protocol service"
     echo "  enclosure                mark_1 enclosure service"
     echo
     echo "Tool COMMANDs:"
@@ -57,6 +58,7 @@ function name-to-script-path() {
         "audio")             _module="mycroft.audio" ;;
         "voice")             _module="mycroft.client.speech" ;;
         "cli")               _module="mycroft.client.text" ;;
+        "gui")               _module="mycroft.gui" ;;
         "enclosure")         _module="mycroft.client.enclosure" ;;
         *)
             echo "Error: Unknown name '${1}'"
@@ -105,7 +107,7 @@ function launch-all() {
     launch-background skills
     launch-background audio
     launch-background voice
-    launch-background enclosure
+    launch-background gui
 }
 
 _opt=$1
@@ -127,6 +129,9 @@ case ${_opt} in
         launch-all
         ;;
     "bus")
+        launch-background ${_opt}
+        ;;
+    "gui")
         launch-background ${_opt}
         ;;
     "audio")

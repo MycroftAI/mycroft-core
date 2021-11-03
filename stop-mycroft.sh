@@ -31,7 +31,8 @@ function help() {
     echo "  audio     stop the audio playback service"
     echo "  skills    stop the skill service"
     echo "  voice     stop voice capture service"
-    echo "  enclosure stop enclosure (hardware/gui interface) service"
+    echo "  gui       stop gui (protocol) service"
+    echo "  enclosure stop enclosure (hardware interface) service"
     echo
     echo "Examples:"
     echo "  ${script}"
@@ -98,6 +99,7 @@ case ${OPT} in
         end-process audio
         end-process speech
         end-process enclosure
+        end-process gui
         end-process messagebus.service
         ;;
     "bus")
@@ -114,6 +116,9 @@ case ${OPT} in
         ;;
     "enclosure")
         end-process enclosure
+        ;;
+    "gui")
+        end-process gui
         ;;
     *)
         help
