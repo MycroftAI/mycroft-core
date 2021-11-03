@@ -23,7 +23,10 @@ from mycroft.util import check_for_signal
 from mycroft.util.log import LOG
 from mycroft.messagebus.message import Message
 from mycroft.tts.remote_tts import RemoteTTSException
-from mycroft.tts.mimic_tts import Mimic
+try:
+    from ovos_tts_plugin_mimic import MimicTTSPlugin
+except ImportError:
+    MimicTTSPlugin = None
 
 bus = None  # Mycroft messagebus connection
 config = None
@@ -141,7 +144,7 @@ def _get_mimic_fallback():
         config = Configuration.get()
         tts_config = config.get('tts', {}).get("mimic", {})
         lang = config.get("lang", "en-us")
-        tts = Mimic(lang, tts_config)
+        tts = MimicTTSPlugin(lang, tts_config)
         tts.validator.validate()
         tts.init(bus)
         mimic_fallback_obj = tts
@@ -157,9 +160,12 @@ def mimic_fallback_tts(utterance, ident, listen):
         ident (str): interaction id for metrics
         listen (bool): True if interaction should end with mycroft listening
     """
-    tts = _get_mimic_fallback()
-    LOG.debug("Mimic fallback, utterance : " + str(utterance))
-    tts.execute(utterance, ident, listen)
+    if MimicTTSPlugin is not None:
+        tts = _get_mimic_fallback()
+        LOG.debug("Mimic fallback, utterance : " + str(utterance))
+        tts.execute(utterance, ident, listen)
+    else:
+        LOG.error("TTS FAILURE! utterance : " + str(utterance))
 
 
 def handle_stop(event):

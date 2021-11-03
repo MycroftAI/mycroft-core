@@ -19,10 +19,15 @@ jobs:
           python -m pip install build wheel
       - name: Install System Dependencies
         run: |
-          sudo apt install python3-dev swig libssl-dev libfann-dev portaudio19-dev
+          sudo apt-get update
+          sudo apt install python3-dev swig libssl-dev libfann-dev portaudio19-dev libpulse-dev
       - name: Build Distribution Packages
         run: |
           python setup.py bdist_wheel
+      - name: Install tflite_runtime workaround tflit bug
+        run: |
+          pip3 install numpy
+          pip3 install --extra-index-url https://google-coral.github.io/py-repo/ tflite_runtime
       - name: Install core repo
         run: |
           pip install .[audio-backend,mark1,stt,tts,skills_minimal,skills,default_skills,enclosure,bus,all]
