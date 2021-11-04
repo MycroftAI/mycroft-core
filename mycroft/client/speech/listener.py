@@ -153,11 +153,8 @@ class AudioConsumer(Thread):
         tag, data, lang = message
 
         if tag == AUDIO_DATA:
-            if data is not None:
-                if self.loop.state.sleeping:
-                    self.wake_up(data)
-                else:
-                    self.process(data)
+            if data is not None and not self.loop.state.sleeping:
+                self.process(data)
         elif tag == STREAM_START:
             self.loop.stt.stream_start()
         elif tag == STREAM_DATA:
@@ -166,13 +163,6 @@ class AudioConsumer(Thread):
             self.loop.stt.stream_stop()
         else:
             LOG.error("Unknown audio queue type %r" % message)
-
-    def wake_up(self, audio):
-        for ww, wakeup_recognizer in self.wakeup_engines:
-            if wakeup_recognizer.found_wake_word(audio.frame_data):
-                self.loop.state.sleeping = False
-                self.loop.emit('recognizer_loop:awoken')
-                break
 
     @staticmethod
     def _audio_length(audio):
@@ -310,7 +300,7 @@ class RecognizerLoop(EventEmitter):
                 sound = data.get("sound")
                 utterance = data.get("utterance")
                 listen = data.get("listen", False)
-                wakeup = data.get("wake_up", False)
+                wakeup = data.get("wakeup", False)
                 trigger = data.get("trigger", False)
                 lang = data.get("stt_lang", self.lang)
                 enabled = data.get("active", True)

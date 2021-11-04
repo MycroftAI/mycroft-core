@@ -13,6 +13,7 @@
 # limitations under the License.
 #
 import audioop
+import time
 from time import sleep, time as get_time
 
 from collections import deque, namedtuple
@@ -359,6 +360,8 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         # Signal statuses
         self._stop_signaled = False
         self._listen_triggered = False
+        self._waiting_for_wakeup = False
+        self._last_ww_ts = 0
 
         # identifier used when uploading wakewords to selene
         self._account_id = None
@@ -411,7 +414,22 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         for ww, hotword in self.loop.engines.items():
             hotword["engine"].update(chunk)
 
+    def check_for_wakeup(self, audio_data):
+        if time.time() - self._last_ww_ts >= 5:
+            self._waiting_for_wakeup = False
+        if not self._waiting_for_wakeup or not self.loop.state.sleeping:
+            return
+        for ww, hotword in self.loop.engines.items():
+            if hotword.get("wakeup") and hotword["engine"].found_wake_word(audio_data):
+                self.loop.state.sleeping = False
+                self.loop.emit('recognizer_loop:awoken')
+                self._waiting_for_wakeup = False
+                return True
+        return False
+
     def check_for_hotwords(self, audio_data):
+        if self.check_for_wakeup(audio_data):
+            return  # was a wake up command to come out of sleep state
         # check hot word
         for ww, hotword in self.loop.engines.items():
             if hotword.get("wakeup"):
@@ -585,21 +603,24 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         store hotword to disk if configured and sending the hotword data
         to the cloud in case the user has opted into the data sharing.
         """
+
         engine = self.loop.engines[hotword]["engine"]
         sound = self.loop.engines[hotword]["sound"]
         utterance = self.loop.engines[hotword]["utterance"]
         listen = self.loop.engines[hotword]["listen"]
         stt_lang = self.loop.engines[hotword]["stt_lang"]
         event = self.loop.engines[hotword]["bus_event"]
-        payload = {
-            'hotword': hotword,
-            'start_listening': listen,
-            'sound': sound,
-            'utterance': utterance,
-            'stt_lang': stt_lang,
-            "bus_event": event,
-            "engine": engine.__class__.__name__
-        }
+
+        if self.loop.state.sleeping:
+            if listen:
+                self._waiting_for_wakeup = True
+                self._last_ww_ts = time.time()
+            return  # no wake word handling during sleep mode
+
+        payload = dict(self.loop.engines[hotword])
+        payload["hotword"] = hotword
+        payload["engine"] = engine.__class__.__name__
+
         if event:
             self.loop.emit("recognizer_loop:hotword_event",
                            {"msg_type": event})
@@ -731,7 +752,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
                     listen = self.loop.engines[hotword]["listen"]
                     stt_lang = self.loop.engines[hotword]["stt_lang"]
                     self._handle_hotword_found(hotword, audio_data, source)
-                    if listen:
+                    if listen and not self.loop.state.sleeping:
                         return WakeWordData(audio_data, said_wake_word,
                             self._stop_signaled, ww_frames), stt_lang
 
@@ -780,9 +801,9 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         LOG.debug("Waiting for wake word...")
         ww_data, lang = self._wait_until_wake_word(source, sec_per_buffer)
 
-        if ww_data.stopped:
-            # If the waiting returned from a stop signal
-            return
+        if ww_data.stopped or self.loop.state.sleeping:
+            # If the waiting returned from a stop signal or sleep mode is active
+            return None, lang
         ww_frames = ww_data.end_audio
 
         LOG.debug("Recording...")
