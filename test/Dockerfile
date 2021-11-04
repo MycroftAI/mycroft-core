@@ -96,7 +96,7 @@ FROM core_builder as voight_kampff_builder
 ARG platform
 # Setup a dummy TTS backend for the audio process
 RUN mkdir /etc/mycroft
-RUN echo '{"tts": {"module": "dummy"}}' > /etc/mycroft/mycroft.conf
+RUN echo '{"tts": {"module": "dummy"}, "skills": {"auto_update": false}}' > /etc/mycroft/mycroft.conf
 RUN mkdir ~/.mycroft/allure-result
 
 # The behave feature files for a skill are defined within the skill's

@@ -13,8 +13,9 @@
 # limitations under the License.
 #
 """Unit tests for the SkillUpdater class."""
-from os import path
+import os
 from time import sleep
+from xdg import BaseDirectory
 from unittest.mock import Mock, patch, PropertyMock
 
 from mycroft.skills.skill_updater import SkillUpdater
@@ -143,7 +144,8 @@ class TestSkillUpdater(MycroftUnitTestBase):
             os_patch.return_value = False
             updater = SkillUpdater(self.message_bus_mock)
             self.assertEqual(
-                path.expanduser('~/.mycroft/.mycroft-skills'),
+                os.path.join(BaseDirectory.save_data_path('mycroft'),
+                             '.mycroft-skills'),
                 updater.installed_skills_file_path
             )
 

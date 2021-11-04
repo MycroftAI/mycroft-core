@@ -17,10 +17,11 @@
 This provides any "enclosure" specific functionality, for example GUI or
 control over the Mark-1 Faceplate.
 """
-from mycroft.configuration import LocalConf, SYSTEM_CONFIG
+from mycroft.configuration import Configuration
 from mycroft.util.log import LOG
 from mycroft.util import wait_for_exit_signal, reset_sigint_handler
 from mycroft.util.hardware_capabilities import EnclosureCapabilities
+
 
 def on_ready():
     LOG.info("Enclosure started!")
@@ -70,8 +71,8 @@ def main(ready_hook=on_ready, error_hook=on_error, stopping_hook=on_stopping):
     only the GUI bus will be started.
     """
     # Read the system configuration
-    system_config = LocalConf(SYSTEM_CONFIG)
-    platform = system_config.get("enclosure", {}).get("platform")
+    config = Configuration.get(remote=False)
+    platform = config.get("enclosure", {}).get("platform")
 
     enclosure = create_enclosure(platform)
 
@@ -81,13 +82,17 @@ def main(ready_hook=on_ready, error_hook=on_error, stopping_hook=on_stopping):
         # enclosure.m2enc.capabilities
         enclosure.default_caps = EnclosureCapabilities()
 
-        LOG.info("Enclosure created, capabilities ===>%s" % (enclosure.default_caps.caps,))
+        LOG.info("Enclosure created, capabilities ===>%s" %
+                 (enclosure.default_caps.caps,))
 
         if platform == "mycroft_mark_2":
-            LOG.info("Mark2 detected[%s], additional capabilities ===>%s" % (enclosure.m2enc.board_type, enclosure.m2enc.capabilities))
+            LOG.info("Mark2 detected[%s], additional capabilities ===>%s" % (
+                enclosure.m2enc.board_type, enclosure.m2enc.capabilities))
             LOG.info("Leds ===>%s" % (enclosure.m2enc.leds.capabilities))
-            LOG.info("Volume ===>%s" % (enclosure.m2enc.hardware_volume.capabilities))
-            LOG.info("Switches ===>%s" % (enclosure.m2enc.switches.capabilities))
+            LOG.info("Volume ===>%s" %
+                     (enclosure.m2enc.hardware_volume.capabilities))
+            LOG.info("Switches ===>%s" %
+                     (enclosure.m2enc.switches.capabilities))
 
         try:
             LOG.info("__main__().py Starting Client Enclosure!")
