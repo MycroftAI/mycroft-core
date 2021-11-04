@@ -66,3 +66,14 @@ jobs:
       run: if [[ ${{ matrix.python-version }} == 3.9 ]]; then bash <(curl -s https://codecov.io/bash); fi
       env:
         CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+  shellcheck:
+    name: Shellcheck
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Shell check mycroft tools
+      uses: ludeeus/action-shellcheck@ceeca77f6538b97991ca2c2a2ebe1ab64e573b5e
+      env:
+        SHELLCHECK_OPTS: -x --exclude SC2034 --exclude SC2012 --exclude SC1091
+      with:
+        scandir: ./bin
