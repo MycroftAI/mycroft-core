@@ -271,6 +271,57 @@ class YandexSTT(STT):
                     response.status_code, response.text))
 
 
+class VkSTT(STT):
+    """
+        VK Cloud STT
+        To use service token for account and add it to local mycroft.conf file.
+        The STT config will look like this:
+
+        "stt": {
+            "module": "vk",
+            "vk": {
+                "credential": {
+                    "service_token": "YOUR_SERVICE_TOKEN"
+                }
+            }
+        }
+    """
+    def __init__(self):
+        super(VkSTT, self).__init__()
+        self.service_token = self.credential.get("service_token")
+        if self.service_token is None:
+            raise ValueError("Service token for VK Cloud STT is not defined")
+
+    def execute(self, audio, language=None):
+        language = language or self.lang
+        if not language.startswith("ru"):
+            raise ValueError("VK Cloud STT is currently Russian only")
+
+        url = "https://voice.mcs.mail.ru/asr"
+        headers = {
+            "Authorization": "Bearer {}".format(self.service_token),
+            "Content-Type": "audio/wave"
+        }
+
+        response = post(url, headers=headers, data=audio.get_wav_data())
+        if response.status_code == 200:
+            result = json.loads(response.text)
+            if ("result" not in result or
+                    "texts" not in result["result"] or
+                    len(result["result"]["texts"]) < 1):
+                raise Exception(
+                    "Transcription failed. Invalid or empty result. "
+                    "Body: {}".format(response.text))
+            return result["result"]["texts"][0]["text"]
+        elif response.status_code == 401:  # Unauthorized
+            raise Exception("Invalid service token for VK STT")
+        elif response.status_code == 401:  # Unauthorized
+            raise Exception("Invalid service token for VK STT")
+        raise Exception(
+            "Request to VK Cloud STT failed: code: {}, body: {}".format(
+                response.status_code, response.text))
+
+
 def requires_pairing(func):
     """Decorator kicking of pairing sequence if client is not allowed access.
 
@@ -630,7 +681,8 @@ class STTFactory:
         "deepspeech_server": DeepSpeechServerSTT,
         "deepspeech_stream_server": DeepSpeechStreamServerSTT,
         "mycroft_deepspeech": MycroftDeepSpeechSTT,
-        "yandex": YandexSTT
+        "yandex": YandexSTT,
+        "vk": VkSTT
     }
 
     @staticmethod
