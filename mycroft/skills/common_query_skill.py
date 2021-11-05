@@ -36,8 +36,6 @@ def is_CQSVisualMatchLevel(match_level):
     return isinstance(match_level, type(CQSVisualMatchLevel.EXACT))
 
 
-VISUAL_DEVICES = ['mycroft_mark_2']
-
 """these are for the confidence calculation"""
 # how much each topic word is worth
 # when found in the answer
@@ -51,10 +49,6 @@ MAX_ANSWER_LEN_FOR_CONFIDENCE = 50
 
 # higher number - less bias for word length
 WORD_COUNT_DIVISOR = 100
-
-
-def handles_visuals(platform):
-    return platform in VISUAL_DEVICES
 
 
 class CommonQuerySkill(MycroftSkill, ABC):
@@ -149,9 +143,8 @@ class CommonQuerySkill(MycroftSkill, ABC):
         num_sentences = float(float(len(answer.split("."))) / float(10))
 
         # Add bonus if match has visuals and the device supports them.
-        platform = self.config_core.get("enclosure", {}).get("platform")
         bonus = 0.0
-        if is_CQSVisualMatchLevel(level) and handles_visuals(platform):
+        if is_CQSVisualMatchLevel(level) and self.gui.connected:
             bonus = 0.1
 
         # extract topic
