@@ -20,9 +20,14 @@ DIR="$( dirname "$SOURCE" )"
 # Enter the Mycroft venv
 source "$DIR/../venv-activate.sh" -q
 
+function count-files() {
+    # shellcheck disable=SC2012
+    ls "$1" | wc -l
+}
+
 function vktest-clear() {
     FEATURES_DIR="$DIR/../test/integrationtests/voight_kampff/features"
-    num_feature_files=$(ls "$FEATURES_DIR" | wc -l) 
+    num_feature_files=$(count-files "$FEATURES_DIR")
     # A clean directory will have `steps/` and `environment.py`
     if [ "$num_feature_files" -gt "2" ] ; then
         echo "Removing Feature files..."
@@ -30,7 +35,7 @@ function vktest-clear() {
         rm "${DIR}"/../test/integrationtests/voight_kampff/features/*.config.json
     fi
     STEPS_DIR="$FEATURES_DIR/steps"
-    num_steps_files=$(ls "$STEPS_DIR" | wc -l)
+    num_steps_files=$(count-files "$STEPS_DIR")
     if [ "$num_steps_files" -gt "2" ] ; then
         echo "Removing Custom Step files..."
         TMP_DIR="$STEPS_DIR/tmp"

@@ -74,6 +74,6 @@ jobs:
     - name: Shell check mycroft tools
       uses: ludeeus/action-shellcheck@ceeca77f6538b97991ca2c2a2ebe1ab64e573b5e
       env:
-        SHELLCHECK_OPTS: -x --exclude SC2034 --exclude SC2012 --exclude SC1091
+        SHELLCHECK_OPTS: -x --exclude SC1091
       with:
         scandir: ./bin
