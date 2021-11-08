@@ -35,25 +35,25 @@ class ESpeak(TTS):
 
         # Create Argument String for Espeak
         arguments = ['espeak', '-v', self.lang + '+' + self.voice]
-        argument = self.config.get("amplitude")
-        if argument:
-            arguments.append("-a "+argument)
+        amplitude = self.config.get('amplitude')
+        if amplitude:
+            arguments.append('-a '+amplitude)
 
-        argument = self.config.get("gap")
-        if argument:
-            arguments.append("-g "+argument)
+        gap = self.config.get('gap')
+        if gap:
+            arguments.append('-g '+gap)
 
-        argument = self.config.get("capital")
-        if argument:
-            arguments.append("-k "+argument)
+        capital = self.config.get('capital')
+        if capital:
+            arguments.append('-k '+capital)
 
-        argument = self.config.get("pitch")
-        if argument:
-            arguments.append("-p "+argument)
+        pitch = self.config.get('pitch')
+        if pitch:
+            arguments.append('-p '+pitch)
 
-        argument = self.config.get("speed")
-        if argument:
-            arguments.append("-s "+argument)
+        speed = self.config.get('speed')
+        if speed:
+            arguments.append('-s '+speed)
 
         arguments.extend(['-w', wav_file, sentence])
 
