@@ -25,6 +25,7 @@ from mycroft.configuration.locations import *
 from mycroft.configuration.ovos import is_using_xdg
 from mycroft.util.json_helper import load_commented_json, merge_dict
 from mycroft.util.log import LOG
+from ovos_utils.json_helper import flattened_delete
 
 
 def is_remote_list(values):
@@ -198,6 +199,15 @@ def _log_old_location_deprecation(old_user_config=OLD_USER_CONFIG):
                                              BASE_FOLDER))
 
 
+def _get_system_constraints():
+    # constraints must come from SYSTEM config
+    # if not defined then load the DEFAULT constraints
+    # these settings can not be set anywhere else!
+    return LocalConf(SYSTEM_CONFIG).get("system") or \
+           LocalConf(DEFAULT_CONFIG).get("system") or \
+           {}
+
+
 class Configuration:
     """Namespace for operations on the configuration singleton."""
     __config = {}  # Cached config
@@ -235,28 +245,36 @@ class Configuration:
         Returns:
             (dict) merged dict of all configuration files
         """
+
+        # system administrators can define different constraints in how
+        # configurations are loaded
+        system_conf = _get_system_constraints()
+        protected_keys = system_conf.get("protected_keys") or {}
+        protected_remote = protected_keys.get("remote") or []
+        protected_user = protected_keys.get("user") or []
+        skip_user = system_conf.get("disable_user_config", False)
+        skip_remote = system_conf.get("disable_remote_config", False)
+
+        # This includes both the user config and
+        # /etc/xdg/mycroft/mycroft.conf
+        xdg_locations = get_xdg_config_locations()
+
         if not configs:
             configs = [LocalConf(DEFAULT_CONFIG),
                        LocalConf(SYSTEM_CONFIG)]
-            if remote:
-                   configs.append(RemoteConf())
-
-            if is_using_xdg():
-                # deprecation warning
-                if isfile(OLD_USER_CONFIG):
-                    _log_old_location_deprecation(OLD_USER_CONFIG)
+            if not skip_remote and remote:
+                configs.append(RemoteConf())
+            if not skip_user:
+                if is_using_xdg():
+                    # deprecation warning
+                    if isfile(OLD_USER_CONFIG):
+                        _log_old_location_deprecation(OLD_USER_CONFIG)
+                        configs.append(LocalConf(OLD_USER_CONFIG))
+                    configs += [LocalConf(p) for p in xdg_locations]
+                else:
+                    # just load the pre defined old locations
                     configs.append(LocalConf(OLD_USER_CONFIG))
-
-                # This includes both the user config and
-                # /etc/xdg/mycroft/mycroft.conf
-                configs += [LocalConf(p) for p in get_xdg_config_locations()]
-
-                configs.append(Configuration.__patch)
-            else:
-                # just load the pre defined locations
-                configs += [LocalConf(OLD_USER_CONFIG),
-                            Configuration.__patch]
-
+            configs.append(Configuration.__patch)
         else:
             # Handle strings in stack
             for index, item in enumerate(configs):
@@ -265,8 +283,20 @@ class Configuration:
 
         # Merge all configs into one
         base = {}
-        for c in configs:
-            merge_dict(base, c)
+        for cfg in configs:
+            # check for protected keys in remote config (changes blocked by system)
+            if isinstance(cfg, RemoteConf):
+                if skip_remote:  # remote config disabled at system level
+                    continue
+                # delete protected keys from remote config
+                flattened_delete(cfg, protected_remote)
+            # check for protected keys in user config (changes blocked by system)
+            elif isinstance(cfg, LocalConf) and cfg.path in xdg_locations + [OLD_USER_CONFIG]:
+                if skip_user:  # user config disabled at system level
+                    continue
+                # delete protected keys from user config
+                flattened_delete(cfg, protected_user)
+            merge_dict(base, cfg)
 
         # copy into cache
         if cache:
