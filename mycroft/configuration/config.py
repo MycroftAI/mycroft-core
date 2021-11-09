@@ -14,22 +14,26 @@
 # limitations under the License.
 #
 
-import inflection
 import json
 import os
 import re
 from os.path import exists, isfile, join, dirname
 
-from requests import RequestException
 import xdg.BaseDirectory
+from requests import RequestException
 
 from mycroft.util.combo_lock import ComboLock
 from mycroft.util.file_utils import get_temp_path
+from mycroft.util import camel_case_split
 from mycroft.util.json_helper import load_commented_json, merge_dict
 from mycroft.util.log import LOG
 
-from .locations import DEFAULT_CONFIG, USER_CONFIG, OLD_USER_CONFIG
-from .locations import SYSTEM_CONFIG
+from .locations import (
+    DEFAULT_CONFIG,
+    OLD_USER_CONFIG,
+    SYSTEM_CONFIG,
+    USER_CONFIG
+)
 
 
 def is_remote_list(values):
@@ -56,7 +60,8 @@ def translate_remote(config, setting):
         if k not in IGNORED_SETTINGS:
             # Translate the CamelCase values stored remotely into the
             # Python-style names used within mycroft-core.
-            key = inflection.underscore(re.sub(r"Setting(s)?", "", k))
+            key = re.sub(r"Setting(s)?", "", k)
+            key = camel_case_split(key).replace(" ", "_").lower()
             if isinstance(v, dict):
                 config[key] = config.get(key, {})
                 translate_remote(config[key], v)
@@ -137,6 +142,7 @@ class LocalConf(dict):
 class RemoteConf(LocalConf):
     _lock = ComboLock(get_temp_path('remote-conf.lock'))
     """Config dictionary fetched from mycroft.ai."""
+
     def __init__(self, cache=None):
         super(RemoteConf, self).__init__(None)
 
