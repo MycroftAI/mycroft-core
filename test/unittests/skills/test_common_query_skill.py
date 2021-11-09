@@ -38,6 +38,7 @@ class TestCommonQuerySkill(TestCase):
 
 class TestCommonQueryMatching(TestCase):
     """Tests for CQS_match_query_phrase."""
+
     def setUp(self):
         self.skill = CQSTest()
         self.bus = mock.Mock(name='bus')
@@ -93,11 +94,10 @@ class TestCommonQueryMatching(TestCase):
         self.assertEqual(response.data['conf'], 1.12)
 
     def test_successful_visual_match_query_phrase(self):
-        self.skill.config_core['enclosure']['platform'] = 'mycroft_mark_2'
+        self.skill.gui.connected = True
         query_phrase = self.bus.on.call_args_list[-2][0][1]
         self.skill.CQS_match_query_phrase.return_value = (
             'What\'s the meaning of life', CQSVisualMatchLevel.EXACT, '42')
-
         query_phrase(Message('question:query',
                              data={'phrase': 'What\'s the meaning of life'}))
 
@@ -119,14 +119,22 @@ class TestCommonQueryMatching(TestCase):
 
 class CQSTest(CommonQuerySkill):
     """Simple skill for testing the CommonQuerySkill"""
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.CQS_match_query_phrase = mock.Mock(name='match_phrase')
         self.CQS_action = mock.Mock(name='selected_action')
         self.skill_id = 'CQSTest'
+        self.gui = MockGUI()
 
     def CQS_match_query_phrase(self, phrase):
         pass
 
     def CQS_action(self, phrase, data):
         pass
+
+
+class MockGUI():
+    def __init__(self):
+        self.connected = False
+        self.setup_default_handlers = AnyCallable
