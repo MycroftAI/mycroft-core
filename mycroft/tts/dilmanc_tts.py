@@ -55,12 +55,13 @@ class DilmancTTS(TTS):
     def get_tts(self, sentence, mp3_file):
         if not self.id or not self.code:
             self.get_id_and_code
-        data = "from={}&tts_submit=%C2%A0%C2%A0Listen&speechspeed={:.2f}".format(
-            sentence, self.speed).encode()
+        data = "from={}&tts_submit=%C2%A0%C2%A0Listen&speechspeed={:.2f}"\
+            .format(sentence, self.speed).encode()
         headers = {"Content-Type": "application/x-www-form-urlencoded",
                    "Referer": "http://dilmanc.az/en/text-to-speech"}
         result = self.session.post(
-            url=self.url + "?id={}&code={}".format(self.id, self.code), data=data, headers=headers)
+            url=self.url + "?id={}&code={}".format(self.id, self.code),
+            data=data, headers=headers)
         text = result.text
         idx = text.find("<audio")
         idx = text.find("src", idx)
