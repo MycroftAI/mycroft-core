@@ -12,17 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
-import inflection
 import json
-from os.path import exists, isfile, join
 import re
+from os.path import isfile
 
-from requests import RequestException
 import xdg.BaseDirectory
+from requests import RequestException
 
 from mycroft.configuration.locations import *
 from mycroft.configuration.ovos import is_using_xdg
+from mycroft.util import camel_case_split
 from mycroft.util.json_helper import load_commented_json, merge_dict
 from mycroft.util.log import LOG
 from ovos_utils.json_helper import flattened_delete
@@ -52,7 +51,8 @@ def translate_remote(config, setting):
         if k not in IGNORED_SETTINGS:
             # Translate the CamelCase values stored remotely into the
             # Python-style names used within mycroft-core.
-            key = inflection.underscore(re.sub(r"Setting(s)?", "", k))
+            key = re.sub(r"Setting(s)?", "", k)
+            key = camel_case_split(key).replace(" ", "_").lower()
             if isinstance(v, dict):
                 config[key] = config.get(key, {})
                 translate_remote(config[key], v)
