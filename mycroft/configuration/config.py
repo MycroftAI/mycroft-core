@@ -289,13 +289,15 @@ class Configuration:
                 if skip_remote:  # remote config disabled at system level
                     continue
                 # delete protected keys from remote config
-                flattened_delete(cfg, protected_remote)
+                for protection in protected_remote:
+                    flattened_delete(cfg, protection)
             # check for protected keys in user config (changes blocked by system)
             elif isinstance(cfg, LocalConf) and cfg.path in xdg_locations + [OLD_USER_CONFIG]:
                 if skip_user:  # user config disabled at system level
                     continue
                 # delete protected keys from user config
-                flattened_delete(cfg, protected_user)
+                for protection in protected_user:
+                    flattened_delete(cfg, protection)
             merge_dict(base, cfg)
 
         # copy into cache
