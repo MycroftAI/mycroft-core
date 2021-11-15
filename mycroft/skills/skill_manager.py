@@ -294,27 +294,33 @@ class SkillManager(Thread):
         # changed at any time and mess up the .conf, if the skill_id changes
         # lots of other stuff will break so you are assured to notice
         # TODO deprecate usage of skill_name once mycroft catches up
-        skills = {skill.name: skill for skill in self.msm.all_skills}
-        skill_ids = {os.path.basename(skill.path): skill
-                     for skill in self.msm.all_skills}
+        msm_skills = {skill.name: skill for skill in self.msm.all_skills}
+
+        skill_ids = {os.path.basename(skill_path): skill_path
+                     for skill_path in self._get_skill_directories()}
         priority_skills = self.skills_config.get("priority_skills", [])
-        for skill_name in priority_skills:
-            skill = skill_ids.get(skill_name) or skills.get(skill_name)
-            if skill is not None:
+        for skill_id in priority_skills:
+            if skill_id in msm_skills and skill_id not in skill_ids:
+                LOG.warning("ovos-core expects a skill_id in 'priority_skills'\n"
+                            "support for skill_name will be removed in version 0.0.3\n"
+                            "This is a bug in mycrof-core, skill_name is not deterministic!")
+                skill = msm_skills[skill_id]
                 if not skill.is_local:
                     try:
                         self.msm.install(skill)
                     except Exception:
-                        log_msg = 'Downloading priority skill: {} failed'
-                        LOG.exception(log_msg.format(skill_name))
+                        LOG.exception(f'Downloading priority skill: {skill_id} failed')
                         continue
-                loader = self._load_skill(skill.path)
+                skill_path = skill.path
+            else:
+                skill_path = skill_ids.get(skill_id)
+
+            if skill_path is not None:
+                loader = self._load_skill(skill_path)
                 if loader:
                     self.upload_queue.put(loader)
             else:
-                LOG.error(
-                    'Priority skill {} can\'t be found'.format(skill_name)
-                )
+                LOG.error(f'Priority skill {skill_id} can\'t be found')
 
         self._alive_status = True
 
