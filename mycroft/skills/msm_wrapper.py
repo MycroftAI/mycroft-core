@@ -26,7 +26,7 @@ import xdg.BaseDirectory
 
 from mycroft.configuration import Configuration
 from mycroft.configuration.ovos import is_using_xdg
-from mycroft.util.combo_lock import ComboLock
+from combo_lock import ComboLock
 from mycroft.util.log import LOG
 from mycroft.util.file_utils import get_temp_path
 from mycroft.configuration import BASE_FOLDER

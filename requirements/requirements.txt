@@ -6,7 +6,7 @@ tornado~=6.0, >=6.0.3
 requests-futures~=0.9.5
 psutil~=5.6.6
 python-dateutil~=2.6.0
-fasteners~=0.14.1
+combo-lock~=0.2
 PyYAML~=5.4
 
 ovos-plugin-manager~=0.0.2

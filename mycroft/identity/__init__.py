@@ -18,7 +18,7 @@ import os
 
 from mycroft.filesystem import FileSystemAccess
 from mycroft.util.log import LOG
-from mycroft.util.combo_lock import ComboLock
+from combo_lock import ComboLock
 identity_lock = ComboLock('/tmp/identity-lock')
 
 
