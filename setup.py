@@ -64,8 +64,7 @@ setup(
         'tts': required('requirements/extra-tts.txt'),
         "skills_minimal": required('requirements/extra-skills-minimal.txt'),
         'skills': required('requirements/extra-skills.txt'),
-        'default_skills': required('requirements/extra-default-skills.txt'),
-        'enclosure': required('requirements/extra-enclosure.txt'),
+        'gui': required('requirements/extra-gui.txt'),
         'bus': required('requirements/extra-bus.txt'),
         'all': required('requirements/requirements.txt'),
         'mycroft': required('requirements/extra-mycroft.txt')

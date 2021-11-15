@@ -30,4 +30,4 @@ jobs:
           pip3 install --extra-index-url https://google-coral.github.io/py-repo/ tflite_runtime
       - name: Install core repo
         run: |
-          pip install .[audio-backend,mark1,stt,tts,skills_minimal,skills,default_skills,enclosure,bus,all]
+          pip install .[audio-backend,mark1,stt,tts,skills_minimal,skills,gui,bus,all]

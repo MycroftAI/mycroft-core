@@ -1,5 +1,5 @@
-SpeechRecognition==3.8.1
-PyAudio>=0.2.11
+SpeechRecognition~=3.8.1
+PyAudio~=0.2.11
 ovos-ww-plugin-pocketsphinx~=0.1.1
 ovos-ww-plugin-precise-lite~=0.1.0
 ovos-ww-plugin-precise~=0.1.0
