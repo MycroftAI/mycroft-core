@@ -3,7 +3,6 @@ PyAudio~=0.2.11
 pyee~=8.1
 SpeechRecognition~=3.8.1
 tornado~=6.0, >=6.0.3
-requests-futures~=0.9.5
 psutil~=5.6.6
 python-dateutil~=2.6.0
 combo-lock~=0.2

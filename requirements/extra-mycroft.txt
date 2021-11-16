@@ -5,7 +5,6 @@ pyee==8.1.0
 SpeechRecognition==3.8.1
 tornado~=6.1
 websocket-client~=1.2.1
-requests-futures==0.9.5
 pyserial==3.0
 psutil==5.6.6
 pocketsphinx==0.1.0
