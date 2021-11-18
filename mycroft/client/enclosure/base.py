@@ -480,7 +480,7 @@ def create_gui_service(enclosure, config):
     application.listen(config['base_port'], config['host'])
 
     create_daemon(ioloop.IOLoop.instance().start)
-    LOG.info('GUI Message bus started!')
+    LOG.info('GUI Message bus started')
     return application
 
 
@@ -490,7 +490,7 @@ class GUIWebsocketHandler(WebSocketHandler):
 
     def open(self):
         GUIWebsocketHandler.clients.append(self)
-        LOG.info('New Connection opened!')
+        LOG.info('New connection to GUI message bus opened')
         self.synchronize()
 
     def on_close(self):

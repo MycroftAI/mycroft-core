@@ -25,7 +25,6 @@ class HardwareEnclosure:
     mute_led = 11    # last led is reserved for mute mic switch
 
     def __init__(self, enclosure_type, board_type=None):
-        LOG.info("Mark2 Starting HardwareEnclosure()")
         self.enclosure_type = enclosure_type
         self.board_type = board_type
 
@@ -85,8 +84,6 @@ class HardwareEnclosure:
 
         # client volume notification
         self.client_volume_handler = None
-
-        LOG.info("Mark2 HardwareEnclosure() initialized")
 
     def get_capabilities(self):
         return self.capabilities

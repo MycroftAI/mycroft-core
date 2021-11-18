@@ -24,7 +24,7 @@ from mycroft.util.hardware_capabilities import EnclosureCapabilities
 
 
 def on_ready():
-    LOG.info("Enclosure started!")
+    LOG.info("Enclosure service is ready")
 
 
 def on_stopping():
@@ -71,6 +71,7 @@ def main(ready_hook=on_ready, error_hook=on_error, stopping_hook=on_stopping):
     only the GUI bus will be started.
     """
     # Read the system configuration
+    LOG.info("Starting Enclosure Service")
     config = Configuration.get(remote=False)
     platform = config.get("enclosure", {}).get("platform")
 
@@ -96,7 +97,6 @@ def main(ready_hook=on_ready, error_hook=on_error, stopping_hook=on_stopping):
                      enclosure.hardware.switches.capabilities)
 
         try:
-            LOG.info("__main__().py Starting Client Enclosure!")
             reset_sigint_handler()
             enclosure.run()
             ready_hook()
