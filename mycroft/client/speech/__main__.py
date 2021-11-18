@@ -239,6 +239,7 @@ def main(ready_hook=on_ready, error_hook=on_error, stopping_hook=on_stopping,
     except Exception as e:
         error_hook(e)
     else:
+        bus.emit(Message("speech.service.ready"))
         status.set_ready()
         wait_for_exit_signal()
         status.set_stopping()

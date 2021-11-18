@@ -27,6 +27,7 @@ from mycroft.util.hardware_capabilities import EnclosureCapabilities
 
 import threading
 
+SERVICES = ("audio", "skills", "speech")
 
 class temperatureMonitorThread(threading.Thread):
     def __init__(self, fan_obj, led_obj, pal_obj):
@@ -164,6 +165,7 @@ class EnclosureMark2(Enclosure):
         self.mute_led = 11
         self.chaseLedThread = None
         self.pulseLedThread = None
+        self.ready_services = []
 
         self.system_volume = 0.5   # pulse audio master system volume
         # if you want to do anything with the system volume
@@ -209,45 +211,11 @@ class EnclosureMark2(Enclosure):
         self.default_caps = EnclosureCapabilities()
 
         LOG.info('** EnclosureMark2 initalized **')
-        self.bus.once('mycroft.skills.trained', self.is_device_ready)
 
-
-    def is_device_ready(self, message):
-        is_ready = False
-        # Bus service assumed to be alive if messages sent and received
-        # Enclosure assumed to be alive if this method is running
-        services = {'audio': False, 'speech': False, 'skills': False}
-        start = time.monotonic()
-        while not is_ready:
-            is_ready = self.check_services_ready(services)
-            if is_ready:
-                break
-            elif time.monotonic() - start >= 60:
-                raise Exception('Timeout waiting for services start.')
-            else:
-                time.sleep(3)
-
-        if is_ready:
-            LOG.info("All Mycroft Services have reported ready.")
-            if connected():
-                self.bus.emit(Message('mycroft.ready'))
-            else:
-                self.bus.emit(Message('mycroft.wifi.setup'))
-
-        return is_ready
-
-    def check_services_ready(self, services):
-        """Report if all specified services are ready.
-
-        services (iterable): service names to check.
-        """
-        for ser in services:
-            services[ser] = False
-            response = self.bus.wait_for_response(Message(
-                'mycroft.{}.is_ready'.format(ser)))
-            if response and response.data['status']:
-                services[ser] = True
-        return all([services[ser] for ser in services])
+    def run(self):
+        """Make it so."""
+        super().run()
+        self._check_services_ready()
 
     def async_volume_handler(self, vol):
         if vol > 1.0:
@@ -259,7 +227,7 @@ class EnclosureMark2(Enclosure):
             "volume": self.current_volume}, context={"source": ["enclosure"]}))
 
     def _define_event_handlers(self):
-        """Assign methods to act upon message bus events."""
+        """Assigns methods to act upon message bus events."""
         self.bus.on('mycroft.volume.set', self.on_volume_set)
         self.bus.on('mycroft.volume.get', self.on_volume_get)
         self.bus.on('mycroft.volume.duck', self.on_volume_duck)
@@ -270,6 +238,9 @@ class EnclosureMark2(Enclosure):
         self.bus.on('mycroft.speech.recognition.unknown', self.handle_end_audio)
         self.bus.on('mycroft.stop.handled', self.handle_end_audio)
         self.bus.on('mycroft.capabilities.get', self.on_capabilities_get)
+        for service in SERVICES:
+            self.bus.once(f'{service}.service.ready',
+                          self.handle_service_ready)
 
     def handle_start_recording(self, message):
         LOG.debug("Gathering speech stuff")
@@ -342,6 +313,38 @@ class EnclosureMark2(Enclosure):
                     'switches': self.m2enc.switches.capabilities
                     }
                 ))
+
+    def handle_service_ready(self, message: Message):
+        """Apply a service ready message to the mycroft ready aggregation
+
+        Args:
+            message: The event that triggered this method
+        """
+        service = message.msg_type.split('.')[0]
+        self._check_mycroft_ready(service)
+
+    def _check_services_ready(self):
+        """Checks for services ready before message handler definition."""
+        for service in SERVICES:
+            response = self.bus.wait_for_response(
+                Message('mycroft.{}.is_ready'.format(service))
+            )
+            if response and response.data['status']:
+                self._check_mycroft_ready(service)
+                self.bus.remove(f"{service}.service.ready",
+                                self.handle_service_ready)
+
+    def _check_mycroft_ready(self, service: str):
+        """Determines if device is ready based on service readiness.
+
+        Args:
+            service: name of the service that reported ready.
+        """
+        self.ready_services.append(service)
+        self.ready_services.sort()
+        if tuple(self.ready_services) == SERVICES:
+            LOG.info("All Mycroft services have reported ready.")
+            self.bus.emit(Message("mycroft.ready"))
 
     def terminate(self):
         self.m2enc.leds._set_led(10, (0, 0, 0))  # blank out reserved led

@@ -230,6 +230,7 @@ def main(alive_hook=on_alive, started_hook=on_started, ready_hook=on_ready,
 
     while not skill_manager.is_all_loaded():
         time.sleep(0.1)
+    bus.emit(Message("skills.service.ready"))
     status.set_ready()
 
     wait_for_exit_signal()
