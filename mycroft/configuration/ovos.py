@@ -70,7 +70,7 @@ from mycroft.util.json_helper import load_commented_json, merge_dict
 
 
 def get_ovos_config():
-    config = {"xdg": False,
+    config = {"xdg": True,
               "base_folder": "mycroft",
               "config_filename": "mycroft.conf",
               "default_config_path": join(dirname(__file__), "mycroft.conf")}
