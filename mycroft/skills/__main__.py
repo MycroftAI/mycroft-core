@@ -197,25 +197,27 @@ def main(alive_hook=on_alive, started_hook=on_started, ready_hook=on_ready,
     reset_sigint_handler()
     # Create PID file, prevent multiple instances of this service
     mycroft.lock.Lock('skills')
-    config = Configuration.get()
-    lang_code = config.get("lang", "en-us")
-    load_languages([lang_code, "en-us"])
-
-    # Connect this process to the Mycroft message bus
     bus = start_message_bus_client("SKILLS")
-    _register_intent_services(bus)
-    event_scheduler = EventScheduler(bus)
+    bus.emit(Message("skills.initialize.started"))
     callbacks = StatusCallbackMap(on_started=started_hook,
                                   on_alive=alive_hook,
                                   on_ready=ready_hook,
                                   on_error=error_hook,
                                   on_stopping=stopping_hook)
     status = ProcessStatus('skills', bus, callbacks)
+    status.set_started()
+
+    config = Configuration.get()
+    lang_code = config.get("lang", "en-us")
+    load_languages([lang_code, "en-us"])
+
+    # Connect this process to the Mycroft message bus
+    _register_intent_services(bus)
+    event_scheduler = EventScheduler(bus)
 
     SkillApi.connect_bus(bus)
     skill_manager = _initialize_skill_manager(bus, watchdog)
 
-    status.set_started()
     _wait_for_internet_connection()
 
     if skill_manager is None:
@@ -230,7 +232,7 @@ def main(alive_hook=on_alive, started_hook=on_started, ready_hook=on_ready,
 
     while not skill_manager.is_all_loaded():
         time.sleep(0.1)
-    bus.emit(Message("skills.service.ready"))
+    bus.emit(Message("skills.initialize.ended"))
     status.set_ready()
 
     wait_for_exit_signal()

@@ -45,26 +45,25 @@ def on_stopping():
 def main(ready_hook=on_ready, error_hook=on_error, stopping_hook=on_stopping):
     """Start the Audio Service and connect to the Message Bus"""
     LOG.info("Starting Audio Service")
+    reset_sigint_handler()
+    check_for_signal("isSpeaking")
+    whitelist = ['mycroft.audio.service']
+    bus = start_message_bus_client("AUDIO", whitelist=whitelist)
+    bus.emit(Message("audio.initialize.started"))
+    callbacks = StatusCallbackMap(on_ready=ready_hook, on_error=error_hook,
+                                  on_stopping=stopping_hook, on_alive=None)
+    status = ProcessStatus('audio', bus, callbacks)
+    status.set_started()
     try:
-        reset_sigint_handler()
-        check_for_signal("isSpeaking")
-        whitelist = ['mycroft.audio.service']
-        bus = start_message_bus_client("AUDIO", whitelist=whitelist)
-        callbacks = StatusCallbackMap(on_ready=ready_hook, on_error=error_hook,
-                                      on_stopping=stopping_hook)
-        status = ProcessStatus('audio', bus, callbacks)
-
         speech.init(bus)
-
         # Connect audio service instance to message bus
         audio = AudioService(bus)
-        status.set_started()
     except Exception as e:
         status.set_error(e)
     else:
         if audio.wait_for_load() and len(audio.service) > 0:
             # If at least one service exists, report ready
-            bus.emit(Message("audio.service.ready"))
+            bus.emit(Message("audio.initialize.ended"))
             status.set_ready()
             wait_for_exit_signal()
             status.set_stopping()

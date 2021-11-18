@@ -221,25 +221,26 @@ def main(ready_hook=on_ready, error_hook=on_error, stopping_hook=on_stopping,
     global bus
     global loop
     global config
+    reset_sigint_handler()
+    PIDLock("voice")
+    bus = start_message_bus_client("VOICE")
+    bus.emit(Message("speech.initialize.started"))
+    callbacks = StatusCallbackMap(on_ready=ready_hook, on_error=error_hook,
+                                  on_stopping=stopping_hook)
+    status = ProcessStatus('speech', bus, callbacks)
+    status.set_started()
     try:
-        reset_sigint_handler()
-        PIDLock("voice")
-        config = Configuration.get()
-        bus = start_message_bus_client("VOICE")
         connect_bus_events(bus)
-        callbacks = StatusCallbackMap(on_ready=ready_hook, on_error=error_hook,
-                                      on_stopping=stopping_hook)
-        status = ProcessStatus('speech', bus, callbacks)
+        config = Configuration.get()
 
         # Register handlers on internal RecognizerLoop bus
         loop = RecognizerLoop(watchdog)
         connect_loop_events(loop)
         create_daemon(loop.run)
-        status.set_started()
     except Exception as e:
         error_hook(e)
     else:
-        bus.emit(Message("speech.service.ready"))
+        bus.emit(Message("speech.initialize.ended"))
         status.set_ready()
         wait_for_exit_signal()
         status.set_stopping()

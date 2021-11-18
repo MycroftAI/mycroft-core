@@ -209,7 +209,7 @@ class EnclosureMark2(Enclosure):
     def run(self):
         """Make it so."""
         super().run()
-        self._check_services_ready()
+        self._check_services_initialized()
 
     def async_volume_handler(self, vol):
         if vol > 1.0:
@@ -233,8 +233,8 @@ class EnclosureMark2(Enclosure):
         self.bus.on('mycroft.stop.handled', self.handle_end_audio)
         self.bus.on('mycroft.capabilities.get', self.on_capabilities_get)
         for service in SERVICES:
-            self.bus.once(f'{service}.service.ready',
-                          self.handle_service_ready)
+            self.bus.once(f'{service}.initialize.ended',
+                          self.handle_service_initialized)
 
     def handle_start_recording(self, message):
         LOG.debug("Gathering speech stuff")
@@ -313,7 +313,7 @@ class EnclosureMark2(Enclosure):
                     }
                 ))
 
-    def handle_service_ready(self, message: Message):
+    def handle_service_initialized(self, message: Message):
         """Apply a service ready message to the mycroft ready aggregation
 
         Args:
@@ -322,7 +322,7 @@ class EnclosureMark2(Enclosure):
         service = message.msg_type.split('.')[0]
         self._check_mycroft_ready(service)
 
-    def _check_services_ready(self):
+    def _check_services_initialized(self):
         """Checks for services ready before message handler definition."""
         for service in SERVICES:
             response = self.bus.wait_for_response(
@@ -330,8 +330,8 @@ class EnclosureMark2(Enclosure):
             )
             if response and response.data['status']:
                 self._check_mycroft_ready(service)
-                self.bus.remove(f"{service}.service.ready",
-                                self.handle_service_ready)
+                self.bus.remove(f"{service}.initialize.ended",
+                                self.handle_service_initialized)
 
     def _check_mycroft_ready(self, service: str):
         """Determines if device is ready based on service readiness.
@@ -342,8 +342,8 @@ class EnclosureMark2(Enclosure):
         self.ready_services.append(service)
         self.ready_services.sort()
         if tuple(self.ready_services) == SERVICES:
-            LOG.info("All Mycroft services have reported ready.")
-            self.bus.emit(Message("mycroft.ready"))
+            LOG.info("All Mycroft services are initialized.")
+            self.bus.emit(Message("mycroft.initialized"))
 
     def terminate(self):
         self.hardware.leds._set_led(10, (0, 0, 0))  # blank out reserved led
