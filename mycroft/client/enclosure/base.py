@@ -493,7 +493,7 @@ class GUIWebsocketHandler(WebSocketHandler):
         LOG.info('New Connection opened!')
         self.synchronize()
 
-    def on_close(self, _=None):
+    def on_close(self):
         LOG.info('Closing {}'.format(id(self)))
         GUIWebsocketHandler.clients.remove(self)
 
@@ -525,10 +525,8 @@ class GUIWebsocketHandler(WebSocketHandler):
                            })
             namespace_pos += 1
 
-    def on_message(self, _=None, message=None):
+    def on_message(self, message):
         LOG.info("Received: {}".format(message))
-        if message is None:
-            return
         msg = json.loads(message)
         if (msg.get('type') == "mycroft.events.triggered" and
                 (msg.get('event_name') == 'page_gained_focus' or
