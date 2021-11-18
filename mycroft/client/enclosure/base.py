@@ -525,8 +525,10 @@ class GUIWebsocketHandler(WebSocketHandler):
                            })
             namespace_pos += 1
 
-    def on_message(self, _, message):
+    def on_message(self, _=None, message=None):
         LOG.info("Received: {}".format(message))
+        if message is None:
+            return
         msg = json.loads(message)
         if (msg.get('type') == "mycroft.events.triggered" and
                 (msg.get('event_name') == 'page_gained_focus' or
