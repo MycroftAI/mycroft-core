@@ -13,23 +13,19 @@
 # limitations under the License.
 #
 """Define the enclosure interface for Mark II devices."""
-import json
+import threading
 import time
-from threading import Timer
-from websocket import WebSocketApp
 
 from mycroft.client.enclosure.base import Enclosure
-from mycroft.messagebus.message import Message
-from mycroft.util import create_daemon, connected
-from mycroft.util.log import LOG
 from mycroft.enclosure.hardware_enclosure import HardwareEnclosure
+from mycroft.messagebus.message import Message
 from mycroft.util.hardware_capabilities import EnclosureCapabilities
-
-import threading
+from mycroft.util.log import LOG
 
 SERVICES = ("audio", "skills", "speech")
 
-class temperatureMonitorThread(threading.Thread):
+
+class TemperatureMonitorThread(threading.Thread):
     def __init__(self, fan_obj, led_obj, pal_obj):
         self.fan_obj = fan_obj
         self.led_obj = led_obj
@@ -41,8 +37,7 @@ class temperatureMonitorThread(threading.Thread):
         LOG.debug("temperature monitor thread started")
         while not self.exit_flag:
             time.sleep(60)
-
-            LOG.debug("CPU temperature is %s" % (self.fan_obj.get_cpu_temp(),))
+            LOG.debug("CPU temperature is %s" % self.fan_obj.get_cpu_temp())
 
             # TODO make this ratiometric
             current_temperature = self.fan_obj.get_cpu_temp()
@@ -53,14 +48,14 @@ class temperatureMonitorThread(threading.Thread):
                 self.led_obj._set_led(10, self.pal_obj.BLUE)
                 continue
 
-            if current_temperature > 50.0 and current_temperature < 60.0:
+            if 50.0 < current_temperature < 60.0:
                 # 122 - 140F we run fan at 25%
                 self.fan_obj.set_fan_speed(25)
                 LOG.debug("Fan set to 25%")
                 self.led_obj._set_led(10, self.pal_obj.MAGENTA)
                 continue
 
-            if current_temperature > 60.0 and current_temperature <= 70.0:
+            if 60.0 < current_temperature <= 70.0:
                 # 140 - 160F we run fan at 50%
                 self.fan_obj.set_fan_speed(50)
                 LOG.debug("Fan set to 50%")
@@ -75,7 +70,7 @@ class temperatureMonitorThread(threading.Thread):
                 continue
 
 
-class pulseLedThread(threading.Thread):
+class PulseLedThread(threading.Thread):
     def __init__(self, led_obj, pal_obj):
         self.led_obj = led_obj
         self.pal_obj = pal_obj
@@ -84,16 +79,16 @@ class pulseLedThread(threading.Thread):
         self.delay = 0.1
         self.brightness = 100
         self.step_size = 5
+        self.tmp_leds = []
         threading.Thread.__init__(self)
 
     def run(self):
         LOG.debug("pulse thread started")
-        self.tmp_leds = []
-        for x in range(0,10):
-            self.tmp_leds.append( self.color_tup )
+        for x in range(0, 10):
+            self.tmp_leds.append(self.color_tup)
 
         self.led_obj.brightness = self.brightness / 100
-        self.led_obj.set_leds( self.tmp_leds )
+        self.led_obj.set_leds(self.tmp_leds)
 
         while not self.exit_flag:
 
@@ -109,16 +104,16 @@ class pulseLedThread(threading.Thread):
                 self.brightness += self.step_size
 
             self.led_obj.brightness = self.brightness / 100
-            self.led_obj.set_leds( self.tmp_leds )
+            self.led_obj.set_leds(self.tmp_leds)
 
             time.sleep(self.delay)
 
         LOG.debug("pulse thread stopped")
         self.led_obj.brightness = 1.0
-        self.led_obj.fill( self.pal_obj.BLACK )
+        self.led_obj.fill(self.pal_obj.BLACK)
 
 
-class chaseLedThread(threading.Thread):
+class ChaseLedThread(threading.Thread):
     def __init__(self, led_obj, background_color, foreground_color):
         self.led_obj = led_obj
         self.bkgnd_col = background_color
@@ -127,7 +122,7 @@ class chaseLedThread(threading.Thread):
         self.color_tup = foreground_color
         self.delay = 0.1
         tmp_leds = []
-        for indx in range(0,10):
+        for indx in range(0, 10):
             tmp_leds.append(self.bkgnd_col)
 
         self.led_obj.set_leds(tmp_leds)
@@ -139,7 +134,7 @@ class chaseLedThread(threading.Thread):
         while not self.exit_flag:
             chase_ctr += 1
             LOG.debug("chase thread %s" % (chase_ctr,))
-            for x in range(0,10):
+            for x in range(0, 10):
                 self.led_obj.set_led(x, self.fgnd_col)
                 time.sleep(self.delay)
                 self.led_obj.set_led(x, self.bkgnd_col)
@@ -147,12 +142,11 @@ class chaseLedThread(threading.Thread):
                 self.exit_flag = True
 
         LOG.debug("chase thread stopped")
-        self.led_obj.fill( (0,0,0) )
+        self.led_obj.fill((0, 0, 0))
 
 
 class EnclosureMark2(Enclosure):
     def __init__(self):
-        LOG.info('** Initialize EnclosureMark2 **')
         super().__init__()
         self.display_bus_client = None
         self._define_event_handlers()
@@ -173,44 +167,44 @@ class EnclosureMark2(Enclosure):
         self.current_volume = 0.5  # hardware/board level volume
 
         # TODO these need to come from a config value
-        self.m2enc = HardwareEnclosure("Mark2", "sj201r4")
-        self.m2enc.client_volume_handler = self.async_volume_handler
+        self.hardware = HardwareEnclosure("Mark2", "sj201r4")
+        self.hardware.client_volume_handler = self.async_volume_handler
 
         # start the temperature monitor thread
-        self.temperatureMonitorThread = temperatureMonitorThread(self.m2enc.fan, self.m2enc.leds, self.m2enc.palette)
+        self.temperatureMonitorThread = TemperatureMonitorThread(
+            self.hardware.fan, self.hardware.leds, self.hardware.palette
+        )
         self.temperatureMonitorThread.start()
 
-        self.m2enc.leds.set_leds([
-                self.m2enc.palette.BLACK,
-                self.m2enc.palette.BLACK,
-                self.m2enc.palette.BLACK,
-                self.m2enc.palette.BLACK,
-                self.m2enc.palette.BLACK,
-                self.m2enc.palette.BLACK,
-                self.m2enc.palette.BLACK,
-                self.m2enc.palette.BLACK,
-                self.m2enc.palette.BLACK,
-                self.m2enc.palette.BLACK
+        self.hardware.leds.set_leds([
+                self.hardware.palette.BLACK,
+                self.hardware.palette.BLACK,
+                self.hardware.palette.BLACK,
+                self.hardware.palette.BLACK,
+                self.hardware.palette.BLACK,
+                self.hardware.palette.BLACK,
+                self.hardware.palette.BLACK,
+                self.hardware.palette.BLACK,
+                self.hardware.palette.BLACK,
+                self.hardware.palette.BLACK
                 ])
 
-        self.m2enc.leds._set_led_with_brightness(
+        self.hardware.leds._set_led_with_brightness(
             self.reserved_led,
-            self.m2enc.palette.MAGENTA,
+            self.hardware.palette.MAGENTA,
             0.5)
 
         # set mute led based on reality
-        mute_led_color = self.m2enc.palette.GREEN
-        if self.m2enc.switches.SW_MUTE == 1:
-            mute_led_color = self.m2enc.palette.RED
+        mute_led_color = self.hardware.palette.GREEN
+        if self.hardware.switches.SW_MUTE == 1:
+            mute_led_color = self.hardware.palette.RED
 
-        self.m2enc.leds._set_led_with_brightness(
+        self.hardware.leds._set_led_with_brightness(
             self.mute_led,
             mute_led_color,
             1.0)
 
         self.default_caps = EnclosureCapabilities()
-
-        LOG.info('** EnclosureMark2 initalized **')
 
     def run(self):
         """Make it so."""
@@ -221,7 +215,7 @@ class EnclosureMark2(Enclosure):
         if vol > 1.0:
             vol = vol / 10
         self.current_volume = vol
-        LOG.info("Async set volume to %s" % (self.current_volume))
+        LOG.info("Async set volume to %s" % self.current_volume)
         # notify anybody listening on the bus who cares
         self.bus.emit(Message("hardware.volume", {
             "volume": self.current_volume}, context={"source": ["enclosure"]}))
@@ -245,19 +239,22 @@ class EnclosureMark2(Enclosure):
     def handle_start_recording(self, message):
         LOG.debug("Gathering speech stuff")
         if self.pulseLedThread is None:
-            self.pulseLedThread = pulseLedThread(self.m2enc.leds, self.m2enc.palette)
+            self.pulseLedThread = PulseLedThread(self.hardware.leds,
+                                                 self.hardware.palette)
             self.pulseLedThread.start()
 
     def handle_stop_recording(self, message):
-        background_color = self.m2enc.palette.BLUE
-        foreground_color = self.m2enc.palette.BLACK
+        background_color = self.hardware.palette.BLUE
+        foreground_color = self.hardware.palette.BLACK
         LOG.debug("Got spoken stuff")
         if self.pulseLedThread is not None:
             self.pulseLedThread.exit_flag = True
             self.pulseLedThread.join()
             self.pulseLedThread = None
         if self.chaseLedThread is None:
-            self.chaseLedThread = chaseLedThread(self.m2enc.leds, background_color, foreground_color)
+            self.chaseLedThread = ChaseLedThread(self.hardware.leds,
+                                                 background_color,
+                                                 foreground_color)
             self.chaseLedThread.start()
 
     def handle_end_audio(self, message):
@@ -270,25 +267,27 @@ class EnclosureMark2(Enclosure):
     def on_volume_duck(self, message):
         # TODO duck it anyway using set vol
         # LOG.warning("Mark2 volume duck deprecated! use volume set instead.")
-        self.m2enc.hardware_volume.set_volume(float(0.1))  # TODO make configurable 'duck_vol'
+        # TODO make configurable 'duck_vol'
+        self.hardware.hardware_volume.set_volume(float(0.1))
 
     def on_volume_unduck(self, message):
         # TODO duck it anyway using set vol
-        # LOG.warning("Mark2 volume unduck deprecated! use volume set instead.")
-        self.m2enc.hardware_volume.set_volume(float(self.current_volume))
+        # LOG.warning("Mark2 volume unduck deprecated!
+        #              use volume set instead.")
+        self.hardware.hardware_volume.set_volume(float(self.current_volume))
 
     def on_volume_set(self, message):
         self.current_volume = message.data.get("percent", self.current_volume)
         LOG.info('Mark2:interface.py set volume to %s' %
                  (self.current_volume,))
-        self.m2enc.hardware_volume.set_volume(float(self.current_volume))
+        self.hardware.hardware_volume.set_volume(float(self.current_volume))
 
         # notify anybody listening on the bus who cares
         self.bus.emit(Message("hardware.volume", {
             "volume": self.current_volume}, context={"source": ["enclosure"]}))
 
     def on_volume_get(self, message):
-        self.current_volume = self.m2enc.hardware_volume.get_volume()
+        self.current_volume = self.hardware.hardware_volume.get_volume()
 
         if self.current_volume > 1.0:
             self.current_volume = self.current_volume / 10
@@ -306,11 +305,11 @@ class EnclosureMark2(Enclosure):
             message.response(
                 data={
                     'default': self.default_caps.caps, 
-                    'extra': self.m2enc.capabilities,
-                    'board_type': self.m2enc.board_type,
-                    'leds': self.m2enc.leds.capabilities,
-                    'volume': self.m2enc.hardware_volume.capabilities,
-                    'switches': self.m2enc.switches.capabilities
+                    'extra': self.hardware.capabilities,
+                    'board_type': self.hardware.board_type,
+                    'leds': self.hardware.leds.capabilities,
+                    'volume': self.hardware.hardware_volume.capabilities,
+                    'switches': self.hardware.switches.capabilities
                     }
                 ))
 
@@ -347,6 +346,6 @@ class EnclosureMark2(Enclosure):
             self.bus.emit(Message("mycroft.ready"))
 
     def terminate(self):
-        self.m2enc.leds._set_led(10, (0, 0, 0))  # blank out reserved led
-        self.m2enc.leds._set_led(11, (0, 0, 0))  # BUG set to real value!
-        self.m2enc.terminate()
+        self.hardware.leds._set_led(10, (0, 0, 0))  # blank out reserved led
+        self.hardware.leds._set_led(11, (0, 0, 0))  # BUG set to real value!
+        self.hardware.terminate()

@@ -83,16 +83,17 @@ def main(ready_hook=on_ready, error_hook=on_error, stopping_hook=on_stopping):
         enclosure.default_caps = EnclosureCapabilities()
 
         LOG.info("Enclosure created, capabilities ===>%s" %
-                 (enclosure.default_caps.caps,))
+                 enclosure.default_caps.caps)
 
         if platform == "mycroft_mark_2":
             LOG.info("Mark2 detected[%s], additional capabilities ===>%s" % (
-                enclosure.m2enc.board_type, enclosure.m2enc.capabilities))
-            LOG.info("Leds ===>%s" % (enclosure.m2enc.leds.capabilities))
+                enclosure.hardware.board_type,
+                enclosure.hardware.capabilities))
+            LOG.info("LEDs ===>%s" % enclosure.hardware.leds.capabilities)
             LOG.info("Volume ===>%s" %
-                     (enclosure.m2enc.hardware_volume.capabilities))
+                     enclosure.hardware.hardware_volume.capabilities)
             LOG.info("Switches ===>%s" %
-                     (enclosure.m2enc.switches.capabilities))
+                     enclosure.hardware.switches.capabilities)
 
         try:
             LOG.info("__main__().py Starting Client Enclosure!")
