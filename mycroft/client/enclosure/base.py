@@ -493,7 +493,7 @@ class GUIWebsocketHandler(WebSocketHandler):
         LOG.info('New Connection opened!')
         self.synchronize()
 
-    def on_close(self, _):
+    def on_close(self, _=None):
         LOG.info('Closing {}'.format(id(self)))
         GUIWebsocketHandler.clients.remove(self)
 
