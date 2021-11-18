@@ -12,11 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-"""Entrypoint for enclosure service.
-
-This provides any "enclosure" specific functionality, for example GUI or
-control over the Mark-1 Faceplate.
 """
+NOTE: this is dead code! do not use!
+
+This file is only present to ensure backwards compatibility
+in case someone is importing from here
+
+This is only meant for 3rd party code expecting ovos-core
+to be a drop in replacement for mycroft-core
+
+"""
+
 from mycroft.configuration import setup_locale
 from mycroft.configuration import Configuration
 from mycroft.util.log import LOG
@@ -46,10 +52,17 @@ def create_enclosure(platform):
     """
     if platform == "mycroft_mark_1":
         LOG.info("Creating Mark I Enclosure")
+        LOG.warning("'mycroft_mark_1' enclosure has been deprecated!\n"
+                    "'mark_1' support is being migrated into PHAL\n"
+                    "see https://github.com/OpenVoiceOS/ovos_phal_mk1")
         from mycroft.client.enclosure.mark1 import EnclosureMark1
         enclosure = EnclosureMark1()
     elif platform == "mycroft_mark_2":
         LOG.info("Creating Mark II Enclosure")
+        LOG.warning("'mycroft_mark_2' enclosure has been deprecated!\n"
+                    "It was never implemented outside the mk2 feature branch\n"
+                    "mark_2 support is being migrated into PHAL\n"
+                    "see https://github.com/OpenVoiceOS/ovos_phal_mk2")
         from mycroft.client.enclosure.mark2 import EnclosureMark2
         enclosure = EnclosureMark2()
     else:
@@ -69,9 +82,11 @@ def main(ready_hook=on_ready, error_hook=on_error, stopping_hook=on_stopping):
     NOTE: in ovos-core the GUI protocol is handled in it's own service and not part of the enclosure like in mycroft-core!
           You need to also run mycroft.gui process separately, it has been extracted into it's own module
     """
-    LOG.warning("mycroft.client.enclosure is in the process of being deprecated in ovos-core!")
-    LOG.warning("You need to also run mycroft.gui process separately, it has been extracted into it's own module")
-
+    LOG.warning("mycroft.client.enclosure is in the process of being deprecated in ovos-core!\n"
+                "see https://github.com/OpenVoiceOS/ovos_PHAL\n"
+                "Be sure to run mycroft.gui process separately, it has been extracted into it's own module!\n"
+                "The only reason to run mycroft.client.enclosure is mark1 support\n"
+                "this module will be removed in version 0.0.3")
     # Read the system configuration
     config = Configuration.get(remote=False)
     platform = config.get("enclosure", {}).get("platform")

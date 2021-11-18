@@ -12,6 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+"""
+NOTE: this is dead code! do not use!
+
+This file is only present to ensure backwards compatibility
+in case someone is importing from here
+
+This is only meant for 3rd party code expecting ovos-core
+to be a drop in replacement for mycroft-core
+
+TODO: consider importing from PHAL if it's compatible
+"""
+
 import time
 from PIL import Image
 

@@ -12,6 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+
+"""
+NOTE: this is dead code! do not use!
+
+This file is only present to ensure backwards compatibility
+in case someone is importing from here
+
+This is only meant for 3rd party code expecting ovos-core
+to be a drop in replacement for mycroft-core
+
+TODO: consider importing from PHAL if it's compatible
+"""
+
 import subprocess
 import time
 from alsaaudio import Mixer
@@ -28,8 +41,6 @@ from mycroft.audio import wait_while_speaking
 from mycroft.client.enclosure.mark1.arduino import EnclosureArduino
 from mycroft.client.enclosure.mark1.eyes import EnclosureEyes
 from mycroft.client.enclosure.mark1.mouth import EnclosureMouth
-from mycroft.enclosure.display_manager import \
-    init_display_manager_bus_connection
 from mycroft.configuration import LocalConf, USER_CONFIG
 from mycroft.messagebus.message import Message
 from mycroft.util import play_wav, create_signal, connected, check_for_signal
@@ -289,10 +300,6 @@ class EnclosureMark1(Enclosure):
 
         # Notifications from mycroft-core
         self.bus.on("enclosure.notify.no_internet", self.on_no_internet)
-
-        # initiates the web sockets on display manager
-        # NOTE: this is a temporary place to connect the display manager
-        init_display_manager_bus_connection()
 
     def on_arduino_responded(self, event=None):
         self.eyes = EnclosureEyes(self.bus, self.writer)

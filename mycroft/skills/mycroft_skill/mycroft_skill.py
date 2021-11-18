@@ -31,8 +31,8 @@ from adapt.intent import Intent, IntentBuilder
 from mycroft import dialog
 from mycroft.api import DeviceApi
 from mycroft.audio import wait_while_speaking
-from mycroft.enclosure.api import EnclosureAPI
-from mycroft.enclosure.gui import SkillGUI
+from ovos_utils.enclosure.api import EnclosureAPI
+from mycroft.gui import SkillGUI
 from mycroft.configuration import Configuration, BASE_FOLDER
 from mycroft.dialog import load_dialogs
 from mycroft.filesystem import FileSystemAccess
