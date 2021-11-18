@@ -19,13 +19,12 @@ accessing and curating mycroft's cache.
 """
 
 import os
-import psutil
-from stat import S_ISREG, ST_MTIME, ST_MODE, ST_SIZE
-import tempfile
 import xdg.BaseDirectory
-
+from ovos_utils.file_utils import get_temp_path
 import mycroft.configuration
 from mycroft.util.log import LOG
+# do not delete these imports, here for backwards compat!
+from ovos_plugin_manager.utils.tts_cache import curate_cache, mb_to_bytes
 
 
 def resolve_resource_file(res_name):
@@ -135,97 +134,6 @@ def read_dict(filename, div='='):
     return d
 
 
-def mb_to_bytes(size):
-    """Takes a size in MB and returns the number of bytes.
-
-    Args:
-        size(int/float): size in Mega Bytes
-
-    Returns:
-        (int/float) size in bytes
-    """
-    return size * 1024 * 1024
-
-
-def _get_cache_entries(directory):
-    """Get information tuple for all regular files in directory.
-
-    Args:
-        directory (str): path to directory to check
-
-    Returns:
-        (tuple) (modification time, size, filepath)
-    """
-    entries = (os.path.join(directory, fn) for fn in os.listdir(directory))
-    entries = ((os.stat(path), path) for path in entries)
-
-    # leave only regular files, insert modification date
-    return ((stat[ST_MTIME], stat[ST_SIZE], path)
-            for stat, path in entries if S_ISREG(stat[ST_MODE]))
-
-
-def _delete_oldest(entries, bytes_needed):
-    """Delete files with oldest modification date until space is freed.
-
-    Args:
-        entries (tuple): file + file stats tuple
-        bytes_needed (int): disk space that needs to be freed
-
-    Returns:
-        (list) all removed paths
-    """
-    deleted_files = []
-    space_freed = 0
-    for moddate, fsize, path in sorted(entries):
-        try:
-            os.remove(path)
-            space_freed += fsize
-            deleted_files.append(path)
-        except Exception:
-            pass
-
-        if space_freed > bytes_needed:
-            break  # deleted enough!
-
-    return deleted_files
-
-
-def curate_cache(directory, min_free_percent=5.0, min_free_disk=50):
-    """Clear out the directory if needed.
-
-    The curation will only occur if both the precentage and actual disk space
-    is below the limit. This assumes all the files in the directory can be
-    deleted as freely.
-
-    Args:
-        directory (str): directory path that holds cached files
-        min_free_percent (float): percentage (0.0-100.0) of drive to keep free,
-                                  default is 5% if not specified.
-        min_free_disk (float): minimum allowed disk space in MB, default
-                               value is 50 MB if not specified.
-    """
-    # Simpleminded implementation -- keep a certain percentage of the
-    # disk available.
-    # TODO: Would be easy to add more options, like whitelisted files, etc.
-    deleted_files = []
-    space = psutil.disk_usage(directory)
-
-    min_free_disk = mb_to_bytes(min_free_disk)
-    percent_free = 100.0 - space.percent
-    if percent_free < min_free_percent and space.free < min_free_disk:
-        LOG.info('Low diskspace detected, cleaning cache')
-        # calculate how many bytes we need to delete
-        bytes_needed = (min_free_percent - percent_free) / 100.0 * space.total
-        bytes_needed = int(bytes_needed + 1.0)
-
-        # get all entries in the directory w/ stats
-        entries = _get_cache_entries(directory)
-        # delete as many as needed starting with the oldest
-        deleted_files = _delete_oldest(entries, bytes_needed)
-
-    return deleted_files
-
-
 def get_cache_directory(domain=None):
     """Get a directory for caching data.
 
@@ -246,8 +154,7 @@ def get_cache_directory(domain=None):
     if not directory:
         if not mycroft.configuration.is_using_xdg():
             # If not defined, use /tmp/mycroft/cache
-            directory = get_temp_path(
-                mycroft.configuration.BASE_FOLDER, 'cache')
+            directory = get_temp_path(mycroft.configuration.BASE_FOLDER, 'cache')
         else:
             directory = os.path.join(xdg.BaseDirectory.xdg_data_home,
                                      mycroft.configuration.BASE_FOLDER, "cache")
@@ -297,25 +204,3 @@ def create_file(filename):
     os.chmod(filename, 0o777)
 
 
-def get_temp_path(*args):
-    """Generate a valid path in the system temp directory.
-
-    This method accepts one or more strings as arguments. The arguments are
-    joined and returned as a complete path inside the systems temp directory.
-    Importantly, this will not create any directories or files.
-
-    Example usage: get_temp_path('mycroft', 'audio', 'example.wav')
-    Will return the equivalent of: '/tmp/mycroft/audio/example.wav'
-
-    Args:
-        path_element (str): directories and/or filename
-
-    Returns:
-        (str) a valid path in the systems temp directory
-    """
-    try:
-        path = os.path.join(tempfile.gettempdir(), *args)
-    except TypeError:
-        raise TypeError("Could not create a temp path, get_temp_path() only "
-                        "accepts Strings")
-    return path
