@@ -202,5 +202,3 @@ def create_file(filename):
     with open(filename, 'w') as f:
         f.write('')
     os.chmod(filename, 0o777)
-
-

@@ -49,6 +49,7 @@ from mycroft.util.log import LOG
 from queue import Queue
 from mycroft.util.file_utils import get_temp_path
 
+
 # The Mark 1 hardware consists of a Raspberry Pi main CPU which is connected
 # to an Arduino over the serial port.  A custom serial protocol sends
 # commands to control various visual elements which are controlled by the

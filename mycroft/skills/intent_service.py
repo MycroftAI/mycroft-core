@@ -81,6 +81,7 @@ class IntentService:
     The intent service also provides the internal API for registering and
     querying the intent service.
     """
+
     def __init__(self, bus):
         self.bus = bus
         config = Configuration.get()

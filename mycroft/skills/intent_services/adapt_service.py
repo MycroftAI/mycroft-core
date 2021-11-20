@@ -46,6 +46,7 @@ class AdaptIntent(IntentBuilder):
     Args:
         name (str): Optional name of intent
     """
+
     def __init__(self, name=''):
         super().__init__(name)
 
@@ -72,6 +73,7 @@ class ContextManager:
     Use to track context throughout the course of a conversational session.
     How to manage a session's lifecycle is not captured here.
     """
+
     def __init__(self, timeout):
         self.frame_stack = []
         self.timeout = timeout * 60  # minutes to seconds
@@ -169,6 +171,7 @@ class ContextManager:
 
 class AdaptService:
     """Intent service wrapping the Apdapt intent Parser."""
+
     def __init__(self, config):
         self.config = config
 

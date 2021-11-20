@@ -9,4 +9,3 @@ to be a drop in replacement for mycroft-core
 """
 
 from mycroft.client.enclosure.base import Enclosure as EnclosureGeneric
-

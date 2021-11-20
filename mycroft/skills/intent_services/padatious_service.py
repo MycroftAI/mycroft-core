@@ -31,6 +31,7 @@ from padaos import IntentContainer as PadaosIntentContainer
 
 class PadatiousMatcher:
     """Matcher class to avoid redundancy in padatious intent matching."""
+
     def __init__(self, service):
         self.service = service
         self.has_result = False
@@ -108,6 +109,7 @@ class PadatiousMatcher:
 
 class PadatiousService:
     """Service class for padatious intent matching."""
+
     def __init__(self, bus, config):
         self.padatious_config = config
         self.bus = bus

@@ -16,6 +16,7 @@ from os.path import abspath, dirname, join
 import mycroft.configuration
 from mycroft.api import Api
 from mycroft.messagebus.message import Message
+
 # don't require adapt to be installed to import non-skill stuff
 try:
     from mycroft.skills.context import adds_context, removes_context

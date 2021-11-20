@@ -11,6 +11,7 @@ from mycroft.util.log import LOG
 
 from ovos_utils import create_daemon, wait_for_exit_signal
 
+
 def reset_sigint_handler():
     """Reset the sigint handler to the default.
 
@@ -18,7 +19,6 @@ def reset_sigint_handler():
     start-mycroft.sh
     """
     sig.signal(sig.SIGINT, sig.default_int_handler)
-
 
 
 _log_all_bus_messages = False
@@ -90,7 +90,7 @@ def create_echo_function(name, whitelist=None):
             # i.e 'mycroft.audio.service' will allow the message
             # 'mycroft.audio.service.play' for example
             if whitelist and not any([msg_type.startswith(e)
-                                     for e in whitelist]):
+                                      for e in whitelist]):
                 return
 
             if blacklist and msg_type in blacklist:
@@ -108,6 +108,7 @@ def create_echo_function(name, whitelist=None):
         if _log_all_bus_messages:
             # Listen for messages and echo them for logging
             LOG(name).info("BUS: {}".format(message))
+
     return echo
 
 
@@ -143,7 +144,6 @@ def start_message_bus_client(service, bus=None, whitelist=None):
 
 
 class ProcessState(IntEnum):
-
     """Oredered enum to make state checks easy.
 
     For example Alive can be determined using >= ProcessState.ALIVE,
@@ -165,7 +165,6 @@ _STATUS_CALLBACKS = [
     'on_error',
     'on_stopping',
 ]
-
 
 # namedtuple defaults only available on 3.7 and later python versions
 if sys.version_info < (3, 7):

@@ -51,6 +51,7 @@ def create_wrapper(handler, skill_id, on_start, on_end, on_error):
         on_end (function): function to call after executing the handler
         on_error (function): function to call for error reporting
     """
+
     def wrapper(message):
         stopwatch = Stopwatch()
         try:
@@ -80,6 +81,7 @@ def create_wrapper(handler, skill_id, on_start, on_end, on_error):
                 report_timing(context['ident'], 'skill_handler', stopwatch,
                               {'handler': handler.__name__,
                                'skill_id': skill_id})
+
     return wrapper
 
 
@@ -96,6 +98,7 @@ def create_basic_wrapper(handler, on_error=None):
     Returns:
         Wrapped callable
     """
+
     def wrapper(message):
         try:
             if len(signature(handler).parameters) == 0:
@@ -115,6 +118,7 @@ class EventContainer:
     This container tracks events added by a skill, allowing unregistering
     all events on shutdown.
     """
+
     def __init__(self, bus=None):
         self.bus = bus
         self.events = []
@@ -131,6 +135,7 @@ class EventContainer:
             once (bool, optional): Event handler will be removed after it has
                                    been run once.
         """
+
         def once_wrapper(message):
             # Remove registered one-time handler before invoking,
             # allowing them to re-schedule themselves.

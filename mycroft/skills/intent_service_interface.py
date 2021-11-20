@@ -62,7 +62,7 @@ class IntentServiceInterface:
         compatibility_data = {'start': entity, 'end': vocab_type}
 
         self.bus.emit(msg.forward("register_vocab",
-                              {**entity_data, **compatibility_data}))
+                                  {**entity_data, **compatibility_data}))
         for alias in aliases:
             alias_data = {
                 'entity_value': alias,
@@ -122,8 +122,8 @@ class IntentServiceInterface:
         if "skill_id" not in msg.context:
             msg.context["skill_id"] = self.skill_id
         self.bus.emit(msg.forward('add_context',
-                              {'context': context, 'word': word,
-                               'origin': origin}))
+                                  {'context': context, 'word': word,
+                                   'origin': origin}))
 
     def remove_adapt_context(self, context):
         """Remove an active Adapt context.

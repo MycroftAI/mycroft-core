@@ -26,7 +26,6 @@ CONFIG_FILE_NAME = _ovos_cfg["config_filename"]
 DEFAULT_CONFIG = _ovos_cfg["default_config_path"] or \
                  join(dirname(__file__), CONFIG_FILE_NAME)
 
-
 SYSTEM_CONFIG = os.environ.get('MYCROFT_SYSTEM_CONFIG',
                                f'/etc/{BASE_FOLDER}/{CONFIG_FILE_NAME}')
 # TODO: remove in 22.02

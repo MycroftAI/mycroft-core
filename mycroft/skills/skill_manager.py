@@ -33,7 +33,6 @@ from mycroft.skills.skill_updater import SkillUpdater
 from mycroft.messagebus import MessageBusClient
 import xdg.BaseDirectory
 
-
 SKILL_MAIN_MODULE = '__init__.py'
 
 
@@ -213,7 +212,7 @@ class SkillManager(Thread):
         # gui -> gui websocket reported ready - NOT IMPLEMENTED
         # enclosure -> enclosure/HAL reported ready - NOT IMPLEMENTED
         services = {k: False for k in
-                   self.config.get("ready_settings", ["skills"])}
+                    self.config.get("ready_settings", ["skills"])}
         start = monotonic()
         while not is_ready:
             is_ready = self.check_services_ready(services)
@@ -402,7 +401,7 @@ class SkillManager(Thread):
             skill_id = os.path.basename(skill_dir)
             for old_skill_dir, skill_loader in self.skill_loaders.items():
                 if old_skill_dir != skill_dir and \
-                    skill_loader.skill_id == skill_id:
+                        skill_loader.skill_id == skill_id:
                     # a higher priority equivalent has been detected!
                     replaced_skills.append(old_skill_dir)
 
@@ -492,8 +491,8 @@ class SkillManager(Thread):
     def _update_skills(self):
         """Update skills once an hour if update is enabled"""
         do_skill_update = (
-            time() >= self.skill_updater.next_download and
-            self.skills_config.get("auto_update", False)
+                time() >= self.skill_updater.next_download and
+                self.skills_config.get("auto_update", False)
         )
         if do_skill_update:
             self.skill_updater.update_skills()

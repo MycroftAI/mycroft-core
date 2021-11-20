@@ -117,6 +117,7 @@ class MycroftSkill:
         bus (MycroftWebsocketClient): Optional bus connection
         use_settings (bool): Set to false to not use skill settings at all
     """
+
     def __init__(self, name=None, bus=None, use_settings=True):
         self.name = name or self.__class__.__name__
         self.resting_name = None
@@ -197,7 +198,7 @@ class MycroftSkill:
         # Then, check XDG_CONFIG_DIR
         if not settings_read_path.joinpath('settings.json').exists():
             for path in xdg.BaseDirectory.load_config_paths(BASE_FOLDER, 'skills',
-                                              basename(self.root_dir)):
+                                                            basename(self.root_dir)):
                 path = Path(path)
                 # If there is a settings file here, use it
                 if path.joinpath('settings.json').exists():
@@ -308,7 +309,7 @@ class MycroftSkill:
         if isdir(base_path):
             # TODO how to choose best local dialect?
             for path in [join(base_path, f)
-                          for f in listdir(base_path) if f.startswith(lang2)]:
+                         for f in listdir(base_path) if f.startswith(lang2)]:
                 if isdir(path):
                     return path
         return join(base_path, lang)
@@ -344,6 +345,7 @@ class MycroftSkill:
 
         def wrap_method(func):
             """Boiler plate for returning the response to the sender."""
+
             def wrapper(message):
                 result = func(*message.data['args'], **message.data['kwargs'])
                 message.context["skill_id"] = self.skill_id
@@ -385,6 +387,7 @@ class MycroftSkill:
         """Add all events allowing the standard interaction with the Mycroft
         system.
         """
+
         def stop_is_implemented():
             return self.__class__.stop is not MycroftSkill.stop
 
@@ -502,7 +505,7 @@ class MycroftSkill:
         if "skill_id" not in msg.context:
             msg.context["skill_id"] = self.skill_id
         self.bus.emit(msg.forward("intent.service.skills.activate",
-                              data={"skill_id": self.skill_id}))
+                                  data={"skill_id": self.skill_id}))
 
     def deactivate(self):
         """remove skill from active_skill list in intent_service.
@@ -512,7 +515,7 @@ class MycroftSkill:
         if "skill_id" not in msg.context:
             msg.context["skill_id"] = self.skill_id
         self.bus.emit(msg.forward(f"intent.service.skills.deactivate",
-                              data={"skill_id": self.skill_id}))
+                                  data={"skill_id": self.skill_id}))
 
     def converse(self, message=None):
         """Handle conversation.
@@ -630,7 +633,7 @@ class MycroftSkill:
         else:
             msg = dig_for_message()
             msg = msg.reply('mycroft.mic.listen') if msg else \
-                  Message('mycroft.mic.listen', context={"skill_id": self.skill_id})
+                Message('mycroft.mic.listen', context={"skill_id": self.skill_id})
             self.bus.emit(msg)
         return self._wait_response(is_cancel, validator, on_fail_fn,
                                    num_retries)
@@ -647,8 +650,8 @@ class MycroftSkill:
         """
         msg = dig_for_message()
         msg = msg.reply('mycroft.mic.listen') if msg else \
-              Message('mycroft.mic.listen',
-                      context={"skill_id": self.skill_id})
+            Message('mycroft.mic.listen',
+                    context={"skill_id": self.skill_id})
 
         num_fails = 0
         while True:
@@ -859,7 +862,7 @@ class MycroftSkill:
             if hasattr(method, 'resting_handler'):
                 self.resting_name = method.resting_handler
                 self.log.info('Registering resting screen {} for {}.'.format(
-                              method, self.resting_name))
+                    method, self.resting_name))
 
                 # Register for handling resting screen
                 msg_type = '{}.{}'.format(self.skill_id, 'idle')
@@ -1311,8 +1314,8 @@ class MycroftSkill:
         if "skill_id" not in msg.context:
             msg.context["skill_id"] = self.skill_id
         self.bus.emit(msg.forward('mycroft.skill.set_cross_context',
-                              {'context': context, 'word': word,
-                               'origin': self.skill_id}))
+                                  {'context': context, 'word': word,
+                                   'origin': self.skill_id}))
 
     def remove_cross_skill_context(self, context):
         """Tell all skills to remove a keyword from the context manager."""
@@ -1322,7 +1325,7 @@ class MycroftSkill:
         if "skill_id" not in msg.context:
             msg.context["skill_id"] = self.skill_id
         self.bus.emit(msg.forward('mycroft.skill.remove_cross_context',
-                              {'context': context}))
+                                  {'context': context}))
 
     def remove_context(self, context):
         """Remove a keyword from the context manager."""

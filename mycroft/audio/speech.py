@@ -23,6 +23,7 @@ from mycroft.util import check_for_signal
 from mycroft.util.log import LOG
 from mycroft.messagebus.message import Message
 from mycroft.tts.remote_tts import RemoteTTSException
+
 try:
     from ovos_tts_plugin_mimic import MimicTTSPlugin
 except ImportError:

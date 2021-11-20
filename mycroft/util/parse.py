@@ -45,9 +45,9 @@ except ImportError:
     def lingua_franca_error(*args, **kwargs):
         raise ImportError("lingua_franca is not installed")
 
+
     extract_number = extract_numbers = extract_duration = get_gender = \
         normalize = lf_extract_datetime = lingua_franca_error
-
 
 
 def _log_unsupported_language(language, supported_languages):
@@ -124,6 +124,6 @@ def extract_datetime(text, anchorDate="DEFAULT", lang=None,
         from mycroft.configuration.locale import get_default_lang
         lang = get_default_lang()
     return lf_extract_datetime(text,
-                             anchorDate,
-                             lang,
-                             default_time)
+                               anchorDate,
+                               lang,
+                               default_time)

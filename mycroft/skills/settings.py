@@ -110,8 +110,7 @@ def save_settings(skill_dir, skill_settings):
         except Exception:
             LOG.error(f'error saving skill settings to {settings_path}')
         else:
-            LOG.info('Skill settings successfully saved to '
-                     '{}' .format(settings_path))
+            LOG.info(f'Skill settings successfully saved to {settings_path}')
 
 
 def get_display_name(skill_name: str):
@@ -143,7 +142,7 @@ class SettingsMetaUploader:
         if is_backend_disabled():
             self.sync_enabled = False
         else:
-            self.sync_enabled = self.config["server"]\
+            self.sync_enabled = self.config["server"] \
                 .get("sync_skill_settings", False)
         if not self.sync_enabled:
             LOG.info("Skill settings sync is disabled, settingsmeta will "
@@ -235,8 +234,8 @@ class SettingsMetaUploader:
             self.api = DeviceApi()
             if self.api.identity.uuid:
                 settings_meta_file_exists = (
-                    self.json_path.is_file() or
-                    self.yaml_path.is_file()
+                        self.json_path.is_file() or
+                        self.yaml_path.is_file()
                 )
                 if settings_meta_file_exists:
                     self._load_settings_meta_file()
@@ -284,9 +283,9 @@ class SettingsMetaUploader:
         self.settings_meta.update(
             skill_gid=self.skill_gid,
             display_name=(
-                self.msm_skill_display_name or
-                self.settings_meta.get('name') or
-                get_display_name(self.skill_name)
+                    self.msm_skill_display_name or
+                    self.settings_meta.get('name') or
+                    get_display_name(self.skill_name)
             )
         )
         for deprecated in ('color', 'identifier', 'name'):
@@ -296,7 +295,7 @@ class SettingsMetaUploader:
                     'settingsmeta file is no longer supported.'
                 )
                 LOG.warning(log_msg.format(deprecated))
-                del(self.settings_meta[deprecated])
+                del (self.settings_meta[deprecated])
 
     def _issue_api_call(self):
         """Use the API to send the settings meta to the server."""
@@ -358,7 +357,7 @@ class SkillSettingsDownloader:
 
         self.api = DeviceApi()
         self.download_timer = None
-       
+
         if is_backend_disabled():
             self.sync_enabled = False
         else:

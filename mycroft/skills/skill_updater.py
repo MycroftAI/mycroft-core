@@ -73,8 +73,8 @@ class SkillUpdater:
         otherwise use the timestamp on .msm as a basis.
         """
         msm_files_exist = (
-            os.path.exists(self.dot_msm_path) and
-            os.path.exists(self.installed_skills_file_path)
+                os.path.exists(self.dot_msm_path) and
+                os.path.exists(self.installed_skills_file_path)
         )
         if msm_files_exist:
             mtime = os.path.getmtime(self.dot_msm_path)

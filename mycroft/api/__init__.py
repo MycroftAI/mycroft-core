@@ -24,7 +24,6 @@ from mycroft.identity import IdentityManager, identity_lock
 from mycroft.version import VersionManager
 from mycroft.util import get_arch, connected, LOG
 
-
 _paired_cache = False
 
 
@@ -167,9 +166,10 @@ class Api:
 
         if 200 <= response.status_code < 300:
             return data
-        elif (not no_refresh and response.status_code == 401 and not
-                response.url.endswith("auth/token") and
-                self.identity.is_expired()):
+        elif all([not no_refresh,
+                  response.status_code == 401,
+                  not response.url.endswith("auth/token"),
+                  self.identity.is_expired()]):
             self.refresh_token()
             return self.send(self.old_params, no_refresh=True)
         raise HTTPError(data, response=response)
@@ -419,7 +419,7 @@ class DeviceApi(Api):
             "method": "PUT",
             "path": "/" + UUID + "/skillJson",
             "json": to_send
-            })
+        })
 
 
 class STTApi(Api):

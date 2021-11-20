@@ -1,7 +1,4 @@
-
-
 from collections import namedtuple
-
 
 # Intent match response tuple containing
 # intent_service: Name of the service that matched the intent

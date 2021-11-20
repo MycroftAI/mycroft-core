@@ -24,6 +24,7 @@ from mycroft.util.log import LOG
 class _GUIDict(dict):
     """ this is an helper dictionay subclass, it ensures that value changed
     in it are propagated to the GUI service real time"""
+
     def __init__(self, gui, **kwargs):
         self.gui = gui
         super().__init__(**kwargs)
@@ -163,7 +164,7 @@ class SkillGUI:
         self.current_page_idx = -1
         if self.bus:
             self.bus.emit(Message("gui.clear.namespace",
-                                        {"__from": self.skill.skill_id}))
+                                  {"__from": self.skill.skill_id}))
 
     def send_event(self, event_name, params=None):
         """Trigger a gui event.
@@ -176,9 +177,9 @@ class SkillGUI:
         params = params or {}
         if self.bus:
             self.bus.emit(Message("gui.event.send",
-                                    {"__from": self.skill.skill_id,
-                                     "event_name": event_name,
-                                     "params": params}))
+                                  {"__from": self.skill.skill_id,
+                                   "event_name": event_name,
+                                   "params": params}))
 
     def _pages2uri(self, page_names):
         # Convert pages to full reference
@@ -256,11 +257,11 @@ class SkillGUI:
         page_urls = self._pages2uri(page_names)
         if self.bus:
             self.bus.emit(Message("gui.page.show",
-                                    {"page": page_urls,
-                                     "index": index,
-                                     "__from": self.skill.skill_id,
-                                     "__idle": override_idle,
-                                     "__animations": override_animations}))
+                                  {"page": page_urls,
+                                   "index": index,
+                                   "__from": self.skill.skill_id,
+                                   "__idle": override_idle,
+                                   "__animations": override_animations}))
 
     def remove_page(self, page):
         """Remove a single page from the GUI.
@@ -282,8 +283,8 @@ class SkillGUI:
         page_urls = self._pages2uri(page_names)
         if self.bus:
             self.bus.emit(Message("gui.page.delete",
-                                        {"page": page_urls,
-                                         "__from": self.skill.skill_id}))
+                                  {"page": page_urls,
+                                   "__from": self.skill.skill_id}))
 
     def show_text(self, text, title=None, override_idle=None,
                   override_animations=False):
@@ -403,7 +404,7 @@ class SkillGUI:
         if self.bus:
             self.clear()
             self.bus.emit(Message("mycroft.gui.screen.close",
-                                    {"skill_id": self.skill.skill_id}))
+                                  {"skill_id": self.skill.skill_id}))
 
     def shutdown(self):
         """Shutdown gui interface.

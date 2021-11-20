@@ -49,7 +49,7 @@ def remove_submodule_refs(module_name):
     # Remove all references them to in sys.modules
     for m in submodules:
         LOG.debug('Removing sys.modules ref for {}'.format(m))
-        del(sys.modules[m])
+        del (sys.modules[m])
 
 
 def load_skill_module(path, skill_id):
@@ -178,7 +178,7 @@ class SkillLoader:
         if self.instance:
             if not self.instance.reload_skill:
                 LOG.info("skill does not allow reloading!")
-                return False # not allowed
+                return False  # not allowed
             self._unload()
         return self._load()
 
@@ -280,8 +280,8 @@ class SkillLoader:
                               '{} ({})'.format(self.skill_id, repr(e)))
             else:
                 module_is_skill = (
-                    hasattr(skill_module, 'create_skill') and
-                    callable(skill_module.create_skill)
+                        hasattr(skill_module, 'create_skill') and
+                        callable(skill_module.create_skill)
                 )
                 if module_is_skill:
                     return skill_module

@@ -26,7 +26,6 @@ to be a drop in replacement for mycroft-core
 TODO: consider importing from PHAL
 """
 
-
 """ DisplayManager
 
 This module provides basic "state" for the visual representation associated
@@ -131,6 +130,7 @@ class DisplayManager:
     """ The Display manager handles the basic state of the display,
     be it a mark-1 or a mark-2 or even a future Mark-3.
     """
+
     def __init__(self, name=None):
         self.name = name or ""
 

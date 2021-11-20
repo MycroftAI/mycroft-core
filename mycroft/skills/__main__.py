@@ -53,6 +53,7 @@ class DevicePrimer:
         message_bus_client: Bus client used to interact with the system
         config (dict): Mycroft configuration
     """
+
     def __init__(self, message_bus_client, config):
         self.bus = message_bus_client
         self.platform = config['enclosure'].get("platform", "unknown")

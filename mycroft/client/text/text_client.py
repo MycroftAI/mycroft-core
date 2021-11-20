@@ -36,6 +36,7 @@ from mycroft.configuration import Configuration, BASE_FOLDER
 from mycroft.configuration.ovos import is_using_xdg
 
 import locale
+
 # Curses uses LC_ALL to determine how to display chars set it to system
 # default
 locale.setlocale(locale.LC_ALL, "")  # Set LC_ALL to user default
@@ -46,7 +47,7 @@ bus = None  # Mycroft messagebus connection
 config = {}  # Will be populated by the Mycroft configuration
 event_thread = None
 history = []
-chat = []   # chat history, oldest at the lowest index
+chat = []  # chat history, oldest at the lowest index
 line = ""
 scr = None
 log_line_offset = 0  # num lines back in logs to show
@@ -71,7 +72,6 @@ find_str = None
 cy_chat_area = 7  # default chat history height (in lines)
 size_log_area = 0  # max number of visible log lines, calculated during draw
 
-
 # Values used to display the audio meter
 show_meter = True
 meter_peak = 20
@@ -83,8 +83,8 @@ SCR_HELP = 1
 SCR_SKILLS = 2
 screen_mode = SCR_MAIN
 
-subscreen = 0     # for help pages, etc.
-REDRAW_FREQUENCY = 10    # seconds between full redraws
+subscreen = 0  # for help pages, etc.
+REDRAW_FREQUENCY = 10  # seconds between full redraws
 last_redraw = time.time() - (REDRAW_FREQUENCY - 1)  # seed for 1s redraw
 screen_lock = Lock()
 is_screen_dirty = True
@@ -400,7 +400,7 @@ def add_log_message(message):
     global log_lock
 
     with log_lock:
-        message = "@" + message       # the first byte is a code
+        message = "@" + message  # the first byte is a code
         filteredLog.append(message)
         mergedLog.append(message)
 
@@ -618,7 +618,7 @@ def _do_meter(height):
         int((float(meter_thresh) / scale) * height), 0, height - 1)
     clr = curses.color_pair(4)  # dark yellow
 
-    str_level = "{0:3} ".format(int(meter_cur))   # e.g. '  4'
+    str_level = "{0:3} ".format(int(meter_cur))  # e.g. '  4'
     str_thresh = "{0:4.2f}".format(meter_thresh)  # e.g. '3.24'
     meter_width = len(str_level) + len(str_thresh) + 4
     for i in range(0, height):
@@ -647,9 +647,9 @@ def _do_meter(height):
         # draw an asterisk if the audio energy is at this level
         if i <= h_cur:
             if meter_cur > meter_thresh:
-                clr_bar = curses.color_pair(3)   # dark green for loud
+                clr_bar = curses.color_pair(3)  # dark green for loud
             else:
-                clr_bar = curses.color_pair(5)   # dark blue for 'silent'
+                clr_bar = curses.color_pair(5)  # dark blue for 'silent'
             scr.addstr(curses.LINES - 1 - i, curses.COLS - len(str_thresh) - 4,
                        "*", clr_bar)
 
@@ -747,7 +747,7 @@ def do_draw_main(scr):
         if len(log) > 25 and log[5] == '-' and log[8] == '-':
             log = log[11:]  # skip logid & date at the front of log line
         else:
-            log = log[1:]   # just skip the logid
+            log = log[1:]  # just skip the logid
 
         # Categorize log line
         if "| DEBUG    |" in log:
@@ -771,9 +771,9 @@ def do_draw_main(scr):
                 start = 0
             end = start + (curses.COLS - 4)
             if start == 0:
-                log = log[start:end] + "~~~~"   # start....
+                log = log[start:end] + "~~~~"  # start....
             elif end >= len_line - 1:
-                log = "~~~~" + log[start:end]   # ....end
+                log = "~~~~" + log[start:end]  # ....end
             else:
                 log = "~~" + log[start:end] + "~~"  # ..middle..
         if len_line > longest_visible_line:
@@ -868,6 +868,7 @@ def do_draw_main(scr):
 def make_titlebar(title, bar_length):
     return title + " " + ("=" * (bar_length - 1 - len(title)))
 
+
 ##############################################################################
 # Help system
 
@@ -887,49 +888,48 @@ help_struct = [('Log Scrolling shortcuts',
                 [("Ctrl+N / Ctrl+Left",
                   "previous query"),
                  ("Ctrl+P / Ctrl+Right",
-                    "next query")]),
+                  "next query")]),
                ("General Commands (type ':' to enter command mode)",
                 [(":quit or :exit",
                   "exit the program"),
                  (":meter (show|hide)",
-                    "display the microphone level"),
-                    (":keycode (show|hide)",
-                     "display typed key codes (mainly debugging)"),
-                    (":history (# lines)",
-                     "set size of visible history buffer"),
-                    (":clear",
-                     "flush the logs")]),
+                  "display the microphone level"),
+                 (":keycode (show|hide)",
+                  "display typed key codes (mainly debugging)"),
+                 (":history (# lines)",
+                  "set size of visible history buffer"),
+                 (":clear",
+                  "flush the logs")]),
                ("Log Manipulation Commands",
                 [(":filter 'STR'",
                   "adds a log filter (optional quotes)"),
                  (":filter remove 'STR'",
-                    "removes a log filter"),
-                    (":filter (clear|reset)",
-                     "reset filters"),
-                    (":filter (show|list)",
-                     "display current filters"),
-                    (":find 'STR'",
-                     "show logs containing 'str'"),
-                    (":log level (DEBUG|INFO|ERROR)",
-                     "set logging level"),
-                    (":log bus (on|off)",
-                     "control logging of messagebus messages")]),
+                  "removes a log filter"),
+                 (":filter (clear|reset)",
+                  "reset filters"),
+                 (":filter (show|list)",
+                  "display current filters"),
+                 (":find 'STR'",
+                  "show logs containing 'str'"),
+                 (":log level (DEBUG|INFO|ERROR)",
+                  "set logging level"),
+                 (":log bus (on|off)",
+                  "control logging of messagebus messages")]),
                ("Skill Debugging Commands",
                 [(":skills",
                   "list installed Skills"),
                  (":api SKILL",
-                    "show Skill's public API"),
-                    (":activate SKILL",
-                     "activate Skill, e.g. 'activate skill-wiki'"),
-                    (":deactivate SKILL",
-                     "deactivate Skill"),
-                    (":keep SKILL",
-                     "deactivate all Skills except the indicated Skill")])]
+                  "show Skill's public API"),
+                 (":activate SKILL",
+                  "activate Skill, e.g. 'activate skill-wiki'"),
+                 (":deactivate SKILL",
+                  "deactivate Skill"),
+                 (":keep SKILL",
+                  "deactivate all Skills except the indicated Skill")])]
 help_longest = 0
 for s in help_struct:
     for ent in s[1]:
         help_longest = max(help_longest, len(ent[0]))
-
 
 HEADER_SIZE = 2
 HEADER_FOOTER_SIZE = 4
@@ -943,7 +943,6 @@ def num_help_pages():
 
 
 def do_draw_help(scr):
-
     def render_header():
         scr.addstr(0, 0, center(25) + "Mycroft Command Line Help", CLR_HEADING)
         scr.addstr(1, 0, "=" * (curses.COLS - 1), CLR_HEADING)
@@ -1353,7 +1352,7 @@ def gui_main(stdscr):
                     # Don't block, this allows us to refresh the screen while
                     # waiting on initial messagebus connection, etc
                     scr.timeout(1)
-                    c = scr.get_wch()   # unicode char or int for special keys
+                    c = scr.get_wch()  # unicode char or int for special keys
                     if c == -1:
                         continue
             except curses.error:
@@ -1417,8 +1416,8 @@ def gui_main(stdscr):
                 else:
                     last_key = str(code)
 
-            scr.timeout(-1)   # resume blocking
-            if code == 27:    # Hitting ESC twice clears the entry line
+            scr.timeout(-1)  # resume blocking
+            if code == 27:  # Hitting ESC twice clears the entry line
                 hist_idx = -1
                 line = ""
             elif c == curses.KEY_RESIZE:

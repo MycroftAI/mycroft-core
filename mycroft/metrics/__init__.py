@@ -29,6 +29,7 @@ from copy import copy
 
 class _MetricSender(threading.Thread):
     """Thread responsible for sending metrics data."""
+
     def __init__(self):
         super().__init__()
         self.queue = Queue()
@@ -91,6 +92,7 @@ class Stopwatch:
     """
         Simple time measuring class.
     """
+
     def __init__(self):
         self.timestamp = None
         self.time = None

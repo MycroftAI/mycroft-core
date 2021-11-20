@@ -21,6 +21,7 @@ FallbackRange = namedtuple('FallbackRange', ['start', 'stop'])
 
 class FallbackService:
     """Intent Service handling fallback skills."""
+
     def __init__(self, bus):
         self.bus = bus
 

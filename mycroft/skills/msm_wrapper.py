@@ -43,8 +43,6 @@ except ImportError:
     SkillRepo = MockSkillRepo
     from mock_msm.exceptions import MsmException
 
-
-
 MsmConfig = namedtuple(
     'MsmConfig',
     [
@@ -80,7 +78,7 @@ def get_skills_directory(conf=None):
     # create folder if needed
     try:
         makedirs(skills_folder, exist_ok=True)
-    except PermissionError: # old style /opt/mycroft/skills not available
+    except PermissionError:  # old style /opt/mycroft/skills not available
         skills_folder = xdg.BaseDirectory.save_data_path(BASE_FOLDER + '/skills')
         makedirs(skills_folder, exist_ok=True)
 

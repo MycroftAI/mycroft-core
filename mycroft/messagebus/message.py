@@ -21,6 +21,7 @@ import mycroft_bus_client
 
 class Message(mycroft_bus_client.Message):
     """Mycroft specific Message class."""
+
     def utterance_remainder(self):
         """
         For intents get the portion not consumed by Adapt.

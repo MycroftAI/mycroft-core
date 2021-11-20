@@ -20,7 +20,6 @@ from os.path import join, expanduser
 from mycroft.configuration import Configuration
 from mycroft.util.log import LOG
 
-
 # The following lines are replaced during the release process.
 # START_VERSION_BLOCK
 CORE_VERSION_MAJOR = 21

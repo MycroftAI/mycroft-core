@@ -14,29 +14,20 @@
 #
 import time
 from threading import Thread
-import speech_recognition as sr
 import pyaudio
 from pyee import EventEmitter
-from requests import RequestException
-from requests.exceptions import ConnectionError
-
-from mycroft import dialog
 from mycroft.client.speech.hotword_factory import HotWordFactory
 from mycroft.client.speech.mic import MutableMicrophone, ResponsiveRecognizer
 from mycroft.configuration import Configuration
-from mycroft.metrics import MetricsAggregator, Stopwatch, report_timing
+from mycroft.metrics import Stopwatch, report_timing
 from mycroft.session import SessionManager
 from mycroft.stt import STTFactory
-from mycroft.util import connected
 from mycroft.util.log import LOG
 from mycroft.util import find_input_device
 from queue import Queue, Empty
 import json
-from copy import deepcopy
-
 
 MAX_MIC_RESTARTS = 20
-
 
 AUDIO_DATA = 0
 STREAM_START = 1
@@ -167,7 +158,7 @@ class AudioConsumer(Thread):
     @staticmethod
     def _audio_length(audio):
         return float(len(audio.frame_data)) / (
-            audio.sample_rate * audio.sample_width)
+                audio.sample_rate * audio.sample_width)
 
     def process(self, audio, lang=None):
         if audio is None:
@@ -281,7 +272,7 @@ class RecognizerLoop(EventEmitter):
         if not device_index and device_name:
             device_index = find_input_device(device_name)
 
-        LOG.debug('Using microphone (None = default): '+str(device_index))
+        LOG.debug('Using microphone (None = default): ' + str(device_index))
 
         self.microphone = MutableMicrophone(device_index, rate,
                                             mute=self.mute_calls > 0)

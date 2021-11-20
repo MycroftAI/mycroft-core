@@ -32,7 +32,6 @@ from enum import Enum
 
 from mycroft.util.bracket_expansion import expand_parentheses, expand_options
 
-
 # lingua_franca is optional, individual skills may install it if they need
 # to use it
 
@@ -48,6 +47,7 @@ try:
 except ImportError:
     def lingua_franca_error(*args, **kwargs):
         raise ImportError("lingua_franca is not installed")
+
 
     from mycroft.util.bracket_expansion import expand_options
 
@@ -149,7 +149,7 @@ def _duration_handler(time1, lang=None, speech=True, *, time2=None,
                 args, **kwargs: "{}\n".format(msg)
             warning = ("WARN: mycroft.util.format.nice_duration_dt() can't "
                        "subtract " + str(type1) + ". Ignoring 2nd "
-                       "argument '" + str(time2) + "'.")
+                                                  "argument '" + str(time2) + "'.")
             warnings.warn(warning)
             warnings.formatwarning = _tmp
             duration = time1
@@ -207,12 +207,12 @@ def _duration_handler(time1, lang=None, speech=True, *, time2=None,
                 out += " "
             out += pronounce_number(minutes, lang) + " "
             out += _translate_word("minute" if minutes ==
-                                   1 else "minutes", lang)
+                                               1 else "minutes", lang)
 
         if ((seconds > 0 and resolution.value >=
              TimeResolution.SECONDS.value) or
-            (milliseconds > 0 and resolution.value ==
-             TimeResolution.MILLISECONDS.value)):
+                (milliseconds > 0 and resolution.value ==
+                 TimeResolution.MILLISECONDS.value)):
 
             if resolution.value == TimeResolution.MILLISECONDS.value:
                 seconds += milliseconds
@@ -224,7 +224,7 @@ def _duration_handler(time1, lang=None, speech=True, *, time2=None,
             # speaking "zero point five seconds" is better than "point five"
             out += pronounce_number(seconds, lang) + " "
             out += _translate_word("second" if seconds ==
-                                   1 else "seconds", lang)
+                                               1 else "seconds", lang)
 
     else:
         # M:SS, MM:SS, H:MM:SS, Dd H:MM:SS format
@@ -251,7 +251,7 @@ def _duration_handler(time1, lang=None, speech=True, *, time2=None,
                     out += "0"
             out += str(minutes) + ":"
             if (seconds > 0 and resolution.value >
-                    TimeResolution.MINUTES.value) or clock:
+                TimeResolution.MINUTES.value) or clock:
                 out += _seconds_str
             else:
                 out += "00"

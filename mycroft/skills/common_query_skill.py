@@ -177,7 +177,7 @@ class CommonQuerySkill(MycroftSkill, ABC):
         wc_mod = float(float(answer_size) / float(WORD_COUNT_DIVISOR)) * 2
 
         confidence = self.level_confidence[level] + \
-            consumed_pct + bonus + num_sentences + relevance + wc_mod
+                     consumed_pct + bonus + num_sentences + relevance + wc_mod
 
         return confidence
 

@@ -85,9 +85,9 @@ class FallbackSkill(MycroftSkill):
                             status = True
                             handler_name = get_handler_name(handler)
                             bus.emit(message.forward(
-                                     'mycroft.skill.handler.complete',
-                                     data={'handler': "fallback",
-                                           "fallback_handler": handler_name}))
+                                'mycroft.skill.handler.complete',
+                                data={'handler': "fallback",
+                                      "fallback_handler": handler_name}))
                             break
                     except Exception:
                         LOG.exception('Exception in fallback.')

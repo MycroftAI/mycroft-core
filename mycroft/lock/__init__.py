@@ -17,7 +17,6 @@ from signal import getsignal, signal, SIGKILL, SIGINT, SIGTERM, \
 from mycroft.configuration import BASE_FOLDER
 import os  # Operating System functions
 
-
 #
 # Wrapper around chain of handler functions for a specific system level signal.
 # Often used to trap Ctrl-C for specific application purposes.

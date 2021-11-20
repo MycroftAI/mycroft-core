@@ -22,9 +22,8 @@ from threading import Thread, Lock
 from mycroft.messagebus.client import MessageBusClient
 from mycroft.messagebus.message import Message
 
-
 bus = None
-buffer = None       # content will show on the CLI "GUI" representation
+buffer = None  # content will show on the CLI "GUI" representation
 msgs = []
 
 loaded = []
@@ -72,7 +71,7 @@ def build_output_buffer():
     buffer.append("MESSAGES")
     buffer.append("-----------------")
     for m in msgs:
-        if len(buffer) > 20:    # cap out at 20 lines total
+        if len(buffer) > 20:  # cap out at 20 lines total
             return
         buffer.append(m)
 
@@ -87,13 +86,13 @@ def handle_gui_ready(msg):
     # Create the websocket for GUI communications
     port = msg.data.get("port")
     if port:
-        log_message("Connecting CLI GUI on "+str(port))
+        log_message("Connecting CLI GUI on " + str(port))
         ws = websocket.WebSocketApp("ws://0.0.0.0:" + str(port) + "/gui",
                                     on_message=on_gui_message,
                                     on_error=on_gui_error,
                                     on_close=on_gui_close)
 
-        log_message("WS = "+str(ws))
+        log_message("WS = " + str(ws))
         event_thread = Thread(target=gui_connect, args=[ws])
         event_thread.setDaemon(True)
         event_thread.start()
@@ -101,7 +100,7 @@ def handle_gui_ready(msg):
 
 def gui_connect(ws):
     # Once the websocket has connected, just watch it for speak events
-    log_message("GUI Connected"+str(ws))
+    log_message("GUI Connected" + str(ws))
     ws.on_open = on_gui_open
     ws.run_forever()
 
@@ -117,7 +116,7 @@ def on_gui_message(ws, payload):
     global vars
     try:
         msg = json.loads(payload)
-        log_message("Msg: "+str(payload))
+        log_message("Msg: " + str(payload))
         type = msg.get("type")
         if type == "mycroft.session.set":
             skill = msg.get("namespace")
@@ -151,7 +150,7 @@ def on_gui_message(ws, payload):
         build_output_buffer()
     except Exception as e:
         log_message(repr(e))
-        log_message("Invalid JSON: "+str(payload))
+        log_message("Invalid JSON: " + str(payload))
 
 
 def on_gui_close(ws):
@@ -159,4 +158,4 @@ def on_gui_close(ws):
 
 
 def on_gui_error(ws, err):
-    log_message("GUI error: "+str(err))
+    log_message("GUI error: " + str(err))

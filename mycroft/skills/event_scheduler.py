@@ -56,6 +56,7 @@ class EventScheduler(Thread):
         bus:            Mycroft messagebus (mycroft.messagebus)
         schedule_file:  File to store pending events to on shutdown
     """
+
     def __init__(self, bus, schedule_file='schedule.json', autostart=True):
         super().__init__()
 
@@ -72,7 +73,7 @@ class EventScheduler(Thread):
         self.schedule_file = old_schedule_path
         if is_using_xdg():
             new_schedule_path = join(
-                    xdg.BaseDirectory.load_first_config(BASE_FOLDER), schedule_file)
+                xdg.BaseDirectory.load_first_config(BASE_FOLDER), schedule_file)
             if isfile(old_schedule_path):
                 shutil.move(old_schedule_path, new_schedule_path)
             self.schedule_file = new_schedule_path
@@ -279,6 +280,7 @@ class EventScheduler(Thread):
 
 class EventSchedulerInterface:
     """Interface for accessing the event scheduler over the message bus."""
+
     def __init__(self, name, sched_id=None, bus=None):
         self.name = name
         self.sched_id = sched_id or self.__class__.__name__

@@ -31,6 +31,7 @@ class MonotonicEvent(Event):
     affected by changes in system time. This class wraps the Event class
     wait() method with logic guards ensuring monotonic operation.
     """
+
     def wait_timeout(self, timeout):
         """Handle timeouts in a monotonic way.
 

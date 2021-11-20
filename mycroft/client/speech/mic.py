@@ -49,7 +49,6 @@ from mycroft.client.speech.data_structures import RollingMean, \
     CyclicAudioBuffer
 from mycroft.util import resolve_resource_file
 
-
 WakeWordData = namedtuple('WakeWordData',
                           ['audio', 'found', 'stopped', 'end_audio'])
 
@@ -223,6 +222,7 @@ class NoiseTracker:
         silence_after_loud (float): time of silence to finalize the sentence.
                                     default 0.25 seconds.
     """
+
     def __init__(self, minimum, maximum, sec_per_buffer, loud_time_limit,
                  silence_time_limit, silence_after_loud_time=0.25):
         self.min_level = minimum
@@ -439,11 +439,11 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
                 yield ww
 
     def _record_phrase(
-        self,
-        source,
-        sec_per_buffer,
-        stream=None,
-        ww_frames=None
+            self,
+            source,
+            sec_per_buffer,
+            stream=None,
+            ww_frames=None
     ):
         """Record an entire spoken phrase.
 
@@ -517,7 +517,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
                     energy,
                     self.energy_threshold,
                     int(source.muted)
-                    )
+                )
                 )
 
     def _skip_wake_word(self):
@@ -718,7 +718,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         while not said_wake_word and not self._stop_signaled:
             if self._skip_wake_word():
                 return WakeWordData(audio_data, False,
-                                    self._stop_signaled, ww_frames),  \
+                                    self._stop_signaled, ww_frames), \
                        self.config.get("lang", "en-us")
             chunk = self.record_sound_chunk(source)
             audio_buffer.append(chunk)
@@ -754,7 +754,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
                     self._handle_hotword_found(hotword, audio_data, source)
                     if listen and not self.loop.state.sleeping:
                         return WakeWordData(audio_data, said_wake_word,
-                            self._stop_signaled, ww_frames), stt_lang
+                                            self._stop_signaled, ww_frames), stt_lang
 
                 if said_hot_word:
                     # reset bytearray to store wake word audio in, else many
@@ -834,8 +834,8 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         if self.dynamic_energy_threshold and energy > 0:
             # account for different chunk sizes and rates
             damping = (
-                self.dynamic_energy_adjustment_damping ** seconds_per_buffer)
+                    self.dynamic_energy_adjustment_damping ** seconds_per_buffer)
             target_energy = energy * self.energy_ratio
             self.energy_threshold = (
-                self.energy_threshold * damping +
-                target_energy * (1 - damping))
+                    self.energy_threshold * damping +
+                    target_energy * (1 - damping))

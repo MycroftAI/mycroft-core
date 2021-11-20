@@ -1,7 +1,11 @@
 {
   "unit system": {
-    "metric": {"system_unit": "metric"},
-    "imperial": {"system_unit": "imperial"}
+    "metric": {
+      "system_unit": "metric"
+    },
+    "imperial": {
+      "system_unit": "imperial"
+    }
   },
   "location": {
     "stockholm": {
