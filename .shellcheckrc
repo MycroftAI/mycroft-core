@@ -1,0 +1,3 @@
+# Disable sourcing errors
+disable=SC1090
+disable=SC1091
