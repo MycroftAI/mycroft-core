@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os
-from os.path import join, dirname, expanduser, exists
+from os.path import join, dirname, expanduser
 
 import xdg.BaseDirectory
 
@@ -23,24 +23,11 @@ SYSTEM_CONFIG = os.environ.get('MYCROFT_SYSTEM_CONFIG',
 # Make sure we support the old location still
 # Deprecated and will be removed eventually
 OLD_USER_CONFIG = join(expanduser('~'), '.mycroft/mycroft.conf')
-USER_CONFIG = join(xdg.BaseDirectory.save_config_path('mycroft'),
-                   'mycroft.conf')
+USER_CONFIG = join(xdg.BaseDirectory.xdg_config_home,
+                   'mycroft',
+                   'mycroft.conf'
+                   )
 
 REMOTE_CONFIG = "mycroft.ai"
 WEB_CONFIG_CACHE = os.environ.get('MYCROFT_WEB_CACHE',
                                   '/var/tmp/mycroft_web_cache.json')
-
-
-def __ensure_folder_exists(path):
-    """ Make sure the directory for the specified path exists.
-
-        Args:
-            path (str): path to config file
-     """
-    directory = dirname(path)
-    if not exists(directory):
-        os.makedirs(directory)
-
-
-__ensure_folder_exists(WEB_CONFIG_CACHE)
-__ensure_folder_exists(USER_CONFIG)
