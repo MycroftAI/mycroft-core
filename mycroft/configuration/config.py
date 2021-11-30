@@ -236,12 +236,12 @@ class Configuration:
                 _log_old_location_deprecation()
                 configs.append(LocalConf(OLD_USER_CONFIG))
 
+            # Then use the system config (/etc/mycroft/mycroft.conf)
+            configs.append(LocalConf(SYSTEM_CONFIG))
+
             # Then use remote config
             if remote:
                 configs.append(RemoteConf())
-
-            # Then use the system config (/etc/mycroft/mycroft.conf)
-            configs.append(LocalConf(SYSTEM_CONFIG))
 
             # Then use the config that comes with the package
             configs.append(LocalConf(DEFAULT_CONFIG))

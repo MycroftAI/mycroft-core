@@ -86,7 +86,8 @@ class LOG:
         cls.handler = logging.StreamHandler(sys.stdout)
         cls.handler.setFormatter(formatter)
 
-        config = mycroft.configuration.Configuration.get(remote=False)
+        config = mycroft.configuration.Configuration.get(cache=False,
+                                                         remote=False)
         if config.get('log_format'):
             formatter = logging.Formatter(config.get('log_format'), style='{')
             cls.handler.setFormatter(formatter)
