@@ -124,7 +124,7 @@ class SkillManager(Thread):
         # Set watchdog to argument or function returning None
         self._watchdog = watchdog or (lambda: None)
         self._stop_event = Event()
-        self._connected_event = Event()
+        # self._connected_event = Event()
         self.config = Configuration.get()
         self.upload_queue = UploadQueue()
 
@@ -137,7 +137,6 @@ class SkillManager(Thread):
         self.empty_skill_dirs = set()  # Save a record of empty skill dirs.
 
         # Statuses
-        self._alive_status = False  # True after priority skills has loaded
         self._loaded_status = False  # True after all skills has loaded
 
         self.skill_updater = SkillUpdater()
@@ -150,10 +149,10 @@ class SkillManager(Thread):
         self.bus.on('skill.converse.request', self.handle_converse_request)
 
         # Update on initial connection
-        self.bus.on(
-            'mycroft.internet.connected',
-            lambda x: self._connected_event.set()
-        )
+        # self.bus.on(
+        #     'mycroft.internet.connected',
+        #     lambda x: self._connected_event.set()
+        # )
 
         # Update upon request
         self.bus.on('skillmanager.update', self.schedule_now)
@@ -202,39 +201,24 @@ class SkillManager(Thread):
         """Trigger upload of skills manifest after pairing."""
         self._start_settings_update()
 
-    def load_priority(self):
-        skills = {skill.name: skill for skill in self.msm.all_skills}
-        priority_skills = self.skills_config.get("priority_skills", [])
-        for skill_name in priority_skills:
-            skill = skills.get(skill_name)
-            if skill is not None:
-                if not skill.is_local:
-                    try:
-                        self.msm.install(skill)
-                    except Exception:
-                        log_msg = 'Downloading priority skill: {} failed'
-                        LOG.exception(log_msg.format(skill_name))
-                        continue
-                loader = self._load_skill(skill.path)
-                if loader:
-                    self.upload_queue.put(loader)
-            else:
-                LOG.error(
-                    'Priority skill {} can\'t be found'.format(skill_name)
-                )
-
-        self._alive_status = True
+    def load_on_startup(self):
+        """Handle initial skill load."""
+        LOG.info('Loading installed skills...')
+        self._load_new_skills()
+        LOG.info("Skills all loaded!")
+        self.bus.emit(Message('mycroft.skills.initialized'))
+        self._loaded_status = True
 
     def run(self):
         """Load skills and update periodically from disk and internet."""
         self._remove_git_locks()
-        self._connected_event.wait()
-        if (not self.skill_updater.defaults_installed() and
-                self.skills_config["auto_update"]):
-            LOG.info('Not all default skills are installed, '
-                     'performing skill update...')
-            self.skill_updater.update_skills()
-        self._load_on_startup()
+        # self._connected_event.wait()
+        # if (not self.skill_updater.defaults_installed() and
+        #         self.skills_config["auto_update"]):
+        #     LOG.info('Not all default skills are installed, '
+        #              'performing skill update...')
+        #     self.skill_updater.update_skills()
+        # self._load_on_startup()
 
         # Sync backend and skills.
         if is_paired() and not self.upload_queue.started:
@@ -267,14 +251,6 @@ class SkillManager(Thread):
         for i in glob(os.path.join(self.msm.skills_dir, '*/.git/index.lock')):
             LOG.warning('Found and removed git lock file: ' + i)
             os.remove(i)
-
-    def _load_on_startup(self):
-        """Handle initial skill load."""
-        LOG.info('Loading installed skills...')
-        self._load_new_skills()
-        LOG.info("Skills all loaded!")
-        self.bus.emit(Message('mycroft.skills.initialized'))
-        self._loaded_status = True
 
     def _reload_modified_skills(self):
         """Handle reload of recently changed skill(s)"""
@@ -357,10 +333,6 @@ class SkillManager(Thread):
         )
         if do_skill_update:
             self.skill_updater.update_skills()
-
-    def is_alive(self, message=None):
-        """Respond to is_alive status request."""
-        return self._alive_status
 
     def is_all_loaded(self, message=None):
         """ Respond to all_loaded status request."""

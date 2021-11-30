@@ -16,6 +16,7 @@
 import threading
 import time
 
+from mycroft.api import is_paired, BackendDown
 from mycroft.client.enclosure.base import Enclosure
 from mycroft.enclosure.hardware_enclosure import HardwareEnclosure
 from mycroft.messagebus.message import Message
@@ -146,6 +147,8 @@ class ChaseLedThread(threading.Thread):
 
 
 class EnclosureMark2(Enclosure):
+    is_raspberry__pi_platform = True
+
     def __init__(self):
         super().__init__()
         self.display_bus_client = None
@@ -160,6 +163,7 @@ class EnclosureMark2(Enclosure):
         self.chaseLedThread = None
         self.pulseLedThread = None
         self.ready_services = []
+        self.is_paired = False
 
         self.system_volume = 0.5   # pulse audio master system volume
         # if you want to do anything with the system volume
@@ -226,10 +230,12 @@ class EnclosureMark2(Enclosure):
         self.bus.on('mycroft.volume.get', self.on_volume_get)
         self.bus.on('mycroft.volume.duck', self.on_volume_duck)
         self.bus.on('mycroft.volume.unduck', self.on_volume_unduck)
-        self.bus.on('recognizer_loop:record_begin', self.handle_start_recording)
+        self.bus.on('recognizer_loop:record_begin',
+                    self.handle_start_recording)
         self.bus.on('recognizer_loop:record_end', self.handle_stop_recording)
         self.bus.on('recognizer_loop:audio_output_end', self.handle_end_audio)
-        self.bus.on('mycroft.speech.recognition.unknown', self.handle_end_audio)
+        self.bus.on('mycroft.speech.recognition.unknown',
+                    self.handle_end_audio)
         self.bus.on('mycroft.stop.handled', self.handle_end_audio)
         self.bus.on('mycroft.capabilities.get', self.on_capabilities_get)
         for service in SERVICES:
@@ -343,7 +349,16 @@ class EnclosureMark2(Enclosure):
         self.ready_services.sort()
         if tuple(self.ready_services) == SERVICES:
             LOG.info("All Mycroft services are initialized.")
-            self.bus.emit(Message("mycroft.initialized"))
+            self.bus.emit(Message("mycroft.started"))
+
+    def _update_system(self):
+        """Skips system update using Admin service.
+
+        The Mark II uses an external vendor, Pantacor, to manage software
+        updates.  Mycroft Core does not control when Pantacor updates are
+        performed.
+        """
+        pass
 
     def terminate(self):
         self.hardware.leds._set_led(10, (0, 0, 0))  # blank out reserved led

@@ -53,10 +53,10 @@ class DevicePrimer(object):
 
     Args:
         message_bus_client: Bus client used to interact with the system
-        config (dict): Mycroft configuration
     """
-    def __init__(self, message_bus_client, config):
+    def __init__(self, message_bus_client):
         self.bus = message_bus_client
+        config = Configuration.get()
         self.platform = config['enclosure'].get("platform", "unknown")
         self.enclosure = EnclosureAPI(self.bus)
         self.is_paired = False
@@ -198,46 +198,47 @@ def main(alive_hook=on_alive, started_hook=on_started, ready_hook=on_ready,
     # Create PID file, prevent multiple instances of this service
     mycroft.lock.Lock('skills')
     bus = start_message_bus_client("SKILLS")
-    bus.emit(Message("skills.initialize.started"))
     callbacks = StatusCallbackMap(on_started=started_hook,
                                   on_alive=alive_hook,
                                   on_ready=ready_hook,
                                   on_error=error_hook,
                                   on_stopping=stopping_hook)
     status = ProcessStatus('skills', bus, callbacks)
+    _set_initialize_started_status(bus, status)
+    _load_language()
+    _register_intent_services(bus)
+    event_scheduler = EventScheduler(bus)
+    SkillApi.connect_bus(bus)
+
+    _wait_for_internet_connection()
+    # device_primer = DevicePrimer(bus)
+    # device_primer.prepare_device()
+    skill_manager = SkillManager(bus, watchdog)
+    skill_manager.load_on_startup()
+
+    while not skill_manager.is_all_loaded():
+        time.sleep(0.1)
+    _set_initialize_ended_status(bus, status)
+    skill_manager.start()
+
+    wait_for_exit_signal()
+    shutdown(skill_manager, event_scheduler, status)
+
+
+def _set_initialize_started_status(bus, status):
+    bus.emit(Message("skills.initialize.started"))
     status.set_started()
 
+
+def _load_language():
     config = Configuration.get()
     lang_code = config.get("lang", "en-us")
     load_languages([lang_code, "en-us"])
 
-    # Connect this process to the Mycroft message bus
-    _register_intent_services(bus)
-    event_scheduler = EventScheduler(bus)
 
-    SkillApi.connect_bus(bus)
-    skill_manager = _initialize_skill_manager(bus, watchdog)
-
-    _wait_for_internet_connection()
-
-    if skill_manager is None:
-        skill_manager = _initialize_skill_manager(bus, watchdog)
-
-    device_primer = DevicePrimer(bus, config)
-    device_primer.prepare_device()
-    skill_manager.start()
-    while not skill_manager.is_alive():
-        time.sleep(0.1)
-    status.set_alive()
-
-    while not skill_manager.is_all_loaded():
-        time.sleep(0.1)
+def _set_initialize_ended_status(bus, status):
     bus.emit(Message("skills.initialize.ended"))
     status.set_ready()
-
-    wait_for_exit_signal()
-    status.set_stopping()
-    shutdown(skill_manager, event_scheduler)
 
 
 def _register_intent_services(bus):
@@ -255,35 +256,14 @@ def _register_intent_services(bus):
     return service
 
 
-def _initialize_skill_manager(bus, watchdog):
-    """Create a thread that monitors the loaded skills, looking for updates
-
-    Returns:
-        SkillManager instance or None if it couldn't be initialized
-    """
-    try:
-        skill_manager = SkillManager(bus, watchdog)
-        skill_manager.load_priority()
-    except MsmException:
-        # skill manager couldn't be created, wait for network connection and
-        # retry
-        skill_manager = None
-        LOG.info(
-            'MSM is uninitialized and requires network connection to fetch '
-            'skill information\nWill retry after internet connection is '
-            'established.'
-        )
-
-    return skill_manager
-
-
 def _wait_for_internet_connection():
     while not connected():
         time.sleep(1)
 
 
-def shutdown(skill_manager, event_scheduler):
+def shutdown(skill_manager, event_scheduler, status):
     LOG.info('Shutting down Skills service')
+    status.set_stopping()
     if event_scheduler is not None:
         event_scheduler.shutdown()
     # Terminate all running threads that update skills
