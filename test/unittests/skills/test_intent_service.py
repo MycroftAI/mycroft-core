@@ -214,10 +214,16 @@ class TestLanguageExtraction(TestCase):
         self.assertEqual(_get_message_lang(msg), 'sv-se')
 
 
-def create_vocab_msg(keyword, value):
+def create_old_style_vocab_msg(keyword, value):
     """Create a message for registering an adapt keyword."""
     return Message('register_vocab',
                    {'start': value, 'end': keyword})
+
+
+def create_vocab_msg(keyword, value):
+    """Create a message for registering an adapt keyword."""
+    return Message('register_vocab',
+                   {'entity_value': value, 'entity_type': keyword})
 
 
 def get_last_message(bus):
@@ -230,13 +236,26 @@ class TestIntentServiceApi(TestCase):
     def setUp(self):
         self.intent_service = IntentService(mock.Mock())
 
-    def setup_simple_adapt_intent(self):
-        msg = create_vocab_msg('testKeyword', 'test')
+    def setup_simple_adapt_intent(self,
+                                  msg=create_vocab_msg('testKeyword', 'test')):
         self.intent_service.handle_register_vocab(msg)
 
         intent = IntentBuilder('skill:testIntent').require('testKeyword')
         msg = Message('register_intent', intent.__dict__)
         self.intent_service.handle_register_intent(msg)
+
+    def test_keyword_backwards_compatibility(self):
+        self.setup_simple_adapt_intent(
+            create_old_style_vocab_msg('testKeyword', 'test')
+        )
+
+        # Check that the intent is returned
+        msg = Message('intent.service.adapt.get', data={'utterance': 'test'})
+        self.intent_service.handle_get_adapt(msg)
+
+        reply = get_last_message(self.intent_service.bus)
+        self.assertEqual(reply.data['intent']['intent_type'],
+                         'skill:testIntent')
 
     def test_get_adapt_intent(self):
         self.setup_simple_adapt_intent()
@@ -300,8 +319,8 @@ class TestIntentServiceApi(TestCase):
         msg = Message('intent.service.adapt.vocab.manifest.get')
         self.intent_service.handle_vocab_manifest(msg)
         reply = get_last_message(self.intent_service.bus)
-        value = reply.data['vocab'][0]['start']
-        keyword = reply.data['vocab'][0]['end']
+        value = reply.data['vocab'][0]['entity_value']
+        keyword = reply.data['vocab'][0]['entity_type']
         self.assertEqual(keyword, 'testKeyword')
         self.assertEqual(value, 'test')
 

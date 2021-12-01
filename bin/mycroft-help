@@ -15,7 +15,7 @@
 # limitations under the License.
 
 SOURCE="${BASH_SOURCE[0]}"
-cd -P "$( dirname "$SOURCE" )"/..
+cd -P "$( dirname "$SOURCE" )"/.. || exit
 DIR="$( pwd )"
 
 echo -e "\e[36mMycroft\e[0m is your open source voice assistant.  Full source"

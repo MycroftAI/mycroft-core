@@ -16,12 +16,15 @@
 
 import inflection
 import json
-from os.path import exists, isfile, join
+import os
 import re
+from os.path import exists, isfile, join, dirname
 
 from requests import RequestException
 import xdg.BaseDirectory
 
+from mycroft.util.combo_lock import ComboLock
+from mycroft.util.file_utils import get_temp_path
 from mycroft.util.json_helper import load_commented_json, merge_dict
 from mycroft.util.log import LOG
 
@@ -85,6 +88,8 @@ def translate_list(config, values):
 
 class LocalConf(dict):
     """Config dictionary from file."""
+    _lock = ComboLock(get_temp_path('local-conf.lock'))
+
     def __init__(self, path):
         super(LocalConf, self).__init__()
         if path:
@@ -116,20 +121,26 @@ class LocalConf(dict):
         The cache will be used if the remote is unreachable to load settings
         that are as close to the user's as possible.
         """
-        path = path or self.path
-        with open(path, 'w') as f:
-            json.dump(self, f, indent=2)
+        with self._lock:
+            path = path or self.path
+            config_dir = dirname(path)
+            if not exists(config_dir):
+                os.makedirs(config_dir)
+
+            with open(path, 'w') as f:
+                json.dump(self, f, indent=2)
 
     def merge(self, conf):
         merge_dict(self, conf)
 
 
 class RemoteConf(LocalConf):
+    _lock = ComboLock(get_temp_path('remote-conf.lock'))
     """Config dictionary fetched from mycroft.ai."""
     def __init__(self, cache=None):
         super(RemoteConf, self).__init__(None)
 
-        cache = cache or join(xdg.BaseDirectory.save_cache_path('mycroft'),
+        cache = cache or join(xdg.BaseDirectory.xdg_cache_home, 'mycroft',
                               'web_cache.json')
         from mycroft.api import is_paired
         if not is_paired():
@@ -179,7 +190,7 @@ def _log_old_location_deprecation():
                 " Note that this location is deprecated and will"
                 " not be used in the future\n"
                 " Please move it to "
-                f"{xdg.BaseDirectory.save_config_path('mycroft')}")
+                f"{join(xdg.BaseDirectory.xdg_config_home, 'mycroft')}")
 
 
 class Configuration:
@@ -236,12 +247,12 @@ class Configuration:
                 _log_old_location_deprecation()
                 configs.append(LocalConf(OLD_USER_CONFIG))
 
+            # Then use the system config (/etc/mycroft/mycroft.conf)
+            configs.append(LocalConf(SYSTEM_CONFIG))
+
             # Then use remote config
             if remote:
                 configs.append(RemoteConf())
-
-            # Then use the system config (/etc/mycroft/mycroft.conf)
-            configs.append(LocalConf(SYSTEM_CONFIG))
 
             # Then use the config that comes with the package
             configs.append(LocalConf(DEFAULT_CONFIG))

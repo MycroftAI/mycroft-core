@@ -23,4 +23,7 @@ from .tools import (
     wait_for_audio_service,
     wait_for_dialog,
     wait_for_dialog_match,
+    VoightKampffCriteriaMatcher,
+    VoightKampffDialogMatcher,
+    VoightKampffMessageMatcher
 )

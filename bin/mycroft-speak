@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 SOURCE="${BASH_SOURCE[0]}"
-cd -P "$( dirname "$SOURCE" )"
+cd -P "$( dirname "$SOURCE" )" || exit
 DIR="$( pwd )"
 
 # Sets var 1 to stdin if no args were given
@@ -23,5 +23,5 @@ set -- "${1:-$(</dev/stdin)}" "${@:2}"
 source "$DIR/../venv-activate.sh" -q
 
 # Send a message to be spoken
-data="$@"
+data="$*"
 output=$(python -m mycroft.messagebus.send "speak"  "{\"utterance\": \"$data\"}")

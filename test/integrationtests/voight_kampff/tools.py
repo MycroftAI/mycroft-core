@@ -15,15 +15,188 @@
 """Common tools to use when creating step files for behave tests."""
 
 from threading import Event
+from typing import Any, Callable, List, Tuple
 import time
 
 from mycroft.audio.utils import wait_while_speaking
 from mycroft.messagebus import Message
 
-
 DEFAULT_TIMEOUT = 10
 
 
+class VoightKampffMessageMatcher:
+    """Matches a specified message type to messages emitted on the bus.
+
+    Usage:
+        Intended for use in a single test condition.
+
+        matcher = VoightKampffMessageMatcher(message_type, context)
+        match_found, error_message = matcher.match()
+        assert match_found, error_message
+
+    Attributes:
+        message_type: identifier of the message to search for on the bus
+        context: the Behave context from the test utilizing this class
+        match_event: mechanism for knowing when a match is found
+        error_message: message that can be used by the test to communicate
+            the reason for a failed match to the tester.
+    """
+    def __init__(self, context: Any, message_type: str):
+        self.message_type = message_type
+        self.context = context
+        self.match_event = Event()
+        self.error_message = ""
+
+    @property
+    def match_found(self):
+        return self.match_event.is_set()
+
+    def match(self, timeout: int = None):
+        """Attempts to match the requested message type to emitted bus events.
+
+        Use a message bus event handler to capture any message emitted on the
+        bus that matches the message type specified by the caller.  Also
+        checks any messages emitted prior to the handler being defined to
+        protect against a race condition.
+
+        Args:
+            timeout: number of seconds to attempt matching before giving up
+        """
+        timeout = timeout or self.context.step_timeout
+        self.context.bus.on(self.message_type, self.handle_message)
+        self._check_historical_messages()
+        if not self.match_event.is_set():
+            self.match_event.wait(timeout=timeout)
+        self.context.bus.remove(self.message_type, self.handle_message)
+        if not self.match_found:
+            self._build_error_message()
+
+        return self.match_found, self.error_message
+
+    def _check_historical_messages(self):
+        """Searches messages emitted before the event handler was defined."""
+        for message in self.context.bus.get_messages(self.message_type):
+            self.handle_message(message)
+            if self.match_found:
+                break
+        self.context.bus.clear_messages()
+
+    def handle_message(self, message: Message):
+        """Applies matching criteria to the emitted event.
+
+        Args:
+            message: message emitted by bus with the requested message type
+        """
+        self.context.matched_message = message
+        self.match_event.set()
+
+    def _build_error_message(self):
+        """Builds a message that communicates the failure to the test."""
+        self.error_message = (
+            f"Expected message type {self.message_type} was not emitted."
+        )
+
+
+class VoightKampffDialogMatcher(VoightKampffMessageMatcher):
+    """Variation of VoightKampffEventMatcher for matching dialogs.
+
+    Usage:
+        Intended for use in a single test condition.
+
+        matcher = VoightKampffDialogMatcher(context, dialogs)
+        match_found, error_message = matcher.match()
+        assert match_found, error_message
+
+    Attributes:
+        dialogs: one or more dialog names that will constitute a match
+        speak_messages: bus messages with message type of "speak" captured
+            in the matching process
+    """
+    def __init__(self, context: Any, dialogs: List[str]):
+        super().__init__(context, message_type="speak")
+        self.dialogs = dialogs
+        self.speak_messages = list()
+
+    def handle_message(self, message: Message):
+        """Applies matching criteria to the emitted event.
+
+        Args:
+            message: message emitted by bus with the requested message type
+        """
+        self.speak_messages.append(message)
+        dialog = message.data.get('meta', {}).get('dialog')
+        if dialog in self.dialogs:
+            wait_while_speaking()
+            self.context.matched_message = message
+            self.match_event.set()
+
+    def _build_error_message(self):
+        """Builds a message that communicates the failure to the test."""
+        self.error_message = (
+            'Expected Mycroft to respond with one of:\n'
+            f"\t{', '.join(self.dialogs)}\n"
+            "Actual response(s):\n"
+        )
+        if self.speak_messages:
+            for message in self.speak_messages:
+                meta = message.data.get("meta")
+                if meta is not None:
+                    if 'dialog' in meta:
+                        self.error_message += f"\tDialog: {meta['dialog']}"
+                    if 'skill' in meta:
+                        self.error_message += (
+                            f" (from {meta['skill']} skill)\n"
+                        )
+        else:
+            self.error_message += "\tMycroft didn't respond"
+
+
+class VoightKampffCriteriaMatcher(VoightKampffMessageMatcher):
+    """Variation of VoightKampffEventMatcher for matching event data.
+
+    In some cases, matching the message type is not enough.  The test
+    requires data in the message payload to match a specified criteria
+    to pass.
+
+    Usage:
+        Intended for use in a single test condition.
+
+        matcher = VoightKampffCriteriaMatcher(
+        message_type, context, criteria_matcher
+        )
+        match_found, error_message = matcher.match()
+        assert match_found, error_message
+
+    Attributes:
+        criteria_matcher: Function to determine if a message contains
+            the data necessary for the test case to pass
+    """
+    def __init__(self, context: Any, message_type: str,
+                 criteria_matcher: Callable):
+        super().__init__(context, message_type)
+        self.criteria_matcher = criteria_matcher
+        self.error_message = ""
+
+    def handle_message(self, message: Message):
+        """Applies matching criteria to the emitted event.
+
+        Args:
+            message: message emitted by bus with the requested message type
+        """
+        status, error_message = self.criteria_matcher(message)
+        self.error_message += error_message
+        if status:
+            self.context.matched_message = message
+            self.match_event.set()
+
+    def _build_error_message(self):
+        """Builds a message that communicates the failure to the test."""
+        # The error message is built from the return value of the criteria
+        # matcher so this method is not needed.
+        pass
+
+
+# TODO: Remove in 21.08
 class CriteriaWaiter:
     """Wait for a message to meet a certain criteria.
 
@@ -43,7 +216,6 @@ class CriteriaWaiter:
         """Reset the wait state."""
         self.result.clear()
 
-    # TODO: Remove in 21.08
     def wait_unspecific(self, timeout):
         """
         Wait for a specified time for criteria to be fulfilled by any message.
@@ -143,10 +315,9 @@ class CriteriaWaiter:
             return self.wait_specific(timeout)
 
 
-def then_wait(msg_type, criteria_func, context, timeout=None):
-    """Wait for a specific message type to fullfil a criteria.
-
-    Uses an event-handler to not repeatedly loop.
+def then_wait(msg_type: str, criteria_func: Callable, context: Any,
+              timeout: int = None) -> Tuple[bool, str]:
+    """Wait for a specific message type to fulfill a criteria.
 
     Args:
         msg_type: message type to watch
@@ -157,14 +328,16 @@ def then_wait(msg_type, criteria_func, context, timeout=None):
                  provided will override the normal normal step timeout.
 
     Returns:
-        (result (bool), debug (str)) Result containing status and debug
-        message.
+        The success of the match attempt and an error message.
     """
-    waiter = CriteriaWaiter(msg_type, criteria_func, context)
-    return waiter.wait(timeout)
+    matcher = VoightKampffCriteriaMatcher(context, msg_type, criteria_func)
+    match_found, error_message = matcher.match(timeout)
+
+    return match_found, error_message
 
 
-def then_wait_fail(msg_type, criteria_func, context, timeout=None):
+def then_wait_fail(msg_type: str, criteria_func: Callable, context: Any,
+                   timeout: int = None) -> Tuple[bool, str]:
     """Wait for a specified time, failing if criteria is fulfilled.
 
     Args:
@@ -177,10 +350,12 @@ def then_wait_fail(msg_type, criteria_func, context, timeout=None):
     Returns:
         tuple (bool, str) test status and debug output
     """
-    status, debug = then_wait(msg_type, criteria_func, context, timeout)
-    return not status, debug
+    match_found, error_message = then_wait(msg_type, criteria_func,
+                                           context, timeout)
+    return not match_found, error_message
 
 
+# TODO: remove in 21.08
 def mycroft_responses(context):
     """Collect and format mycroft responses from context.
 
@@ -202,10 +377,12 @@ def mycroft_responses(context):
     return responses
 
 
+# TODO: remove in 21.08
 def print_mycroft_responses(context):
     print(mycroft_responses(context))
 
 
+# TODO: remove in 21.08
 def format_dialog_match_error(potential_matches, speak_messages):
     """Format error message to be displayed when an expected
 
@@ -256,6 +433,7 @@ def emit_utterance(bus, utterance):
                      context={'client_name': 'mycroft_listener'}))
 
 
+# TODO: remove in 21.08
 def wait_for_dialog(bus, dialogs, context=None, timeout=None):
     """Wait for one of the dialogs given as argument.
 
@@ -273,6 +451,7 @@ def wait_for_dialog(bus, dialogs, context=None, timeout=None):
     wait_for_dialog_match(bus, dialogs, timeout_duration)
 
 
+# TODO: remove in 21.08
 def wait_for_dialog_match(bus, dialogs, timeout=DEFAULT_TIMEOUT):
     """Match dialogs spoken to the specified list of expected dialogs.
 
@@ -308,28 +487,21 @@ def wait_for_dialog_match(bus, dialogs, timeout=DEFAULT_TIMEOUT):
     return match_found, speak_messages
 
 
-def wait_for_audio_service(context, message_type):
+def wait_for_audio_service(context: Any, message_type: str):
     """Wait for audio.service message that matches type provided.
 
     May be play, stop, or pause messages
 
     Args:
-        context (behave Context): optional context providing scenario timeout
-        message_type (string): final component of bus message in form
-                               `mycroft.audio.service.{type}
+        context: optional context providing scenario timeout
+        message_type: final component of bus message in form
+            mycroft.audio.service.{type}
+
+    Raises:
+        AssertionError if no match is found.
     """
     msg_type = 'mycroft.audio.service.{}'.format(message_type)
+    event_matcher = VoightKampffMessageMatcher(context, msg_type)
+    match_found, error_message = event_matcher.match()
 
-    def check_for_msg(message):
-        return message.msg_type == msg_type, ''
-
-    passed, debug = then_wait(msg_type, check_for_msg, context)
-
-    if not passed:
-        debug += mycroft_responses(context)
-    if not debug:
-        if message_type == 'play':
-            message_type = 'start'
-        debug = "Mycroft didn't {} playback".format(message_type)
-
-    assert passed, debug
+    assert match_found, error_message

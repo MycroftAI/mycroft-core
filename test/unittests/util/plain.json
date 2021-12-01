@@ -67,6 +67,7 @@
     "test": false
   },
   "log_level": "DEBUG",
+  "log_format": "{asctime} {levelname} {process} {name} {message}",
   "ignore_logs": ["enclosure.mouth.viseme"],
   "session": {
     "ttl": 180

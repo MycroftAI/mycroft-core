@@ -176,8 +176,8 @@ your environment.'
     sleep 0.5
     # The AVX instruction set is an x86 construct
     # ARM has a range of equivalents, unsure which are (un)supported by TF.
-    if ! grep -q avx /proc/cpuinfo && [[ ! $(uname -m) == 'arm'* ]]; then
-      echo "
+    if ! grep -q avx /proc/cpuinfo && ! [[ $(uname -m) == 'arm'* || $(uname -m) == 'aarch64' ]]; then
+        echo "
 The Precise Wake Word Engine requires the AVX instruction set, which is
 not supported on your CPU. Do you want to fall back to the PocketSphinx
 engine? Advanced users can build the precise engine with an older
@@ -185,20 +185,20 @@ version of TensorFlow (v1.13) if desired and change use_precise to true
 in mycroft.conf.
   Y)es, I want to use the PocketSphinx engine or my own.
   N)o, stop the installation."
-      if get_YN ; then
-        if [[ ! -f /etc/mycroft/mycroft.conf ]]; then
-          $SUDO mkdir -p /etc/mycroft
-          $SUDO touch /etc/mycroft/mycroft.conf
-          $SUDO bash -c 'echo "{ \"use_precise\": true }" > /etc/mycroft/mycroft.conf'
+        if get_YN ; then
+            if [[ ! -f /etc/mycroft/mycroft.conf ]]; then
+                $SUDO mkdir -p /etc/mycroft
+                $SUDO touch /etc/mycroft/mycroft.conf
+                $SUDO bash -c 'echo "{ \"use_precise\": false }" > /etc/mycroft/mycroft.conf'
+            else
+                # Ensure dependency installed to merge configs
+                disable_precise_later=true
+            fi
         else
-          $SUDO bash -c 'jq ". + { \"use_precise\": true }" /etc/mycroft/mycroft.conf > tmp.mycroft.conf' 
-          $SUDO mv -f tmp.mycroft.conf /etc/mycroft/mycroft.conf
+            echo -e "$HIGHLIGHT N - quit the installation $RESET"
+            exit 1
         fi
-      else
-        echo -e "$HIGHLIGHT N - quit the installation $RESET"
-        exit 1
-      fi
-      echo
+        echo
     fi
     echo "
 Do you want to run on 'master' or against a dev branch?  Unless you are
@@ -398,7 +398,7 @@ function redhat_install() {
 }
 
 function gentoo_install() {
-    $SUDO emerge --noreplace dev-vcs/git dev-lang/python dev-python/setuptools dev-python/pygobject dev-python/requests sys-devel/libtool virtual/libffi virtual/jpeg dev-libs/openssl sys-devel/autoconf sys-devel/bison dev-lang/swig dev-libs/glib media-libs/portaudio media-sound/mpg123 media-libs/flac net-misc/curl sci-mathematics/fann sys-devel/gcc app-misc/jq media-libs/alsa-lib dev-libs/icu
+    $SUDO emerge --noreplace dev-vcs/git dev-lang/python dev-python/setuptools dev-python/pygobject dev-python/requests sys-devel/libtool dev-libs/libffi virtual/jpeg dev-libs/openssl sys-devel/autoconf sys-devel/bison dev-lang/swig dev-libs/glib media-libs/portaudio media-sound/mpg123 media-libs/flac net-misc/curl sci-mathematics/fann sys-devel/gcc app-misc/jq media-libs/alsa-lib dev-libs/icu
 }
 
 function alpine_install() {
@@ -460,12 +460,18 @@ function install_venv() {
     # Force version of pip for reproducability, but there is nothing special
     # about this version.  Update whenever a new version is released and
     # verified functional.
-    curl https://bootstrap.pypa.io/get-pip.py | "${VIRTUALENV_ROOT}/bin/python" - 'pip==21.1.2'
+    curl https://bootstrap.pypa.io/get-pip.py | "${VIRTUALENV_ROOT}/bin/${opt_python}" - 'pip==20.0.2'
     # Function status depending on if pip exists
     [[ -x ${VIRTUALENV_ROOT}/bin/pip ]]
 }
 
 install_deps
+
+# It's later. Update existing config with jq.
+if [ $disable_precise_later == true ]; then
+    $SUDO bash -c 'jq ". + { \"use_precise\": false }" /etc/mycroft/mycroft.conf > tmp.mycroft.conf' 
+                    $SUDO mv -f tmp.mycroft.conf /etc/mycroft/mycroft.conf
+fi
 
 # Configure to use the standard commit template for
 # this repo only.

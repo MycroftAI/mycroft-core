@@ -249,14 +249,35 @@ class AdaptService:
             ret = None
         return ret
 
+    # TODO 22.02: Remove this deprecated method
     def register_vocab(self, start_concept, end_concept, alias_of, regex_str):
-        """Register vocabulary."""
+        """Register Vocabulary. DEPRECATED
+
+        This method should not be used, it has been replaced by
+        register_vocabulary().
+        """
+        self.register_vocabulary(start_concept, end_concept,
+                                 alias_of, regex_str)
+
+    def register_vocabulary(self, entity_value, entity_type,
+                            alias_of, regex_str):
+        """Register skill vocabulary as adapt entity.
+
+        This will handle both regex registration and registration of normal
+        keywords. if the "regex_str" argument is set all other arguments will
+        be ignored.
+
+        Argument:
+            entity_value: the natural langauge word
+            entity_type: the type/tag of an entity instance
+            alias_of: entity this is an alternative for
+        """
         with self.lock:
             if regex_str:
                 self.engine.register_regex_entity(regex_str)
             else:
                 self.engine.register_entity(
-                    start_concept, end_concept, alias_of=alias_of)
+                    entity_value, entity_type, alias_of=alias_of)
 
     def register_intent(self, intent):
         """Register new intent with adapt engine.
