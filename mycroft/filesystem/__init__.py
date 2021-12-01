@@ -39,7 +39,7 @@ class FileSystemAccess:
 
         # Migrate from the old location if it still exists
         # TODO: remove in 22.02
-        if isdir(old_path):
+        if not isdir(path) and isdir(old_path):
             if isdir(path):
                 shutil.rmtree(path)
             shutil.move(old_path, path)
