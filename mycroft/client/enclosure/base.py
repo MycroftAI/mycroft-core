@@ -123,7 +123,7 @@ class Enclosure:
         """Perform any enclosure shutdown processes."""
         pass
 
-    def handle_internet_connected(self):
+    def handle_internet_connected(self, _):
         self._update_system_clock()
         self._authenticate_with_server()
         if not self.is_authenticated:
@@ -132,6 +132,8 @@ class Enclosure:
                 self._notify_server_unavailable()
             else:
                 self._pair_with_server()
+        LOG.info("Device is ready for use, activating microphone")
+        self.bus.emit(Message("mycroft.mic.unmute"))
 
     def _update_system_clock(self):
         """Force a sync of the local clock with the Network Time Protocol.
