@@ -460,9 +460,6 @@ class EnclosureMark2(Enclosure):
 
                 was_internet_connected = is_internet_connected
 
-                # TODO
-                LOG.info("%s %s", network_status, internet_status)
-
                 time.sleep(self._connectivity_check_seconds)
         except Exception:
             LOG.exception("error during connectivity check")
