@@ -1,6 +1,8 @@
 from unittest import TestCase, mock
 
-from mycroft.util.network_utils import connected
+from mycroft.util.network_utils import (
+    connected, ConnectivityState, MessageType, NetworkManager
+)
 
 
 class TestNetworkConnected(TestCase):
@@ -50,3 +52,52 @@ class TestNetworkFailure(TestCase):
             }
         }
         self.assertFalse(connected())
+
+
+@mock.patch('mycroft.util.network_utils.MessageBus', autospec=True)
+class TestNetworkManager(TestCase):
+
+    def test_full_connectivity(self, mock_bus):
+        """Check network/internet connectivity"""
+        reply = mock.MagicMock()
+        reply.message_type.return_value = MessageType.METHOD_RETURN
+        reply.body.__getitem__.return_value = ConnectivityState.FULL.value
+        mock_bus.call.return_value = reply
+
+        net_manager = NetworkManager(bus=mock_bus)
+        self.assertTrue(net_manager.is_network_connected())
+        self.assertTrue(net_manager.is_internet_connected())
+
+        mock_bus.call.assert_awaited()
+
+    def test_limited_connectivity(self, mock_bus):
+        """Check network connectivity only"""
+        reply = mock.MagicMock()
+        reply.message_type.return_value = MessageType.METHOD_RETURN
+        reply.body.__getitem__.return_value = ConnectivityState.LIMITED.value
+        mock_bus.call.return_value = reply
+
+        net_manager = NetworkManager(bus=mock_bus)
+        self.assertTrue(net_manager.is_network_connected())
+        self.assertFalse(net_manager.is_internet_connected())
+
+        mock_bus.call.assert_awaited()
+
+    def test_bus_error(self, mock_bus):
+        """Ensure DBus thread is restarted if an error occurs"""
+        net_manager = NetworkManager(bus=mock_bus)
+        mock_bus.call.side_effect = RuntimeError("fake DBus error")
+
+        # Should report no connectivity
+        self.assertFalse(net_manager.is_network_connected())
+
+        # Bus has been restored
+        mock_bus.call.side_effect = None
+
+        reply = mock.MagicMock()
+        reply.message_type.return_value = MessageType.METHOD_RETURN
+        reply.body.__getitem__.return_value = ConnectivityState.FULL.value
+        mock_bus.call.return_value = reply
+
+        self.assertTrue(net_manager.is_network_connected())
+        self.assertTrue(net_manager.is_internet_connected())

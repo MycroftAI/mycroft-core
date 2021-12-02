@@ -3,7 +3,7 @@ import requests
 import socket
 import threading
 import typing
-from enum import Enum
+from enum import IntEnum
 from urllib.request import urlopen
 from urllib.error import URLError
 
@@ -108,7 +108,7 @@ def _connected_google():
 # -----------------------------------------------------------------------------
 
 
-class ConnectivityState(int, Enum):
+class ConnectivityState(IntEnum):
     """ State of network/internet connectivity.
 
     See also:
@@ -135,37 +135,37 @@ class ConnectivityState(int, Enum):
 
 class NetworkManager:
     """Connects to org.freedesktop.NetworkManager over DBus to
-    determine connectivity."""
+    determine network/internet connectivity.
+
+    This differs from the connected() utility method by relying on the reported
+    state from org.freedesktop.NetworkManager rather than attempting to reach a
+    specific IP address or URL.
+    """
 
     DEFAULT_TIMEOUT = 1.0
+    """Seconds to wait for a DBus reply"""
 
-    def __init__(self, dbus_address: typing.Optional[str] = None):
-        self.dbus_address = dbus_address
-        self.state: ConnectivityState = ConnectivityState.UNKNOWN
+    def __init__(
+        self,
+        dbus_address: typing.Optional[str] = None,
+        bus: typing.Optional[MessageBus] = None
+    ):
+        self._bus = bus
+        self._dbus_address = dbus_address
+        self._state: ConnectivityState = ConnectivityState.UNKNOWN
 
         # Events used to communicate with DBus thread
         self._state_requested = threading.Event()
         self._state_ready = threading.Event()
 
-        # Run DBus message in a separate thread with its own asyncio loop
-        self._dbus_thread = threading.Thread(
-            target=self._dbus_thread_proc,
-            daemon=True,
-        )
-
-        self._dbus_thread.start()
-
-    def get_state(self, timeout=DEFAULT_TIMEOUT) -> ConnectivityState:
-        """Gets the current connectivity state."""
-        self._state_ready.clear()
-        self._state_requested.set()
-        self._state_ready.wait(timeout=timeout)
-        return self.state
+        # Run DBus message in a separate thread with its own asyncio loop.
+        # Thread is started automatically when state is requested.
+        self._dbus_thread: typing.Optional[threading.Thread] = None
 
     def is_network_connected(self, timeout=DEFAULT_TIMEOUT) -> bool:
         """True if the network is connected, but internet may not be
         reachable."""
-        return self.get_state(timeout=timeout) in {
+        return self._get_state(timeout=timeout) in {
             ConnectivityState.PORTAL,
             ConnectivityState.LIMITED,
             ConnectivityState.FULL,
@@ -173,7 +173,27 @@ class NetworkManager:
 
     def is_internet_connected(self, timeout=DEFAULT_TIMEOUT) -> bool:
         """True if the internet is reachable."""
-        return self.get_state(timeout=timeout) == ConnectivityState.FULL
+        return self._get_state(timeout=timeout) == ConnectivityState.FULL
+
+    def _get_state(self, timeout=DEFAULT_TIMEOUT) -> ConnectivityState:
+        """Gets the current connectivity state."""
+        self._ensure_thread_started()
+
+        self._state_ready.clear()
+        self._state_requested.set()
+        self._state_ready.wait(timeout=timeout)
+
+        return self._state
+
+    def _ensure_thread_started(self):
+        """Starts DBus thread if necessary"""
+        if self._dbus_thread is None:
+            self._dbus_thread = threading.Thread(
+                target=self._dbus_thread_proc,
+                daemon=True,
+            )
+
+            self._dbus_thread.start()
 
     def _dbus_thread_proc(self):
         """Run separate asyncio loop for DBus"""
@@ -185,19 +205,24 @@ class NetworkManager:
     async def _dbus_thread_proc_async(self):
         """Connects to DBus and waits for requests from main thread."""
         try:
-            if self.dbus_address:
-                # Use custom session bus
-                bus = MessageBus(bus_address=self.dbus_address)
-            else:
-                # Use system bus
-                bus = MessageBus(bus_type=BusType.SYSTEM)
+            if self._bus is None:
+                # Connect to bus
+                if self._dbus_address:
+                    # Use custom session bus
+                    bus = MessageBus(bus_address=self._dbus_address)
+                else:
+                    # Use system bus
+                    bus = MessageBus(bus_type=BusType.SYSTEM)
 
-            await bus.connect()
+                await bus.connect()
+            else:
+                # Use message bus from constructor
+                bus = self._bus
 
             while True:
                 # State update requested from main thread
                 self._state_requested.wait()
-                self.state = ConnectivityState.UNKNOWN
+                self._state = ConnectivityState.UNKNOWN
 
                 reply = await bus.call(
                     Message(
@@ -208,10 +233,13 @@ class NetworkManager:
                     ))
 
                 if reply.message_type != MessageType.ERROR:
-                    self.state = ConnectivityState(reply.body[0])
+                    self._state = ConnectivityState(reply.body[0])
 
                 # Signal main thread that state is ready
                 self._state_requested.clear()
                 self._state_ready.set()
         except Exception:
-            LOG.exception("network-manager")
+            LOG.exception("error occurred while waiting for DBus reply")
+
+        # Thread will be restarted if there was an error
+        self._dbus_thread = None
