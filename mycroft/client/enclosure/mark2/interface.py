@@ -15,6 +15,7 @@
 """Define the enclosure interface for Mark II devices."""
 import threading
 import time
+import typing
 
 from mycroft.api import is_paired, BackendDown
 from mycroft.client.enclosure.base import Enclosure
@@ -22,7 +23,7 @@ from mycroft.enclosure.hardware_enclosure import HardwareEnclosure
 from mycroft.messagebus.message import Message
 from mycroft.util.hardware_capabilities import EnclosureCapabilities
 from mycroft.util.log import LOG
-from mycroft.util.network_utils import connected
+from mycroft.util.network_utils import connected, NetworkManager
 
 SERVICES = ("audio", "skills", "speech")
 
@@ -211,10 +212,20 @@ class EnclosureMark2(Enclosure):
 
         self.default_caps = EnclosureCapabilities()
 
+        # Poll network mananger for connectivity status
+        self._network_manager = NetworkManager()
+
+        # TODO: This should come from a setting
+        self._connectivity_check_seconds = 5.0
+
+        self._connectivity_thread_running = False
+        self._connectivity_thread: typing.Optional[threading.Thread] = None
+
     def run(self):
         """Make it so."""
         super().run()
         self._check_services_initialized()
+        self._start_connectivity_thread()
 
     def async_volume_handler(self, vol):
         if vol > 1.0:
@@ -312,7 +323,7 @@ class EnclosureMark2(Enclosure):
         self.bus.emit(
             message.response(
                 data={
-                    'default': self.default_caps.caps, 
+                    'default': self.default_caps.caps,
                     'extra': self.hardware.capabilities,
                     'board_type': self.hardware.board_type,
                     'leds': self.hardware.leds.capabilities,
@@ -375,3 +386,83 @@ class EnclosureMark2(Enclosure):
         self.hardware.leds._set_led(10, (0, 0, 0))  # blank out reserved led
         self.hardware.leds._set_led(11, (0, 0, 0))  # BUG set to real value!
         self.hardware.terminate()
+
+    def stop(self):
+        self._stop_connectivity_thread()
+        super().stop()
+
+    def _start_connectivity_thread(self):
+        """Start thread to poll for network/internet connectivity"""
+        self._connectivity_thread_running = True
+        self._connectivity_thread = threading.Thread(
+            target=self._check_connectivity,
+            daemon=True
+        )
+        self._connectivity_thread.start()
+
+    def _stop_connectivity_thread(self):
+        """Stop thread to poll for network/internet connectivity"""
+        if self._connectivity_thread is not None:
+            self._connectivity_thread_running = False
+            self._connectivity_thread.join(
+                timeout=self._connectivity_check_seconds * 2
+            )
+            self._connectivity_thread = None
+
+    def _check_connectivity(self):
+        """Periodically check network/internet connectivity"""
+        was_network_connected = False
+        was_internet_connected = False
+
+        try:
+            while self._connectivity_thread_running:
+                # Check network connectivity
+                is_network_connected = (
+                    self._network_manager.is_network_connected()
+                )
+
+                if is_network_connected != was_network_connected:
+                    if is_network_connected:
+                        self.bus.emit(Message("mycroft.network.connected"))
+                    else:
+                        self.bus.emit(Message("mycroft.network.disconnected"))
+
+                network_status = (
+                    "connected" if is_network_connected else "disconnected"
+                )
+
+                self.bus.emit(Message(
+                    "mycroft.network.status",
+                    data={"status": network_status}
+                ))
+
+                was_network_connected = is_network_connected
+
+                # Check internet connectivity
+                is_internet_connected = (
+                    self._network_manager.is_internet_connected()
+                )
+
+                if is_internet_connected != was_internet_connected:
+                    if is_internet_connected:
+                        self.bus.emit(Message("mycroft.internet.connected"))
+                    else:
+                        self.bus.emit(Message("mycroft.internet.disconnected"))
+
+                internet_status = (
+                    "connected" if is_internet_connected else "disconnected"
+                )
+
+                self.bus.emit(Message(
+                    "mycroft.internet.status",
+                    data={"status": internet_status}
+                ))
+
+                was_internet_connected = is_internet_connected
+
+                # TODO
+                LOG.info("%s %s", network_status, internet_status)
+
+                time.sleep(self._connectivity_check_seconds)
+        except Exception:
+            LOG.exception("error during connectivity check")
