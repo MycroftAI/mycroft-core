@@ -22,6 +22,7 @@ from mycroft.enclosure.hardware_enclosure import HardwareEnclosure
 from mycroft.messagebus.message import Message
 from mycroft.util.hardware_capabilities import EnclosureCapabilities
 from mycroft.util.log import LOG
+from mycroft.util.network_utils import connected
 
 SERVICES = ("audio", "skills", "speech")
 
@@ -238,6 +239,7 @@ class EnclosureMark2(Enclosure):
                     self.handle_end_audio)
         self.bus.on('mycroft.stop.handled', self.handle_end_audio)
         self.bus.on('mycroft.capabilities.get', self.on_capabilities_get)
+        self.bus.on('mycroft.started', self.handle_mycroft_started)
         for service in SERVICES:
             self.bus.once(f'{service}.initialize.ended',
                           self.handle_service_initialized)
@@ -326,7 +328,7 @@ class EnclosureMark2(Enclosure):
             message: The event that triggered this method
         """
         service = message.msg_type.split('.')[0]
-        self._check_mycroft_ready(service)
+        self._check_mycroft_started(service)
 
     def _check_services_initialized(self):
         """Checks for services ready before message handler definition."""
@@ -335,21 +337,30 @@ class EnclosureMark2(Enclosure):
                 Message('mycroft.{}.is_ready'.format(service))
             )
             if response and response.data['status']:
-                self._check_mycroft_ready(service)
+                self._check_mycroft_started(service)
                 self.bus.remove(f"{service}.initialize.ended",
                                 self.handle_service_initialized)
 
-    def _check_mycroft_ready(self, service: str):
+    def _check_mycroft_started(self, service: str):
         """Determines if device is ready based on service readiness.
 
         Args:
             service: name of the service that reported ready.
         """
+        LOG.info("{} service has been initialized".format(service))
         self.ready_services.append(service)
         self.ready_services.sort()
         if tuple(self.ready_services) == SERVICES:
             LOG.info("All Mycroft services are initialized.")
             self.bus.emit(Message("mycroft.started"))
+
+    def handle_mycroft_started(self, _):
+        LOG.info("Muting microphone during start up.")
+        self.bus.emit(Message("mycroft.mic.mute"))
+        while not connected():
+            time.sleep(1)
+        LOG.info("Internet connection detected")
+        self.bus.emit(Message("mycroft.internet.connected"))
 
     def _update_system(self):
         """Skips system update using Admin service.
