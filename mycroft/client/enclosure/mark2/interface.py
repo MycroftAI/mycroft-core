@@ -40,7 +40,7 @@ class TemperatureMonitorThread(threading.Thread):
         LOG.debug("temperature monitor thread started")
         while not self.exit_flag:
             time.sleep(60)
-            LOG.debug("CPU temperature is %s" % self.fan_obj.get_cpu_temp())
+            LOG.debug(f"CPU temperature is {self.fan_obj.get_cpu_temp()}")
 
             # TODO make this ratiometric
             current_temperature = self.fan_obj.get_cpu_temp()
@@ -136,7 +136,7 @@ class ChaseLedThread(threading.Thread):
         chase_ctr = 0
         while not self.exit_flag:
             chase_ctr += 1
-            LOG.debug("chase thread %s" % (chase_ctr,))
+            LOG.debug(f"chase thread {chase_ctr}")
             for x in range(0, 10):
                 self.led_obj.set_led(x, self.fgnd_col)
                 time.sleep(self.delay)
@@ -231,7 +231,7 @@ class EnclosureMark2(Enclosure):
         if vol > 1.0:
             vol = vol / 10
         self.current_volume = vol
-        LOG.info("Async set volume to %s" % self.current_volume)
+        LOG.info(f"Async set volume to {self.current_volume}")
         # notify anybody listening on the bus who cares
         self.bus.emit(Message("hardware.volume", {
             "volume": self.current_volume}, context={"source": ["enclosure"]}))
@@ -297,8 +297,7 @@ class EnclosureMark2(Enclosure):
 
     def on_volume_set(self, message):
         self.current_volume = message.data.get("percent", self.current_volume)
-        LOG.info('Mark2:interface.py set volume to %s' %
-                 (self.current_volume,))
+        LOG.info(f'Setting volume to {self.current_volume}')
         self.hardware.hardware_volume.set_volume(float(self.current_volume))
 
         # notify anybody listening on the bus who cares
@@ -307,19 +306,15 @@ class EnclosureMark2(Enclosure):
 
     def on_volume_get(self, message):
         self.current_volume = self.hardware.hardware_volume.get_volume()
-
         if self.current_volume > 1.0:
             self.current_volume = self.current_volume / 10
-
-        LOG.info('Mark2:interface.py get and emit volume %s' %
-                 (self.current_volume,))
+        LOG.info(f'Current volume {self.current_volume}')
         self.bus.emit(
             message.response(
                 data={'percent': self.current_volume, 'muted': False}))
 
     def on_capabilities_get(self, message):
-        LOG.info('Mark2:interface.py get capabilities requested')
-
+        LOG.info('Enclosure capabilities requested')
         self.bus.emit(
             message.response(
                 data={
@@ -358,7 +353,7 @@ class EnclosureMark2(Enclosure):
         Args:
             service: name of the service that reported ready.
         """
-        LOG.info("{} service has been initialized".format(service))
+        LOG.info(f"{service.title()} service has been initialized")
         self.ready_services.append(service)
         self.ready_services.sort()
         if tuple(self.ready_services) == SERVICES:

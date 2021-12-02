@@ -152,7 +152,7 @@ def start_message_bus_client(service, bus=None, whitelist=None):
 
     # Wait for connection
     bus_connected.wait()
-    LOG.info('Connected to messagebus')
+    LOG.info('Connected to Mycroft Core message bus')
 
     return bus
 

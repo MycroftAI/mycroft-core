@@ -507,18 +507,13 @@ class Enclosure:
     #
     # If the connection is lost, it must be renegotiated and restarted.
     def on_gui_client_connected(self, message):
-        # GUI has announced presence
-        LOG.info('GUI HAS ANNOUNCED!')
         port = self.global_config["gui_websocket"]["base_port"]
-        LOG.debug("on_gui_client_connected")
         gui_id = message.data.get("gui_id")
-
-        LOG.debug("Heard announcement from gui_id: {}".format(gui_id))
+        LOG.info(f"GUI with ID {gui_id} connected to Mycroft Core message bus")
 
         # Announce connection, the GUI should connect on it soon
         self.bus.emit(Message("mycroft.gui.port",
-                              {"port": port,
-                               "gui_id": gui_id}))
+                              {"port": port, "gui_id": gui_id}))
 
     def register_gui_handlers(self):
         # TODO: Register handlers for standard (Mark 1) events
@@ -585,7 +580,7 @@ class GUIWebsocketHandler(WebSocketHandler):
 
     def open(self):
         GUIWebsocketHandler.clients.append(self)
-        LOG.info('New connection to GUI message bus opened')
+        LOG.debug('New connection to GUI message bus opened')
         self.synchronize()
 
     def on_close(self):
