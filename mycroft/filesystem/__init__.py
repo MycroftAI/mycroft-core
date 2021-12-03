@@ -39,10 +39,15 @@ class FileSystemAccess:
 
         # Migrate from the old location if it still exists
         # TODO: remove in 22.02
-        if isdir(old_path):
-            if isdir(path):
-                shutil.rmtree(path)
+        if not isdir(path) and isdir(old_path):
+            # This differs from mainline core
+            # As Mark II's can jump back and forward between pre-xdg and
+            # post-xdg versions of mycroft-core - new paths with valid content
+            # were being deleted. This causes devices to lose pairing info etc
             shutil.move(old_path, path)
+            # Create a symlink at old_path so users switching back to stable
+            # still have pairing info.
+            os.symlink(path, old_path)
 
         if not isdir(path):
             os.makedirs(path)
