@@ -17,7 +17,6 @@ import threading
 import time
 import typing
 
-from mycroft.api import is_paired, BackendDown
 from mycroft.client.enclosure.base import Enclosure
 from mycroft.enclosure.hardware_enclosure import HardwareEnclosure
 from mycroft.messagebus.message import Message
@@ -164,7 +163,7 @@ class EnclosureMark2(Enclosure):
         self.mute_led = 11
         self.chaseLedThread = None
         self.pulseLedThread = None
-        self.ready_services = []
+        self.ready_services = set()
         self.is_paired = False
 
         self.system_volume = 0.5   # pulse audio master system volume
@@ -224,7 +223,7 @@ class EnclosureMark2(Enclosure):
     def run(self):
         """Make it so."""
         super().run()
-        self._check_services_initialized()
+        self._find_initialized_services()
         self._start_connectivity_thread()
 
     def async_volume_handler(self, vol):
@@ -252,8 +251,8 @@ class EnclosureMark2(Enclosure):
         self.bus.on('mycroft.capabilities.get', self.on_capabilities_get)
         self.bus.on('mycroft.started', self.handle_mycroft_started)
         for service in SERVICES:
-            self.bus.once(f'{service}.initialize.ended',
-                          self.handle_service_initialized)
+            self.bus.on(f'{service}.initialize.ended',
+                        self.handle_service_initialized)
 
     def handle_start_recording(self, message):
         LOG.debug("Gathering speech stuff")
@@ -334,39 +333,53 @@ class EnclosureMark2(Enclosure):
             message: The event that triggered this method
         """
         service = message.msg_type.split('.')[0]
-        self._check_mycroft_started(service)
+        LOG.info(f"{service.title()} service has been initialized")
+        self._check_all_services_initialized(service)
 
-    def _check_services_initialized(self):
-        """Checks for services ready before message handler definition."""
+    def _find_initialized_services(self):
+        """Checks for services initialized before message bus connection.
+
+        This handles a race condition where a service could have finished its
+        initialization processing before this service is ready to accept
+        messages from the core bus.
+        """
         for service in SERVICES:
-            response = self.bus.wait_for_response(
-                Message('mycroft.{}.is_ready'.format(service))
-            )
-            if response and response.data['status']:
-                self._check_mycroft_started(service)
-                self.bus.remove(f"{service}.initialize.ended",
-                                self.handle_service_initialized)
+            if service not in self.ready_services:
+                response = self.bus.wait_for_response(
+                    Message('mycroft.{}.is_ready'.format(service))
+                )
+                if response and response.data['status']:
+                    LOG.info(f"{service.title()} service has been initialized")
+                    self._check_all_services_initialized(service)
 
-    def _check_mycroft_started(self, service: str):
-        """Determines if device is ready based on service readiness.
+    def _check_all_services_initialized(self, service: str):
+        """Determines if all services have finished initialization.
+
+        Post-initialization processing cannot happen on any service until
+        all services have finished their initialization
 
         Args:
             service: name of the service that reported ready.
         """
-        LOG.info(f"{service.title()} service has been initialized")
-        self.ready_services.append(service)
-        self.ready_services.sort()
-        if tuple(self.ready_services) == SERVICES:
+        self.ready_services.add(service)
+        if all(service in self.ready_services for service in SERVICES):
             LOG.info("All Mycroft services are initialized.")
             self.bus.emit(Message("mycroft.started"))
 
     def handle_mycroft_started(self, _):
         LOG.info("Muting microphone during start up.")
         self.bus.emit(Message("mycroft.mic.mute"))
+        self._remove_service_init_handlers()
         while not connected():
             time.sleep(1)
         LOG.info("Internet connection detected")
         self.bus.emit(Message("mycroft.internet.connected"))
+
+    def _remove_service_init_handlers(self):
+        """Deletes the event handlers for services initialized."""
+        for service in SERVICES:
+            self.bus.remove(f"{service}.initialize.ended",
+                            self.handle_service_initialized)
 
     def _update_system(self):
         """Skips system update using Admin service.
