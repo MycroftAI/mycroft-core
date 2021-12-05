@@ -49,7 +49,8 @@ class IdentityManager:
                     IdentityManager.__identity = DeviceIdentity(**json.load(f))
             else:
                 IdentityManager.__identity = DeviceIdentity()
-        except Exception:
+        except Exception as e:
+            LOG.exception(f'Failed to load identity file: {repr(e)}')
             IdentityManager.__identity = DeviceIdentity()
 
     @staticmethod
