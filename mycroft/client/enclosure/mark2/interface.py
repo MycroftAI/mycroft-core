@@ -148,12 +148,11 @@ class ChaseLedThread(threading.Thread):
 
 
 class EnclosureMark2(Enclosure):
-    is_raspberry__pi_platform = True
+    is_raspberry_pi_platform = True
 
     def __init__(self):
         super().__init__()
         self.display_bus_client = None
-        self._define_event_handlers()
         self.finished_loading = False
         self.active_screen = 'loading'
         self.paused_screen = None
@@ -223,6 +222,7 @@ class EnclosureMark2(Enclosure):
     def run(self):
         """Make it so."""
         super().run()
+        self._define_event_handlers()
         self._find_initialized_services()
         self._start_connectivity_thread()
 
@@ -237,6 +237,9 @@ class EnclosureMark2(Enclosure):
 
     def _define_event_handlers(self):
         """Assigns methods to act upon message bus events."""
+        for service in SERVICES:
+            self.bus.on(f'{service}.initialize.ended',
+                        self.handle_service_initialized)
         self.bus.on('mycroft.volume.set', self.on_volume_set)
         self.bus.on('mycroft.volume.get', self.on_volume_get)
         self.bus.on('mycroft.volume.duck', self.on_volume_duck)
@@ -250,9 +253,6 @@ class EnclosureMark2(Enclosure):
         self.bus.on('mycroft.stop.handled', self.handle_end_audio)
         self.bus.on('mycroft.capabilities.get', self.on_capabilities_get)
         self.bus.on('mycroft.started', self.handle_mycroft_started)
-        for service in SERVICES:
-            self.bus.on(f'{service}.initialize.ended',
-                        self.handle_service_initialized)
 
     def handle_start_recording(self, message):
         LOG.debug("Gathering speech stuff")
@@ -370,6 +370,7 @@ class EnclosureMark2(Enclosure):
         LOG.info("Muting microphone during start up.")
         self.bus.emit(Message("mycroft.mic.mute"))
         self._remove_service_init_handlers()
+        # TODO: Replace with DBus logic
         while not connected():
             time.sleep(1)
         LOG.info("Internet connection detected")
