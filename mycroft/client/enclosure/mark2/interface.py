@@ -22,7 +22,8 @@ from mycroft.enclosure.hardware_enclosure import HardwareEnclosure
 from mycroft.messagebus.message import Message
 from mycroft.util.hardware_capabilities import EnclosureCapabilities
 from mycroft.util.log import LOG
-from mycroft.util.network_utils import connected, NetworkManager
+
+from .activities import InternetConnectActivity, NetworkConnectActivity
 
 SERVICES = ("audio", "skills", "speech")
 
@@ -210,21 +211,11 @@ class EnclosureMark2(Enclosure):
 
         self.default_caps = EnclosureCapabilities()
 
-        # Poll network mananger for connectivity status
-        self._network_manager = NetworkManager()
-
-        # TODO: This should come from a setting
-        self._connectivity_check_seconds = 5.0
-
-        self._connectivity_thread_running = False
-        self._connectivity_thread: typing.Optional[threading.Thread] = None
-
     def run(self):
         """Make it so."""
         super().run()
         self._define_event_handlers()
         self._find_initialized_services()
-        self._start_connectivity_thread()
 
     def async_volume_handler(self, vol):
         if vol > 1.0:
@@ -253,6 +244,7 @@ class EnclosureMark2(Enclosure):
         self.bus.on('mycroft.stop.handled', self.handle_end_audio)
         self.bus.on('mycroft.capabilities.get', self.on_capabilities_get)
         self.bus.on('mycroft.started', self.handle_mycroft_started)
+        self.bus.on('hardware.network-detected', self.handle_network_detected)
 
     def handle_start_recording(self, message):
         LOG.debug("Gathering speech stuff")
@@ -370,17 +362,30 @@ class EnclosureMark2(Enclosure):
         LOG.info("Muting microphone during start up.")
         self.bus.emit(Message("mycroft.mic.mute"))
         self._remove_service_init_handlers()
-        # TODO: Replace with DBus logic
-        while not connected():
-            time.sleep(1)
-        LOG.info("Internet connection detected")
-        self.bus.emit(Message("mycroft.internet.connected"))
+        self._detect_network()
 
     def _remove_service_init_handlers(self):
         """Deletes the event handlers for services initialized."""
         for service in SERVICES:
             self.bus.remove(f"{service}.initialize.ended",
                             self.handle_service_initialized)
+
+    def _detect_network(self):
+        network_activity = NetworkConnectActivity(
+            "hardware.network-detection",
+            self.bus
+        )
+        network_activity.run()
+
+    def handle_network_detected(self, message=None):
+        self._detect_internet()
+
+    def _detect_internet(self):
+        internet_activity = InternetConnectActivity(
+            "hardware.internet-detection",
+            self.bus
+        )
+        internet_activity.run()
 
     def _update_system(self):
         """Skips system update using Admin service.
@@ -395,80 +400,3 @@ class EnclosureMark2(Enclosure):
         self.hardware.leds._set_led(10, (0, 0, 0))  # blank out reserved led
         self.hardware.leds._set_led(11, (0, 0, 0))  # BUG set to real value!
         self.hardware.terminate()
-
-    def stop(self):
-        self._stop_connectivity_thread()
-        super().stop()
-
-    def _start_connectivity_thread(self):
-        """Start thread to poll for network/internet connectivity"""
-        self._connectivity_thread_running = True
-        self._connectivity_thread = threading.Thread(
-            target=self._check_connectivity,
-            daemon=True
-        )
-        self._connectivity_thread.start()
-
-    def _stop_connectivity_thread(self):
-        """Stop thread to poll for network/internet connectivity"""
-        if self._connectivity_thread is not None:
-            self._connectivity_thread_running = False
-            self._connectivity_thread.join(
-                timeout=self._connectivity_check_seconds * 2
-            )
-            self._connectivity_thread = None
-
-    def _check_connectivity(self):
-        """Periodically check network/internet connectivity"""
-        was_network_connected = False
-        was_internet_connected = False
-
-        try:
-            while self._connectivity_thread_running:
-                # Check network connectivity
-                is_network_connected = (
-                    self._network_manager.is_network_connected()
-                )
-
-                if is_network_connected != was_network_connected:
-                    if is_network_connected:
-                        self.bus.emit(Message("mycroft.network.connected"))
-                    else:
-                        self.bus.emit(Message("mycroft.network.disconnected"))
-
-                network_status = (
-                    "connected" if is_network_connected else "disconnected"
-                )
-
-                self.bus.emit(Message(
-                    "mycroft.network.status",
-                    data={"status": network_status}
-                ))
-
-                was_network_connected = is_network_connected
-
-                # Check internet connectivity
-                is_internet_connected = (
-                    self._network_manager.is_internet_connected()
-                )
-
-                if is_internet_connected != was_internet_connected:
-                    if is_internet_connected:
-                        self.bus.emit(Message("mycroft.internet.connected"))
-                    else:
-                        self.bus.emit(Message("mycroft.internet.disconnected"))
-
-                internet_status = (
-                    "connected" if is_internet_connected else "disconnected"
-                )
-
-                self.bus.emit(Message(
-                    "mycroft.internet.status",
-                    data={"status": internet_status}
-                ))
-
-                was_internet_connected = is_internet_connected
-
-                time.sleep(self._connectivity_check_seconds)
-        except Exception:
-            LOG.exception("error during connectivity check")
