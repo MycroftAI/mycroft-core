@@ -416,6 +416,7 @@ class EnclosureMark2(Enclosure):
             elif check_count % 60:
                 LOG.info("Waiting for system clock to synchronize...")
             check_count += 1
+            time.sleep(1)
         self.bus.emit(Message("hardware.clock-sync.ended"))
 
     def terminate(self):
