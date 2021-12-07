@@ -22,7 +22,7 @@ from mycroft.enclosure.hardware_enclosure import HardwareEnclosure
 from mycroft.messagebus.message import Message
 from mycroft.util.hardware_capabilities import EnclosureCapabilities
 from mycroft.util.log import LOG
-from mycroft.util.network_utils import connected, NetworkManager
+from mycroft.util.network_utils import connected, NetworkManager, check_system_clock_sync_status
 
 SERVICES = ("audio", "skills", "speech")
 
@@ -148,7 +148,7 @@ class ChaseLedThread(threading.Thread):
 
 
 class EnclosureMark2(Enclosure):
-    is_raspberry_pi_platform = True
+    force_system_clock_update = True
 
     def __init__(self):
         super().__init__()
@@ -382,6 +382,18 @@ class EnclosureMark2(Enclosure):
             self.bus.remove(f"{service}.initialize.ended",
                             self.handle_service_initialized)
 
+    def handle_internet_connected(self, _):
+        self._synchronize_system_clock()
+        self._authenticate_with_server()
+        if not self.is_authenticated:
+            self._update_system()
+            if self.server_unavailable:
+                self._notify_server_unavailable()
+            else:
+                self._pair_with_server()
+        LOG.info("Device is ready for use, activating microphone")
+        self.bus.emit(Message("mycroft.mic.unmute"))
+
     def _update_system(self):
         """Skips system update using Admin service.
 
@@ -390,6 +402,21 @@ class EnclosureMark2(Enclosure):
         performed.
         """
         pass
+
+    def _synchronize_system_clock(self):
+        """Waits for the system clock to be synchronized with a NTP service."""
+        self.bus.emit(Message("hardware.clock-sync.started"))
+        check_count = 0
+        while True:
+            clock_synchronized = check_system_clock_sync_status()
+            if clock_synchronized:
+                LOG.info("System clock synchronized")
+                self.bus.emit(Message("hardware.clock-synchronized"))
+                break
+            elif check_count % 60:
+                LOG.info("Waiting for system clock to synchronize...")
+            check_count += 1
+        self.bus.emit(Message("hardware.clock-sync.ended"))
 
     def terminate(self):
         self.hardware.leds._set_led(10, (0, 0, 0))  # blank out reserved led

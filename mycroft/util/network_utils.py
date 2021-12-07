@@ -1,6 +1,7 @@
 import asyncio
 import requests
 import socket
+import subprocess
 import threading
 import typing
 from enum import IntEnum
@@ -243,3 +244,16 @@ class NetworkManager:
 
         # Thread will be restarted if there was an error
         self._dbus_thread = None
+
+
+def check_system_clock_sync_status() -> bool:
+    clock_synchronized = False
+    timedatectl_result = subprocess.run("timedatectl", capture_output=True)
+    timedatectl_stdout = timedatectl_result.stdout.decode().split("\n")
+    for line in timedatectl_stdout:
+        if "System clock synchronized" in line:
+            synchronized_value = line.split(":")[1].strip()
+            if synchronized_value == "yes":
+                clock_synchronized = True
+
+    return clock_synchronized
