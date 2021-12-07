@@ -22,9 +22,12 @@ from mycroft.enclosure.hardware_enclosure import HardwareEnclosure
 from mycroft.messagebus.message import Message
 from mycroft.util.hardware_capabilities import EnclosureCapabilities
 from mycroft.util.log import LOG
-from mycroft.util.network_utils import check_system_clock_sync_status
 
-from .activities import InternetConnectActivity, NetworkConnectActivity
+from .activities import (
+    InternetConnectActivity,
+    NetworkConnectActivity,
+    SystemClockSyncActivity
+)
 
 SERVICES = ("audio", "skills", "speech")
 
@@ -246,6 +249,8 @@ class EnclosureMark2(Enclosure):
         self.bus.on('mycroft.capabilities.get', self.on_capabilities_get)
         self.bus.on('mycroft.started', self.handle_mycroft_started)
         self.bus.on('hardware.network-detected', self.handle_network_detected)
+        self.bus.on('hardware.internet-detected',
+                    self.handle_internet_connected)
 
     def handle_start_recording(self, message):
         LOG.debug("Gathering speech stuff")
@@ -378,7 +383,7 @@ class EnclosureMark2(Enclosure):
         )
         network_activity.run()
 
-    def handle_network_detected(self, message=None):
+    def handle_network_detected(self, _):
         self._detect_internet()
 
     def _detect_internet(self):
@@ -411,18 +416,10 @@ class EnclosureMark2(Enclosure):
 
     def _synchronize_system_clock(self):
         """Waits for the system clock to be synchronized with a NTP service."""
-        self.bus.emit(Message("hardware.clock-sync.started"))
-        check_count = 0
-        while True:
-            clock_synchronized = check_system_clock_sync_status()
-            if clock_synchronized:
-                LOG.info("System clock synchronized")
-                self.bus.emit(Message("hardware.clock-synchronized"))
-                break
-            elif check_count % 60:
-                LOG.info("Waiting for system clock to synchronize...")
-            check_count += 1
-        self.bus.emit(Message("hardware.clock-sync.ended"))
+        sync_activity = SystemClockSyncActivity(
+            "hardware.clock-sync", self.bus
+        )
+        sync_activity.run()
 
     def terminate(self):
         self.hardware.leds._set_led(10, (0, 0, 0))  # blank out reserved led
