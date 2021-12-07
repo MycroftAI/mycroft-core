@@ -7,15 +7,13 @@ from dbus_next.aio import MessageBus
 
 from mycroft.activity import Activity
 from mycroft.messagebus import Message
+from mycroft.util.network_utils import get_network_manager
 
 # Network manager state
 # https://developer-old.gnome.org/NetworkManager/stable/nm-dbus-types.html#NMState
 
 NOT_CONNECTED = 0
 NETWORK_CONNECTED = 50
-
-NM_NAMESPACE = "org.freedesktop.NetworkManager"
-NM_PATH = "/org/freedesktop/NetworkManager"
 
 
 class NetworkConnectActivity(Activity):
@@ -46,7 +44,7 @@ class NetworkConnectActivity(Activity):
             self.dbus = MessageBus(bus_type=BusType.SYSTEM)
             await self.dbus.connect()
 
-            nm_interface = await self._get_network_manager()
+            nm_interface = await get_network_manager(self.dbus)
 
             # Get initial state
             self._nm_state = await nm_interface.get_state()
@@ -79,15 +77,3 @@ class NetworkConnectActivity(Activity):
         """Callback for state changed signal"""
         self._nm_state = new_state
         self._state_ready.set()
-
-    async def _get_network_manager(self):
-        """Get DBus interface to NetworkManager"""
-        introspection = await self.dbus.introspect(NM_NAMESPACE, NM_PATH)
-
-        nm_object = self.dbus.get_proxy_object(
-            NM_NAMESPACE,
-            NM_PATH,
-            introspection,
-        )
-
-        return nm_object.get_interface(NM_NAMESPACE)

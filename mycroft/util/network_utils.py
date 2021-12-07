@@ -8,6 +8,8 @@ from enum import IntEnum
 from urllib.request import urlopen
 from urllib.error import URLError
 
+from dbus_next.aio import MessageBus
+
 from .log import LOG
 
 
@@ -121,3 +123,19 @@ def check_system_clock_sync_status() -> bool:
         LOG.exception("error while checking system clock sync: %s", e.output)
 
     return clock_synchronized
+
+
+# -----------------------------------------------------------------------------
+
+
+NM_NAMESPACE = "org.freedesktop.NetworkManager"
+NM_PATH = "/org/freedesktop/NetworkManager"
+
+
+async def get_network_manager(dbus: MessageBus):
+    """Get DBus interface to NetworkManager"""
+    introspection = await dbus.introspect(NM_NAMESPACE, NM_PATH)
+
+    nm_object = dbus.get_proxy_object(NM_NAMESPACE, NM_PATH, introspection)
+
+    return nm_object.get_interface(NM_NAMESPACE)
