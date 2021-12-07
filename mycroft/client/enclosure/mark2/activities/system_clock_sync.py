@@ -26,8 +26,9 @@ class SystemClockSyncActivity(Activity):
                     self.bus.emit(Message("hardware.clock-synchronized"))
                     break
 
-                if check_count % 60:
+                if (check_count % 60) == 0:
                     self.log.info("Waiting for system clock to synchronize...")
+
                 check_count += 1
                 time.sleep(1)
         except Exception:

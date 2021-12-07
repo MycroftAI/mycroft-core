@@ -15,8 +15,9 @@ def _get_network_tests_config():
     """Get network_tests object from mycroft.configuration."""
     # Wrapped to avoid circular import errors.
     from mycroft.configuration import Configuration
+
     config = Configuration.get()
-    return config.get('network_tests', {})
+    return config.get("network_tests", {})
 
 
 def connected():
@@ -41,8 +42,8 @@ def _connected_ncsi():
         True if internet connection can be detected
     """
     config = _get_network_tests_config()
-    ncsi_endpoint = config.get('ncsi_endpoint')
-    expected_text = config.get('ncsi_expected_text')
+    ncsi_endpoint = config.get("ncsi_endpoint")
+    expected_text = config.get("ncsi_expected_text")
     try:
         r = requests.get(ncsi_endpoint)
         if r.text == expected_text:
@@ -64,19 +65,20 @@ def _connected_dns(host=None, port=53, timeout=3):
     # Service: domain (DNS/TCP)
     config = _get_network_tests_config()
     if host is None:
-        host = config.get('dns_primary')
+        host = config.get("dns_primary")
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.settimeout(timeout)
         s.connect((host, port))
         return True
     except IOError:
-        LOG.error("Unable to connect to primary DNS server, "
-                  "trying secondary...")
+        LOG.error(
+            "Unable to connect to primary DNS server, " "trying secondary..."
+        )
         try:
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             s.settimeout(timeout)
-            dns_secondary = config.get('dns_secondary')
+            dns_secondary = config.get("dns_secondary")
             s.connect((dns_secondary, port))
             return True
         except IOError:
@@ -91,11 +93,11 @@ def _connected_google():
     """
     connect_success = False
     config = _get_network_tests_config()
-    url = config.get('web_url')
+    url = config.get("web_url")
     try:
         urlopen(url, timeout=3)
     except URLError as ue:
-        LOG.error('Attempt to connect to internet failed: ' + str(ue.reason))
+        LOG.error("Attempt to connect to internet failed: " + str(ue.reason))
     else:
         connect_success = True
 
@@ -104,13 +106,18 @@ def _connected_google():
 
 def check_system_clock_sync_status() -> bool:
     clock_synchronized = False
-    timedatectl_result = subprocess.run("timedatectl", capture_output=True)
-    timedatectl_stdout = timedatectl_result.stdout.decode().split("\n")
-    for line in timedatectl_stdout:
-        if "System clock synchronized" in line:
-            synchronized_value = line.split(":")[1].strip()
-            if synchronized_value == "yes":
+
+    try:
+        timedatectl_result = subprocess.check_output(
+            ["timedatectl", "show"], stderr=subprocess.STDOUT
+        )
+        timedatectl_stdout = timedatectl_result.decode().splitlines()
+
+        for line in timedatectl_stdout:
+            if line.strip() == "NTPSynchronized=yes":
                 clock_synchronized = True
                 break
+    except subprocess.CalledProcessError as e:
+        LOG.exception("error while checking system clock sync: %s", e.output)
 
     return clock_synchronized
