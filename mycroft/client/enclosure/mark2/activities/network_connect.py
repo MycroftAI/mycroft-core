@@ -36,6 +36,8 @@ class NetworkConnectActivity(Activity):
         self._loop.run_until_complete(self._activity_proc_async())
         self._loop.close()
 
+        self.end()
+
     async def _activity_proc_async(self):
         self._state_ready = asyncio.Event()
         self._nm_state = NOT_CONNECTED

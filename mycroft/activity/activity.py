@@ -16,14 +16,14 @@ class Activity:
         self._started_event = f"{self.name}.started"
         self._ended_event = f"{self.name}.ended"
 
-        self.bus.on(self._started_event, self._handle_started)
-        self.bus.on(self._ended_event, self._handle_ended)
+        self.bus.on(self._started_event, self.handle_started)
+        self.bus.on(self._ended_event, self.handle_ended)
 
     def started(self):
         """Called when activity has started"""
         pass
 
-    def _handle_started(self, message: typing.Optional[Message] = None):
+    def handle_started(self, _):
         """Runs started() in respose to started event"""
         self.started()
 
@@ -31,7 +31,7 @@ class Activity:
         """Called when activity has ended"""
         pass
 
-    def _handle_ended(self, message: typing.Optional[Message] = None):
+    def handle_ended(self, _):
         """Runs ended() in response to ended event"""
         self.ended()
 

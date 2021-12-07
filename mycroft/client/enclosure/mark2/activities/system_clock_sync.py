@@ -29,8 +29,11 @@ class SystemClockSyncActivity(Activity):
                 if check_count % 60:
                     self.log.info("Waiting for system clock to synchronize...")
                 check_count += 1
+                time.sleep(1)
         except Exception:
             self.log.exception("error synchronizing system clock")
+
+        self.end()
 
     def ended(self):
         self._sync_thread.join(timeout=1.0)

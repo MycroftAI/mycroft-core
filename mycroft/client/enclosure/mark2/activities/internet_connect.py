@@ -33,5 +33,7 @@ class InternetConnectActivity(Activity):
         except Exception:
             self.log.exception("error checking for internet connection")
 
+        self.end()
+
     def ended(self):
         self._connect_thread.join(timeout=1.0)
