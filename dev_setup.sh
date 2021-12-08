@@ -543,9 +543,7 @@ fi
 
 if ! grep -q "$TOP" "$VENV_PATH_FILE" ; then
     echo 'Adding mycroft-core to virtualenv path'
-    sed -i.tmp '1 a\
-'"$TOP"'
-' "$VENV_PATH_FILE"
+    sed -i.tmp "1 a$TOP" "$VENV_PATH_FILE"
 fi
 
 # install required python modules
