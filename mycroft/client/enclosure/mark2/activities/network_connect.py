@@ -96,6 +96,7 @@ class NetworkConnectActivity(Activity):
                 await self._props_changed.wait()
 
                 while not (await is_connected()):
+                    self._props_changed.clear()
                     await self._props_changed.wait()
 
             # Report connected
