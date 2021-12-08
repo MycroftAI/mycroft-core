@@ -265,9 +265,11 @@ Would you like this to be added to your PATH in the .profile?'
         if [[ ! -f ~/.profile_mycroft ]] ; then
             # Only add the following to the .profile if .profile_mycroft
             # doesn't exist, indicating this script has not been run before
-            echo '' >> ~/.profile
-            echo '# include Mycroft commands' >> ~/.profile
-            echo 'source ~/.profile_mycroft' >> ~/.profile
+            {
+                echo ''
+                echo '# include Mycroft commands'
+                echo 'source ~/.profile_mycroft'
+            } >> ~/.profile
         fi
 
         echo "
