@@ -571,7 +571,7 @@ if ! pip install -r requirements/tests.txt ; then
 fi
 
 SYSMEM=$(free | awk '/^Mem:/ { print $2 }')
-MAXCORES=$(($SYSMEM / 2202010))
+MAXCORES=$((SYSMEM / 2202010))
 MINCORES=1
 CORES=$(nproc)
 
