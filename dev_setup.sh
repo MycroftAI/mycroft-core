@@ -22,7 +22,7 @@ export LANGUAGE=en
 # exit on any error
 set -Ee
 
-cd $(dirname $0)
+cd $(dirname "$0")
 TOP=$(pwd -L)
 
 function clean_mycroft_files() {
@@ -289,9 +289,9 @@ fi" > ~/.profile_mycroft
         echo 'This script will create that folder for you.  This requires sudo'
         echo 'permission and might ask you for a password...'
         setup_user=$USER
-        setup_group=$(id -gn $USER)
+        setup_group=$(id -gn "$USER")
         $SUDO mkdir -p /opt/mycroft/skills
-        $SUDO chown -R ${setup_user}:${setup_group} /opt/mycroft
+        $SUDO chown -R "${setup_user}":"${setup_group}" /opt/mycroft
         echo 'Created!'
     fi
     if [[ ! -d skills ]] ; then
@@ -319,7 +319,7 @@ If unsure answer yes.
 fi
 
 function os_is() {
-    [[ $(grep "^ID=" /etc/os-release | awk -F'=' '/^ID/ {print $2}' | sed 's/\"//g') == $1 ]]
+    [[ $(grep "^ID=" /etc/os-release | awk -F'=' '/^ID/ {print $2}' | sed 's/\"//g') == "$1" ]]
 }
 
 function os_is_like() {
@@ -485,7 +485,7 @@ else
     # first, look for a build of mimic in the folder
     has_mimic=''
     if [[ -f ${TOP}/mimic/bin/mimic ]] ; then
-        has_mimic=$(${TOP}/mimic/bin/mimic -lv | grep Voice) || true
+        has_mimic=$("${TOP}"/mimic/bin/mimic -lv | grep Voice) || true
     fi
 
     # in not, check the system path
@@ -538,7 +538,7 @@ if [[ ! -f $VENV_PATH_FILE ]] ; then
     echo "import sys; new=sys.path[sys.__plen:]; del sys.path[sys.__plen:]; p=getattr(sys,'__egginsert',0); sys.path[p:p]=new; sys.__egginsert = p+len(new)" >> "$VENV_PATH_FILE" || return 1
 fi
 
-if ! grep -q "$TOP" $VENV_PATH_FILE ; then
+if ! grep -q "$TOP" "$VENV_PATH_FILE" ; then
     echo 'Adding mycroft-core to virtualenv path'
     sed -i.tmp '1 a\
 '"$TOP"'
