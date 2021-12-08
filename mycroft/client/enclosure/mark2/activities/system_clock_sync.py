@@ -24,7 +24,10 @@ class SystemClockSyncActivity(Activity):
 
                 check_count += 1
                 time.sleep(1)
-        except Exception:
+        except Exception as error:
             self.log.exception("error synchronizing system clock")
+            self.bus.emit(
+                Message(f"{self.name}.error", data={"error": str(error)})
+            )
 
         self.end()

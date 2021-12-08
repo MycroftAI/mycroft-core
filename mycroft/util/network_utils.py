@@ -8,7 +8,9 @@ from enum import IntEnum
 from urllib.request import urlopen
 from urllib.error import URLError
 
+from dbus_next import BusType
 from dbus_next.aio import MessageBus
+
 
 from .log import LOG
 
@@ -130,6 +132,22 @@ def check_system_clock_sync_status() -> bool:
 
 NM_NAMESPACE = "org.freedesktop.NetworkManager"
 NM_PATH = "/org/freedesktop/NetworkManager"
+
+
+def get_dbus() -> MessageBus:
+    """Get configured DBus message bus"""
+    from mycroft.configuration import Configuration
+
+    config = Configuration.get()
+    dbus_config = config.get("dbus", {})
+    bus_address = dbus_config.get("bus_address")
+
+    if bus_address:
+        # Configured bus
+        return MessageBus(bus_address=bus_address)
+
+    # System bus
+    return MessageBus(bus_type=BusType.SYSTEM)
 
 
 async def get_network_manager(dbus: MessageBus):

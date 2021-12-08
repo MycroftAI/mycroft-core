@@ -78,7 +78,7 @@ def main(alive_hook=on_alive, started_hook=on_started, ready_hook=on_ready,
     event_scheduler = EventScheduler(bus)
     SkillApi.connect_bus(bus)
 
-    _wait_for_internet_connection()
+    # _wait_for_internet_connection()
     skill_manager = SkillManager(bus, watchdog)
     skill_manager.load_on_startup()
 
