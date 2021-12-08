@@ -151,9 +151,9 @@ def get_dbus() -> MessageBus:
 
 
 async def get_network_manager(dbus: MessageBus):
-    """Get DBus interface to NetworkManager"""
+    """Get DBus object, interface to NetworkManager"""
     introspection = await dbus.introspect(NM_NAMESPACE, NM_PATH)
 
     nm_object = dbus.get_proxy_object(NM_NAMESPACE, NM_PATH, introspection)
 
-    return nm_object.get_interface(NM_NAMESPACE)
+    return nm_object, nm_object.get_interface(NM_NAMESPACE)

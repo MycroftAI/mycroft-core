@@ -252,6 +252,10 @@ class EnclosureMark2(Enclosure):
         self.bus.on('hardware.internet-detected',
                     self.handle_internet_connected)
 
+        # Retry network detection when wifi setup is finished
+        self.bus.on('system.wifi.setup.connected',
+                    self.detect_network)
+
     def handle_start_recording(self, message):
         LOG.debug("Gathering speech stuff")
         if self.pulseLedThread is None:
@@ -368,7 +372,7 @@ class EnclosureMark2(Enclosure):
         LOG.info("Muting microphone during start up.")
         self.bus.emit(Message("mycroft.mic.mute"))
         self._remove_service_init_handlers()
-        self._detect_network()
+        self.detect_network()
 
     def _remove_service_init_handlers(self):
         """Deletes the event handlers for services initialized."""
@@ -376,7 +380,7 @@ class EnclosureMark2(Enclosure):
             self.bus.remove(f"{service}.initialize.ended",
                             self.handle_service_initialized)
 
-    def _detect_network(self):
+    def detect_network(self):
         network_activity = NetworkConnectActivity(
             "hardware.network-detection",
             self.bus
