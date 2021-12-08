@@ -22,33 +22,33 @@ from os.path import exists, isfile
 
 from mycroft.lock import Lock
 from mycroft.util.file_utils import get_temp_path
-from mycroft.configuration import BASE_FOLDER
+from ovos_utils.configuration import get_xdg_base
 
 
 class TestLock(unittest.TestCase):
     def setUp(self):
-        if exists(get_temp_path(BASE_FOLDER)):
-            rmtree(get_temp_path(BASE_FOLDER))
+        if exists(get_temp_path(get_xdg_base())):
+            rmtree(get_temp_path(get_xdg_base()))
 
     def test_create_lock(self):
         l1 = Lock('test')
         self.assertTrue(
-            isfile(get_temp_path(BASE_FOLDER, 'test.pid')))
+            isfile(get_temp_path(get_xdg_base(), 'test.pid')))
 
     def test_delete_lock(self):
         l1 = Lock('test')
         self.assertTrue(
-            isfile(get_temp_path(BASE_FOLDER, 'test.pid')))
+            isfile(get_temp_path(get_xdg_base(), 'test.pid')))
         l1.delete()
         self.assertFalse(
-            isfile(get_temp_path(BASE_FOLDER, 'test.pid')))
+            isfile(get_temp_path(get_xdg_base(), 'test.pid')))
 
     @patch('os.kill')
     def test_existing_lock(self, mock_kill):
         """ Test that an existing lock will kill the old pid. """
         l1 = Lock('test')
         self.assertTrue(
-            isfile(get_temp_path(BASE_FOLDER, 'test.pid')))
+            isfile(get_temp_path(get_xdg_base(), 'test.pid')))
         l2 = Lock('test2')
         self.assertFalse(mock_kill.called)
         l2 = Lock('test')
@@ -57,13 +57,13 @@ class TestLock(unittest.TestCase):
     def test_keyboard_interrupt(self):
         l1 = Lock('test')
         self.assertTrue(
-            isfile(get_temp_path(BASE_FOLDER, 'test.pid')))
+            isfile(get_temp_path(get_xdg_base(), 'test.pid')))
         try:
             os.kill(os.getpid(), signal.SIGINT)
         except KeyboardInterrupt:
             pass
         self.assertFalse(
-            isfile(get_temp_path(BASE_FOLDER, 'test.pid')))
+            isfile(get_temp_path(get_xdg_base(), 'test.pid')))
 
 
 if __name__ == '__main__':

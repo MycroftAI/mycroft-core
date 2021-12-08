@@ -15,8 +15,8 @@
 import os
 import shutil
 from os.path import join, expanduser, isdir
-import mycroft.configuration
 import xdg.BaseDirectory
+from ovos_utils.configuration import is_using_xdg, get_xdg_base
 
 
 class FileSystemAccess:
@@ -35,11 +35,11 @@ class FileSystemAccess:
         if not isinstance(path, str) or len(path) == 0:
             raise ValueError("path must be initialized as a non empty string")
 
-        path = expanduser(f'~/.{mycroft.configuration.BASE_FOLDER}/{path}')
+        path = expanduser(f'~/.{get_xdg_base()}/{path}')
 
-        if mycroft.configuration.is_using_xdg():
+        if is_using_xdg():
             xdg_path = expanduser(
-                f'{xdg.BaseDirectory.xdg_config_home}/{mycroft.configuration.BASE_FOLDER}/{path}')
+                f'{xdg.BaseDirectory.xdg_config_home}/{get_xdg_base()}/{path}')
             # Migrate from the old location if it still exists
             if isdir(path) and not isdir(xdg_path):
                 shutil.move(path, xdg_path)

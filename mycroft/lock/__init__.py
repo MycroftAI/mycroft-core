@@ -14,7 +14,7 @@
 #
 from signal import getsignal, signal, SIGKILL, SIGINT, SIGTERM, \
     SIG_DFL, default_int_handler, SIG_IGN  # signals
-from mycroft.configuration import BASE_FOLDER
+from ovos_utils.configuration import get_xdg_base
 import os  # Operating System functions
 
 #
@@ -98,7 +98,7 @@ class Lock:  # python 3+ 'class Lock'
 
     #
     # Class constants
-    DIRECTORY = get_temp_path(BASE_FOLDER)
+    DIRECTORY = get_temp_path(get_xdg_base())
     FILE = '/{}.pid'
 
     #

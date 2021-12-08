@@ -21,7 +21,8 @@ from inspect import signature
 
 from mycroft.api import is_paired
 from mycroft.enclosure.api import EnclosureAPI
-from mycroft.configuration import Configuration, BASE_FOLDER
+from mycroft.configuration import Configuration
+from ovos_utils.configuration import get_xdg_base
 from mycroft.messagebus.message import Message
 from mycroft.util.log import LOG
 from mycroft.util import connected
@@ -123,7 +124,7 @@ def _get_skill_locations(conf=None):
     # they should be considered applets rather than full applications
     skill_locations = list(reversed(
         [os.path.join(p, "skills")
-         for p in xdg.BaseDirectory.load_data_paths(BASE_FOLDER)]
+         for p in xdg.BaseDirectory.load_data_paths(get_xdg_base())]
     ))
 
     # load the old hardcoded /opt/mycroft/skills folder

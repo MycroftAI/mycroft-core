@@ -33,7 +33,8 @@ from mycroft.api import DeviceApi
 from mycroft.audio import wait_while_speaking
 from ovos_utils.enclosure.api import EnclosureAPI
 from mycroft.gui import SkillGUI
-from mycroft.configuration import Configuration, BASE_FOLDER
+from ovos_utils.configuration import is_using_xdg, get_xdg_base
+from mycroft.configuration import Configuration
 from mycroft.dialog import load_dialogs
 from mycroft.filesystem import FileSystemAccess
 from mycroft.messagebus.message import Message, dig_for_message
@@ -189,7 +190,7 @@ class MycroftSkill:
         # Otherwise save to XDG_CONFIG_DIR
         if not self.settings_write_path.joinpath('settings.json').exists():
             self.settings_write_path = Path(xdg.BaseDirectory.save_config_path(
-                BASE_FOLDER, 'skills', basename(self.root_dir)))
+                get_xdg_base(), 'skills', basename(self.root_dir)))
 
         # To not break existing setups,
         # read from skill directory if the settings file exists there
@@ -197,7 +198,7 @@ class MycroftSkill:
 
         # Then, check XDG_CONFIG_DIR
         if not settings_read_path.joinpath('settings.json').exists():
-            for path in xdg.BaseDirectory.load_config_paths(BASE_FOLDER, 'skills',
+            for path in xdg.BaseDirectory.load_config_paths(get_xdg_base(), 'skills',
                                                             basename(self.root_dir)):
                 path = Path(path)
                 # If there is a settings file here, use it

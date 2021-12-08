@@ -66,7 +66,8 @@ from xdg.BaseDirectory import xdg_cache_home
 import yaml
 
 from mycroft.api import DeviceApi, is_paired, is_backend_disabled
-from mycroft.configuration import Configuration, BASE_FOLDER
+from mycroft.configuration import Configuration
+from ovos_utils.configuration import get_xdg_base
 from mycroft.messagebus.message import Message
 from mycroft.util import camel_case_split
 from mycroft.util.log import LOG
@@ -249,7 +250,7 @@ class SettingsMetaUploader:
             LOG.debug('settingsmeta.json not uploaded - device is not paired')
 
         if not synced and not self._stopped:
-            self.upload_timer = Timer(ONE_MINUTE, self.upload)
+            self.upload_timer = Timer(60, self.upload)
             self.upload_timer.daemon = True
             self.upload_timer.start()
 
@@ -308,7 +309,7 @@ class SettingsMetaUploader:
 
 
 # Path to remote cache
-REMOTE_CACHE = Path(xdg_cache_home, BASE_FOLDER, 'remote_skill_settings.json')
+REMOTE_CACHE = Path(xdg_cache_home, get_xdg_base(), 'remote_skill_settings.json')
 
 
 def load_remote_settings_cache():
@@ -401,7 +402,7 @@ class SkillSettingsDownloader:
             self.download_timer.cancel()
 
         if self.continue_downloading:
-            self.download_timer = Timer(ONE_MINUTE, self.download)
+            self.download_timer = Timer(60, self.download)
             self.download_timer.daemon = True
             self.download_timer.start()
 

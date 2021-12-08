@@ -32,8 +32,8 @@ from threading import Thread, Lock
 from mycroft.messagebus.client import MessageBusClient
 from mycroft.messagebus.message import Message
 from mycroft.util.log import LOG
-from mycroft.configuration import Configuration, BASE_FOLDER
-from mycroft.configuration.ovos import is_using_xdg
+from mycroft.configuration import Configuration
+from ovos_utils.configuration import is_using_xdg, get_xdg_base
 
 import locale
 
@@ -187,7 +187,7 @@ def load_settings():
 
     # Check XDG_CONFIG_DIR
     if config_file is None:
-        for conf_dir in xdg.BaseDirectory.load_config_paths(BASE_FOLDER):
+        for conf_dir in xdg.BaseDirectory.load_config_paths(get_xdg_base()):
             xdg_file = os.path.join(conf_dir, filename)
             if os.path.isfile(xdg_file):
                 config_file = xdg_file
@@ -230,7 +230,7 @@ def save_settings():
         config_file = path
     else:
         config_file = os.path.join(xdg.BaseDirectory.xdg_config_home,
-                                   BASE_FOLDER, filename)
+                                   get_xdg_base(), filename)
 
     with io.open(config_file, 'w') as f:
         f.write(str(json.dumps(config, ensure_ascii=False)))

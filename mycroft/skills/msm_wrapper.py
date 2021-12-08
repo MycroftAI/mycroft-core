@@ -27,13 +27,14 @@ import xdg.BaseDirectory
 from mycroft.configuration import Configuration
 from mycroft.configuration.ovos import is_using_xdg
 from combo_lock import ComboLock
-from mycroft.util.log import LOG
-from mycroft.util.file_utils import get_temp_path
-from mycroft.configuration import BASE_FOLDER
 
 from mock_msm import \
     MycroftSkillsManager as MockMSM, \
     SkillRepo as MockSkillRepo
+
+from ovos_utils.configuration import get_xdg_base
+from mycroft.util.file_utils import get_temp_path
+from mycroft.util.log import LOG
 
 try:
     from msm.exceptions import MsmException
@@ -70,16 +71,16 @@ def get_skills_directory(conf=None):
     # if xdg is disabled, ignore it!
     elif not is_using_xdg():
         # old style mycroft-core skills path definition
-        data_dir = conf.get("data_dir") or "/opt/" + BASE_FOLDER
+        data_dir = conf.get("data_dir") or "/opt/" + get_xdg_base()
         folder = conf["skills"].get("msm", {}).get("directory", "skills")
         skills_folder = path.join(data_dir, folder)
     else:
-        skills_folder = xdg.BaseDirectory.save_data_path(BASE_FOLDER + '/skills')
+        skills_folder = xdg.BaseDirectory.save_data_path(get_xdg_base() + '/skills')
     # create folder if needed
     try:
         makedirs(skills_folder, exist_ok=True)
     except PermissionError:  # old style /opt/mycroft/skills not available
-        skills_folder = xdg.BaseDirectory.save_data_path(BASE_FOLDER + '/skills')
+        skills_folder = xdg.BaseDirectory.save_data_path(get_xdg_base() + '/skills')
         makedirs(skills_folder, exist_ok=True)
 
     return path.expanduser(skills_folder)
@@ -109,7 +110,7 @@ def build_msm_config(device_config: dict) -> MsmConfig:
     msm_config = device_config['skills'].get('msm', {})
     msm_repo_config = msm_config.get('repo', {})
     enclosure_config = device_config.get('enclosure', {})
-    data_dir = path.expanduser(device_config.get('data_dir', xdg.BaseDirectory.save_data_path(BASE_FOLDER)))
+    data_dir = path.expanduser(device_config.get('data_dir', xdg.BaseDirectory.save_data_path(get_xdg_base())))
     skills_dir = get_skills_directory(device_config)
     old_skills_dir = path.join(data_dir, msm_config.get('directory', "skills"))
 

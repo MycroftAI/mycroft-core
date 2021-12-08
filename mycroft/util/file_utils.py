@@ -21,6 +21,7 @@ accessing and curating mycroft's cache.
 import os
 import xdg.BaseDirectory
 from ovos_utils.file_utils import get_temp_path
+from ovos_utils.configuration import is_using_xdg, get_xdg_base
 import mycroft.configuration
 from mycroft.util.log import LOG
 # do not delete these imports, here for backwards compat!
@@ -62,20 +63,20 @@ def resolve_resource_file(res_name):
         return res_name
 
     # Now look for XDG_DATA_DIRS
-    for path in xdg.BaseDirectory.load_data_paths(mycroft.configuration.BASE_FOLDER):
+    for path in xdg.BaseDirectory.load_data_paths(get_xdg_base()):
         filename = os.path.join(path, res_name)
         if os.path.isfile(filename):
             return filename
 
     # Now look in the old user location
     filename = os.path.join(os.path.expanduser('~'),
-                            f'.{mycroft.configuration.BASE_FOLDER}',
+                            f'.{get_xdg_base()}',
                             res_name)
     if os.path.isfile(filename):
         return filename
 
     # Next look for /opt/mycroft/res/res_name
-    data_dir = config.get('data_dir', xdg.BaseDirectory.save_data_path(mycroft.configuration.BASE_FOLDER))
+    data_dir = config.get('data_dir', xdg.BaseDirectory.save_data_path(get_xdg_base()))
     res_dir = os.path.join(data_dir, 'res')
     filename = os.path.expanduser(os.path.join(res_dir, res_name))
     if os.path.isfile(filename):
@@ -152,12 +153,12 @@ def get_cache_directory(domain=None):
     config = mycroft.configuration.Configuration.get(remote=False)
     directory = config.get("cache_path")
     if not directory:
-        if not mycroft.configuration.is_using_xdg():
+        if not is_using_xdg():
             # If not defined, use /tmp/mycroft/cache
-            directory = get_temp_path(mycroft.configuration.BASE_FOLDER, 'cache')
+            directory = get_temp_path(get_xdg_base(), 'cache')
         else:
             directory = os.path.join(xdg.BaseDirectory.xdg_data_home,
-                                     mycroft.configuration.BASE_FOLDER, "cache")
+                                     get_xdg_base(), "cache")
     return ensure_directory_exists(directory, domain)
 
 

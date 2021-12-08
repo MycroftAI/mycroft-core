@@ -20,7 +20,7 @@ import xdg.BaseDirectory
 from requests import RequestException
 
 from mycroft.configuration.locations import *
-from mycroft.configuration.ovos import is_using_xdg
+from ovos_utils.configuration import is_using_xdg, get_xdg_config_locations
 from mycroft.util import camel_case_split
 from mycroft.util.json_helper import load_commented_json, merge_dict
 from mycroft.util.log import LOG
@@ -196,7 +196,7 @@ def _log_old_location_deprecation(old_user_config=OLD_USER_CONFIG):
     LOG.warning(" Note that this location is deprecated and will" +
                 " not be used in the future")
     LOG.warning(" Please move it to " + join(xdg.BaseDirectory.xdg_config_home,
-                                             BASE_FOLDER))
+                                             get_xdg_base()))
 
 
 def _get_system_constraints():
