@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import threading
 import time
 
 from mycroft.activity import Activity
@@ -11,12 +10,6 @@ class SystemClockSyncActivity(Activity):
     """Waits for the system clock to be synchronized with a NTP service."""
 
     def started(self):
-        self._sync_thread = threading.Thread(
-            target=self._sync_proc, daemon=True
-        )
-        self._sync_thread.start()
-
-    def _sync_proc(self):
         try:
             check_count = 0
             while True:
@@ -35,6 +28,3 @@ class SystemClockSyncActivity(Activity):
             self.log.exception("error synchronizing system clock")
 
         self.end()
-
-    def ended(self):
-        self._sync_thread.join(timeout=1.0)
