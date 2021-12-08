@@ -538,7 +538,7 @@ HOOK_FILE='./.git/hooks/pre-commit'
 if [[ -n $INSTALL_PRECOMMIT_HOOK ]] || grep -q 'MYCROFT DEV SETUP' $HOOK_FILE; then
     if [[ ! -f $HOOK_FILE ]] || grep -q 'MYCROFT DEV SETUP' $HOOK_FILE; then
         echo 'Installing PEP8 check as precommit-hook'
-        echo "#! $(which python)" > $HOOK_FILE
+        echo "#! $(command -v python)" > $HOOK_FILE
         echo '# MYCROFT DEV SETUP' >> $HOOK_FILE
         cat ./scripts/pre-commit >> $HOOK_FILE
         chmod +x $HOOK_FILE
