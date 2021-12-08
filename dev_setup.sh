@@ -22,7 +22,8 @@ export LANGUAGE=en
 # exit on any error
 set -Ee
 
-cd $(dirname "$0")
+ROOT_DIRNAME=$(dirname "$0")
+cd "$ROOT_DIRNAME"
 TOP=$(pwd -L)
 
 function clean_mycroft_files() {
