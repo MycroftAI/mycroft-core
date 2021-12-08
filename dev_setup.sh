@@ -35,7 +35,7 @@ generated within the mycroft-core directory.
 
 Do you wish to continue? (y/n)'
     while true; do
-        read -N1 -s key
+        read -rN1 -s key
         case $key in
         [Yy])
             sudo rm -rf /var/log/mycroft
@@ -146,7 +146,7 @@ function get_YN() {
     # Loop until the user hits the Y or the N key
     echo -e -n "Choice [${CYAN}Y${RESET}/${CYAN}N${RESET}]: "
     while true; do
-        read -N1 -s key
+        read -rN1 -s key
         case $key in
         [Yy])
             return 0
@@ -357,7 +357,7 @@ We have detected that your computer has the libjack-jackd2-0 package installed.
 Mycroft requires a conflicting package, and will likely uninstall this package.
 On some systems, this can cause other programs to be marked for removal.
 Please review the following package changes carefully."
-        read -p "Press enter to continue"
+        read -rp "Press enter to continue"
         $SUDO apt-get install $APT_PACKAGE_LIST
     else
         $SUDO apt-get install -y $APT_PACKAGE_LIST
@@ -451,7 +451,7 @@ function install_deps() {
 ${YELLOW}Make sure to manually install:$BLUE git python3 python-setuptools python-venv pygobject libtool libffi libjpg openssl autoconf bison swig glib2.0 portaudio19 mpg123 flac curl fann g++ jq\n$RESET"
 
         echo 'Warning: Failed to install all dependencies. Continue? y/N'
-        read -n1 continue
+        read -rn1 continue
         if [[ $continue != 'y' ]] ; then
             exit 1
         fi
@@ -562,7 +562,7 @@ fi
 # install required python modules
 if ! pip install -r requirements/requirements.txt ; then
     echo 'Warning: Failed to install required dependencies. Continue? y/N'
-    read -n1 continue
+    read -rn1 continue
     if [[ $continue != 'y' ]] ; then
         exit 1
     fi
@@ -573,7 +573,7 @@ if [[ ! $(pip install -r requirements/extra-audiobackend.txt) ||
 	! $(pip install -r requirements/extra-stt.txt) ||
 	! $(pip install -r requirements/extra-mark1.txt) ]] ; then
     echo 'Warning: Failed to install some optional dependencies. Continue? y/N'
-    read -n1 continue
+    read -rn1 continue
     if [[ $continue != 'y' ]] ; then
         exit 1
     fi
