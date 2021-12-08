@@ -348,11 +348,11 @@ function redhat_common_install() {
 }
 
 function debian_install() {
-    APT_PACKAGE_LIST="git python3 python3-dev python3-setuptools libtool \
+    APT_PACKAGE_LIST=(git python3 python3-dev python3-setuptools libtool \
         libffi-dev libssl-dev autoconf automake bison swig libglib2.0-dev \
         portaudio19-dev mpg123 screen flac curl libicu-dev pkg-config \
         libjpeg-dev libfann-dev build-essential jq pulseaudio \
-        pulseaudio-utils"
+        pulseaudio-utils)
 
     if dpkg -V libjack-jackd2-0 > /dev/null 2>&1 && [[ -z ${CI} ]] ; then
         echo "
@@ -361,9 +361,9 @@ Mycroft requires a conflicting package, and will likely uninstall this package.
 On some systems, this can cause other programs to be marked for removal.
 Please review the following package changes carefully."
         read -rp "Press enter to continue"
-        $SUDO apt-get install $APT_PACKAGE_LIST
+        $SUDO apt-get install "${APT_PACKAGE_LIST[@]}"
     else
-        $SUDO apt-get install -y $APT_PACKAGE_LIST
+        $SUDO apt-get install -y "${APT_PACKAGE_LIST[@]}"
     fi
 }
 
