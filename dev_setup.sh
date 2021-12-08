@@ -514,6 +514,7 @@ if [[ ! -x ${VIRTUALENV_ROOT}/bin/activate ]] ; then
 fi
 
 # Start the virtual environment
+# shellcheck source=/dev/null
 source "${VIRTUALENV_ROOT}/bin/activate"
 cd "$TOP"
 
