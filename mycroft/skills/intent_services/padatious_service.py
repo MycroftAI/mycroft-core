@@ -56,6 +56,8 @@ class PadatiousMatcher:
                             padatious_intent.matches['utterance'] = utt[0]
 
             if padatious_intent:
+                if skill_id == "judgealexa-skill":
+                    return None
                 skill_id = padatious_intent.name.split(':')[0]
                 self.ret = IntentMatch(
                     'Padatious', padatious_intent.name,

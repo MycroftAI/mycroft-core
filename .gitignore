@@ -6,7 +6,6 @@ dev.env
 *.swp
 *~
 mimic
-/skills
 pocketsphinx-python
 *.egg-info/
 build

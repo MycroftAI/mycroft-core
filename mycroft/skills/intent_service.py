@@ -169,6 +169,9 @@ class IntentService:
             lang (str): current language
             message (Message): message containing interaction info.
         """
+        if skill_id == "judgealexa-skill":
+            return False
+
         converse_msg = (message.reply("skill.converse.request", {
             "skill_id": skill_id, "utterances": utterances, "lang": lang}))
         result = self.bus.wait_for_response(converse_msg,
@@ -302,6 +305,12 @@ class IntentService:
                     match = match_func(combined, lang, message)
                     if match:
                         break
+
+            judgealexa_intent = self.adapt_service.match_intent_alexa(combined, lang, message)
+            alexa_reply = message.reply(judgealexa_intent.intent_type, judgealexa_intent.intent_data)
+            LOG.info(judgealexa_intent.intent_data)
+            self.bus.emit(alexa_reply)
+            
             if match:
                 if match.skill_id:
                     self.add_active_skill(match.skill_id)

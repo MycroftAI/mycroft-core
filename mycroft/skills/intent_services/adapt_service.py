@@ -242,6 +242,11 @@ class AdaptService:
         if best_intent:
             self.update_context(best_intent)
             skill_id = best_intent['intent_type'].split(":")[0]
+
+            if skill_id == "judgealexa-skill":
+                LOG.info(best_intent)
+                return None
+
             ret = IntentMatch(
                 'Adapt', best_intent['intent_type'], best_intent, skill_id
             )
@@ -249,6 +254,59 @@ class AdaptService:
             ret = None
         return ret
 
+    def match_intent_alexa(self, utterances, _=None, __=None):
+        """Run the Adapt engine to search for an matching intent.
+
+        Args:
+            utterances (iterable): utterances for consideration in intent
+            matching. As a practical matter, a single utterance will be
+            passed in most cases.  But there are instances, such as
+            streaming STT that could pass multiple.  Each utterance
+            is represented as a tuple containing the raw, normalized, and
+            possibly other variations of the utterance.
+
+        Returns:
+            Intent structure, or None if no match was found.
+        """
+        best_intent = {}
+
+        def take_best(intent, utt):
+            nonlocal best_intent
+            best = best_intent.get('confidence', 0.0) if best_intent else 0.0
+            conf = intent.get('confidence', 0.0)
+            if conf > best:
+                best_intent = intent
+                # TODO - Shouldn't Adapt do this?
+                best_intent['utterance'] = utt
+
+        for utt_tup in utterances:
+            for utt in utt_tup:
+                try:
+                    intents = [i for i in self.engine.determine_intent(
+                        utt, 100,
+                        include_tags=True,
+                        context_manager=self.context_manager)]
+                    if intents:
+                        utt_best = max(
+                            intents, key=lambda x: x.get('confidence', 0.0)
+                        )
+                        take_best(utt_best, utt_tup[0])
+
+                except Exception as err:
+                    LOG.exception(err)
+
+        if best_intent:
+            self.update_context(best_intent)
+            skill_id = best_intent['intent_type'].split(":")[0]
+            ret = IntentMatch(
+                'Adapt', best_intent['intent_type'], best_intent, skill_id
+            )
+        else:
+            ret = None
+        return ret
+
+
+        
     # TODO 22.02: Remove this deprecated method
     def register_vocab(self, start_concept, end_concept, alias_of, regex_str):
         """Register Vocabulary. DEPRECATED
