@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 import asyncio
-import threading
 import typing
 
-from mycroft.activity import Activity
+from mycroft.activity import ThreadActivity
 from mycroft.messagebus import Message
 from mycroft.util.network_utils import (
     get_dbus,
@@ -12,10 +11,10 @@ from mycroft.util.network_utils import (
 )
 
 # Network manager state
-# https://developer-old.gnome.org/NetworkManager/stable/nm-dbus-types.html#NMState
+# https://developer-old.gnome.org/NetworkManager/stable/nm-dbus-types.html#NMDeviceState
 
 NOT_CONNECTED = 0
-NETWORK_CONNECTED = 60
+NETWORK_CONNECTED = 100
 
 # NetworkManager constants
 NM_DEVICE_TYPE_ETHERNET = 1
@@ -25,7 +24,7 @@ NM_802_11_MODE_UNKNOWN = 0
 NM_802_11_MODE_INFRA = 2
 
 
-class NetworkConnectActivity(Activity):
+class NetworkConnectActivity(ThreadActivity):
     """Determines network connectivity using DBus NetworkManager"""
 
     def __init__(
@@ -34,27 +33,13 @@ class NetworkConnectActivity(Activity):
         super().__init__(name, bus)
 
         self._bus_address = bus_address
-        self._async_thread: typing.Optional[threading.Thread] = None
         self._props_changed: typing.Optional[asyncio.Event] = None
 
     def started(self):
-        self._async_thread = threading.Thread(
-            target=self._activity_proc, daemon=True
-        )
-        self._async_thread.start()
-
-    def ended(self):
-        if self._async_thread is not None:
-            self._async_thread.join(timeout=1.0)
-            self._async_thread = None
-
-    def _activity_proc(self):
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         loop.run_until_complete(self._activity_proc_async())
         loop.close()
-
-        self.end()
 
     async def _activity_proc_async(self):
         self._props_changed = asyncio.Event()
@@ -87,7 +72,7 @@ class NetworkConnectActivity(Activity):
                 return False
 
             # Initial connectivity check
-            if not (await is_connected()):
+            if not await is_connected():
                 # Report not connected
                 self.bus.emit(Message("hardware.network-not-detected"))
                 self.log.info("Network connection not detected")
@@ -95,7 +80,7 @@ class NetworkConnectActivity(Activity):
                 # Wait until connected
                 await self._props_changed.wait()
 
-                while not (await is_connected()):
+                while not await is_connected():
                     self._props_changed.clear()
                     await self._props_changed.wait()
 
@@ -127,7 +112,9 @@ class NetworkConnectActivity(Activity):
                 NM_NAMESPACE, device_path, dev_introspect
             )
 
-            dev_interface = dev_object.get_interface(f"{NM_NAMESPACE}.Device",)
+            dev_interface = dev_object.get_interface(
+                f"{NM_NAMESPACE}.Device",
+            )
 
             dev_type = await dev_interface.get_device_type()
 
@@ -186,7 +173,7 @@ class IsWifiConnected:
             # Only check state if *not* in access point mode.
             # It will always report connected otherwise.
             state = await self.dev_interface.get_state()
-            return state >= NETWORK_CONNECTED
+            return state == NETWORK_CONNECTED
 
         return False
 
@@ -200,4 +187,4 @@ class IsDeviceConnected:
     async def __call__(self):
         # Only check state
         state = await self.dev_interface.get_state()
-        return state >= NETWORK_CONNECTED
+        return state == NETWORK_CONNECTED
