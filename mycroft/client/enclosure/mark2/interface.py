@@ -25,6 +25,7 @@ from mycroft.util.log import LOG
 
 from .activities import (
     InternetConnectActivity,
+    HotspotActivity,
     NetworkConnectActivity,
     SystemClockSyncActivity
 )
@@ -248,13 +249,15 @@ class EnclosureMark2(Enclosure):
         self.bus.on('mycroft.stop.handled', self.handle_end_audio)
         self.bus.on('mycroft.capabilities.get', self.on_capabilities_get)
         self.bus.on('mycroft.started', self.handle_mycroft_started)
-        self.bus.on('hardware.network-detected', self.handle_network_detected)
+
+        self.bus.on('hardware.network-detected', self._detect_internet)
         self.bus.on('hardware.internet-detected',
                     self.handle_internet_connected)
 
-        # Retry network detection when wifi setup is finished
-        self.bus.on('system.wifi.setup.connected',
-                    self.detect_network)
+        self.bus.on('hardware.network-not-detected', self._create_hotspot)
+
+        # Try network detection again after wifi setup
+        self.bus.on('system.wifi.setup.connected', self._detect_network)
 
     def handle_start_recording(self, message):
         LOG.debug("Gathering speech stuff")
@@ -372,7 +375,7 @@ class EnclosureMark2(Enclosure):
         LOG.info("Muting microphone during start up.")
         self.bus.emit(Message("mycroft.mic.mute"))
         self._remove_service_init_handlers()
-        self.detect_network()
+        self._detect_network()
 
     def _remove_service_init_handlers(self):
         """Deletes the event handlers for services initialized."""
@@ -380,24 +383,21 @@ class EnclosureMark2(Enclosure):
             self.bus.remove(f"{service}.initialize.ended",
                             self.handle_service_initialized)
 
-    def detect_network(self):
+    def _detect_network(self, _message=None):
         network_activity = NetworkConnectActivity(
             "hardware.network-detection",
             self.bus
         )
         network_activity.run()
 
-    def handle_network_detected(self, _):
-        self._detect_internet()
-
-    def _detect_internet(self):
+    def _detect_internet(self, _message=None):
         internet_activity = InternetConnectActivity(
             "hardware.internet-detection",
             self.bus
         )
         internet_activity.run()
 
-    def handle_internet_connected(self, _):
+    def handle_internet_connected(self, _message=None):
         self._synchronize_system_clock()
         self._authenticate_with_server()
         if not self.is_authenticated:
@@ -424,6 +424,12 @@ class EnclosureMark2(Enclosure):
             "hardware.clock-sync", self.bus
         )
         sync_activity.run()
+
+    def _create_hotspot(self, _message=None):
+        hotspot_activity = HotspotActivity(
+            "network.hotspot", self.bus
+        )
+        hotspot_activity.run(block=False)
 
     def terminate(self):
         self.hardware.leds._set_led(10, (0, 0, 0))  # blank out reserved led
