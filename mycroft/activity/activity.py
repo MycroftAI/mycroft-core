@@ -1,6 +1,4 @@
 #!/usr/bin/env python3
-import typing
-
 from mycroft.messagebus import Message
 from mycroft.util import LOG
 
@@ -24,7 +22,7 @@ class Activity:
         pass
 
     def handle_started(self, _):
-        """Runs started() in respose to started event"""
+        """Runs started() in response to started event"""
         self.started()
 
     def ended(self):
