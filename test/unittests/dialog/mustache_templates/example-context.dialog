@@ -1,0 +1,1 @@
+Hello {{name}}, You have just won {{value}} dollars! Well, {{taxed_value}} dollars, after taxes.

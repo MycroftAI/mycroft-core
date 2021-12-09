@@ -1,0 +1,12 @@
+coveralls==1.8.2
+flake8==3.7.9
+pytest==5.2.4
+pytest-cov==2.8.1
+cov-core==1.15.0
+sphinx==2.2.1
+sphinx-rtd-theme==0.4.3
+https://github.com/krisgesling/tag-expressions-python/tarball/master/
+https://github.com/krisgesling/behave/tarball/master/
+allure-behave==2.8.10
+
+python-vlc==1.1.2

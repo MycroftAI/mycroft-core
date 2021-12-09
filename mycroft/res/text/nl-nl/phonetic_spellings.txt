@@ -1,0 +1,5 @@
+jalepeno: jallapenjo
+ai: A.I.
+mycroftai: mycroft A.I.
+spotify: spot-ify
+corgi: core-gee
