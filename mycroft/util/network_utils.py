@@ -109,6 +109,7 @@ def _connected_google():
 
 
 def check_system_clock_sync_status() -> bool:
+    """Return True if the system clock has been synchronized with NTP"""
     clock_synchronized = False
 
     try:
@@ -121,8 +122,10 @@ def check_system_clock_sync_status() -> bool:
             if line.strip() == "NTPSynchronized=yes":
                 clock_synchronized = True
                 break
-    except subprocess.CalledProcessError as e:
-        LOG.exception("error while checking system clock sync: %s", e.output)
+    except subprocess.CalledProcessError as error:
+        LOG.exception(
+            "error while checking system clock sync: %s", error.output
+        )
 
     return clock_synchronized
 
