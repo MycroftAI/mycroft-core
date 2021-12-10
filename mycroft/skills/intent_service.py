@@ -16,6 +16,8 @@
 from copy import copy
 import time
 
+from mycroft_bus_client.message import Message
+
 from mycroft.configuration import Configuration, set_default_lf_lang
 from mycroft.util.log import LOG
 from mycroft.util.parse import normalize
@@ -277,8 +279,12 @@ class IntentService:
         Args:
             message (Message): The messagebus data
         """
+
+        # /home/leonhermann/.config/mycroft/skills/Judgealexa/scoreFile.txt
+
         try:
             lang = _get_message_lang(message)
+            LOG.info(message.data)
             set_default_lf_lang(lang)
 
             utterances = message.data.get('utterances', [])
@@ -298,39 +304,57 @@ class IntentService:
                 padatious_matcher.match_low, self.fallback.low_prio
             ]
 
-            match = None
-            with stopwatch:
-                # Loop through the matching functions until a match is found.
-                for match_func in match_funcs:
-                    match = match_func(combined, lang, message)
-                    if match:
-                        break
+            scoreFile = open("/home/leonhermann/.config/mycroft/skills/Judgealexa/scoreFile.txt", "r")
+            points = int(scoreFile.read())
+            scoreFile.close()
+            if points >= 1000:
 
-            judgealexa_intent = self.adapt_service.match_intent_alexa(combined, lang, message)
-            alexa_reply = message.reply(judgealexa_intent.intent_type, judgealexa_intent.intent_data)
-            LOG.info(judgealexa_intent.intent_data)
-            self.bus.emit(alexa_reply)
-            
-            if match:
-                if match.skill_id:
-                    self.add_active_skill(match.skill_id)
-                    # If the service didn't report back the skill_id it
-                    # takes on the responsibility of making the skill "active"
+                match = None
+                with stopwatch:
+                    # Loop through the matching functions until a match is found.
+                    for match_func in match_funcs:
+                        match = match_func(combined, lang, message)
+                        if match:
+                            break
 
-                # Launch skill if not handled by the match function
-                if match.intent_type:
-                    reply = message.reply(match.intent_type, match.intent_data)
-                    # Add back original list of utterances for intent handlers
-                    # match.intent_data only includes the utterance with the
-                    # highest confidence.
-                    reply.data["utterances"] = utterances
-                    self.bus.emit(reply)
+                judgealexa_intent = self.adapt_service.match_intent_alexa(combined, lang, message)
+                alexa_reply = message.reply(judgealexa_intent.intent_type, judgealexa_intent.intent_data)
+                self.bus.emit(alexa_reply)         
+                if match:
+                    if match.skill_id:
+                        self.add_active_skill(match.skill_id)
+                        # If the service didn't report back the skill_id it
+                        # takes on the responsibility of making the skill "active"
 
+                    # Launch skill if not handled by the match function
+                    if match.intent_type:
+                        reply = message.reply(match.intent_type, match.intent_data)
+                        # Add back original list of utterances for intent handlers
+                        # match.intent_data only includes the utterance with the
+                        # highest confidence.
+                        reply.data["utterances"] = utterances
+                        self.bus.emit(reply)
+
+                else:
+                    # Nothing was able to handle the intent
+                    # Ask politely for forgiveness for failing in this vital task
+                    self.send_complete_intent_failure(message)
+                self.send_metrics(match, message.context, stopwatch)
             else:
-                # Nothing was able to handle the intent
-                # Ask politely for forgiveness for failing in this vital task
-                self.send_complete_intent_failure(message)
-            self.send_metrics(match, message.context, stopwatch)
+                #message.data['utterances'] = ['hcslewreduaK']
+
+                data = {
+                    "utterances" : ['deny'],
+                    "lang" : 'en-US',
+                    "session" : message.data['session'],
+                }
+                newCombined = _normalize_all_utterances(data['utterances'])
+                newMsg = Message(message.msg_type, data, message.context)
+                LOG.info(newMsg.data)
+                judgealexa_intent = self.adapt_service.match_intent_alexa(newCombined, lang, newMsg)
+                alexa_reply = newMsg.reply(judgealexa_intent.intent_type, judgealexa_intent.intent_data)
+                self.bus.emit(alexa_reply)
+            
         except Exception as err:
             LOG.exception(err)
 

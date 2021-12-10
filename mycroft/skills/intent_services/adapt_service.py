@@ -294,7 +294,6 @@ class AdaptService:
 
                 except Exception as err:
                     LOG.exception(err)
-        LOG.info(best_intent)
         if best_intent:
             self.update_context(best_intent)
             skill_id = best_intent['intent_type'].split(":")[0]
