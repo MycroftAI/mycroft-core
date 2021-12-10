@@ -38,9 +38,9 @@ def create_voight_kampff_logger():
 
 
 class InterceptAllBusClient(MessageBusClient):
-    """Bus Client storing all messages recieved.
+    """Bus Client storing all messages received.
 
-    This allows readback of older messages and non-event-driven operation.
+    This allows read back of older messages and non-event-driven operation.
     """
     def __init__(self):
         super().__init__()
@@ -49,8 +49,8 @@ class InterceptAllBusClient(MessageBusClient):
         self.new_message_available = Event()
         self._processed_messages = 0
 
-    def on_message(self, message):
-        """Extends normal operation by storing the recieved message.
+    def on_message(self, _, message):
+        """Extends normal operation by storing the received message.
 
         Args:
             message (Message): message from the Mycroft bus
@@ -58,13 +58,13 @@ class InterceptAllBusClient(MessageBusClient):
         with self.message_lock:
             self.messages.append(Message.deserialize(message))
         self.new_message_available.set()
-        super().on_message(message)
+        super().on_message(_, message)
 
     def get_messages(self, msg_type):
         """Get messages from received list of messages.
 
         Args:
-            msg_type (None,str): string filter for messagetype to extract.
+            msg_type (None,str): string filter for the message type to extract.
                                  if None all messages will be returned.
         """
         with self.message_lock:
@@ -82,7 +82,7 @@ class InterceptAllBusClient(MessageBusClient):
         """
         with self.message_lock:
             if msg not in self.messages:
-                raise ValueError(f'{msg} was not found in '
+                raise ValueError(f'{msg.msg_type} was not found in '
                                  'the list of messages.')
             # Update processed message count if a read message was removed
             if self.messages.index(msg) < self._processed_messages:
@@ -91,9 +91,9 @@ class InterceptAllBusClient(MessageBusClient):
             self.messages.remove(msg)
 
     def clear_messages(self):
-        """Clear all messages that has been fetched atleast once."""
+        """Clear all messages that has been fetched at least once."""
         with self.message_lock:
-            self.messages = self.messages[:self._processed_messages]
+            self.messages = self.messages[self._processed_messages:]
             self._processed_messages = 0
 
     def clear_all_messages(self):

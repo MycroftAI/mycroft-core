@@ -15,7 +15,7 @@
 # limitations under the License.
 
 SOURCE="${BASH_SOURCE[0]}"
-cd -P "$( dirname "$SOURCE" )"
+cd -P "$( dirname "$SOURCE" )" || exit
 DIR="$( pwd )"
 script=${0}
 script=${script##*/}
@@ -49,7 +49,7 @@ function help() {
 
 VIEWER="nano --syntax=json --view"
 if [ -z "$EDITOR" ] ; then
-    if [ $( which sensible-editor ) ] ; then
+    if which sensible-editor > /dev/null ; then
         EDITOR="sensible-editor"
     else
         EDITOR="nano --syntax=json --tempfile"
@@ -82,14 +82,14 @@ function validate_config_file() {
         return 0
     fi
 
-    echo -n ${BLUE}
+    echo -n "${BLUE}"
 
     # Remove any comments (lines starting with # or //) found in the file and
     # Use jq to validate and output errors
     sed 's/^\s*[#\/].*$//g' "$1" | sed '/^$/d' | jq -e "." > /dev/null
     result=$?
 
-    echo -n ${RESET}
+    echo -n "${RESET}"
 
     #xxx echo "RESULT=$result for $1"
     return $result
@@ -99,7 +99,7 @@ _conf_file="${XDG_CONFIG_HOME:-$HOME/.config}/mycroft/mycroft.conf"
 function name_to_path() {
     case ${1} in
         "system")     _conf_file="/etc/mycroft/mycroft.conf" ;;
-        "user")       _conf_file=$(readlink -f ${XDG_CONFIG_HOME:-$HOME/.config}/mycroft/mycroft.conf) ;;
+        "user")       _conf_file=$(readlink -f "${XDG_CONFIG_HOME:-$HOME/.config}/mycroft/mycroft.conf") ;;
         "default")    _conf_file="$DIR/../mycroft/configuration/mycroft.conf" ;;
         "remote")     _conf_file="$HOME/.cache/mycroft/web_cache.json" ;;
 
@@ -113,12 +113,12 @@ function name_to_path() {
 ################################################################
 
 function edit_config() {
-    name_to_path $1
-    validate_config_file $_conf_file
+    name_to_path "$1"
+    validate_config_file "$_conf_file"
     rc=$?
     if [ $rc -ne 0 ] ; then
         echo "${YELLOW}WARNING: ${RESET}Configuration file did not pass validation before edits."
-        read -p "Review errors above and press ENTER to continue with editing."
+        read -r -p "Review errors above and press ENTER to continue with editing."
     fi
 
     if [ -f "${_conf_file}" ] ; then
@@ -128,7 +128,7 @@ function edit_config() {
         echo "}" >> "${TEMP}/mycroft.json"
     fi
 
-    while [ 1 ] ; do
+    while true ; do
         case $1 in
         system | user)
             # Allow user to edit
@@ -150,19 +150,18 @@ function edit_config() {
         fi
 
         # file was changed, validate changes
-        validate_config_file $TEMP/mycroft.json
-        if [ $? -ne 0 ] ; then
+        if validate_config_file $TEMP/mycroft.json > /dev/null ; then
+            key="S"
+        else
             echo "${YELLOW}WARNING: ${RESET}Configuration file does not pass validation, see errors above."
             echo "Press X to abandon changes, S to force save, any other key to edit again."
-            read -N1 -s key
-        else
-            key="S"
+            read -r -N1 -s key
         fi
 
         case $key in
         [Ss])
             echo "Saving..."
-            mv $TEMP/mycroft.json $_conf_file
+            mv $TEMP/mycroft.json "$_conf_file"
             signal_reload_config
             break
             ;;
@@ -180,11 +179,11 @@ function signal_reload_config() {
     source "$DIR/../venv-activate.sh" -q
 
     # Post a messagebus notification to reload the config file
-    output=$(python -m mycroft.messagebus.send "configuration.updated"  "{}")
+    python -m mycroft.messagebus.send "configuration.updated"  "{}" > /dev/null
 }
 
 function show_config() {
-    name_to_path $1
+    name_to_path "$1"
 
     # Use jq to display formatted nicely (after stripping out comments)
     sed 's/^\s*[#\/].*$//g' "${_conf_file}" | sed '/^$/d' | jq "."
@@ -201,7 +200,7 @@ function get_config() {
     json_config=$( source "$DIR/../venv-activate.sh" -q && python -c "import json; from mycroft.configuration import Configuration; print(json.dumps(Configuration.get()))" )
 
     # Read the given variable from the mix
-    echo ${json_config} | jq -r "${value}"
+    echo "${json_config}" | jq -r "${value}"
 }
 
 function set_config() {
@@ -212,10 +211,9 @@ function set_config() {
         value=".${value}"
     fi
 
-    jq "${value} = \"$2\"" ~/.mycroft/mycroft.conf > "${TEMP}/~mycroft.conf"
-    if [ $? -eq 0 ] ; then
+    if jq "${value} = \"$2\"" "$_conf_file" > "${TEMP}/~mycroft.conf" ; then
         # Successful update, replace the config file
-        mv "${TEMP}/~mycroft.conf" ~/.mycroft/mycroft.conf
+        mv "${TEMP}/~mycroft.conf" "$_conf_file"
         signal_reload_config
     fi
 }
@@ -223,16 +221,16 @@ function set_config() {
 _opt=$1
 case ${_opt} in
     "edit")
-        edit_config $2
+        edit_config "$2"
         ;;
     "reload")
         signal_reload_config
         ;;
     "show")
-        show_config $2
+        show_config "$2"
         ;;
     "get")
-        get_config $2
+        get_config "$2"
         ;;
     "set")
         set_config "$2" "$3"

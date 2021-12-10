@@ -201,7 +201,7 @@ class PreciseHotword(HotWordEngine):
         # Make sure we pick the key we need from wherever it's located,
         # but save to a writeable location only
         local_conf = LocalConf(
-            join(xdg.BaseDirectory.save_config_path('mycroft'), 'mycroft.conf')
+            join(xdg.BaseDirectory.xdg_config_home, 'mycroft', 'mycroft.conf')
         )
 
         for conf_dir in xdg.BaseDirectory.load_config_paths('mycroft'):

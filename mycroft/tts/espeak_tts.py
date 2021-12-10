@@ -32,8 +32,32 @@ class ESpeak(TTS):
         Returns:
             tuple ((str) file location, None)
         """
-        subprocess.call(['espeak', '-v', self.lang + '+' + self.voice,
-                         '-w', wav_file, sentence])
+
+        # Create Argument String for Espeak
+        arguments = ['espeak', '-v', self.lang + '+' + self.voice]
+        amplitude = self.config.get('amplitude')
+        if amplitude:
+            arguments.append('-a '+amplitude)
+
+        gap = self.config.get('gap')
+        if gap:
+            arguments.append('-g '+gap)
+
+        capital = self.config.get('capital')
+        if capital:
+            arguments.append('-k '+capital)
+
+        pitch = self.config.get('pitch')
+        if pitch:
+            arguments.append('-p '+pitch)
+
+        speed = self.config.get('speed')
+        if speed:
+            arguments.append('-s '+speed)
+
+        arguments.extend(['-w', wav_file, sentence])
+
+        subprocess.call(arguments)
         return wav_file, None
 
 
