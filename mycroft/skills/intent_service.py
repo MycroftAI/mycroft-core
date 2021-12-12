@@ -344,7 +344,7 @@ class IntentService:
                 #message.data['utterances'] = ['hcslewreduaK']
 
                 data = {
-                    "utterances" : ['deny'],
+                    "utterances" : ['hcslewreduaK'],
                     "lang" : 'en-US',
                     "session" : message.data['session'],
                 }
