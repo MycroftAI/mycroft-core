@@ -250,14 +250,17 @@ class EnclosureMark2(Enclosure):
         self.bus.on('mycroft.capabilities.get', self.on_capabilities_get)
         self.bus.on('mycroft.started', self.handle_mycroft_started)
 
-        self.bus.on('hardware.network-detected', self._detect_internet)
+        # Request messages to detect network/internet
+        self.bus.on('hardware.detect-network', self._detect_network)
+        self.bus.on('hardware.detect-internet', self._detect_internet)
+
+        self.bus.on('hardware.network-detected',
+                    self._handle_network_detected)
         self.bus.on('hardware.internet-detected',
-                    self.handle_internet_connected)
+                    self._handle_internet_connected)
 
-        self.bus.on('hardware.network-not-detected', self._create_hotspot)
-
-        # Try network detection again after wifi setup
-        self.bus.on('system.wifi.setup.connected', self._detect_network)
+        self.bus.on('system.wifi.setup.create-hotspot',
+                    self._handle_create_hotspot)
 
     def handle_start_recording(self, message):
         LOG.debug("Gathering speech stuff")
@@ -383,21 +386,24 @@ class EnclosureMark2(Enclosure):
             self.bus.remove(f"{service}.initialize.ended",
                             self.handle_service_initialized)
 
-    def _detect_network(self, _message=None):
-        network_activity = NetworkConnectActivity(
-            "hardware.network-detection",
-            self.bus
-        )
-        network_activity.run()
+    def _handle_create_hotspot(self, _message=None):
+        """Communicate with awconnect container to create hotspot"""
+        self._create_hotspot()
 
-    def _detect_internet(self, _message=None):
-        internet_activity = InternetConnectActivity(
-            "hardware.internet-detection",
-            self.bus
-        )
-        internet_activity.run()
+    def _handle_detect_network(self, _message=None):
+        """Request to detect network"""
+        self._detect_network()
 
-    def handle_internet_connected(self, _message=None):
+    def _handle_detect_internet(self, _message=None):
+        """Request to detect internet"""
+        self._detect_internet()
+
+    def _handle_network_detected(self, _message=None):
+        """Detect internet once network is connected"""
+        self.bus.emit(Message("hardware.detect-internet"))
+
+    def _handle_internet_connected(self, _message=None):
+        """Complete enclosure setup"""
         self._synchronize_system_clock()
         self._authenticate_with_server()
         if not self.is_authenticated:
@@ -418,6 +424,22 @@ class EnclosureMark2(Enclosure):
         """
         pass
 
+    def _detect_network(self, _message=None):
+        """Check network connectivity over DBus"""
+        network_activity = NetworkConnectActivity(
+            "hardware.network-detection",
+            self.bus
+        )
+        network_activity.run()
+
+    def _detect_internet(self, _message=None):
+        """Check internet connectivity with network_utils"""
+        internet_activity = InternetConnectActivity(
+            "hardware.internet-detection",
+            self.bus
+        )
+        internet_activity.run()
+
     def _synchronize_system_clock(self):
         """Waits for the system clock to be synchronized with a NTP service."""
         sync_activity = SystemClockSyncActivity(
@@ -425,7 +447,7 @@ class EnclosureMark2(Enclosure):
         )
         sync_activity.run()
 
-    def _create_hotspot(self, _message=None):
+    def _create_hotspot(self):
         hotspot_activity = HotspotActivity(
             "network.hotspot", self.bus
         )

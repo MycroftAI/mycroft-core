@@ -9,6 +9,7 @@ SOCKET_PATH = "/awconnect/tmp/mycroft_socket"
 EVENT_CREATE = "create-hotspot"
 EVENT_CREATED = "hotspot-created"
 EVENT_CONNECTED = "user-connected"
+EVENT_SELECTED = "user-selected"
 EVENT_DESTROYED = "hotspot-destroyed"
 
 
@@ -21,7 +22,9 @@ class HotspotActivity(ThreadActivity):
 
         with sock.makefile(mode="rw") as conn_file:
             # Wait for hello
+            self.log.debug("Waiting for hello message")
             conn_file.readline()
+            self.log.info("Connected to awconnect")
 
             # Request that hotspot is created
             print(EVENT_CREATE, file=conn_file, flush=True)
@@ -39,6 +42,13 @@ class HotspotActivity(ThreadActivity):
                     self.bus.emit(
                         Message("system.wifi.setup.hotspot-connected")
                     )
+                elif line == EVENT_SELECTED:
+                    self.log.info("User selected access point")
+                    self.bus.emit(
+                        Message("system.wifi.setup.hotspot-selected")
+                    )
                 elif line == EVENT_DESTROYED:
-                    self.log.info("Wi-Fi setup complete")
-                    self.bus.emit(Message("system.wifi.setup.connected"))
+                    self.log.info("Hotspot destroyed")
+                    self.bus.emit(
+                        Message("system.wifi.setup.hotspot-deactivated")
+                    )
