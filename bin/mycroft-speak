@@ -24,4 +24,4 @@ source "$DIR/../venv-activate.sh" -q
 
 # Send a message to be spoken
 data="$*"
-output=$(python -m mycroft.messagebus.send "speak"  "{\"utterance\": \"$data\"}")
+python -m mycroft.messagebus.send "speak"  "{\"utterance\": \"$data\"}" >> /dev/null

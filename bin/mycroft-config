@@ -65,11 +65,17 @@ function found_exe() {
 }
 
 if found_exe tput ; then
+    # shellcheck disable=SC2034
     GREEN="$(tput setaf 2)"
+    # shellcheck disable=SC2034
     BLUE="$(tput setaf 4)"
+    # shellcheck disable=SC2034
     CYAN="$(tput setaf 6)"
+    # shellcheck disable=SC2034
     YELLOW="$(tput setaf 3)"
+    # shellcheck disable=SC2034
     RESET="$(tput sgr0)"
+    # shellcheck disable=SC2034
     HIGHLIGHT=${YELLOW}
 fi
 
