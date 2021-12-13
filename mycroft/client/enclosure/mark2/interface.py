@@ -251,6 +251,7 @@ class EnclosureMark2(Enclosure):
         self.bus.on('hardware.network-detected', self.handle_network_detected)
         self.bus.on('hardware.internet-detected',
                     self.handle_internet_connected)
+        self.bus.on('server-connect.authenticated', self.handle_server_authenticated)
 
     def handle_start_recording(self, message):
         LOG.debug("Gathering speech stuff")
@@ -395,15 +396,6 @@ class EnclosureMark2(Enclosure):
 
     def handle_internet_connected(self, _):
         self._synchronize_system_clock()
-        self._authenticate_with_server()
-        if not self.is_authenticated:
-            self._update_system()
-            if self.server_unavailable:
-                self._notify_server_unavailable()
-            else:
-                self._pair_with_server()
-        LOG.info("Device is ready for use, activating microphone")
-        self.bus.emit(Message("mycroft.mic.unmute"))
 
     def _update_system(self):
         """Skips system update using Admin service.
@@ -420,6 +412,13 @@ class EnclosureMark2(Enclosure):
             "hardware.clock-sync", self.bus
         )
         sync_activity.run()
+
+    def handle_server_authenticated(self, _):
+        LOG.info("Server authentication successful")
+        LOG.info("Activating microphone")
+        self.bus.emit(Message("mycroft.mic.unmute"))
+        LOG.info("Device is ready for user interactions")
+        self.bus.emit(Message("mycroft.ready"))
 
     def terminate(self):
         self.hardware.leds._set_led(10, (0, 0, 0))  # blank out reserved led
