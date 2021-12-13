@@ -43,9 +43,14 @@ class IdentityManager:
     def _load():
         LOG.debug('Loading identity')
         try:
-            with FileSystemAccess('identity').open('identity2.json', 'r') as f:
-                IdentityManager.__identity = DeviceIdentity(**json.load(f))
-        except Exception:
+            identity_dir = FileSystemAccess('identity')
+            if identity_dir.exists('identity2.json'):
+                with identity_dir.open('identity2.json', 'r') as f:
+                    IdentityManager.__identity = DeviceIdentity(**json.load(f))
+            else:
+                IdentityManager.__identity = DeviceIdentity()
+        except Exception as e:
+            LOG.exception(f'Failed to load identity file: {repr(e)}')
             IdentityManager.__identity = DeviceIdentity()
 
     @staticmethod
