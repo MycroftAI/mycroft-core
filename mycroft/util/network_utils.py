@@ -109,6 +109,7 @@ def _connected_google():
 
 
 def check_system_clock_sync_status() -> bool:
+    """Return True if the system clock has been synchronized with NTP"""
     clock_synchronized = False
 
     try:
@@ -121,8 +122,10 @@ def check_system_clock_sync_status() -> bool:
             if line.strip() == "NTPSynchronized=yes":
                 clock_synchronized = True
                 break
-    except subprocess.CalledProcessError as e:
-        LOG.exception("error while checking system clock sync: %s", e.output)
+    except subprocess.CalledProcessError as error:
+        LOG.exception(
+            "error while checking system clock sync: %s", error.output
+        )
 
     return clock_synchronized
 
@@ -151,9 +154,9 @@ def get_dbus() -> MessageBus:
 
 
 async def get_network_manager(dbus: MessageBus):
-    """Get DBus interface to NetworkManager"""
+    """Get DBus object, interface to NetworkManager"""
     introspection = await dbus.introspect(NM_NAMESPACE, NM_PATH)
 
     nm_object = dbus.get_proxy_object(NM_NAMESPACE, NM_PATH, introspection)
 
-    return nm_object.get_interface(NM_NAMESPACE)
+    return nm_object, nm_object.get_interface(NM_NAMESPACE)
