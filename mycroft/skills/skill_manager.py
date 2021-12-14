@@ -212,13 +212,6 @@ class SkillManager(Thread):
     def run(self):
         """Load skills and update periodically from disk and internet."""
         self._remove_git_locks()
-        # self._connected_event.wait()
-        # if (not self.skill_updater.defaults_installed() and
-        #         self.skills_config["auto_update"]):
-        #     LOG.info('Not all default skills are installed, '
-        #              'performing skill update...')
-        #     self.skill_updater.update_skills()
-        # self._load_on_startup()
 
         # Sync backend and skills.
         if is_paired() and not self.upload_queue.started:
