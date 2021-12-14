@@ -30,6 +30,8 @@ EVENT_DESTROYED = "hotspot-destroyed"
 
 _LOGGER = logging.getLogger("wifi-connect")
 
+_HOTSPOT_PROC: typing.Optional[subprocess.Popen] = None
+
 # -----------------------------------------------------------------------------
 
 
@@ -80,7 +82,7 @@ def main():
 
 
 def _client_thread(connection):
-    hotspot_proc: typing.Optional[subprocess.Popen] = None
+    global _HOTSPOT_PROC
 
     try:
         with connection, connection.makefile(mode="rw") as conn_file:
@@ -95,18 +97,18 @@ def _client_thread(connection):
                     _LOGGER.info("Creating hotspot: %s", SSID)
 
                     _cleanup_hotspot()
-                    if hotspot_proc is not None:
+                    if _HOTSPOT_PROC is not None:
                         try:
-                            hotspot_proc.wait(timeout=1)
+                            _HOTSPOT_PROC.wait(timeout=1)
                         except subprocess.TimeoutExpired:
-                            hotspot_proc.kill()
+                            _HOTSPOT_PROC.kill()
 
-                        hotspot_proc = None
+                        _HOTSPOT_PROC = None
 
-                    hotspot_proc = _create_hotspot()
+                    _HOTSPOT_PROC = _create_hotspot()
 
                     # Watch output from wifi-connect
-                    for hs_line in hotspot_proc.stdout:
+                    for hs_line in _HOTSPOT_PROC.stdout:
                         hs_line = hs_line.strip().lower()
                         _LOGGER.debug("wifi-connect: %s", hs_line)
 
@@ -125,15 +127,15 @@ def _client_thread(connection):
 
                     # Block until wifi-connect exits
                     try:
-                        hotspot_proc.communicate(timeout=1)
+                        _HOTSPOT_PROC.communicate(timeout=1)
                     except subprocess.TimeoutExpired:
-                        hotspot_proc.kill()
+                        _HOTSPOT_PROC.kill()
 
                     _cleanup_hotspot()
 
                     _LOGGER.info("Hotspot destroyed")
                     print(EVENT_DESTROYED, file=conn_file, flush=True)
-                    hotspot_proc = None
+                    _HOTSPOT_PROC = None
     except Exception:
         _LOGGER.exception("Error in client thread")
 
