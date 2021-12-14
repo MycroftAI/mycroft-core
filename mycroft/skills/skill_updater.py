@@ -56,8 +56,8 @@ class SkillUpdater:
         update_interval = self.config['skills']['update_interval']
         self.update_interval = int(update_interval) * ONE_HOUR
         self.dot_msm_path = os.path.join(self.msm.skills_dir, '.msm')
-        self.next_download = self._determine_next_download_time()
-        self._log_next_download_time()
+        self.next_download = None
+        self._update_download_time()
         self.installed_skills = set()
         self.default_skill_install_error = False
 
@@ -66,26 +66,6 @@ class SkillUpdater:
 
     def _register_bus_handlers(self):
         """TODO: Register bus handlers for triggering updates and such."""
-
-    def _determine_next_download_time(self):
-        """Determine the initial values of the next/last download times.
-
-        Update immediately if the .msm or installed skills file is missing
-        otherwise use the timestamp on .msm as a basis.
-        """
-        msm_files_exist = (
-            os.path.exists(self.dot_msm_path) and
-            os.path.exists(self.installed_skills_file_path)
-        )
-        if msm_files_exist:
-            mtime = os.path.getmtime(self.dot_msm_path)
-            next_download = mtime + self.update_interval
-        else:
-            # Last update can't be found or the requirements don't seem to be
-            # installed trigger update before skill loading
-            next_download = time() - 1
-
-        return next_download
 
     @property
     def installed_skills_file_path(self):
