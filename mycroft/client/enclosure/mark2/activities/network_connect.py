@@ -29,8 +29,8 @@ from mycroft.util.network_utils import (
 # Network manager state
 # https://developer-old.gnome.org/NetworkManager/stable/nm-dbus-types.html#NMDeviceState
 
-NOT_CONNECTED = 0
-NETWORK_CONNECTED = 100
+NM_DEVICE_STATE_DISCONNECTED = 30
+NM_DEVICE_STATE_ACTIVATED = 100
 
 # NetworkManager constants
 NM_DEVICE_TYPE_ETHERNET = 1
@@ -54,21 +54,48 @@ class DeviceState(str, Enum):
 
 
 class NetworkDevice:
+    """DBus network device"""
+
+    DISCONNECT_WAIT = 8.0
+    """Seconds to wait before double-checking disconnected state.
+
+    Devices pass through a disconnected state when switching modes, so we don't
+    want to report "not connected" too early.
+    """
+
     def __init__(self, name: str, dev_interface, props_interface):
         self.name = name
         self.dev_interface = dev_interface
         self.props_interface = props_interface
 
     async def is_connected(self) -> DeviceState:
+        """Return device connected state.
+
+        A "not ready" device will be checked again when one if its properties
+        has changed.
+        """
         # Only check state
         state = await self.dev_interface.get_state()
-        if state == NETWORK_CONNECTED:
+        LOG.info("%s state: %s", self.name, state)
+
+        if state == NM_DEVICE_STATE_ACTIVATED:
             return DeviceState.CONNECTED
 
-        return DeviceState.NOT_CONNECTED
+        if state == NM_DEVICE_STATE_DISCONNECTED:
+            # Wait and check again
+            await asyncio.sleep(NetworkDevice.DISCONNECT_WAIT)
+            state = await self.dev_interface.get_state()
+            LOG.info("%s state(2): %s", self.name, state)
+
+            if state == NM_DEVICE_STATE_DISCONNECTED:
+                return DeviceState.NOT_CONNECTED
+
+        return DeviceState.NOT_READY
 
 
 class WiFiDevice(NetworkDevice):
+    """DBus wireless network device"""
+
     def __init__(
         self, name: str, dev_interface, props_interface, wireless_interface
     ):
@@ -77,6 +104,8 @@ class WiFiDevice(NetworkDevice):
 
     async def is_connected(self) -> DeviceState:
         mode = await self.wireless_interface.get_mode()
+        LOG.debug("%s mode: %s", self.name, mode)
+
         if mode != NM_802_11_MODE_INFRA:
             return DeviceState.NOT_READY
 
@@ -134,17 +163,16 @@ class NetworkConnectActivity(ThreadActivity):
 
             self._subscribe_to_signals(devices)
 
-            # Initial connectivity check
-            if not await self._is_connected(devices):
+            if await self._is_connected(devices):
+                # Report connected
+                LOG.info("Network connection detected")
+                self.bus.emit(Message("hardware.network-detected"))
+            else:
                 # Report not connected
                 self.bus.emit(Message("hardware.network-not-detected"))
                 LOG.info("Network connection not detected")
 
-                await self._wait_for_connectivity(devices)
-
-            # Report connected
-            LOG.info("Network connection detected")
-            self.bus.emit(Message("hardware.network-detected"))
+                # await self._wait_for_connectivity(devices)
 
             self._cleanup(devices)
             await dbus.wait_for_disconnect()

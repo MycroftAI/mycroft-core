@@ -50,14 +50,14 @@ class AccessPointActivity(ThreadActivity):
             conn_file.readline()
             LOG.info("Connected to awconnect")
 
-            # Request that hotspot is created
+            # Request that access point is created
             print(EVENT_CREATE, file=conn_file, flush=True)
 
             for line in conn_file:
                 line = line.strip()
 
                 if line == EVENT_CREATED:
-                    LOG.info("Hotspot created")
+                    LOG.info("Access point created")
                     self.bus.emit(
                         Message("hardware.awconnect.ap-activated")
                     )
@@ -72,7 +72,7 @@ class AccessPointActivity(ThreadActivity):
                         Message("hardware.awconnect.credentials-entered")
                     )
                 elif line == EVENT_DESTROYED:
-                    LOG.info("Hotspot destroyed")
+                    LOG.info("Access point destroyed")
                     self.bus.emit(
                         Message("hardware.awconnect.ap-deactivated")
                     )

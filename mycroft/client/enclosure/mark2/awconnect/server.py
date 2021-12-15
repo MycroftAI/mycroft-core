@@ -49,7 +49,7 @@ EVENT_DESTROYED = "ap-destroyed"
 
 _LOGGER = logging.getLogger("wifi-connect")
 
-_HOTSPOT_PROC: typing.Optional[subprocess.Popen] = None
+_ACCESS_POINT_PROC: typing.Optional[subprocess.Popen] = None
 
 
 def main():
@@ -92,7 +92,7 @@ def main():
         except Exception:
             _LOGGER.exception("Error communicating with socket client")
         finally:
-            _cleanup_hotspot()
+            _cleanup_access_point()
 
 
 # -----------------------------------------------------------------------------
@@ -104,7 +104,7 @@ def _client_thread(connection):
     #
     # Additionally, we can't run this code on the main thread because
     # socket.accept() will miss clients.
-    global _HOTSPOT_PROC
+    global _ACCESS_POINT_PROC
 
     try:
         with connection, connection.makefile(mode="rw") as conn_file:
@@ -116,26 +116,26 @@ def _client_thread(connection):
 
                 # Wait for event from Mycroft
                 if line == EVENT_CREATE:
-                    _LOGGER.info("Creating hotspot: %s", SSID)
+                    _LOGGER.info("Creating access point: %s", SSID)
 
-                    _cleanup_hotspot()
-                    if _HOTSPOT_PROC is not None:
+                    _cleanup_access_point()
+                    if _ACCESS_POINT_PROC is not None:
                         try:
-                            _HOTSPOT_PROC.wait(timeout=1)
+                            _ACCESS_POINT_PROC.wait(timeout=1)
                         except subprocess.TimeoutExpired:
-                            _HOTSPOT_PROC.kill()
+                            _ACCESS_POINT_PROC.kill()
 
-                        _HOTSPOT_PROC = None
+                        _ACCESS_POINT_PROC = None
 
-                    _HOTSPOT_PROC = _create_hotspot()
+                    _ACCESS_POINT_PROC = _create_access_point()
 
                     # Watch output from wifi-connect
-                    for hs_line in _HOTSPOT_PROC.stdout:
+                    for hs_line in _ACCESS_POINT_PROC.stdout:
                         hs_line = hs_line.strip().lower()
                         _LOGGER.debug("wifi-connect: %s", hs_line)
 
                         if "created" in hs_line:
-                            _LOGGER.info("Hotspot created")
+                            _LOGGER.info("Access point created")
                             print(EVENT_CREATED, file=conn_file, flush=True)
                         elif "user connected" in hs_line:
                             _LOGGER.info("User visited portal page")
@@ -149,18 +149,20 @@ def _client_thread(connection):
                             print(
                                 EVENT_ENTERED_CREDS, file=conn_file, flush=True
                             )
+                        elif "stopping" in hs_line:
+                            _LOGGER.info("Access point destroyed")
+                            print(EVENT_DESTROYED, file=conn_file, flush=True)
 
                     # Block until wifi-connect exits
-                    try:
-                        _HOTSPOT_PROC.communicate(timeout=1)
-                    except subprocess.TimeoutExpired:
-                        _HOTSPOT_PROC.kill()
+                    if _ACCESS_POINT_PROC is not None:
+                        try:
+                            _ACCESS_POINT_PROC.communicate(timeout=1)
+                        except subprocess.TimeoutExpired:
+                            _ACCESS_POINT_PROC.kill()
 
-                    _cleanup_hotspot()
+                        _cleanup_access_point()
 
-                    _LOGGER.info("Hotspot destroyed")
-                    print(EVENT_DESTROYED, file=conn_file, flush=True)
-                    _HOTSPOT_PROC = None
+                    _ACCESS_POINT_PROC = None
     except Exception:
         _LOGGER.exception("Error in client thread")
 
@@ -168,13 +170,13 @@ def _client_thread(connection):
 # -----------------------------------------------------------------------------
 
 
-def _cleanup_hotspot():
-    """Delete existing hotspot if it exists"""
+def _cleanup_access_point():
+    """Delete existing access point if it exists"""
     subprocess.run(["nmcli", "connection", "delete", SSID], check=False)
 
 
-def _create_hotspot() -> subprocess.Popen:
-    """Create a new hotspot with wifi-connect"""
+def _create_access_point() -> subprocess.Popen:
+    """Create a new access point with wifi-connect"""
     return subprocess.Popen(
         [
             "/opt/wifi-connect/wifi-connect",
