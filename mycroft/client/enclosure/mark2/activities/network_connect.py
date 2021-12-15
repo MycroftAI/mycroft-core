@@ -1,9 +1,25 @@
-#!/usr/bin/env python3
+# Copyright 2019 Mycroft AI Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+"""Checks network connectivity using DBus and NetworkManager"""
 import asyncio
 import typing
+from enum import Enum
 
 from mycroft.activity import ThreadActivity
 from mycroft.messagebus import Message
+from mycroft.util.log import LOG
 from mycroft.util.network_utils import (
     get_dbus,
     get_network_manager,
@@ -24,87 +40,174 @@ NM_802_11_MODE_UNKNOWN = 0
 NM_802_11_MODE_INFRA = 2
 
 
+class DeviceState(str, Enum):
+    """State of a network device"""
+
+    NOT_CONNECTED = "not-connected"
+    """Device is not connected to a network"""
+
+    NOT_READY = "not-ready"
+    """Connectivity cannot be determined yet"""
+
+    CONNECTED = "connected"
+    """Device is connected to a network"""
+
+
+class NetworkDevice:
+    def __init__(self, name: str, dev_interface, props_interface):
+        self.name = name
+        self.dev_interface = dev_interface
+        self.props_interface = props_interface
+
+    async def is_connected(self) -> DeviceState:
+        # Only check state
+        state = await self.dev_interface.get_state()
+        if state == NETWORK_CONNECTED:
+            return DeviceState.CONNECTED
+
+        return DeviceState.NOT_CONNECTED
+
+
+class WiFiDevice(NetworkDevice):
+    def __init__(
+        self, name: str, dev_interface, props_interface, wireless_interface
+    ):
+        super().__init__(name, dev_interface, props_interface)
+        self.wireless_interface = wireless_interface
+
+    async def is_connected(self) -> DeviceState:
+        mode = await self.wireless_interface.get_mode()
+        if mode != NM_802_11_MODE_INFRA:
+            return DeviceState.NOT_READY
+
+        # Only check state if *not* in access point mode.
+        # It will always report connected otherwise.
+        return await super().is_connected()
+
+
+class NoNetworkDevicesError(Exception):
+    """Raised when no network devices are found on DBus"""
+
+    pass
+
+
 class NetworkConnectActivity(ThreadActivity):
     """Determines network connectivity using DBus NetworkManager"""
 
     def __init__(
-        self, name: str, bus, bus_address: typing.Optional[str] = None
+        self, name: str, bus, dbus_address: typing.Optional[str] = None
     ):
         super().__init__(name, bus)
 
-        self._bus_address = bus_address
+        self._dbus_address = dbus_address
         self._props_changed: typing.Optional[asyncio.Event] = None
+        self._error: typing.Optional[Exception] = None
 
-    def started(self):
+    def _run(self):
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         loop.run_until_complete(self._activity_proc_async())
         loop.close()
 
+        if self._error is not None:
+            # Ensure ended success is set correctly
+            raise self._error
+
     async def _activity_proc_async(self):
         self._props_changed = asyncio.Event()
 
         try:
-            dbus = get_dbus()
+            dbus = get_dbus(self._dbus_address)
             await dbus.connect()
 
             _nm_object, nm_interface = await get_network_manager(dbus)
 
             # Find wi-fi and ethernet devices
-            network_props_interfaces = await self._get_network_devices(
-                dbus, nm_interface
-            )
+            devices = await self._get_network_devices(dbus, nm_interface)
 
-            assert network_props_interfaces, "No network devices found on DBus"
-
-            for dev_props_interface, _ in network_props_interfaces:
-                # Subscribe to state updates
-                dev_props_interface.on_properties_changed(
-                    self._dev_props_changed
+            if not devices:
+                # Will raise in _run
+                self._error = NoNetworkDevicesError(
+                    "No network devices found on DBus"
                 )
+                return
 
-            async def is_connected():
-                """True if any device is connected"""
-                for _, is_dev_connected in network_props_interfaces:
-                    if await is_dev_connected():
-                        return True
-
-                return False
+            self._subscribe_to_signals(devices)
 
             # Initial connectivity check
-            if not await is_connected():
+            if not await self._is_connected(devices):
                 # Report not connected
                 self.bus.emit(Message("hardware.network-not-detected"))
-                self.log.info("Network connection not detected")
+                LOG.info("Network connection not detected")
 
-                # Wait until connected
-                await self._props_changed.wait()
-
-                while not await is_connected():
-                    self._props_changed.clear()
-                    await self._props_changed.wait()
+                await self._wait_for_connectivity(devices)
 
             # Report connected
+            LOG.info("Network connection detected")
             self.bus.emit(Message("hardware.network-detected"))
-            self.log.info("Network connection detected")
 
-            # Clean up
-            for dev_props_interface, _ in network_props_interfaces:
-                dev_props_interface.off_properties_changed(
-                    self._dev_props_changed
-                )
-
+            self._cleanup(devices)
             await dbus.wait_for_disconnect()
         except Exception as error:
-            self.log.exception("error while checking for network connectivity")
-            self.bus.emit(
-                Message(f"{self.name}.error", data={"error": str(error)})
+            LOG.exception("error while checking for network connectivity")
+            self._error = error  # will raise in _run
+
+    def _subscribe_to_signals(self, devices):
+        """Watch all network devices for property changes"""
+        for device in devices:
+            # Subscribe to state updates
+            device.props_interface.on_properties_changed(
+                self._dev_props_changed
             )
 
-    async def _get_network_devices(self, dbus, nm_interface):
+    def _dev_props_changed(
+        self, _interface, _changed_props, _invalidated_props
+    ):
+        """Callback for properties changed signal"""
+        if self._props_changed is not None:
+            self._props_changed.set()
+
+    async def _wait_for_connectivity(self, devices):
+        """Wait until at least one network device is connected"""
+        await self._props_changed.wait()
+
+        while not await self._is_connected(devices):
+            self._props_changed.clear()
+            await self._props_changed.wait()
+
+    async def _is_connected(self, devices):
+        """True if any device is connected"""
+        while True:
+            all_disconnected = True
+
+            for device in devices:
+                state = await device.is_connected()
+                if state == DeviceState.CONNECTED:
+                    LOG.info("Device connected: %s", device.name)
+                    return True
+
+                if state == DeviceState.NOT_READY:
+                    all_disconnected = False
+
+            if all_disconnected:
+                break
+
+            await self._props_changed.wait()
+
+        return False
+
+    def _cleanup(self, devices):
+        """Remove signal handlers"""
+        for device in devices:
+            device.props_interface.off_properties_changed(
+                self._dev_props_changed
+            )
+
+    async def _get_network_devices(
+        self, dbus, nm_interface
+    ) -> typing.List[NetworkDevice]:
         """Get DBus interfaces and is_connected methods for network devices"""
-        # Pairs of (dbus_props_interface, is_device_connected)
-        network_devices = []
+        network_devices: typing.List[NetworkDevice] = []
 
         for device_path in await nm_interface.get_all_devices():
             dev_introspect = await dbus.introspect(NM_NAMESPACE, device_path)
@@ -121,7 +224,7 @@ class NetworkConnectActivity(ThreadActivity):
             # TODO: Include ethernet
             # if dev_type in {NM_DEVICE_TYPE_ETHERNET, NM_DEVICE_TYPE_WIFI}:
             if dev_type in {NM_DEVICE_TYPE_WIFI}:
-                self.log.debug("Network device found: %s", device_path)
+                LOG.debug("Network device found: %s", device_path)
 
                 # Get access to PropertiesChanged signal
                 dev_props_interface = dev_object.get_interface(
@@ -129,6 +232,8 @@ class NetworkConnectActivity(ThreadActivity):
                 )
 
                 if dev_type == NM_DEVICE_TYPE_WIFI:
+                    dev_name = await dev_interface.get_interface()
+
                     # Need to check for AP mode before looking at
                     # connectivity state.
                     #
@@ -138,53 +243,20 @@ class NetworkConnectActivity(ThreadActivity):
                         f"{NM_NAMESPACE}.Device.Wireless",
                     )
 
-                    is_dev_connected = IsWifiConnected(
-                        dev_interface, wireless_interface
+                    network_devices.append(
+                        WiFiDevice(
+                            dev_name,
+                            dev_interface,
+                            dev_props_interface,
+                            wireless_interface,
+                        )
                     )
                 else:
                     # Just use device state for ethernet
-                    is_dev_connected = IsDeviceConnected(dev_interface)
-
-                network_devices.append((dev_props_interface, is_dev_connected))
+                    network_devices.append(
+                        NetworkDevice(
+                            dev_name, dev_interface, dev_props_interface
+                        )
+                    )
 
         return network_devices
-
-    def _dev_props_changed(
-        self, _interface, _changed_props, _invalidated_props
-    ):
-        """Callback for properties changed signal"""
-        if self._props_changed is not None:
-            self._props_changed.set()
-
-
-# -----------------------------------------------------------------------------
-
-
-class IsWifiConnected:
-    """Check if DBus Wi-Fi device is connected"""
-
-    def __init__(self, dev_interface, wireless_interface):
-        self.dev_interface = dev_interface
-        self.wireless_interface = wireless_interface
-
-    async def __call__(self):
-        mode = await self.wireless_interface.get_mode()
-        if mode == NM_802_11_MODE_INFRA:
-            # Only check state if *not* in access point mode.
-            # It will always report connected otherwise.
-            state = await self.dev_interface.get_state()
-            return state == NETWORK_CONNECTED
-
-        return False
-
-
-class IsDeviceConnected:
-    """Check if DBus network device is connected"""
-
-    def __init__(self, dev_interface):
-        self.dev_interface = dev_interface
-
-    async def __call__(self):
-        # Only check state
-        state = await self.dev_interface.get_state()
-        return state == NETWORK_CONNECTED

@@ -137,13 +137,8 @@ NM_NAMESPACE = "org.freedesktop.NetworkManager"
 NM_PATH = "/org/freedesktop/NetworkManager"
 
 
-def get_dbus() -> MessageBus:
-    """Get configured DBus message bus"""
-    from mycroft.configuration import Configuration
-
-    config = Configuration.get()
-    dbus_config = config.get("dbus", {})
-    bus_address = dbus_config.get("bus_address")
+def get_dbus(bus_address: typing.Optional[str] = None) -> MessageBus:
+    """Get DBus message bus"""
 
     if bus_address:
         # Configured bus

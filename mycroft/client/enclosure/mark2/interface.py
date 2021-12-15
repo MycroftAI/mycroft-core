@@ -24,10 +24,10 @@ from mycroft.util.hardware_capabilities import EnclosureCapabilities
 from mycroft.util.log import LOG
 
 from .activities import (
+    AccessPointActivity,
     InternetConnectActivity,
-    HotspotActivity,
     NetworkConnectActivity,
-    SystemClockSyncActivity
+    SystemClockSyncActivity,
 )
 
 SERVICES = ("audio", "skills", "speech")
@@ -160,7 +160,7 @@ class EnclosureMark2(Enclosure):
         super().__init__()
         self.display_bus_client = None
         self.finished_loading = False
-        self.active_screen = 'loading'
+        self.active_screen = "loading"
         self.paused_screen = None
         self.is_pairing = False
         self.active_until_stopped = None
@@ -171,7 +171,7 @@ class EnclosureMark2(Enclosure):
         self.ready_services = set()
         self.is_paired = False
 
-        self.system_volume = 0.5   # pulse audio master system volume
+        self.system_volume = 0.5  # pulse audio master system volume
         # if you want to do anything with the system volume
         # (ala pulseaudio, etc) do it here!
         self.current_volume = 0.5  # hardware/board level volume
@@ -186,7 +186,8 @@ class EnclosureMark2(Enclosure):
         )
         self.temperatureMonitorThread.start()
 
-        self.hardware.leds.set_leds([
+        self.hardware.leds.set_leds(
+            [
                 self.hardware.palette.BLACK,
                 self.hardware.palette.BLACK,
                 self.hardware.palette.BLACK,
@@ -196,13 +197,13 @@ class EnclosureMark2(Enclosure):
                 self.hardware.palette.BLACK,
                 self.hardware.palette.BLACK,
                 self.hardware.palette.BLACK,
-                self.hardware.palette.BLACK
-                ])
+                self.hardware.palette.BLACK,
+            ]
+        )
 
         self.hardware.leds._set_led_with_brightness(
-            self.reserved_led,
-            self.hardware.palette.MAGENTA,
-            0.5)
+            self.reserved_led, self.hardware.palette.MAGENTA, 0.5
+        )
 
         # set mute led based on reality
         mute_led_color = self.hardware.palette.GREEN
@@ -210,9 +211,8 @@ class EnclosureMark2(Enclosure):
             mute_led_color = self.hardware.palette.RED
 
         self.hardware.leds._set_led_with_brightness(
-            self.mute_led,
-            mute_led_color,
-            1.0)
+            self.mute_led, mute_led_color, 1.0
+        )
 
         self.default_caps = EnclosureCapabilities()
 
@@ -228,46 +228,58 @@ class EnclosureMark2(Enclosure):
         self.current_volume = vol
         LOG.info(f"Async set volume to {self.current_volume}")
         # notify anybody listening on the bus who cares
-        self.bus.emit(Message("hardware.volume", {
-            "volume": self.current_volume}, context={"source": ["enclosure"]}))
+        self.bus.emit(
+            Message(
+                "hardware.volume",
+                {"volume": self.current_volume},
+                context={"source": ["enclosure"]},
+            )
+        )
 
     def _define_event_handlers(self):
         """Assigns methods to act upon message bus events."""
         for service in SERVICES:
-            self.bus.on(f'{service}.initialize.ended',
-                        self.handle_service_initialized)
-        self.bus.on('mycroft.volume.set', self.on_volume_set)
-        self.bus.on('mycroft.volume.get', self.on_volume_get)
-        self.bus.on('mycroft.volume.duck', self.on_volume_duck)
-        self.bus.on('mycroft.volume.unduck', self.on_volume_unduck)
-        self.bus.on('recognizer_loop:record_begin',
-                    self.handle_start_recording)
-        self.bus.on('recognizer_loop:record_end', self.handle_stop_recording)
-        self.bus.on('recognizer_loop:audio_output_end', self.handle_end_audio)
-        self.bus.on('mycroft.speech.recognition.unknown',
-                    self.handle_end_audio)
-        self.bus.on('mycroft.stop.handled', self.handle_end_audio)
-        self.bus.on('mycroft.capabilities.get', self.on_capabilities_get)
-        self.bus.on('mycroft.started', self.handle_mycroft_started)
+            self.bus.on(
+                f"{service}.initialize.ended", self.handle_service_initialized
+            )
+        self.bus.on("mycroft.volume.set", self.on_volume_set)
+        self.bus.on("mycroft.volume.get", self.on_volume_get)
+        self.bus.on("mycroft.volume.duck", self.on_volume_duck)
+        self.bus.on("mycroft.volume.unduck", self.on_volume_unduck)
+        self.bus.on(
+            "recognizer_loop:record_begin", self.handle_start_recording
+        )
+        self.bus.on("recognizer_loop:record_end", self.handle_stop_recording)
+        self.bus.on("recognizer_loop:audio_output_end", self.handle_end_audio)
+        self.bus.on(
+            "mycroft.speech.recognition.unknown", self.handle_end_audio
+        )
+        self.bus.on("mycroft.stop.handled", self.handle_end_audio)
+        self.bus.on("mycroft.capabilities.get", self.on_capabilities_get)
+        self.bus.on("mycroft.started", self.handle_mycroft_started)
 
         # Request messages to detect network/internet
-        self.bus.on('hardware.detect-network', self._detect_network)
-        self.bus.on('hardware.detect-internet', self._detect_internet)
+        self.bus.on("hardware.detect-network", self._handle_detect_network)
+        self.bus.on("hardware.detect-internet", self._handle_detect_internet)
 
-        self.bus.on('hardware.network-detected',
-                    self._handle_network_detected)
-        self.bus.on('hardware.internet-detected',
-                    self._handle_internet_connected)
+        self.bus.on("hardware.network-detected", self._handle_network_detected)
+        self.bus.on(
+            "hardware.internet-detected", self._handle_internet_connected
+        )
 
-        self.bus.on('system.wifi.setup.create-hotspot',
-                    self._handle_create_hotspot)
-        self.bus.on('server-connect.authenticated', self.handle_server_authenticated)
+        self.bus.on(
+            "hardware.awconnect.create-ap", self._handle_create_access_point
+        )
+        self.bus.on(
+            "server-connect.authenticated", self.handle_server_authenticated
+        )
 
     def handle_start_recording(self, message):
         LOG.debug("Gathering speech stuff")
         if self.pulseLedThread is None:
-            self.pulseLedThread = PulseLedThread(self.hardware.leds,
-                                                 self.hardware.palette)
+            self.pulseLedThread = PulseLedThread(
+                self.hardware.leds, self.hardware.palette
+            )
             self.pulseLedThread.start()
 
     def handle_stop_recording(self, message):
@@ -279,9 +291,9 @@ class EnclosureMark2(Enclosure):
             self.pulseLedThread.join()
             self.pulseLedThread = None
         if self.chaseLedThread is None:
-            self.chaseLedThread = ChaseLedThread(self.hardware.leds,
-                                                 background_color,
-                                                 foreground_color)
+            self.chaseLedThread = ChaseLedThread(
+                self.hardware.leds, background_color, foreground_color
+            )
             self.chaseLedThread.start()
 
     def handle_end_audio(self, message):
@@ -305,35 +317,43 @@ class EnclosureMark2(Enclosure):
 
     def on_volume_set(self, message):
         self.current_volume = message.data.get("percent", self.current_volume)
-        LOG.info(f'Setting volume to {self.current_volume}')
+        LOG.info(f"Setting volume to {self.current_volume}")
         self.hardware.hardware_volume.set_volume(float(self.current_volume))
 
         # notify anybody listening on the bus who cares
-        self.bus.emit(Message("hardware.volume", {
-            "volume": self.current_volume}, context={"source": ["enclosure"]}))
+        self.bus.emit(
+            Message(
+                "hardware.volume",
+                {"volume": self.current_volume},
+                context={"source": ["enclosure"]},
+            )
+        )
 
     def on_volume_get(self, message):
         self.current_volume = self.hardware.hardware_volume.get_volume()
         if self.current_volume > 1.0:
             self.current_volume = self.current_volume / 10
-        LOG.info(f'Current volume {self.current_volume}')
+        LOG.info(f"Current volume {self.current_volume}")
         self.bus.emit(
             message.response(
-                data={'percent': self.current_volume, 'muted': False}))
+                data={"percent": self.current_volume, "muted": False}
+            )
+        )
 
     def on_capabilities_get(self, message):
-        LOG.info('Enclosure capabilities requested')
+        LOG.info("Enclosure capabilities requested")
         self.bus.emit(
             message.response(
                 data={
-                    'default': self.default_caps.caps,
-                    'extra': self.hardware.capabilities,
-                    'board_type': self.hardware.board_type,
-                    'leds': self.hardware.leds.capabilities,
-                    'volume': self.hardware.hardware_volume.capabilities,
-                    'switches': self.hardware.switches.capabilities
-                    }
-                ))
+                    "default": self.default_caps.caps,
+                    "extra": self.hardware.capabilities,
+                    "board_type": self.hardware.board_type,
+                    "leds": self.hardware.leds.capabilities,
+                    "volume": self.hardware.hardware_volume.capabilities,
+                    "switches": self.hardware.switches.capabilities,
+                }
+            )
+        )
 
     def handle_service_initialized(self, message: Message):
         """Apply a service ready message to the mycroft ready aggregation
@@ -341,7 +361,7 @@ class EnclosureMark2(Enclosure):
         Args:
             message: The event that triggered this method
         """
-        service = message.msg_type.split('.')[0]
+        service = message.msg_type.split(".")[0]
         LOG.info(f"{service.title()} service has been initialized")
         self._check_all_services_initialized(service)
 
@@ -355,9 +375,9 @@ class EnclosureMark2(Enclosure):
         for service in SERVICES:
             if service not in self.ready_services:
                 response = self.bus.wait_for_response(
-                    Message('mycroft.{}.is_ready'.format(service))
+                    Message("mycroft.{}.is_ready".format(service))
                 )
-                if response and response.data['status']:
+                if response and response.data["status"]:
                     LOG.info(f"{service.title()} service has been initialized")
                     self._check_all_services_initialized(service)
 
@@ -379,17 +399,18 @@ class EnclosureMark2(Enclosure):
         LOG.info("Muting microphone during start up.")
         self.bus.emit(Message("mycroft.mic.mute"))
         self._remove_service_init_handlers()
-        self._detect_network()
+        self.bus.emit(Message("hardware.detect-network"))
 
     def _remove_service_init_handlers(self):
         """Deletes the event handlers for services initialized."""
         for service in SERVICES:
-            self.bus.remove(f"{service}.initialize.ended",
-                            self.handle_service_initialized)
+            self.bus.remove(
+                f"{service}.initialize.ended", self.handle_service_initialized
+            )
 
-    def _handle_create_hotspot(self, _message=None):
-        """Communicate with awconnect container to create hotspot"""
-        self._create_hotspot()
+    def _handle_create_access_point(self, _message=None):
+        """Communicate with awconnect container to create Mycroft access point"""
+        self._create_access_point()
 
     def _handle_detect_network(self, _message=None):
         """Request to detect network"""
@@ -416,19 +437,20 @@ class EnclosureMark2(Enclosure):
         """
         pass
 
-    def _detect_network(self, _message=None):
+    def _detect_network(self):
         """Check network connectivity over DBus"""
+        dbus_config = self.config.get("dbus", {})
+        bus_address = dbus_config.get("bus_address")
+
         network_activity = NetworkConnectActivity(
-            "hardware.network-detection",
-            self.bus
+            "hardware.network-detection", self.bus, dbus_address=bus_address
         )
         network_activity.run()
 
-    def _detect_internet(self, _message=None):
+    def _detect_internet(self):
         """Check internet connectivity with network_utils"""
         internet_activity = InternetConnectActivity(
-            "hardware.internet-detection",
-            self.bus
+            "hardware.internet-detection", self.bus
         )
         internet_activity.run()
 
@@ -439,11 +461,9 @@ class EnclosureMark2(Enclosure):
         )
         sync_activity.run()
 
-    def _create_hotspot(self):
-        hotspot_activity = HotspotActivity(
-            "network.hotspot", self.bus
-        )
-        hotspot_activity.run(block=False)
+    def _create_access_point(self):
+        ap_activity = AccessPointActivity("network.access-point", self.bus)
+        ap_activity.run(block=False)
 
     def handle_server_authenticated(self, _):
         LOG.info("Server authentication successful")
