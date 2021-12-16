@@ -20,7 +20,7 @@ the user interacts with the access point and its captive portal page.
 """
 import socket
 
-from mycroft.activity import ThreadActivity
+from mycroft.activity import Activity
 from mycroft.messagebus import Message
 from mycroft.util import LOG
 
@@ -33,7 +33,7 @@ EVENT_ENTERED_CREDS = "user-entered-credentials"
 EVENT_DESTROYED = "ap-destroyed"
 
 
-class AccessPointActivity(ThreadActivity):
+class AccessPointActivity(Activity):
     """Communicates with awconnect server to manage Mycroft access point.
 
     Messages are sent and received as lines of text over the socket.

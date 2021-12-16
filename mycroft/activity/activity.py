@@ -17,6 +17,8 @@
 An activity is some action that occurs between a started and ended event.
 """
 import abc
+import threading
+import typing
 
 from mycroft.messagebus import Message
 from mycroft.util import LOG
@@ -33,7 +35,7 @@ class Activity(abc.ABC):
         self._ended_event = f"{self.name}.ended"
 
     def run(self):
-        """Runs activity"""
+        """Runs activity, blocking until finished"""
         self.bus.emit(Message(self._started_event))
         try:
             self._run()
@@ -44,6 +46,14 @@ class Activity(abc.ABC):
             end_data = dict(success=True)
 
         self.bus.emit(Message(self._ended_event, end_data))
+
+    def run_background(self, timeout: typing.Optional[float] = None):
+        """Runs activity in a thread, blocking only if timeout is set"""
+        bg_thread = threading.Thread(target=self.run, daemon=True)
+        bg_thread.start()
+
+        if timeout is not None:
+            bg_thread.join(timeout=timeout)
 
     @abc.abstractmethod
     def _run(self):

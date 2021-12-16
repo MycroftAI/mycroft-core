@@ -477,8 +477,9 @@ class EnclosureMark2(Enclosure):
         sync_activity.run()
 
     def _create_access_point(self):
+        """Request access point creation from awconnect"""
         ap_activity = AccessPointActivity("network.access-point", self.bus)
-        ap_activity.run(block=False)
+        ap_activity.run_background()
 
     def handle_server_authenticated(self, _):
         LOG.info("Server authentication successful")

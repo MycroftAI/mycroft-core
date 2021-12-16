@@ -17,7 +17,7 @@ import asyncio
 import typing
 from enum import Enum
 
-from mycroft.activity import ThreadActivity
+from mycroft.activity import Activity
 from mycroft.messagebus import Message
 from mycroft.util.log import LOG
 from mycroft.util.network_utils import (
@@ -120,7 +120,7 @@ class NoNetworkDevicesError(Exception):
     pass
 
 
-class NetworkConnectActivity(ThreadActivity):
+class NetworkConnectActivity(Activity):
     """Determines network connectivity using DBus NetworkManager"""
 
     def __init__(

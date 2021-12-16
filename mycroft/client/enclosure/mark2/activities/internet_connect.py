@@ -15,7 +15,7 @@
 """Checks for internet connectivity"""
 import time
 
-from mycroft.activity import ThreadActivity
+from mycroft.activity import Activity
 from mycroft.messagebus import Message
 from mycroft.util.log import LOG
 from mycroft.util.network_utils import connected
@@ -23,7 +23,7 @@ from mycroft.util.network_utils import connected
 NOT_DETECTED_RETRIES = 1
 
 
-class InternetConnectActivity(ThreadActivity):
+class InternetConnectActivity(Activity):
     """Check for internet connectivity by trying to reach a website"""
 
     def _run(self):

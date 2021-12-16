@@ -1,15 +1,28 @@
-import asyncio
-import requests
+# Copyright 2021 Mycroft AI Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+"""Utilities for network and internet detection."""
 import socket
 import subprocess
-import threading
 import typing
-from enum import IntEnum
 from urllib.request import urlopen
 from urllib.error import URLError
 
-from dbus_next import BusType
-from dbus_next.aio import MessageBus
+import requests
+
+from dbus_next import BusType as DBusType
+from dbus_next.aio import MessageBus as DBusMessageBus
 
 
 from .log import LOG
@@ -137,18 +150,18 @@ NM_NAMESPACE = "org.freedesktop.NetworkManager"
 NM_PATH = "/org/freedesktop/NetworkManager"
 
 
-def get_dbus(bus_address: typing.Optional[str] = None) -> MessageBus:
+def get_dbus(bus_address: typing.Optional[str] = None) -> DBusMessageBus:
     """Get DBus message bus"""
 
     if bus_address:
         # Configured bus
-        return MessageBus(bus_address=bus_address)
+        return DBusMessageBus(bus_address=bus_address)
 
     # System bus
-    return MessageBus(bus_type=BusType.SYSTEM)
+    return DBusMessageBus(bus_type=DBusType.SYSTEM)
 
 
-async def get_network_manager(dbus: MessageBus):
+async def get_network_manager(dbus: DBusMessageBus):
     """Get DBus object, interface to NetworkManager"""
     introspection = await dbus.introspect(NM_NAMESPACE, NM_PATH)
 
