@@ -396,6 +396,7 @@ class EnclosureMark2(Enclosure):
             self.bus.emit(Message("mycroft.started"))
 
     def handle_mycroft_started(self, _):
+        """Executes logic that depends on all services being initialized."""
         LOG.info("Muting microphone during start up.")
         self.bus.emit(Message("mycroft.mic.mute"))
         self._remove_service_init_handlers()
@@ -425,8 +426,19 @@ class EnclosureMark2(Enclosure):
         self.bus.emit(Message("hardware.detect-internet"))
 
     def _handle_internet_connected(self, _message=None):
-        """Complete enclosure setup"""
-        self._synchronize_system_clock()
+        """Executes logic that depends on an internet connection.
+
+        The first thing that has to happen after the internet connection is
+        established is to synchronize the system clock.  If the system clock
+        time is too far away from the actual time, issues like SSL errors on
+        API calls can occur.
+
+        The mycroft.internet-ready event indicates that any logic that needs
+        to use the internet can now be executed.
+        """
+        if self.force_system_clock_update:
+            self._synchronize_system_clock()
+        self.bus.emit(Message("mycroft.internet-ready"))
 
     def _update_system(self):
         """Skips system update using Admin service.
