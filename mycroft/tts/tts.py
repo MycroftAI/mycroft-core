@@ -39,19 +39,15 @@ from mycroft.util.plugins import load_plugin
 from queue import Queue, Empty
 from .cache import hash_sentence, TextToSpeechCache
 
-
 _TTS_ENV = deepcopy(os.environ)
 _TTS_ENV['PULSE_PROP'] = 'media.role=phone'
 
-
 EMPTY_PLAYBACK_QUEUE_TUPLE = (None, None, None, None, None)
-
 
 class PlaybackThread(Thread):
     """Thread class for playing back tts audio and sending
     viseme data to enclosure.
     """
-
     def __init__(self, queue):
         super(PlaybackThread, self).__init__()
         self.queue = queue
@@ -96,7 +92,7 @@ class PlaybackThread(Thread):
         while not self._terminated:
             try:
                 (snd_type, data,
-                 visemes, ident, listen) = self.queue.get(timeout=2)
+                 visemes, ident, listen) = TTS.queue.get(timeout=2)
                 self.blink(0.5)
                 if not self._processing_queue:
                     self._processing_queue = True
@@ -115,7 +111,7 @@ class PlaybackThread(Thread):
                         self.p.wait()
                 report_timing(ident, 'speech_playback', stopwatch)
 
-                if self.queue.empty():
+                if TTS.queue.empty():
                     self.tts.end_audio(listen)
                     self._processing_queue = False
                 self.blink(0.2)
@@ -167,6 +163,8 @@ class TTS(metaclass=ABCMeta):
         phonetic_spelling (bool): Whether to spell certain words phonetically
         ssml_tags (list): Supported ssml properties. Ex. ['speak', 'prosody']
     """
+    queue = None
+    playback = None
 
     def __init__(self, lang, config, validator, audio_ext='wav',
                  phonetic_spelling=True, ssml_tags=None):
@@ -183,9 +181,12 @@ class TTS(metaclass=ABCMeta):
         self.filename = get_temp_path('tts.wav')
         self.enclosure = None
         random.seed()
-        self.queue = Queue()
-        self.playback = PlaybackThread(self.queue)
-        self.playback.start()
+
+        if TTS.queue is None:
+            TTS.queue = Queue()
+            TTS.playback = PlaybackThread(TTS.queue)
+            TTS.playback.start()
+
         self.spellings = self.load_spellings()
         self.tts_name = type(self).__name__
         self.cache = TextToSpeechCache(
@@ -224,7 +225,6 @@ class TTS(metaclass=ABCMeta):
         Args:
             listen (bool): indication if listening trigger should be sent.
         """
-
         self.bus.emit(Message("recognizer_loop:audio_output_end"))
         if listen:
             self.bus.emit(Message('mycroft.mic.listen'))
@@ -338,9 +338,6 @@ class TTS(metaclass=ABCMeta):
         try:
             self._execute(sentence, ident, listen)
         except Exception:
-            # If an error occurs end the audio sequence through an empty entry
-            self.queue.put(EMPTY_PLAYBACK_QUEUE_TUPLE)
-            # Re-raise to allow the Exception to be handled externally as well.
             raise
 
     def _execute(self, sentence, ident, listen):
@@ -397,7 +394,7 @@ class TTS(metaclass=ABCMeta):
                     audio_file, phoneme_file
                 )
             viseme = self.viseme(phonemes) if phonemes else None
-            self.queue.put(
+            TTS.queue.put(
                 (self.audio_ext, str(audio_file.path), viseme, ident, l)
             )
 
@@ -488,7 +485,6 @@ class TTSValidator(metaclass=ABCMeta):
     It exposes and implements ``validate(tts)`` function as a template to
     validate the TTS engines.
     """
-
     def __init__(self, tts):
         self.tts = tts
 
