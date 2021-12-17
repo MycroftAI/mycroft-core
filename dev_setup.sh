@@ -24,6 +24,13 @@ set -Ee
 
 cd $(dirname $0)
 TOP=$(pwd -L)
+# Whether or not to allow root execution - not recommended if you can help it!
+opt_allowroot=false
+# Whether or not to skip the Mimic build, which can take hours on a slow machine
+opt_forcemimicbuild=false
+opt_skipmimicbuild=false
+opt_python=python3
+param=''
 
 function clean_mycroft_files() {
     echo '
@@ -70,12 +77,6 @@ Mycroft Forums (https://community.mycroft.ai/)
 }
 
 # Parse the command line
-opt_forcemimicbuild=false
-opt_allowroot=false
-opt_skipmimicbuild=false
-opt_python=python3
-param=''
-
 for var in "$@" ; do
     # Check if parameter should be read
     if [[ $param == 'python' ]] ; then
