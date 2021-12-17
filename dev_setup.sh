@@ -627,7 +627,8 @@ if [[ ! -w /var/log/mycroft/ ]] ; then
     if [[ ! -d /var/log/mycroft/ ]] ; then
         $SUDO mkdir /var/log/mycroft/
     fi
-    $SUDO chmod 777 /var/log/mycroft/
+    $SUDO chown -R ${setup_user}:${setup_group} /var/log/mycroft
+    $SUDO chmod -R 664 /var/log/mycroft/
 fi
 
 #Store a fingerprint of setup
