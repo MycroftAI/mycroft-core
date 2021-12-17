@@ -110,7 +110,7 @@ for var in "$@" ; do
     fi
     if [[ $var == '-n' || $var == '--no-error' ]] ; then
         # Do NOT exit on errors
-    set +Ee
+        set +Ee
     fi
     if [[ $var == '-sm' ]] ; then
         opt_skipmimicbuild=true
@@ -562,8 +562,8 @@ fi
 
 # install optional python modules
 if [[ ! $(pip install -r requirements/extra-audiobackend.txt) ||
-    ! $(pip install -r requirements/extra-stt.txt) ||
-    ! $(pip install -r requirements/extra-mark1.txt) ]] ; then
+        ! $(pip install -r requirements/extra-stt.txt) ||
+        ! $(pip install -r requirements/extra-mark1.txt) ]] ; then
     echo 'Warning: Failed to install some optional dependencies. Continue? y/N'
     read -n1 continue
     if [[ $continue != 'y' ]] ; then
