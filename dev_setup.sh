@@ -24,6 +24,7 @@ set -Ee
 
 cd $(dirname $0)
 TOP=$(pwd -L)
+LOG_FILE="${PWD}/mycroft-update.log"
 # Whether or not to allow root execution - not recommended if you can help it!
 opt_allowroot=false
 # Whether or not to skip the Mimic build, which can take hours on a slow machine
@@ -120,8 +121,8 @@ for var in "$@" ; do
 done
 
 if [[ $(id -u) -eq 0 && $opt_allowroot != true ]] ; then
-    echo 'This script should not be run as root or with sudo.'
-    echo 'If you really need to for this, rerun with --allow-root'
+    logger -f $LOG_FILE -s 'This script should not be run as root or with sudo.'
+    logger -f $LOG_FILE -s 'If you really need to for this, rerun with --allow-root'
     exit 1
 fi
 
