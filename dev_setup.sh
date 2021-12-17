@@ -62,6 +62,10 @@ Options:
     -p arg, --python arg    Sets the python version to use
     -r, --allow-root        Allow to be run as root (e.g. sudo)
     -sm                     Skip mimic build
+
+Need more help? Please visit:
+Mycroft Chat (https://chat.mycroft.ai/)
+Mycroft Forums (https://community.mycroft.ai/)
 '
 }
 
