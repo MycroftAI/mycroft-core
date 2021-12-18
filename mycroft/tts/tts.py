@@ -44,6 +44,7 @@ _TTS_ENV['PULSE_PROP'] = 'media.role=phone'
 
 EMPTY_PLAYBACK_QUEUE_TUPLE = (None, None, None, None, None)
 
+
 class PlaybackThread(Thread):
     """Thread class for playing back tts audio and sending
     viseme data to enclosure.
@@ -51,6 +52,9 @@ class PlaybackThread(Thread):
     def __init__(self, queue):
         super(PlaybackThread, self).__init__()
         self.queue = queue
+        self.tts = []
+        self.bus = None
+
         self._terminated = False
         self._processing_queue = False
         self.enclosure = None
@@ -62,7 +66,28 @@ class PlaybackThread(Thread):
             self.pulse_env = None
 
     def init(self, tts):
-        self.tts = tts
+        """DEPRECATED! Init the TTS Playback thread.
+
+        TODO: 22.02 Remove this
+        """
+        self.attach_tts(tts)
+        self.set_bus(tts.bus)
+
+    def set_bus(self, bus):
+        """Provide bus instance to the TTS Playback thread.
+
+        Args:
+            bus (MycroftBusClient): bus client
+        """
+        self.bus = bus
+
+    def attach_tts(self, tts):
+        """Add TTS to be cache checked."""
+        self.tts.append(tts)
+
+    def detach_tts(self, tts):
+        """Remove TTS from cache check."""
+        self.tts.remove(tts)
 
     def clear_queue(self):
         """Remove all pending playbacks."""
@@ -86,17 +111,17 @@ class PlaybackThread(Thread):
         the loop then wait for the playback process to finish before starting
         checking the next position in queue.
 
-        If the queue is empty the tts.end_audio() is called possibly triggering
+        If the queue is empty the end_audio() is called possibly triggering
         listening.
         """
         while not self._terminated:
             try:
                 (snd_type, data,
-                 visemes, ident, listen) = TTS.queue.get(timeout=2)
+                 visemes, ident, listen) = self.queue.get(timeout=2)
                 self.blink(0.5)
                 if not self._processing_queue:
                     self._processing_queue = True
-                    self.tts.begin_audio()
+                    self.begin_audio()
 
                 stopwatch = Stopwatch()
                 with stopwatch:
@@ -111,8 +136,8 @@ class PlaybackThread(Thread):
                         self.p.wait()
                 report_timing(ident, 'speech_playback', stopwatch)
 
-                if TTS.queue.empty():
-                    self.tts.end_audio(listen)
+                if self.queue.empty():
+                    self.end_audio(listen)
                     self._processing_queue = False
                 self.blink(0.2)
             except Empty:
@@ -120,8 +145,41 @@ class PlaybackThread(Thread):
             except Exception as e:
                 LOG.exception(e)
                 if self._processing_queue:
-                    self.tts.end_audio(listen)
+                    self.end_audio(listen)
                     self._processing_queue = False
+
+    def begin_audio(self):
+        """Perform befining of speech actions."""
+        # Create signals informing start of speech
+        if self.bus:
+            self.bus.emit(Message("recognizer_loop:audio_output_start"))
+        else:
+            LOG.warning("Speech started before bus was attached.")
+
+    def end_audio(self, listen):
+        """Perform end of speech output actions.
+
+        Will inform the system that speech has ended and trigger the TTS's
+        cache checks. Listening will be triggered if requested.
+
+        Args:
+            listen (bool): True if listening event should be emitted
+        """
+        if self.bus:
+            # Send end of speech signals to the system
+            self.bus.emit(Message("recognizer_loop:audio_output_end"))
+            if listen:
+                self.bus.emit(Message('mycroft.mic.listen'))
+
+            # Clear cache for all attached tts objects
+            # This is basically the only safe time
+            for tts in self.tts:
+                tts.cache.curate()
+
+            # This check will clear the filesystem IPC "signal"
+            check_for_signal("isSpeaking")
+        else:
+            LOG.warning("Speech started before bus was attached.")
 
     def show_visemes(self, pairs):
         """Send viseme data to enclosure
@@ -240,9 +298,10 @@ class TTS(metaclass=ABCMeta):
             bus:    Mycroft messagebus connection
         """
         self.bus = bus
-        self.playback.init(self)
+        TTS.playback.set_bus(bus)
+        TTS.playback.attach_tts(self)
         self.enclosure = EnclosureAPI(self.bus)
-        self.playback.enclosure = self.enclosure
+        TTS.playback.enclosure = self.enclosure
 
     def get_tts(self, sentence, wav_file):
         """Abstract method that a tts implementation needs to implement.
@@ -347,6 +406,8 @@ class TTS(metaclass=ABCMeta):
                     sentence = sentence.replace(word,
                                                 self.spellings[word.lower()])
 
+        # TODO: 22.02 This is no longer needed and can be removed
+        # Just kept for compatibility for now
         chunks = self._preprocess_sentence(sentence)
         # Apply the listen flag to the last chunk, set the rest to False
         chunks = [(chunks[i], listen if i == len(chunks) - 1 else False)
@@ -473,10 +534,6 @@ class TTS(metaclass=ABCMeta):
             except Exception:
                 LOG.debug("Failed to read .PHO from cache")
         return None
-
-    def __del__(self):
-        self.playback.stop()
-        self.playback.join()
 
 
 class TTSValidator(metaclass=ABCMeta):

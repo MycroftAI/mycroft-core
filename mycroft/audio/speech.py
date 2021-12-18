@@ -116,10 +116,9 @@ def mute_and_speak(utterance, ident, listen=False):
     # update TTS object if configuration has changed
     if tts_hash != hash(str(config.get('tts', ''))):
         global tts
-        # Stop tts playback thread
-        tts.playback.stop()
-        tts.playback.join()
         # Create new tts instance
+        if tts:
+            tts.playback.detach_tts(tts)
         tts = TTSFactory.create()
         tts.init(bus)
         tts_hash = hash(str(config.get('tts', '')))
