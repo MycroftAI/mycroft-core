@@ -22,8 +22,16 @@ export LANGUAGE=en
 # exit on any error
 set -Ee
 
-cd $(dirname $0)
+cd $(dirname "$0")
 TOP=$(pwd -L)
+LOG_FILE="${PWD}/mycroft-update.log"
+# Whether or not to allow root execution - not recommended if you can help it!
+opt_allowroot=false
+# Whether or not to skip the Mimic build, which can take hours on a slow machine
+opt_forcemimicbuild=false
+opt_skipmimicbuild=false
+opt_python=python3
+param=''
 
 function clean_mycroft_files() {
     echo '
@@ -62,16 +70,14 @@ Options:
     -p arg, --python arg    Sets the python version to use
     -r, --allow-root        Allow to be run as root (e.g. sudo)
     -sm                     Skip mimic build
+
+Need more help? Please visit:
+Mycroft Chat (https://chat.mycroft.ai/)
+Mycroft Forums (https://community.mycroft.ai/)
 '
 }
 
 # Parse the command line
-opt_forcemimicbuild=false
-opt_allowroot=false
-opt_skipmimicbuild=false
-opt_python=python3
-param=''
-
 for var in "$@" ; do
     # Check if parameter should be read
     if [[ $param == 'python' ]] ; then
@@ -104,7 +110,7 @@ for var in "$@" ; do
     fi
     if [[ $var == '-n' || $var == '--no-error' ]] ; then
         # Do NOT exit on errors
-	set +Ee
+        set +Ee
     fi
     if [[ $var == '-sm' ]] ; then
         opt_skipmimicbuild=true
@@ -115,8 +121,8 @@ for var in "$@" ; do
 done
 
 if [[ $(id -u) -eq 0 && $opt_allowroot != true ]] ; then
-    echo 'This script should not be run as root or with sudo.'
-    echo 'If you really need to for this, rerun with --allow-root'
+    logger -f "$LOG_FILE" -s 'This script should not be run as root or with sudo.'
+    logger -f "$LOG_FILE" -s 'If you really need to for this, rerun with --allow-root'
     exit 1
 fi
 
@@ -289,9 +295,9 @@ fi" > ~/.profile_mycroft
         echo 'This script will create that folder for you.  This requires sudo'
         echo 'permission and might ask you for a password...'
         setup_user=$USER
-        setup_group=$(id -gn $USER)
+        setup_group=$(id -gn "$USER")
         $SUDO mkdir -p /opt/mycroft/skills
-        $SUDO chown -R ${setup_user}:${setup_group} /opt/mycroft
+        $SUDO chown -R "${setup_user}:${setup_group}" /opt/mycroft
         echo 'Created!'
     fi
     if [[ ! -d skills ]] ; then
@@ -319,7 +325,7 @@ If unsure answer yes.
 fi
 
 function os_is() {
-    [[ $(grep "^ID=" /etc/os-release | awk -F'=' '/^ID/ {print $2}' | sed 's/\"//g') == $1 ]]
+    [[ $(grep "^ID=" /etc/os-release | awk -F'=' '/^ID/ {print $2}' | sed 's/\"//g') == "$1" ]]
 }
 
 function os_is_like() {
@@ -440,7 +446,7 @@ function install_deps() {
         echo "$GREEN Installing packages for Alpine Linux...$RESET"
         alpine_install
     else
-    	echo
+        echo
         echo -e "${YELLOW}Could not find package manager
 ${YELLOW}Make sure to manually install:$BLUE git python3 python-setuptools python-venv pygobject libtool libffi libjpg openssl autoconf bison swig glib2.0 portaudio19 mpg123 flac curl fann g++ jq\n$RESET"
 
@@ -485,7 +491,7 @@ else
     # first, look for a build of mimic in the folder
     has_mimic=''
     if [[ -f ${TOP}/mimic/bin/mimic ]] ; then
-        has_mimic=$(${TOP}/mimic/bin/mimic -lv | grep Voice) || true
+        has_mimic=$("${TOP}/mimic/bin/mimic" -lv | grep Voice) || true
     fi
 
     # in not, check the system path
@@ -538,7 +544,7 @@ if [[ ! -f $VENV_PATH_FILE ]] ; then
     echo "import sys; new=sys.path[sys.__plen:]; del sys.path[sys.__plen:]; p=getattr(sys,'__egginsert',0); sys.path[p:p]=new; sys.__egginsert = p+len(new)" >> "$VENV_PATH_FILE" || return 1
 fi
 
-if ! grep -q "$TOP" $VENV_PATH_FILE ; then
+if ! grep -q "$TOP" "$VENV_PATH_FILE" ; then
     echo 'Adding mycroft-core to virtualenv path'
     sed -i.tmp '1 a\
 '"$TOP"'
@@ -556,8 +562,8 @@ fi
 
 # install optional python modules
 if [[ ! $(pip install -r requirements/extra-audiobackend.txt) ||
-	! $(pip install -r requirements/extra-stt.txt) ||
-	! $(pip install -r requirements/extra-mark1.txt) ]] ; then
+        ! $(pip install -r requirements/extra-stt.txt) ||
+        ! $(pip install -r requirements/extra-mark1.txt) ]] ; then
     echo 'Warning: Failed to install some optional dependencies. Continue? y/N'
     read -n1 continue
     if [[ $continue != 'y' ]] ; then
@@ -621,7 +627,10 @@ if [[ ! -w /var/log/mycroft/ ]] ; then
     if [[ ! -d /var/log/mycroft/ ]] ; then
         $SUDO mkdir /var/log/mycroft/
     fi
-    $SUDO chmod 777 /var/log/mycroft/
+    setup_user=$USER
+    setup_group=$(id -gn "$USER")
+    $SUDO chown -R "${setup_user}":"${setup_group}" /var/log/mycroft
+    $SUDO chmod -R 664 /var/log/mycroft/
 fi
 
 #Store a fingerprint of setup
