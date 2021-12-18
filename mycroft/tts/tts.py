@@ -394,10 +394,7 @@ class TTS(metaclass=ABCMeta):
         sentence = self.validate_ssml(sentence)
 
         create_signal("isSpeaking")
-        try:
-            self._execute(sentence, ident, listen)
-        except Exception:
-            raise
+        self._execute(sentence, ident, listen)
 
     def _execute(self, sentence, ident, listen):
         if self.phonetic_spelling:
