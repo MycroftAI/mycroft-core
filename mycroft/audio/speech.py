@@ -74,13 +74,7 @@ def handle_speak(event):
         # so we likely will want to get rid of this when not running on Mimic
         if (config.get('enclosure', {}).get('platform') != "picroft" and
                 len(re.findall('<[^>]*>', utterance)) == 0):
-            # Remove any whitespace present after the period,
-            # if a character (only alpha) ends with a period
-            # ex: A. Lincoln -> A.Lincoln
-            # so that we don't split at the period
-            utterance = re.sub(r'\b([A-za-z][\.])(\s+)', r'\g<1>', utterance)
-            chunks = re.split(r'(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\;|\?)\s',
-                              utterance)
+            chunks = tts.preprocess_utterance(utterance)
             # Apply the listen flag to the last chunk, set the rest to False
             chunks = [(chunks[i], listen if i == len(chunks) - 1 else False)
                       for i in range(len(chunks))]

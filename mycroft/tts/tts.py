@@ -44,6 +44,27 @@ _TTS_ENV['PULSE_PROP'] = 'media.role=phone'
 
 EMPTY_PLAYBACK_QUEUE_TUPLE = (None, None, None, None, None)
 
+SSML_TAGS = re.compile(r'<[^>]*>')
+WHITESPACE_AFTER_PERIOD = re.compile(r'\b([A-za-z][\.])(\s+)')
+SENTENCE_DELIMITERS = re.compile(
+    r'(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\;|\?)\s'
+)
+
+
+def default_preprocess_utterance(utterance):
+    """Default method for preprocessing Mycroft utterances for TTS.
+
+    Args:
+        utteance (str): Input utterance
+
+    Returns:
+        [str]: list of preprocessed sentences
+    """
+
+    utterance = WHITESPACE_AFTER_PERIOD.sub(r'\g<1>', utterance)
+    chunks = SENTENCE_DELIMITERS.split(utterance)
+    return chunks
+
 
 class PlaybackThread(Thread):
     """Thread class for playing back tts audio and sending
@@ -283,6 +304,7 @@ class TTS(metaclass=ABCMeta):
         Args:
             listen (bool): indication if listening trigger should be sent.
         """
+
         self.bus.emit(Message("recognizer_loop:audio_output_end"))
         if listen:
             self.bus.emit(Message('mycroft.mic.listen'))
@@ -353,7 +375,7 @@ class TTS(metaclass=ABCMeta):
             return self.remove_ssml(utterance)
 
         # find ssml tags in string
-        tags = re.findall('<[^>]*>', utterance)
+        tags = SSML_TAGS.findall(utterance)
 
         for tag in tags:
             if any(supported in tag for supported in self.ssml_tags):
@@ -364,6 +386,21 @@ class TTS(metaclass=ABCMeta):
 
         # return text with supported ssml tags only
         return utterance.replace("  ", " ")
+
+    def preprocess_utterance(self, utterance):
+        """Preprocess utterance into list of chunks suitable for the TTS.
+
+        Perform general chunking and TTS specific chunking.
+        """
+        # Remove any whitespace present after the period,
+        # if a character (only alpha) ends with a period
+        # ex: A. Lincoln -> A.Lincoln
+        # so that we don't split at the period
+        chunks = default_preprocess_utterance(utterance)
+        result = []
+        for chunk in chunks:
+            result += self._preprocess_sentence(chunk)
+        return result
 
     def _preprocess_sentence(self, sentence):
         """Default preprocessing is no preprocessing.
