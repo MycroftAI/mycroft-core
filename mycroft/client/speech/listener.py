@@ -172,6 +172,7 @@ class AudioConsumer(Thread):
 
     # TODO: Localization
     def wake_up(self, audio):
+        LOG.info("im woke........89")
         if self.wakeup_recognizer.found_wake_word(audio.frame_data):
             SessionManager.touch()
             self.state.sleeping = False
@@ -185,7 +186,7 @@ class AudioConsumer(Thread):
 
     # TODO: Localization
     def process(self, audio):
-
+        LOG.info("processing.....................89")
         if self._audio_length(audio) >= self.MIN_AUDIO_SIZE:
             stopwatch = Stopwatch()
             with stopwatch:
@@ -238,6 +239,7 @@ class AudioConsumer(Thread):
             send_unknown_intent()
             LOG.error(e)
             LOG.error("Speech Recognition could not understand audio")
+            self.emitter.emit('speech_recognition_failed', "placeholder")
             return None
 
         if connected():

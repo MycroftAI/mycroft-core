@@ -85,6 +85,7 @@ class IntentService:
         # Dictionary for translating a skill id to a name
         self.bus = bus
 
+        self.wakeword_found = False
         self.skill_names = {}
         config = Configuration.get()
         self.adapt_service = AdaptService(config.get('context', {}))
@@ -108,6 +109,9 @@ class IntentService:
         # Converse method
         self.bus.on('mycroft.speech.recognition.unknown', self.reset_converse)
         self.bus.on('mycroft.skills.loaded', self.update_skill_name_dict)
+
+        # Wakeword
+        self.bus.on('recognizer_loop:wakeword', self.handle_wakeword_found)
 
         def add_active_skill_handler(message):
             self.add_active_skill(message.data['skill_id'])
@@ -256,6 +260,9 @@ class IntentService:
         report_timing(ident, 'intent_service', stopwatch,
                       {'intent_type': intent_type})
 
+    def handle_wakeword_found(self, _):
+        self.wakeword_found = True
+
     def handle_utterance(self, message):
         """Main entrypoint for handling user utterances with Mycroft skills
 
@@ -284,7 +291,6 @@ class IntentService:
 
         try:
             lang = _get_message_lang(message)
-            LOG.info(message.data)
             set_default_lf_lang(lang)
 
             utterances = message.data.get('utterances', [])
@@ -297,18 +303,23 @@ class IntentService:
 
             # List of functions to use to match the utterance with intent.
             # These are listed in priority order.
+            # match_funcs = [
+            #     self._converse, padatious_matcher.match_high,
+            #     self.adapt_service.match_intent, self.fallback.high_prio,
+            #     padatious_matcher.match_medium, self.fallback.medium_prio,
+            #     padatious_matcher.match_low, self.fallback.low_prio
+            # ]
             match_funcs = [
                 self._converse, padatious_matcher.match_high,
-                self.adapt_service.match_intent, self.fallback.high_prio,
-                padatious_matcher.match_medium, self.fallback.medium_prio,
-                padatious_matcher.match_low, self.fallback.low_prio
+                self.adapt_service.match_intent,
+                padatious_matcher.match_medium,
+                padatious_matcher.match_low
             ]
 
             scoreFile = open("/home/leonhermann/.config/mycroft/skills/Judgealexa/scoreFile.txt", "r")
             points = int(scoreFile.read())
             scoreFile.close()
             if points >= 1000:
-
                 match = None
                 with stopwatch:
                     # Loop through the matching functions until a match is found.
@@ -317,23 +328,28 @@ class IntentService:
                         if match:
                             break
 
+                LOG.info(match)
                 judgealexa_intent = self.adapt_service.match_intent_alexa(combined, lang, message)
-                alexa_reply = message.reply(judgealexa_intent.intent_type, judgealexa_intent.intent_data)
-                self.bus.emit(alexa_reply)         
+                if judgealexa_intent:
+                    alexa_reply = message.reply(judgealexa_intent.intent_type, judgealexa_intent.intent_data)
+                    self.bus.emit(alexa_reply)
+                    match = IntentMatch('Adapt', None, None, None)
+                LOG.info(self.wakeword_found)
                 if match:
-                    if match.skill_id:
-                        self.add_active_skill(match.skill_id)
-                        # If the service didn't report back the skill_id it
-                        # takes on the responsibility of making the skill "active"
+                    if self.wakeword_found: 
+                        if match.skill_id:
+                            self.add_active_skill(match.skill_id)
+                            # If the service didn't report back the skill_id it
+                            # takes on the responsibility of making the skill "active"
 
-                    # Launch skill if not handled by the match function
-                    if match.intent_type:
-                        reply = message.reply(match.intent_type, match.intent_data)
-                        # Add back original list of utterances for intent handlers
-                        # match.intent_data only includes the utterance with the
-                        # highest confidence.
-                        reply.data["utterances"] = utterances
-                        self.bus.emit(reply)
+                        # Launch skill if not handled by the match function
+                        if match.intent_type:
+                            reply = message.reply(match.intent_type, match.intent_data)
+                            # Add back original list of utterances for intent handlers
+                            # match.intent_data only includes the utterance with the
+                            # highest confidence.
+                            reply.data["utterances"] = utterances
+                            self.bus.emit(reply)
 
                 else:
                     # Nothing was able to handle the intent
@@ -341,8 +357,6 @@ class IntentService:
                     self.send_complete_intent_failure(message)
                 self.send_metrics(match, message.context, stopwatch)
             else:
-                #message.data['utterances'] = ['hcslewreduaK']
-
                 data = {
                     "utterances" : ['hcslewreduaK'],
                     "lang" : 'en-US',
@@ -350,10 +364,9 @@ class IntentService:
                 }
                 newCombined = _normalize_all_utterances(data['utterances'])
                 newMsg = Message(message.msg_type, data, message.context)
-                LOG.info(newMsg.data)
                 judgealexa_intent = self.adapt_service.match_intent_alexa(newCombined, lang, newMsg)
                 alexa_reply = newMsg.reply(judgealexa_intent.intent_type, judgealexa_intent.intent_data)
-                self.bus.emit(alexa_reply)
+            self.wakeword_found = False
             
         except Exception as err:
             LOG.exception(err)

@@ -725,10 +725,10 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         # If enabled, play a wave file with a short sound to audibly
         # indicate recording has begun.
         if self.config.get('confirm_listening'):
-            if self.mute_and_confirm_listening(source):
+            # if self.mute_and_confirm_listening(source):
                 # Clear frames from wakeword detctions since they're
                 # irrelevant after mute - play wav - unmute sequence
-                ww_frames = None
+            ww_frames = None
 
         # Notify system of recording start
         emitter.emit("recognizer_loop:record_begin")

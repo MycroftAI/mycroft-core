@@ -104,7 +104,8 @@ def handle_complete_intent_failure(event):
     data = {'utterance': dialog.get('not.loaded')}
     context = {'client_name': 'mycroft_listener',
                'source': 'audio'}
-    bus.emit(Message('speak', data, context))
+    handle_mic_listen("placeholder")
+    # bus.emit(Message('speak', data, context))
 
 
 def handle_sleep(event):
@@ -132,6 +133,7 @@ def handle_mic_listen(_):
 
     Starts listening as if wakeword was spoken.
     """
+    LOG.info("MICLISTENKNSKKNKSANKNKSA89")
     loop.responsive_recognizer.trigger_listen()
 
 
@@ -162,6 +164,7 @@ def handle_audio_end(event):
     """
     if config.get("listener").get("mute_during_output"):
         loop.unmute()  # restore
+    handle_mic_listen("placeholder")
 
 
 def handle_stop(event):
@@ -196,6 +199,7 @@ def connect_loop_events(loop):
     loop.on('recognizer_loop:wakeword', handle_wakeword)
     loop.on('recognizer_loop:record_end', handle_record_end)
     loop.on('recognizer_loop:no_internet', handle_no_internet)
+    loop.on('speech_recognition_failed', handle_mic_listen)
 
 
 def connect_bus_events(bus):

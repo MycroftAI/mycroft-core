@@ -16,6 +16,8 @@ import abc
 import re
 from requests_futures.sessions import FuturesSession
 
+from mycroft.messagebus.message import Message
+
 from .tts import TTS
 from mycroft.util import play_wav
 from mycroft.util.log import LOG
@@ -56,6 +58,7 @@ class RemoteTTS(TTS):
                     LOG.error(e.message)
                 finally:
                     self.end_audio(listen)
+        #self.bus.emit(Message('mycroft.mic.listen'))
 
     @staticmethod
     def __get_phrases(sentence):

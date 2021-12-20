@@ -297,6 +297,11 @@ class AdaptService:
         if best_intent:
             self.update_context(best_intent)
             skill_id = best_intent['intent_type'].split(":")[0]
+
+            if skill_id != "judgealexa-skill":
+                LOG.info(best_intent)
+                return None
+
             ret = IntentMatch(
                 'Adapt', best_intent['intent_type'], best_intent, skill_id
             )
