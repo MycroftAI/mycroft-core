@@ -36,6 +36,7 @@ class IdleDisplaySkill(MycroftSkill):
     by other skills.  For example, Mycroft's Home Screen Skill.
     """
     def initialize(self):
+        """Tasks to complete during skill load but after bus initialization."""
         self._define_message_bus_handlers()
 
     def _define_message_bus_handlers(self):
