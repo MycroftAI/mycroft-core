@@ -25,6 +25,7 @@ from .fallback_skill import FallbackSkill
 from .common_iot_skill import CommonIoTSkill
 from .common_play_skill import CommonPlaySkill, CPSMatchLevel
 from .common_query_skill import CommonQuerySkill, CQSMatchLevel
+from.idle_display_skill import IdleDisplaySkill
 
 __all__ = ['MycroftSkill',
            'intent_handler',
@@ -35,4 +36,5 @@ __all__ = ['MycroftSkill',
            'CommonPlaySkill',
            'CPSMatchLevel',
            'CommonQuerySkill',
-           'CQSMatchLevel']
+           'CQSMatchLevel',
+           'IdleDisplaySkill']
