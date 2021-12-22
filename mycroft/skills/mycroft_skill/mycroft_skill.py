@@ -119,7 +119,6 @@ class MycroftSkill:
     """
     def __init__(self, name=None, bus=None, use_settings=True):
         self.name = name or self.__class__.__name__
-        self.resting_name = None
         self.skill_id = ''  # will be set from the path, so guaranteed unique
         self.settings_meta = None  # set when skill is loaded in SkillLoader
 
@@ -733,43 +732,6 @@ class MycroftSkill:
         if self.skill_control.category == 'undefined':
             self.bus.emit(Message('active_skill_request',
                                   {'skill_id': self.skill_id}))
-
-    def _handle_collect_resting(self, _=None):
-        """Handler for collect resting screen messages.
-
-        Sends info on how to trigger this skills resting page.
-        """
-        self.log.info('Registering resting screen')
-        message = Message(
-            'mycroft.mark2.register_idle',
-            data={'name': self.resting_name, 'id': self.skill_id}
-        )
-        self.bus.emit(message)
-
-    def register_resting_screen(self):
-        """Registers resting screen from the resting_screen_handler decorator.
-
-        This only allows one screen and if two is registered only one
-        will be used.
-        """
-        for attr_name in get_non_properties(self):
-            method = getattr(self, attr_name)
-            if hasattr(method, 'resting_handler'):
-                self.resting_name = method.resting_handler
-                self.log.info('Registering resting screen {} for {}.'.format(
-                              method, self.resting_name))
-
-                # Register for handling resting screen
-                msg_type = '{}.{}'.format(self.skill_id, 'idle')
-                self.add_event(msg_type, method)
-                # Register handler for resting screen collect message
-                self.add_event('mycroft.mark2.collect_idle',
-                               self._handle_collect_resting)
-
-                # Do a send at load to make sure the skill is registered
-                # if reloaded
-                self._handle_collect_resting()
-                break
 
     def _register_decorated(self):
         """Register all intent handlers that are decorated with an intent.
