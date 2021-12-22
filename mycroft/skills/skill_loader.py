@@ -305,7 +305,6 @@ class SkillLoader:
                 # Set up intent handlers
                 # TODO: can this be a public method?
                 self.instance._register_decorated()
-                self.instance.register_resting_screen()
                 self.instance.initialize()
                 self.skill_control = self.instance.skill_control
             except Exception as e:
