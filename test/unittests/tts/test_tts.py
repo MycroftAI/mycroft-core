@@ -12,14 +12,6 @@ mock_audio = "/tmp/mock_path"
 mock_viseme = mock.Mock(name='viseme')
 
 
-class MsgTypeCheck:
-    def __init__(self, msg_type):
-        self.msg_type = msg_type
-
-    def __eq__(self, other):
-        return self.msg_type == other.msg_type
-
-
 class MockTTS(mycroft.tts.TTS):
     def __init__(self, lang, config, validator, audio_ext='wav',
                  phonetic_spelling=True, ssml_tags=None):
@@ -66,20 +58,17 @@ class TestPlaybackThread(unittest.TestCase):
             # Test wav data
             wav_mock = mock.Mock(name='wav_data')
             queue.put(('wav', wav_mock, None, 0, False))
-            time.sleep(0.3)
+            time.sleep(0.2)
+            mock_tts.begin_audio.called_with()
             mock_play_wav.assert_called_with(wav_mock, environment=None)
-            mock_tts.bus.emit.assert_called_with(
-                    MsgTypeCheck('recognizer_loop:audio_output_end')
-            )
+            mock_tts.end_audio.assert_called_with(False)
 
             # Test mp3 data and trigger listening True
             mp3_mock = mock.Mock(name='mp3_data')
             queue.put(('mp3', mp3_mock, None, 0, True))
             time.sleep(0.2)
             mock_play_mp3.assert_called_with(mp3_mock, environment=None)
-            mock_tts.bus.emit.assert_called_with(
-                MsgTypeCheck('mycroft.mic.listen')
-            )
+            mock_tts.end_audio.assert_called_with(True)
             self.assertFalse(playback.enclosure.get.called)
 
             # Test sending visemes
@@ -103,7 +92,7 @@ class TestTTS(unittest.TestCase):
         tts.init(bus_mock)
         self.assertTrue(tts.bus is bus_mock)
 
-        mycroft.tts.TTS.queue = mock.Mock()
+        tts.queue = mock.Mock()
         with mock.patch('mycroft.tts.tts.open') as mock_open:
             tts.cache.temporary_cache_dir = Path('/tmp/dummy')
             tts.execute('Oh no, not again', 42)
@@ -111,7 +100,7 @@ class TestTTS(unittest.TestCase):
             'Oh no, not again',
             '/tmp/dummy/8da7f22aeb16bc3846ad07b644d59359.wav'
         )
-        mycroft.tts.TTS.queue.put.assert_called_with(
+        tts.queue.put.assert_called_with(
             (
                 'wav',
                 mock_audio,
@@ -128,7 +117,7 @@ class TestTTS(unittest.TestCase):
         tts.init(bus_mock)
         self.assertTrue(tts.bus is bus_mock)
 
-        mycroft.tts.TTS.queue = mock.Mock()
+        tts.queue = mock.Mock()
         with mock.patch('mycroft.tts.tts.open') as mock_open:
             tts.cache.temporary_cache_dir = Path('/tmp/dummy')
             tts.execute('Oh no, not again', 42)
@@ -136,7 +125,7 @@ class TestTTS(unittest.TestCase):
             'Oh no, not again',
             '/tmp/dummy/8da7f22aeb16bc3846ad07b644d59359.wav'
         )
-        mycroft.tts.TTS.queue.put.assert_called_with(
+        tts.queue.put.assert_called_with(
             (
                 'wav',
                 mock_audio,
