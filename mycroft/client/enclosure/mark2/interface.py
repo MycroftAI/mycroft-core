@@ -250,7 +250,16 @@ class EnclosureMark2(Enclosure):
         return all([services[ser] for ser in services])
 
     def async_volume_handler(self, vol):
-        if vol > 1.0:
+        """Report changed Mark II hardware volume.
+
+        This does not set the volume, only reports it on the bus.
+
+        Args:
+            vol (int or float): the target volume 0-10
+                                Note if a float < 1.0 is provided this will be
+                                treated as a percentage eg 0.9 = 90% volume.
+        """
+        if vol >= 1.0:
             vol = vol / 10
         self.current_volume = vol
         LOG.info("Async set volume to %s" % (self.current_volume))
