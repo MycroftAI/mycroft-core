@@ -56,7 +56,8 @@ fi
 
 # it's big, it's heavy, it's wood!
 function mlog() {
-    local timestamp="[$( date +"%Y-%m-%d %H:%M:%S" )]"
+    local timestamp
+    timestamp="[$( date +"%Y-%m-%d %H:%M:%S" )]"
     message="$*"
     echo "${timestamp} ${message}" |tee -a ${LOG_FILE}
 }
@@ -98,7 +99,7 @@ ${MYCROFT_HOME}/scripts/logs
 EOF
 
     if [[ ${RUN_AS_ROOT} -eq 1 ]] ; then
-        while read CHECKFN ; do
+        while read -r CHECKFN ; do
             checkperms "${CHECKFN}"
             case $? in
                 "0") mlog " - ${CHECKFN} has viable permissions." ;;
@@ -148,8 +149,8 @@ function checkPIP() {
     if workon mycroft ; then
         pip list > /tmp/mycroft-piplist.$$
 
-        while read reqline ; do
-            IFS='==' read  -r -a PIPREQ <<< "$reqline"
+        while read -r reqline ; do
+            IFS='==' read -r -a PIPREQ <<< "$reqline"
             PIPREQVER=$( grep -i ^"${PIPREQ[0]} " /tmp/mycroft-piplist.$$ | cut -d'(' -f2 | tr -d '\051' )
             if [[ "${PIPREQVER}" == "${PIPREQ[2]}" ]] ; then
                 mlog " -- pip ${PIPREQ[0]} version ${PIPREQ[2]}"
@@ -176,7 +177,7 @@ function checktubes() {
 
 # I prefer biking myself.
 function checkrunning() {
-    while read SCREEN_SESS ; do
+    while read -r SCREEN_SESS ; do
         SESS_NAME=$( echo "${SCREEN_SESS}" | cut -d'(' -f1 | cut -d'.' -f2 )
         SESS_ID=$( echo "${SCREEN_SESS}" | cut -d'.' -f1 )
         if [[ $( ps flax| grep "$SESS_ID" | awk ' { print $4 } ' | grep -c "$SESS_ID" ) -eq 1 ]]; then
