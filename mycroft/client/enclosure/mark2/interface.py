@@ -88,11 +88,11 @@ class pulseLedThread(threading.Thread):
     def run(self):
         LOG.debug("pulse thread started")
         self.tmp_leds = []
-        for x in range(0,10):
-            self.tmp_leds.append( self.color_tup )
+        for x in range(0, 10):
+            self.tmp_leds.append(self.color_tup)
 
         self.led_obj.brightness = self.brightness / 100
-        self.led_obj.set_leds( self.tmp_leds )
+        self.led_obj.set_leds(self.tmp_leds)
 
         while not self.exit_flag:
 
@@ -108,13 +108,13 @@ class pulseLedThread(threading.Thread):
                 self.brightness += self.step_size
 
             self.led_obj.brightness = self.brightness / 100
-            self.led_obj.set_leds( self.tmp_leds )
+            self.led_obj.set_leds(self.tmp_leds)
 
             time.sleep(self.delay)
 
         LOG.debug("pulse thread stopped")
         self.led_obj.brightness = 1.0
-        self.led_obj.fill( self.pal_obj.BLACK )
+        self.led_obj.fill(self.pal_obj.BLACK)
 
 
 class chaseLedThread(threading.Thread):
@@ -126,7 +126,7 @@ class chaseLedThread(threading.Thread):
         self.color_tup = foreground_color
         self.delay = 0.1
         tmp_leds = []
-        for indx in range(0,10):
+        for indx in range(0, 10):
             tmp_leds.append(self.bkgnd_col)
 
         self.led_obj.set_leds(tmp_leds)
@@ -138,7 +138,7 @@ class chaseLedThread(threading.Thread):
         while not self.exit_flag:
             chase_ctr += 1
             LOG.debug("chase thread %s" % (chase_ctr,))
-            for x in range(0,10):
+            for x in range(0, 10):
                 self.led_obj.set_led(x, self.fgnd_col)
                 time.sleep(self.delay)
                 self.led_obj.set_led(x, self.bkgnd_col)
@@ -146,17 +146,17 @@ class chaseLedThread(threading.Thread):
                 self.exit_flag = True
 
         LOG.debug("chase thread stopped")
-        self.led_obj.fill( (0,0,0) )
+        self.led_obj.fill((0, 0, 0))
 
 
 class EnclosureMark2(Enclosure):
     def __init__(self):
-        LOG.info('** Initialize EnclosureMark2 **')
+        LOG.info("** Initialize EnclosureMark2 **")
         super().__init__()
         self.display_bus_client = None
         self._define_event_handlers()
         self.finished_loading = False
-        self.active_screen = 'loading'
+        self.active_screen = "loading"
         self.paused_screen = None
         self.is_pairing = False
         self.active_until_stopped = None
@@ -165,7 +165,7 @@ class EnclosureMark2(Enclosure):
         self.chaseLedThread = None
         self.pulseLedThread = None
 
-        self.system_volume = 0.5   # pulse audio master system volume
+        self.system_volume = 0.5  # pulse audio master system volume
         # if you want to do anything with the system volume
         # (ala pulseaudio, etc) do it here!
         self.current_volume = 0.5  # hardware/board level volume
@@ -175,10 +175,13 @@ class EnclosureMark2(Enclosure):
         self.m2enc.client_volume_handler = self.async_volume_handler
 
         # start the temperature monitor thread
-        self.temperatureMonitorThread = temperatureMonitorThread(self.m2enc.fan, self.m2enc.leds, self.m2enc.palette)
+        self.temperatureMonitorThread = temperatureMonitorThread(
+            self.m2enc.fan, self.m2enc.leds, self.m2enc.palette
+        )
         self.temperatureMonitorThread.start()
 
-        self.m2enc.leds.set_leds([
+        self.m2enc.leds.set_leds(
+            [
                 self.m2enc.palette.BLACK,
                 self.m2enc.palette.BLACK,
                 self.m2enc.palette.BLACK,
@@ -188,51 +191,47 @@ class EnclosureMark2(Enclosure):
                 self.m2enc.palette.BLACK,
                 self.m2enc.palette.BLACK,
                 self.m2enc.palette.BLACK,
-                self.m2enc.palette.BLACK
-                ])
+                self.m2enc.palette.BLACK,
+            ]
+        )
 
         self.m2enc.leds._set_led_with_brightness(
-            self.reserved_led,
-            self.m2enc.palette.MAGENTA,
-            0.5)
+            self.reserved_led, self.m2enc.palette.MAGENTA, 0.5
+        )
 
         # set mute led based on reality
         mute_led_color = self.m2enc.palette.GREEN
         if self.m2enc.switches.SW_MUTE == 1:
             mute_led_color = self.m2enc.palette.RED
 
-        self.m2enc.leds._set_led_with_brightness(
-            self.mute_led,
-            mute_led_color,
-            1.0)
+        self.m2enc.leds._set_led_with_brightness(self.mute_led, mute_led_color, 1.0)
 
         self.default_caps = EnclosureCapabilities()
 
-        LOG.info('** EnclosureMark2 initalized **')
-        self.bus.once('mycroft.skills.trained', self.is_device_ready)
-
+        LOG.info("** EnclosureMark2 initalized **")
+        self.bus.once("mycroft.skills.trained", self.is_device_ready)
 
     def is_device_ready(self, message):
         is_ready = False
         # Bus service assumed to be alive if messages sent and received
         # Enclosure assumed to be alive if this method is running
-        services = {'audio': False, 'speech': False, 'skills': False}
+        services = {"audio": False, "speech": False, "skills": False}
         start = time.monotonic()
         while not is_ready:
             is_ready = self.check_services_ready(services)
             if is_ready:
                 break
             elif time.monotonic() - start >= 60:
-                raise Exception('Timeout waiting for services start.')
+                raise Exception("Timeout waiting for services start.")
             else:
                 time.sleep(3)
 
         if is_ready:
             LOG.info("All Mycroft Services have reported ready.")
             if connected():
-                self.bus.emit(Message('mycroft.ready'))
+                self.bus.emit(Message("mycroft.ready"))
             else:
-                self.bus.emit(Message('mycroft.wifi.setup'))
+                self.bus.emit(Message("mycroft.wifi.setup"))
 
         return is_ready
 
@@ -243,9 +242,10 @@ class EnclosureMark2(Enclosure):
         """
         for ser in services:
             services[ser] = False
-            response = self.bus.wait_for_response(Message(
-                'mycroft.{}.is_ready'.format(ser)))
-            if response and response.data['status']:
+            response = self.bus.wait_for_response(
+                Message("mycroft.{}.is_ready".format(ser))
+            )
+            if response and response.data["status"]:
                 services[ser] = True
         return all([services[ser] for ser in services])
 
@@ -264,21 +264,26 @@ class EnclosureMark2(Enclosure):
         self.current_volume = vol
         LOG.info("Async set volume to %s" % (self.current_volume))
         # notify anybody listening on the bus who cares
-        self.bus.emit(Message("hardware.volume", {
-            "volume": self.current_volume}, context={"source": ["enclosure"]}))
+        self.bus.emit(
+            Message(
+                "hardware.volume",
+                {"volume": self.current_volume},
+                context={"source": ["enclosure"]},
+            )
+        )
 
     def _define_event_handlers(self):
         """Assign methods to act upon message bus events."""
-        self.bus.on('mycroft.volume.set', self.on_volume_set)
-        self.bus.on('mycroft.volume.get', self.on_volume_get)
-        self.bus.on('mycroft.volume.duck', self.on_volume_duck)
-        self.bus.on('mycroft.volume.unduck', self.on_volume_unduck)
-        self.bus.on('recognizer_loop:record_begin', self.handle_start_recording)
-        self.bus.on('recognizer_loop:record_end', self.handle_stop_recording)
-        self.bus.on('recognizer_loop:audio_output_end', self.handle_end_audio)
-        self.bus.on('mycroft.speech.recognition.unknown', self.handle_end_audio)
-        self.bus.on('mycroft.stop.handled', self.handle_end_audio)
-        self.bus.on('mycroft.capabilities.get', self.on_capabilities_get)
+        self.bus.on("mycroft.volume.set", self.on_volume_set)
+        self.bus.on("mycroft.volume.get", self.on_volume_get)
+        self.bus.on("mycroft.volume.duck", self.on_volume_duck)
+        self.bus.on("mycroft.volume.unduck", self.on_volume_unduck)
+        self.bus.on("recognizer_loop:record_begin", self.handle_start_recording)
+        self.bus.on("recognizer_loop:record_end", self.handle_stop_recording)
+        self.bus.on("recognizer_loop:audio_output_end", self.handle_end_audio)
+        self.bus.on("mycroft.speech.recognition.unknown", self.handle_end_audio)
+        self.bus.on("mycroft.stop.handled", self.handle_end_audio)
+        self.bus.on("mycroft.capabilities.get", self.on_capabilities_get)
 
     def handle_start_recording(self, message):
         LOG.debug("Gathering speech stuff")
@@ -295,7 +300,9 @@ class EnclosureMark2(Enclosure):
             self.pulseLedThread.join()
             self.pulseLedThread = None
         if self.chaseLedThread is None:
-            self.chaseLedThread = chaseLedThread(self.m2enc.leds, background_color, foreground_color)
+            self.chaseLedThread = chaseLedThread(
+                self.m2enc.leds, background_color, foreground_color
+            )
             self.chaseLedThread.start()
 
     def handle_end_audio(self, message):
@@ -308,7 +315,9 @@ class EnclosureMark2(Enclosure):
     def on_volume_duck(self, message):
         # TODO duck it anyway using set vol
         # LOG.warning("Mark2 volume duck deprecated! use volume set instead.")
-        self.m2enc.hardware_volume.set_volume(float(0.1))  # TODO make configurable 'duck_vol'
+        self.m2enc.hardware_volume.set_volume(
+            float(0.1)
+        )  # TODO make configurable 'duck_vol'
 
     def on_volume_unduck(self, message):
         # TODO duck it anyway using set vol
@@ -317,13 +326,17 @@ class EnclosureMark2(Enclosure):
 
     def on_volume_set(self, message):
         self.current_volume = message.data.get("percent", self.current_volume)
-        LOG.info('Mark2:interface.py set volume to %s' %
-                 (self.current_volume,))
+        LOG.info("Mark2:interface.py set volume to %s" % (self.current_volume,))
         self.m2enc.hardware_volume.set_volume(float(self.current_volume))
 
         # notify anybody listening on the bus who cares
-        self.bus.emit(Message("hardware.volume", {
-            "volume": self.current_volume}, context={"source": ["enclosure"]}))
+        self.bus.emit(
+            Message(
+                "hardware.volume",
+                {"volume": self.current_volume},
+                context={"source": ["enclosure"]},
+            )
+        )
 
     def on_volume_get(self, message):
         self.current_volume = self.m2enc.hardware_volume.get_volume()
@@ -331,26 +344,26 @@ class EnclosureMark2(Enclosure):
         if self.current_volume > 1.0:
             self.current_volume = self.current_volume / 10
 
-        LOG.info('Mark2:interface.py get and emit volume %s' %
-                 (self.current_volume,))
+        LOG.info("Mark2:interface.py get and emit volume %s" % (self.current_volume,))
         self.bus.emit(
-            message.response(
-                data={'percent': self.current_volume, 'muted': False}))
+            message.response(data={"percent": self.current_volume, "muted": False})
+        )
 
     def on_capabilities_get(self, message):
-        LOG.info('Mark2:interface.py get capabilities requested')
+        LOG.info("Mark2:interface.py get capabilities requested")
 
         self.bus.emit(
             message.response(
                 data={
-                    'default': self.default_caps.caps, 
-                    'extra': self.m2enc.capabilities,
-                    'board_type': self.m2enc.board_type,
-                    'leds': self.m2enc.leds.capabilities,
-                    'volume': self.m2enc.hardware_volume.capabilities,
-                    'switches': self.m2enc.switches.capabilities
-                    }
-                ))
+                    "default": self.default_caps.caps,
+                    "extra": self.m2enc.capabilities,
+                    "board_type": self.m2enc.board_type,
+                    "leds": self.m2enc.leds.capabilities,
+                    "volume": self.m2enc.hardware_volume.capabilities,
+                    "switches": self.m2enc.switches.capabilities,
+                }
+            )
+        )
 
     def terminate(self):
         self.m2enc.leds._set_led(10, (0, 0, 0))  # blank out reserved led
