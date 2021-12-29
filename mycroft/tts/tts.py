@@ -194,8 +194,8 @@ class TTS(metaclass=ABCMeta):
         self.cache.clear()
 
     @property
-    def supported_languages(self) -> set:
-        """Return languages supported by this TTS implementation
+    def available_languages(self) -> set:
+        """Return languages supported by this TTS implementation in this state
 
         This property should be overridden by the derived class to advertise
         what languages that engine supports.

@@ -38,8 +38,8 @@ class STT(metaclass=ABCMeta):
         self.can_stream = False
 
     @property
-    def supported_languages(self) -> set:
-        """Return languages supported by this STT implementation
+    def available_languages(self) -> set:
+        """Return languages supported by this STT implementation in this state
 
         This property should be overridden by the derived class to advertise
         what languages that engine supports.
