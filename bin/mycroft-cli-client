@@ -21,4 +21,4 @@ DIR="$( dirname "$SOURCE" )"
 source "$DIR/../venv-activate.sh" -q
 
 # Invoke the Command Line Interface
-python -m mycroft.client.text $@
+python -m mycroft.client.text "$@"

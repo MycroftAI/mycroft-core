@@ -42,7 +42,7 @@ def remove_submodule_refs(module_name):
         module_name: name of skill module.
     """
     submodules = []
-    LOG.debug('Skill module'.format(module_name))
+    LOG.debug('Skill module: {}'.format(module_name))
     # Collect found submodules
     for m in sys.modules:
         if m.startswith(module_name + '.'):
@@ -308,7 +308,6 @@ class SkillLoader:
                 # Set up intent handlers
                 # TODO: can this be a public method?
                 self.instance._register_decorated()
-                self.instance.register_resting_screen()
                 self.instance.initialize()
                 self.skill_control = self.instance.skill_control
             except Exception as e:

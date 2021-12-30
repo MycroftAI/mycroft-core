@@ -359,7 +359,7 @@ class Enclosure:
 
         # Load any already stored Data
         data = self.datastore.get(namespace, {})
-        for key in data:
+        for key in dict(data):
             msg = {"type": "mycroft.session.set",
                    "namespace": namespace,
                    "data": {key: data[key]}}
