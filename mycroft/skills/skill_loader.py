@@ -155,27 +155,30 @@ class SkillLoader:
         Returns:
              bool: if the skill was loaded/reloaded
         """
-        try:
-            self.last_modified = _get_last_modified_time(self.skill_directory)
-        except OSError as err:
-            self.last_modified = self.last_loaded
-            if not self.modtime_error_log_written:
-                self.modtime_error_log_written = True
-                LOG.error('Failed to get last_modification time '
-                          '({})'.format(repr(err)))
-        else:
-            self.modtime_error_log_written = False
+        # try:
+        #     self.last_modified = _get_last_modified_time(self.skill_directory)
+        # except OSError as err:
+        #     self.last_modified = self.last_loaded
+        #     if not self.modtime_error_log_written:
+        #         self.modtime_error_log_written = True
+        #         LOG.error('Failed to get last_modification time '
+        #                   '({})'.format(repr(err)))
+        # else:
+        #     self.modtime_error_log_written = False
 
-        modified = self.last_modified > self.last_loaded
+        # modified = self.last_modified > self.last_loaded
 
-        # create local reference to avoid threading issues
-        instance = self.instance
+        # # create local reference to avoid threading issues
+        # instance = self.instance
 
-        reload_allowed = (
-                self.active and
-                (instance is None or instance.reload_skill)
-        )
-        return modified and reload_allowed
+        # reload_allowed = (
+        #         self.active and
+        #         (instance is None or instance.reload_skill)
+        # )
+        # return modified and reload_allowed
+
+        # Check disabled on Mark II since skills are static
+        return False
 
     def reload(self):
         LOG.info('ATTEMPTING TO RELOAD SKILL: ' + self.skill_id)
