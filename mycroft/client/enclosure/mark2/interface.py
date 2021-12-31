@@ -187,7 +187,6 @@ class EnclosureMark2(Enclosure):
         self.temperatureMonitorThread.start()
 
         self.hardware.leds.set_leds(
-
             [
                 self.hardware.palette.BLACK,
                 self.hardware.palette.BLACK,
@@ -211,7 +210,8 @@ class EnclosureMark2(Enclosure):
         if self.hardware.switches.SW_MUTE == 1:
             mute_led_color = self.hardware.palette.RED
 
-        self.hardware.leds._set_led_with_brightness(self.mute_led, mute_led_color, 1.0
+        self.hardware.leds._set_led_with_brightness(
+            self.mute_led, mute_led_color, 1.0
         )
 
         self.default_caps = EnclosureCapabilities()
@@ -316,9 +316,7 @@ class EnclosureMark2(Enclosure):
         # TODO duck it anyway using set vol
         # LOG.warning("Mark2 volume duck deprecated! use volume set instead.")
         # TODO make configurable 'duck_vol'
-        # self.hardware.hardware_volume.set_volume(
-            float(0.1)
-        )
+        # self.hardware.hardware_volume.set_volume(float(0.1))
         # Use amixer in volume skill to avoid AGC issue.
         pass
 
@@ -350,7 +348,8 @@ class EnclosureMark2(Enclosure):
             self.current_volume = self.current_volume / 10
         LOG.info(f"Current volume {self.current_volume}")
         self.bus.emit(
-            message.response(data={"percent": self.current_volume, "muted": False}
+            message.response(
+                data={"percent": self.current_volume, "muted": False}
             )
         )
 
