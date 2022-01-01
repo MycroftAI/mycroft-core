@@ -468,7 +468,7 @@ function install_venv() {
 install_deps
 
 # It's later. Update existing config with jq.
-if [ $disable_precise_later == true ]; then
+if [[ $disable_precise_later == true ]]; then
     $SUDO bash -c 'jq ". + { \"use_precise\": false }" /etc/mycroft/mycroft.conf > tmp.mycroft.conf' 
                     $SUDO mv -f tmp.mycroft.conf /etc/mycroft/mycroft.conf
 fi
