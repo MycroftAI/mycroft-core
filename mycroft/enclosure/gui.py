@@ -143,6 +143,12 @@ class SkillGUI:
                                      "event_name": event_name,
                                      "params": params}))
 
+    def replace_page(self, name, override_idle=None):
+        """Remove the page being displayed and show a new page."""
+        if self.page is not None:
+            self.remove_page(self.page)
+        self.show_page(name, override_idle)
+
     def show_page(self, name, override_idle=None,
                   override_animations=False):
         """Begin showing the page in the GUI
