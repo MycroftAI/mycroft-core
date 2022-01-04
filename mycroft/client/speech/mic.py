@@ -591,6 +591,9 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
             sec_per_buffer (float):  Fractional number of seconds in each chunk
         """
 
+        #noise_tracker = NoiseTracker(0, 25, sec_per_buffer, self.MIN_LOUD_SEC_PER_PHRASE, self.recording_timeout_with_silence)
+        
+
         # The maximum audio in seconds to keep for transcribing a phrase
         # The wake word must fit in this time
         ww_duration = self.wake_word_recognizer.expected_duration
@@ -616,9 +619,35 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         average_samples = int(5 / sec_per_buffer)  # average over last 5 secs
         audio_mean = RollingMean(average_samples)
 
+
         # These are frames immediately after wake word is detected
         # that we want to keep to send to STT
         ww_frames = deque(maxlen=7)
+
+        chunk = self.record_sound_chunk(source)
+        energy = self.calc_energy(chunk, source.SAMPLE_WIDTH)
+
+        LOG.info(energy)
+        while energy < self.energy_threshold * self.multiplier:
+            audio_buffer.append(chunk)
+            ww_frames.append(chunk)
+
+            audio_mean.append_sample(energy)
+
+            if energy < self.energy_threshold * self.multiplier:
+                self._adjust_threshold(energy, sec_per_buffer)
+            # maintain the threshold using average
+            if self.energy_threshold < energy < audio_mean.value * 1.5:
+                # bump the threshold to just above this value
+                self.energy_threshold = energy * 1.2
+
+            chunk = self.record_sound_chunk(source)
+            energy = self.calc_energy(chunk, source.SAMPLE_WIDTH)
+            LOG.info(energy)
+
+        LOG.info(energy)
+
+            
 
         said_wake_word = False
         audio_data = None
@@ -655,6 +684,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
                 said_wake_word = \
                     self.wake_word_recognizer.found_wake_word(audio_data)
 
+        LOG.info('hallo')
         self._listen_triggered = False
         return WakeWordData(audio_data, said_wake_word,
                             self._stop_signaled, ww_frames)
@@ -710,6 +740,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
 
         LOG.debug("Waiting for wake word...")
         ww_data = self._wait_until_wake_word(source, sec_per_buffer)
+        LOG.info(ww_data)
 
         ww_frames = None
         if ww_data.found:
