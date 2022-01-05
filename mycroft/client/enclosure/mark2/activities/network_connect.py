@@ -249,9 +249,8 @@ class NetworkConnectActivity(Activity):
 
             dev_type = await dev_interface.get_device_type()
 
-            # TODO: Include ethernet
-            # if dev_type in {NM_DEVICE_TYPE_ETHERNET, NM_DEVICE_TYPE_WIFI}:
-            if dev_type in {NM_DEVICE_TYPE_WIFI}:
+            # Only pay attention to ethernet and wifi devices
+            if dev_type in {NM_DEVICE_TYPE_ETHERNET, NM_DEVICE_TYPE_WIFI}:
                 LOG.debug("Network device found: %s", device_path)
 
                 # Get access to PropertiesChanged signal
