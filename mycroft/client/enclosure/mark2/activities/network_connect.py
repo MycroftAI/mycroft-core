@@ -279,6 +279,8 @@ class NetworkConnectActivity(Activity):
                         )
                     )
                 else:
+                    dev_name = await dev_interface.get_interface()
+
                     # Just use device state for ethernet
                     network_devices.append(
                         NetworkDevice(
