@@ -41,7 +41,7 @@ NM_802_11_MODE_INFRA = 2
 
 # Seconds to check device statuses before declaring that the network is not
 # connected.
-NOT_CONNECTED_TIMEOUT = 10.0
+NOT_CONNECTED_TIMEOUT = 60.0
 
 
 class DeviceState(str, Enum):
