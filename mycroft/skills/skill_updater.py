@@ -19,14 +19,14 @@ from datetime import datetime
 from time import time
 import xdg.BaseDirectory
 
-# from msm import MsmException
+from msm import MsmException
 
 from mycroft.api import DeviceApi, is_paired
 from mycroft.configuration import Configuration
 from mycroft.util import connected
 from mycroft.util.combo_lock import ComboLock
 from mycroft.util.log import LOG
-# from .msm_wrapper import build_msm_config, create_msm
+from .msm_wrapper import build_msm_config, create_msm
 from mycroft.util.file_utils import get_temp_path
 
 ONE_HOUR = 3600
@@ -47,15 +47,15 @@ class SkillUpdater:
                                 commands.
     """
     _installed_skills_file_path = None
-    # _msm = None
+    _msm = None
 
     def __init__(self, bus=None):
-        # self.msm_lock = ComboLock(get_temp_path('mycroft-msm.lck'))
+        self.msm_lock = ComboLock(get_temp_path('mycroft-msm.lck'))
         self.install_retries = 0
         self.config = Configuration.get()
         update_interval = self.config['skills']['update_interval']
         self.update_interval = int(update_interval) * ONE_HOUR
-        # self.dot_msm_path = os.path.join(self.msm.skills_dir, '.msm')
+        self.dot_msm_path = os.path.join(self.msm.skills_dir, '.msm')
         self.next_download = None
         self._update_download_time()
         self.installed_skills = set()
@@ -84,28 +84,27 @@ class SkillUpdater:
 
         return self._installed_skills_file_path
 
-    # @property
-    # def msm(self):
-    #     if self._msm is None:
-    #         msm_config = build_msm_config(self.config)
-    #         self._msm = create_msm(msm_config)
+    @property
+    def msm(self):
+        if self._msm is None:
+            msm_config = build_msm_config(self.config)
+            self._msm = create_msm(msm_config)
 
-    #     return self._msm
+        return self._msm
 
     @property
     def default_skill_names(self) -> tuple:
         """Property representing the default skills expected to be installed"""
-        # default_skill_groups = dict(self.msm.repo.get_default_skill_names())
-        # default_skills = set(default_skill_groups['default'])
-        # platform_default_skills = default_skill_groups.get(self.msm.platform)
-        # if platform_default_skills is None:
-        #     log_msg = 'No default skills found for platform {}'
-        #     LOG.info(log_msg.format(self.msm.platform))
-        # else:
-        #     default_skills.update(platform_default_skills)
+        default_skill_groups = dict(self.msm.repo.get_default_skill_names())
+        default_skills = set(default_skill_groups['default'])
+        platform_default_skills = default_skill_groups.get(self.msm.platform)
+        if platform_default_skills is None:
+            log_msg = 'No default skills found for platform {}'
+            LOG.info(log_msg.format(self.msm.platform))
+        else:
+            default_skills.update(platform_default_skills)
 
-        # return tuple(default_skills)
-        return tuple()
+        return tuple(default_skills)
 
     def _load_installed_skills(self):
         """Load the last known skill listing from a file."""
@@ -127,86 +126,85 @@ class SkillUpdater:
         Args:
             quick (bool): Expedite the download by running with more threads?
         """
-        # LOG.info('Beginning skill update...')
-        # self.msm._device_skill_state = None  # TODO: Proper msm method
-        # success = True
-        # if connected():
-        #     self._load_installed_skills()
-        #     with self.msm_lock, self.msm.lock:
-        #         self._apply_install_or_update(quick)
-        #     self._save_installed_skills()
-        #     # Schedule retry in 5 minutes on failure, after 10 shorter periods
-        #     # Go back to 60 minutes wait
-        #     if self.default_skill_install_error and self.install_retries < 10:
-        #         self._schedule_retry()
-        #         success = False
-        #     else:
-        #         self.install_retries = 0
-        #         self._update_download_time()
-        # else:
-        #     self.handle_not_connected()
-        #     success = False
+        LOG.info('Beginning skill update...')
+        self.msm._device_skill_state = None  # TODO: Proper msm method
+        success = True
+        if connected():
+            self._load_installed_skills()
+            with self.msm_lock, self.msm.lock:
+                self._apply_install_or_update(quick)
+            self._save_installed_skills()
+            # Schedule retry in 5 minutes on failure, after 10 shorter periods
+            # Go back to 60 minutes wait
+            if self.default_skill_install_error and self.install_retries < 10:
+                self._schedule_retry()
+                success = False
+            else:
+                self.install_retries = 0
+                self._update_download_time()
+        else:
+            self.handle_not_connected()
+            success = False
 
-        # if success:
-        #     LOG.info('Skill update complete')
+        if success:
+            LOG.info('Skill update complete')
 
-        # return success
-        return True
+        return success
 
     def handle_not_connected(self):
         """Notifications of the device not being connected to the internet"""
-        # LOG.error('msm failed, network connection not available')
-        # self.next_download = time() + FIVE_MINUTES
+        LOG.error('msm failed, network connection not available')
+        self.next_download = time() + FIVE_MINUTES
 
     def _apply_install_or_update(self, quick):
         """Invoke MSM to install or update a skill."""
-        # try:
-        #     # Determine if all defaults are installed
-        #     defaults = all(
-        #         [s.is_local for s in self.msm.default_skills.values()]
-        #     )
-        #     num_threads = 20 if not defaults or quick else 2
-        #     self.msm.apply(
-        #         self.install_or_update,
-        #         self.msm.list(),
-        #         max_threads=num_threads
-        #     )
-        #     self.post_manifest()
+        try:
+            # Determine if all defaults are installed
+            defaults = all(
+                [s.is_local for s in self.msm.default_skills.values()]
+            )
+            num_threads = 20 if not defaults or quick else 2
+            self.msm.apply(
+                self.install_or_update,
+                self.msm.list(),
+                max_threads=num_threads
+            )
+            self.post_manifest()
 
-        # except MsmException as e:
-        #     LOG.error('Failed to update skills: {}'.format(repr(e)))
+        except MsmException as e:
+            LOG.error('Failed to update skills: {}'.format(repr(e)))
 
     def post_manifest(self, reload_skills_manifest=False):
         """Post the manifest of the device's skills to the backend."""
-        # upload_allowed = self.config['skills'].get('upload_skill_manifest')
-        # if upload_allowed and is_paired():
-        #     if reload_skills_manifest:
-        #         self.msm.clear_cache()
-        #     try:
-        #         device_api = DeviceApi()
-        #         device_api.upload_skills_data(self.msm.device_skill_state)
-        #     except Exception:
-        #         LOG.exception('Could not upload skill manifest')
+        upload_allowed = self.config['skills'].get('upload_skill_manifest')
+        if upload_allowed and is_paired():
+            if reload_skills_manifest:
+                self.msm.clear_cache()
+            try:
+                device_api = DeviceApi()
+                device_api.upload_skills_data(self.msm.device_skill_state)
+            except Exception:
+                LOG.exception('Could not upload skill manifest')
 
     def install_or_update(self, skill):
         """Install missing defaults and update existing skills"""
-        # if self._get_device_skill_state(skill.name).get('beta', False):
-        #     skill.sha = None  # Will update to latest head
-        # if skill.is_local:
-        #     skill.update()
-        #     if skill.name not in self.installed_skills:
-        #         skill.update_deps()
-        # elif skill.name in self.default_skill_names:
-        #     try:
-        #         self.msm.install(skill, origin='default')
-        #     except Exception:
-        #         if skill.name in self.default_skill_names:
-        #             LOG.warning(
-        #                 'Failed to install default skill: ' + skill.name
-        #             )
-        #             self.default_skill_install_error = True
-        #         raise
-        # self.installed_skills.add(skill.name)
+        if self._get_device_skill_state(skill.name).get('beta', False):
+            skill.sha = None  # Will update to latest head
+        if skill.is_local:
+            skill.update()
+            if skill.name not in self.installed_skills:
+                skill.update_deps()
+        elif skill.name in self.default_skill_names:
+            try:
+                self.msm.install(skill, origin='default')
+            except Exception:
+                if skill.name in self.default_skill_names:
+                    LOG.warning(
+                        'Failed to install default skill: ' + skill.name
+                    )
+                    self.default_skill_install_error = True
+                raise
+        self.installed_skills.add(skill.name)
 
     def defaults_installed(self):
         """Check if all default skills are installed.
@@ -214,19 +212,18 @@ class SkillUpdater:
         Returns:
             True if all default skills are installed, else False.
         """
-        # defaults = []
-        # for skill in self.msm.default_skills.values():
-        #     if not skill_is_blacklisted(skill):
-        #         defaults.append(skill)
-        # return all([skill.is_local for skill in defaults])
-        return True
+        defaults = []
+        for skill in self.msm.default_skills.values():
+            if not skill_is_blacklisted(skill):
+                defaults.append(skill)
+        return all([skill.is_local for skill in defaults])
 
     def _get_device_skill_state(self, skill_name):
         """Get skill data structure from name."""
         device_skill_state = {}
-        # for msm_skill_state in self.msm.device_skill_state.get('skills', []):
-        #     if msm_skill_state.get('name') == skill_name:
-        #         device_skill_state = msm_skill_state
+        for msm_skill_state in self.msm.device_skill_state.get('skills', []):
+            if msm_skill_state.get('name') == skill_name:
+                device_skill_state = msm_skill_state
 
         return device_skill_state
 
@@ -239,10 +236,10 @@ class SkillUpdater:
 
     def _update_download_time(self):
         """Update timestamp on .msm file to be used when system is restarted"""
-        # with open(self.dot_msm_path, 'a'):
-        #     os.utime(self.dot_msm_path, None)
-        # self.next_download = time() + self.update_interval
-        # self._log_next_download_time()
+        with open(self.dot_msm_path, 'a'):
+            os.utime(self.dot_msm_path, None)
+        self.next_download = time() + self.update_interval
+        self._log_next_download_time()
 
     def _log_next_download_time(self):
         LOG.info(

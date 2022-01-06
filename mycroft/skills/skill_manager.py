@@ -24,7 +24,7 @@ from mycroft.enclosure.api import EnclosureAPI
 from mycroft.configuration import Configuration
 from mycroft.messagebus.message import Message
 from mycroft.util.log import LOG
-# from .msm_wrapper import create_msm as msm_creator, build_msm_config
+from .msm_wrapper import create_msm as msm_creator, build_msm_config
 from .settings import SkillSettingsDownloader
 from .skill_loader import SkillLoader
 from .skill_updater import SkillUpdater
@@ -110,7 +110,7 @@ def _shutdown_skill(instance):
 
 
 class SkillManager(Thread):
-    # _msm = None
+    _msm = None
 
     def __init__(self, bus, watchdog=None):
         """Constructor
@@ -170,21 +170,21 @@ class SkillManager(Thread):
     def skills_config(self):
         return self.config['skills']
 
-    # @property
-    # def msm(self):
-    #     if self._msm is None:
-    #         msm_config = build_msm_config(self.config)
-    #         self._msm = msm_creator(msm_config)
+    @property
+    def msm(self):
+        if self._msm is None:
+            msm_config = build_msm_config(self.config)
+            self._msm = msm_creator(msm_config)
 
-    #     return self._msm
+        return self._msm
 
-    # @staticmethod
-    # def create_msm():
-    #     LOG.debug('instantiating msm via static method...')
-    #     msm_config = build_msm_config(Configuration.get())
-    #     msm_instance = msm_creator(msm_config)
+    @staticmethod
+    def create_msm():
+        LOG.debug('instantiating msm via static method...')
+        msm_config = build_msm_config(Configuration.get())
+        msm_instance = msm_creator(msm_config)
 
-    #     return msm_instance
+        return msm_instance
 
     def schedule_now(self, _):
         self.skill_updater.next_download = time() - 1
@@ -214,22 +214,22 @@ class SkillManager(Thread):
         self._remove_git_locks()
 
         # Sync backend and skills.
-        # if is_paired() and not self.upload_queue.started:
-        #     self._start_settings_update()
+        if is_paired() and not self.upload_queue.started:
+            self._start_settings_update()
 
         # Scan the file folder that contains Skills.  If a Skill is updated,
         # unload the existing version from memory and reload from the disk.
         while not self._stop_event.is_set():
             try:
-                # self._unload_removed_skills()
-                # self._reload_modified_skills()
+                self._unload_removed_skills()
+                self._reload_modified_skills()
                 self._load_new_skills()
-                # self._update_skills()
-                # if (is_paired() and self.upload_queue.started and
-                #         len(self.upload_queue) > 0):
-                #     self.msm.clear_cache()
-                #     self.skill_updater.post_manifest()
-                #     self.upload_queue.send()
+                self._update_skills()
+                if (is_paired() and self.upload_queue.started and
+                        len(self.upload_queue) > 0):
+                    self.msm.clear_cache()
+                    self.skill_updater.post_manifest()
+                    self.upload_queue.send()
 
                 self._watchdog()
                 sleep(2)  # Pause briefly before beginning next scan
@@ -241,9 +241,9 @@ class SkillManager(Thread):
 
     def _remove_git_locks(self):
         """If git gets killed from an abrupt shutdown it leaves lock files."""
-        # for i in glob(os.path.join(self.msm.skills_dir, '*/.git/index.lock')):
-        #     LOG.warning('Found and removed git lock file: ' + i)
-        #     os.remove(i)
+        for i in glob(os.path.join(self.msm.skills_dir, '*/.git/index.lock')):
+            LOG.warning('Found and removed git lock file: ' + i)
+            os.remove(i)
 
     def _reload_modified_skills(self):
         """Handle reload of recently changed skill(s)"""
@@ -279,8 +279,7 @@ class SkillManager(Thread):
         return skill_loader if load_status else None
 
     def _get_skill_directories(self):
-        # skill_glob = glob(os.path.join(self.msm.skills_dir, '*/'))
-        skill_glob = glob(os.path.join("/opt/mycroft/skills", '*/'))
+        skill_glob = glob(os.path.join(self.msm.skills_dir, '*/'))
 
         skill_directories = []
         for skill_dir in skill_glob:
