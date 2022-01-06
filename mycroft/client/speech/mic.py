@@ -622,16 +622,18 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
 
         # These are frames immediately after wake word is detected
         # that we want to keep to send to STT
-        ww_frames = deque(maxlen=7)
+        ww_frames = deque(maxlen=35)
 
-        chunk = self.record_sound_chunk(source)
-        energy = self.calc_energy(chunk, source.SAMPLE_WIDTH)
+        energy = -1
+        said_wake_word = False
+        audio_data = None
 
-        LOG.info(energy)
-        while energy < self.energy_threshold * self.multiplier:
+        while energy < max(self.energy_threshold * 3, 200):
+            chunk = self.record_sound_chunk(source)
             audio_buffer.append(chunk)
             ww_frames.append(chunk)
 
+            energy = self.calc_energy(chunk, source.SAMPLE_WIDTH)
             audio_mean.append_sample(energy)
 
             if energy < self.energy_threshold * self.multiplier:
@@ -641,18 +643,27 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
                 # bump the threshold to just above this value
                 self.energy_threshold = energy * 1.2
 
-            chunk = self.record_sound_chunk(source)
-            energy = self.calc_energy(chunk, source.SAMPLE_WIDTH)
-            LOG.info(energy)
+            # Periodically output energy level stats. This can be used to
+            # visualize the microphone input, e.g. a needle on a meter.
+            if mic_write_counter % 3:
+                self._watchdog()
+                self.write_mic_level(energy, source)
+            mic_write_counter += 1
 
-        LOG.info(energy)
+            buffers_since_check += 1.0
+            # Send chunk to wake_word_recognizer
+            self.wake_word_recognizer.update(chunk)
 
-            
+            if buffers_since_check > buffers_per_check:
+                buffers_since_check -= buffers_per_check
+                audio_data = audio_buffer.get_last(test_size) + silence
+                said_wake_word = \
+                    self.wake_word_recognizer.found_wake_word(audio_data)
 
-        said_wake_word = False
-        audio_data = None
+        counter = 0
         while (not said_wake_word and not self._stop_signaled and
-               not self._skip_wake_word()):
+               not self._skip_wake_word() and counter < 35):
+            counter += 1
             chunk = self.record_sound_chunk(source)
             audio_buffer.append(chunk)
             ww_frames.append(chunk)
@@ -740,14 +751,13 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
 
         LOG.debug("Waiting for wake word...")
         ww_data = self._wait_until_wake_word(source, sec_per_buffer)
-        LOG.info(ww_data)
 
-        ww_frames = None
+        #ww_frames = None
         if ww_data.found:
             # If the wakeword was heard send it
             self._send_wakeword_info(emitter)
             self._handle_wakeword_found(ww_data.audio, source)
-            ww_frames = ww_data.end_audio
+        ww_frames = ww_data.end_audio
         if ww_data.stopped:
             # If the waiting returned from a stop signal
             return
@@ -755,13 +765,14 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         LOG.debug("Recording...")
         # If enabled, play a wave file with a short sound to audibly
         # indicate recording has begun.
-        if self.config.get('confirm_listening'):
-            # if self.mute_and_confirm_listening(source):
-                # Clear frames from wakeword detctions since they're
-                # irrelevant after mute - play wav - unmute sequence
-            ww_frames = None
+        # if self.config.get('confirm_listening'):
+        #     # if self.mute_and_confirm_listening(source):
+        #         # Clear frames from wakeword detctions since they're
+        #         # irrelevant after mute - play wav - unmute sequence
+        #     ww_frames = None
 
         # Notify system of recording start
+        LOG.info(ww_frames)
         emitter.emit("recognizer_loop:record_begin")
 
         frame_data = self._record_phrase(
