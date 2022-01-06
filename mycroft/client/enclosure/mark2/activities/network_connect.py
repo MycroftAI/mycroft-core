@@ -169,7 +169,7 @@ class NetworkConnectActivity(Activity):
                 )
             except asyncio.TimeoutError:
                 # Not connected
-                pass
+                LOG.warning("Timeout occurred while checking for network connectivity")
 
             if connected:
                 # Report connected
