@@ -39,6 +39,10 @@ NM_DEVICE_TYPE_WIFI = 2
 NM_802_11_MODE_UNKNOWN = 0
 NM_802_11_MODE_INFRA = 2
 
+# Seconds to check device statuses before declaring that the network is not
+# connected.
+NOT_CONNECTED_TIMEOUT = 10.0
+
 
 class DeviceState(str, Enum):
     """State of a network device"""
@@ -96,9 +100,7 @@ class NetworkDevice:
 class WiFiDevice(NetworkDevice):
     """DBus wireless network device"""
 
-    def __init__(
-        self, name: str, dev_interface, props_interface, wireless_interface
-    ):
+    def __init__(self, name: str, dev_interface, props_interface, wireless_interface):
         super().__init__(name, dev_interface, props_interface)
         self.wireless_interface = wireless_interface
 
@@ -123,9 +125,7 @@ class NoNetworkDevicesError(Exception):
 class NetworkConnectActivity(Activity):
     """Determines network connectivity using DBus NetworkManager"""
 
-    def __init__(
-        self, name: str, bus, dbus_address: typing.Optional[str] = None
-    ):
+    def __init__(self, name: str, bus, dbus_address: typing.Optional[str] = None):
         super().__init__(name, bus)
 
         self._dbus_address = dbus_address
@@ -156,14 +156,22 @@ class NetworkConnectActivity(Activity):
 
             if not devices:
                 # Will raise in _run
-                self._error = NoNetworkDevicesError(
-                    "No network devices found on DBus"
-                )
+                self._error = NoNetworkDevicesError("No network devices found on DBus")
                 return
 
             self._subscribe_to_signals(devices)
 
-            if await self._is_connected(devices):
+            # Check for connectivity with a timeout
+            connected = False
+            try:
+                connected = await asyncio.wait_for(
+                    self._is_connected(devices), NOT_CONNECTED_TIMEOUT
+                )
+            except asyncio.TimeoutError:
+                # Not connected
+                pass
+
+            if connected:
                 # Report connected
                 LOG.info("Network connection detected")
                 self.bus.emit(Message("hardware.network-detected"))
@@ -171,8 +179,6 @@ class NetworkConnectActivity(Activity):
                 # Report not connected
                 self.bus.emit(Message("hardware.network-not-detected"))
                 LOG.info("Network connection not detected")
-
-                # await self._wait_for_connectivity(devices)
 
             self._cleanup(devices)
             await dbus.wait_for_disconnect()
@@ -184,13 +190,9 @@ class NetworkConnectActivity(Activity):
         """Watch all network devices for property changes"""
         for device in devices:
             # Subscribe to state updates
-            device.props_interface.on_properties_changed(
-                self._dev_props_changed
-            )
+            device.props_interface.on_properties_changed(self._dev_props_changed)
 
-    def _dev_props_changed(
-        self, _interface, _changed_props, _invalidated_props
-    ):
+    def _dev_props_changed(self, _interface, _changed_props, _invalidated_props):
         """Callback for properties changed signal"""
         if self._props_changed is not None:
             self._props_changed.set()
@@ -227,9 +229,7 @@ class NetworkConnectActivity(Activity):
     def _cleanup(self, devices):
         """Remove signal handlers"""
         for device in devices:
-            device.props_interface.off_properties_changed(
-                self._dev_props_changed
-            )
+            device.props_interface.off_properties_changed(self._dev_props_changed)
 
     async def _get_network_devices(
         self, dbus, nm_interface
@@ -243,9 +243,7 @@ class NetworkConnectActivity(Activity):
                 NM_NAMESPACE, device_path, dev_introspect
             )
 
-            dev_interface = dev_object.get_interface(
-                f"{NM_NAMESPACE}.Device",
-            )
+            dev_interface = dev_object.get_interface(f"{NM_NAMESPACE}.Device",)
 
             dev_type = await dev_interface.get_device_type()
 
@@ -283,9 +281,7 @@ class NetworkConnectActivity(Activity):
 
                     # Just use device state for ethernet
                     network_devices.append(
-                        NetworkDevice(
-                            dev_name, dev_interface, dev_props_interface
-                        )
+                        NetworkDevice(dev_name, dev_interface, dev_props_interface)
                     )
 
         return network_devices
