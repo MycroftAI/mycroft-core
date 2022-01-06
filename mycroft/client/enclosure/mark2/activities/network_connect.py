@@ -81,13 +81,13 @@ class NetworkDevice:
         if state == NM_DEVICE_STATE_ACTIVATED:
             return DeviceState.CONNECTED
 
-        if state == NM_DEVICE_STATE_DISCONNECTED:
+        if state <= NM_DEVICE_STATE_DISCONNECTED:
             # Wait and check again
             await asyncio.sleep(NetworkDevice.DISCONNECT_WAIT)
             state = await self.dev_interface.get_state()
             LOG.info("%s state(2): %s", self.name, state)
 
-            if state == NM_DEVICE_STATE_DISCONNECTED:
+            if state <= NM_DEVICE_STATE_DISCONNECTED:
                 return DeviceState.NOT_CONNECTED
 
         return DeviceState.NOT_READY
