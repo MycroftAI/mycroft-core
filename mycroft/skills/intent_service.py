@@ -22,6 +22,7 @@ from mycroft.configuration import Configuration, set_default_lf_lang
 from mycroft.util.log import LOG
 from mycroft.util.parse import normalize
 from mycroft.metrics import report_timing, Stopwatch
+from utterance_analysis.sentiment import analyze
 from .intent_services import (
     AdaptService, AdaptIntent,
     FallbackService,
@@ -288,6 +289,7 @@ class IntentService:
         """
 
         # /home/leonhermann/.config/mycroft/skills/Judgealexa/scoreFile.txt
+        # /home/leonhermann/.config/mycroft/skills/Judgealexa/utterances.txt
 
         try:
             lang = _get_message_lang(message)
@@ -319,6 +321,15 @@ class IntentService:
             scoreFile = open("/home/leonhermann/.config/mycroft/skills/Judgealexa/scoreFile.txt", "r")
             points = int(scoreFile.read())
             scoreFile.close()
+
+            sentiment = analyze(utterances[0])
+
+            t = time.localtime()
+            current_time = time.strftime("%d.%m.%Y %H:%M:%S", t)
+            utteranceFile = open("/home/leonhermann/.config/mycroft/skills/Judgealexa/utterances.txt", "a")
+            utteranceFile.write(f"{utterances[0]},{current_time},{sentiment}\n")
+            utteranceFile.close()
+
             if points >= 1000:
                 match = None
                 with stopwatch:
@@ -327,14 +338,11 @@ class IntentService:
                         match = match_func(combined, lang, message)
                         if match:
                             break
-
-                LOG.info(match)
                 judgealexa_intent = self.adapt_service.match_intent_alexa(combined, lang, message)
                 if judgealexa_intent:
                     alexa_reply = message.reply(judgealexa_intent.intent_type, judgealexa_intent.intent_data)
                     self.bus.emit(alexa_reply)
-                    match = IntentMatch('Adapt', None, None, None)
-                LOG.info(self.wakeword_found)
+                    #match = IntentMatch('Adapt', None, None, None)
                 if match:
                     if self.wakeword_found: 
                         if match.skill_id:
