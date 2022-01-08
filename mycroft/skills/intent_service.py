@@ -264,6 +264,17 @@ class IntentService:
     def handle_wakeword_found(self, _):
         self.wakeword_found = True
 
+    def getPoints(self):
+        pointsFile = open("/home/leonhermann/.config/mycroft/skills/Judgealexa/scoreFile.txt", "r")
+        points = pointsFile.read()
+        pointsFile.close()
+        return int(points)
+
+    def setPoints(self, number):
+        pointsFile = open("/home/leonhermann/.config/mycroft/skills/Judgealexa/scoreFile.txt", "w+")
+        pointsFile.write(str(number))
+        pointsFile.close()
+
     def handle_utterance(self, message):
         """Main entrypoint for handling user utterances with Mycroft skills
 
@@ -318,11 +329,14 @@ class IntentService:
                 padatious_matcher.match_low
             ]
 
-            scoreFile = open("/home/leonhermann/.config/mycroft/skills/Judgealexa/scoreFile.txt", "r")
-            points = int(scoreFile.read())
-            scoreFile.close()
+            points = self.getPoints()
 
             sentiment = analyze(utterances[0])
+
+
+            if "NEGATIVE" in str(sentiment[0]):
+                self.setPoints(points - 1)
+                LOG.info("Score decreased due to negative sentiment!")
 
             t = time.localtime()
             current_time = time.strftime("%d.%m.%Y %H:%M:%S", t)
