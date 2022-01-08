@@ -15,6 +15,8 @@
 """Mycroft's intent service, providing intent parsing since forever!"""
 from copy import copy
 import time
+from flair.data import Sentence
+from flair.models.text_classification_model import TextClassifier
 
 from mycroft_bus_client.message import Message
 
@@ -85,6 +87,8 @@ class IntentService:
     def __init__(self, bus):
         # Dictionary for translating a skill id to a name
         self.bus = bus
+
+        self.classifier = TextClassifier.load('en-sentiment')
 
         self.wakeword_found = False
         self.skill_names = {}
@@ -331,12 +335,15 @@ class IntentService:
 
             points = self.getPoints()
 
-            sentiment = analyze(utterances[0])
-
+            start_time = time.time()
+            sentiment = analyze(utterances[0], self.classifier)
 
             if "NEGATIVE" in str(sentiment[0]):
                 self.setPoints(points - 1)
-                LOG.info("Score decreased due to negative sentiment!")
+
+            duration = time.time() - start_time
+            
+            LOG.info(f"{duration} seconds")
 
             t = time.localtime()
             current_time = time.strftime("%d.%m.%Y %H:%M:%S", t)
