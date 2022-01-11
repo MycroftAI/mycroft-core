@@ -16,6 +16,7 @@
 import threading
 import time
 import typing
+from queue import Queue
 
 from mycroft.client.enclosure.base import Enclosure
 from mycroft.enclosure.hardware_enclosure import HardwareEnclosure
@@ -29,6 +30,7 @@ from .activities import (
     NetworkConnectActivity,
     SystemClockSyncActivity,
 )
+from .leds import ChaseLedAnimation, LedAnimation, PulseLedAnimation
 
 SERVICES = ("audio", "skills", "speech")
 
@@ -78,79 +80,35 @@ class TemperatureMonitorThread(threading.Thread):
                 continue
 
 
-class PulseLedThread(threading.Thread):
-    def __init__(self, led_obj, pal_obj):
-        self.led_obj = led_obj
-        self.pal_obj = pal_obj
-        self.exit_flag = False
-        self.color_tup = self.pal_obj.MYCROFT_GREEN
-        self.delay = 0.1
-        self.brightness = 100
-        self.step_size = 5
-        self.tmp_leds = []
-        threading.Thread.__init__(self)
+class LedThread(threading.Thread):
+
+    def __init__(self, animations: typing.Dict[str, LedAnimation]):
+        self.animations = animations
+        self.queue = Queue()
+        self.current_animation: typing.Optional[LedAnimation] = None
+
+        super().__init__()
+
+    def start_animation(self, name: str):
+        self.stop_animation()
+        self.queue.put(name)
+
+    def stop_animation(self):
+        if self.current_animation is not None:
+            self.current_animation.stop()
 
     def run(self):
-        LOG.debug("pulse thread started")
-        for x in range(0, 10):
-            self.tmp_leds.append(self.color_tup)
-
-        self.led_obj.brightness = self.brightness / 100
-        self.led_obj.set_leds(self.tmp_leds)
-
-        while not self.exit_flag:
-
-            if (self.brightness + self.step_size) > 100:
-                self.brightness = self.brightness - self.step_size
-                self.step_size = self.step_size * -1
-
-            elif (self.brightness + self.step_size) < 0:
-                self.brightness = self.brightness - self.step_size
-                self.step_size = self.step_size * -1
-
-            else:
-                self.brightness += self.step_size
-
-            self.led_obj.brightness = self.brightness / 100
-            self.led_obj.set_leds(self.tmp_leds)
-
-            time.sleep(self.delay)
-
-        LOG.debug("pulse thread stopped")
-        self.led_obj.brightness = 1.0
-        self.led_obj.fill(self.pal_obj.BLACK)
-
-
-class ChaseLedThread(threading.Thread):
-    def __init__(self, led_obj, background_color, foreground_color):
-        self.led_obj = led_obj
-        self.bkgnd_col = background_color
-        self.fgnd_col = foreground_color
-        self.exit_flag = False
-        self.color_tup = foreground_color
-        self.delay = 0.1
-        tmp_leds = []
-        for indx in range(0, 10):
-            tmp_leds.append(self.bkgnd_col)
-
-        self.led_obj.set_leds(tmp_leds)
-        threading.Thread.__init__(self)
-
-    def run(self):
-        LOG.debug("chase thread started")
-        chase_ctr = 0
-        while not self.exit_flag:
-            chase_ctr += 1
-            LOG.debug(f"chase thread {chase_ctr}")
-            for x in range(0, 10):
-                self.led_obj.set_led(x, self.fgnd_col)
-                time.sleep(self.delay)
-                self.led_obj.set_led(x, self.bkgnd_col)
-            if chase_ctr > 10:
-                self.exit_flag = True
-
-        LOG.debug("chase thread stopped")
-        self.led_obj.fill((0, 0, 0))
+        try:
+            while True:
+                name = self.queue.get()
+                self.stop_animation()
+                self.current_animation = self.animations.get(name)
+                if self.current_animation is not None:
+                    self.current_animation.run()
+                else:
+                    LOG.error("No animation named %s", name)
+        except Exception:
+            LOG.exception("error running led animation")
 
 
 class EnclosureMark2(Enclosure):
@@ -166,8 +124,6 @@ class EnclosureMark2(Enclosure):
         self.active_until_stopped = None
         self.reserved_led = 10
         self.mute_led = 11
-        self.chaseLedThread = None
-        self.pulseLedThread = None
         self.ready_services = set()
         self.is_paired = False
 
@@ -215,6 +171,20 @@ class EnclosureMark2(Enclosure):
         )
 
         self.default_caps = EnclosureCapabilities()
+
+        self.led_thread = LedThread(
+            animations = {
+                "pulse": PulseLedAnimation(
+                    self.hardware.leds, self.hardware.palette
+                ),
+                "chase": ChaseLedAnimation(
+                    self.hardware.leds,
+                    background_color=self.hardware.palette.BLUE,
+                    foreground_color=self.hardware.palette.BLACK
+                )
+            }
+        )
+        self.led_thread.start()
 
     def run(self):
         """Make it so."""
@@ -285,32 +255,15 @@ class EnclosureMark2(Enclosure):
 
     def handle_start_recording(self, message):
         LOG.debug("Gathering speech stuff")
-        if self.pulseLedThread is None:
-            self.pulseLedThread = PulseLedThread(
-                self.hardware.leds, self.hardware.palette
-            )
-            self.pulseLedThread.start()
+        self.led_thread.start_animation("pulse")
 
     def handle_stop_recording(self, message):
-        background_color = self.hardware.palette.BLUE
-        foreground_color = self.hardware.palette.BLACK
         LOG.debug("Got spoken stuff")
-        if self.pulseLedThread is not None:
-            self.pulseLedThread.exit_flag = True
-            self.pulseLedThread.join()
-            self.pulseLedThread = None
-        if self.chaseLedThread is None:
-            self.chaseLedThread = ChaseLedThread(
-                self.hardware.leds, background_color, foreground_color
-            )
-            self.chaseLedThread.start()
+        self.led_thread.start_animation("chase")
 
     def handle_end_audio(self, message):
         LOG.debug("Finished playing audio")
-        if self.chaseLedThread is not None:
-            self.chaseLedThread.exit_flag = True
-            self.chaseLedThread.join()
-            self.chaseLedThread = None
+        self.led_thread.stop_animation()
 
     def on_volume_duck(self, message):
         # TODO duck it anyway using set vol
