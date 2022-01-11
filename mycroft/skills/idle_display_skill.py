@@ -42,7 +42,8 @@ class IdleDisplaySkill(MycroftSkill):
     def _define_message_bus_handlers(self):
         """Defines the bus events handled in this skill and their handlers."""
         self.bus.on("mycroft.ready", self.handle_mycroft_ready)
-        self.bus.on("mycroft.skills.loaded", self.handle_skill_loaded)
+        self.bus.on("mycroft.started", self.handle_mycroft_started)
+        self.bus.on("mycroft.internet-ready", self.handle_internet_ready)
 
     def handle_mycroft_ready(self, _):
         """Executes code dependent on the "mycroft.ready" event."""
@@ -54,11 +55,13 @@ class IdleDisplaySkill(MycroftSkill):
             "Subclass must override the _show_idle_screen method"
         )
 
-    def handle_skill_loaded(self, message):
-        """Executes code dependent on the "mycroft.skills.loaded" event.
+    def handle_mycroft_started(self, _):
+        """Executes code dependent on the "mycroft.skills.loaded" event."""
+        self._show_internet_connecting_screen()
 
-         Args:
-             message: Message sent over the bus to indicate a skill has loaded
-         """
-        if message.data["id"] == self.skill_id:
-            self._show_idle_screen()
+    def _show_internet_connecting_screen(self):
+        """Override this method with logic to display the idle screen."""
+        pass
+
+    def handle_internet_ready(self, _):
+        self.gui.remove_page("internet_connect.qml")
