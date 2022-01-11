@@ -379,6 +379,8 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         if self.save_utterances and not isdir(self.saved_utterances_dir):
             os.mkdir(self.saved_utterances_dir)
 
+        # Enabled by mycroft.mic.enable_write_level message
+        self.mic_level_enabled = False
         self.mic_level_file = os.path.join(get_ipc_directory(), "mic_level")
 
         # Signal statuses
@@ -495,6 +497,9 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         return byte_data
 
     def write_mic_level(self, energy, source):
+        if not self.mic_level_enabled:
+            return
+
         with open(self.mic_level_file, 'w') as f:
             f.write('Energy:  cur={} thresh={:.3f} muted={}'.format(
                 energy,

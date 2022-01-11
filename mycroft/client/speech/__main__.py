@@ -138,6 +138,31 @@ def handle_mic_listen(_):
     loop.responsive_recognizer.trigger_listen()
 
 
+def handle_enable_write_level(_):
+    """Handlers for mycroft.mic.enable_write_level.
+
+    From the CLI.
+    Enables writing the mic level to temp file.
+    """
+    if loop is None:
+        return
+
+    LOG.info("Enabled mic level writing")
+    loop.responsive_recognizer.mic_level_enabled = True
+
+
+def handle_disable_write_level(_):
+    """Handlers for mycroft.mic.disable_write_level.
+
+    Dsiables writing the mic level to temp file.
+    """
+    if loop is None:
+        return
+
+    LOG.info("Disabled mic level writing")
+    loop.responsive_recognizer.mic_level_enabled = False
+
+
 def handle_mic_get_status(event):
     """Query microphone mute status."""
     data = {'muted': loop.is_muted()}
@@ -211,6 +236,8 @@ def connect_bus_events(bus):
     bus.on('mycroft.mic.unmute', handle_mic_unmute)
     bus.on('mycroft.mic.get_status', handle_mic_get_status)
     bus.on('mycroft.mic.listen', handle_mic_listen)
+    bus.on('mycroft.mic.enable_write_level', handle_enable_write_level)
+    bus.on('mycroft.mic.disable_write_level', handle_disable_write_level)
     bus.on("mycroft.paired", handle_paired)
     bus.on('recognizer_loop:audio_output_start', handle_audio_start)
     bus.on('recognizer_loop:audio_output_end', handle_audio_end)

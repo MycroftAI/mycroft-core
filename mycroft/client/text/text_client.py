@@ -1298,6 +1298,7 @@ def handle_cmd(cmd):
 
 def handle_is_connected(msg):
     add_log_message("Connected to Messagebus!")
+    bus.emit(Message('mycroft.mic.enable_write_level'))
     # start_qml_gui(bus, gui_text)
 
 
