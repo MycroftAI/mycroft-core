@@ -637,9 +637,6 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         test_size = source.duration_to_bytes(ww_test_duration)
         audio_buffer = CyclicAudioBuffer(max_size, silence)
 
-        buffers_per_check = self.SEC_BETWEEN_WW_CHECKS / sec_per_buffer
-        buffers_since_check = 0.0
-
         # Rolling buffer to track the audio energy (loudness) heard on
         # the source recently.  An average audio energy is maintained
         # based on these levels.
@@ -675,15 +672,12 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
                 self.write_mic_level(energy, source)
             mic_write_counter += 1
 
-            buffers_since_check += 1.0
             # Send chunk to wake_word_recognizer
             self.wake_word_recognizer.update(chunk)
 
-            if buffers_since_check > buffers_per_check:
-                buffers_since_check -= buffers_per_check
-                audio_data = audio_buffer.get_last(test_size) + silence
-                said_wake_word = \
-                    self.wake_word_recognizer.found_wake_word(audio_data)
+            # Parameter to found_wake_word is deprecated
+            said_wake_word = \
+                self.wake_word_recognizer.found_wake_word(None)
 
         self._listen_triggered = False
         return WakeWordData(audio_data, said_wake_word,
