@@ -19,6 +19,10 @@ import typing
 from queue import Queue
 
 from mycroft.client.enclosure.base import Enclosure
+from mycroft.messagebus.message import Message
+from mycroft.util import create_daemon, connected
+from mycroft.util.log import LOG
+from mycroft.enclosure.hardware.display import NamespaceManager
 from mycroft.enclosure.hardware_enclosure import HardwareEnclosure
 from mycroft.messagebus.message import Message
 from mycroft.util.hardware_capabilities import EnclosureCapabilities
@@ -126,6 +130,7 @@ class EnclosureMark2(Enclosure):
         self.mute_led = 11
         self.ready_services = set()
         self.is_paired = False
+        self.gui = NamespaceManager(self.bus)
 
         self.system_volume = 0.5  # pulse audio master system volume
         # if you want to do anything with the system volume
