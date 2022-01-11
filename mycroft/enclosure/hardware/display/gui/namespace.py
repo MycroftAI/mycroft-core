@@ -296,7 +296,6 @@ class NamespaceManager:
             message: the message requesting namespace removal
         """
         try:
-            LOG.info(f"clear namespace message: {message.data}")
             namespace_name = message.data['__from']
         except KeyError:
             LOG.error(
@@ -457,6 +456,7 @@ class NamespaceManager:
         self.remove_namespace_timers[namespace.name] = remove_namespace_timer
 
     def _remove_namespace_via_timer(self, namespace_name: str):
+        """Removes a namespace and the corresponding timer instance."""
         self._remove_namespace(namespace_name)
         del self.remove_namespace_timers[namespace_name]
 

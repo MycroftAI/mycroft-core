@@ -56,7 +56,7 @@ class IdleDisplaySkill(MycroftSkill):
         )
 
     def handle_mycroft_started(self, _):
-        """Executes code dependent on the "mycroft.skills.loaded" event."""
+        """Executes code dependent on the "mycroft.started" event."""
         self._show_internet_connecting_screen()
 
     def _show_internet_connecting_screen(self):
@@ -64,4 +64,5 @@ class IdleDisplaySkill(MycroftSkill):
         pass
 
     def handle_internet_ready(self, _):
+        """Executes code dependent on the "mycroft.started" event."""
         self.gui.remove_page("internet_connect.qml")
