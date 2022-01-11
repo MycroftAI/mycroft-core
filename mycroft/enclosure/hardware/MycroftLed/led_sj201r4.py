@@ -11,7 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import os
+
+from smbus2 import SMBus
+
 from mycroft.enclosure.hardware.MycroftLed.MycroftLed import MycroftLed
 from mycroft.util.log import LOG
 
@@ -22,12 +24,15 @@ class Led(MycroftLed):
     device_addr = 0x04
 
     def __init__(self):
+        self.bus = SMBus(1)
         self.brightness = 0.5
         self.capabilities = {
-                        "num_leds":10,
+                        "num_leds": self.num_leds,
                         "brightness":"(0.0-1.0)",
                         "led_colors":"MycroftPalette",
-                        "reserved_leds":[10,11],
+                        "reserved_leds": list(
+                            range(self.num_leds, self.real_num_leds)
+                        ),
                     }
 
     def adjust_brightness(self, cval, bval):
@@ -38,28 +43,33 @@ class Led(MycroftLed):
 
     def _set_led(self, pixel, color):
         """ internal interface
-            permits access to the 
+            permits access to the
             reserved leds """
-        red_val   = color[0]
-        green_val = color[1]
-        blue_val  = color[2]
+        red_val   = int(color[0])
+        green_val = int(color[1])
+        blue_val  = int(color[2])
 
-        cmd =   "i2cset -y 1 %d %d %d %d %d i " % (
-                    self.device_addr,
-                    pixel,
-                    red_val,
-                    green_val,
-                    blue_val)
-        os.system(cmd)
-        LOG.debug("Execute %s" % (cmd,))
+        # cmd =   "i2cset -y 1 %d %d %d %d %d i " % (
+        #             self.device_addr,
+        #             pixel,
+        #             red_val,
+        #             green_val,
+        #             blue_val)
+        # os.system(cmd)
+        # LOG.debug("Execute %s" % (cmd,))
+
+        self.bus.write_i2c_block_data(
+            self.device_addr, pixel,
+            [red_val, green_val, blue_val]
+        )
 
     def _set_led_with_brightness(self, pixel, color, blevel):
         self._set_led(
-                pixel, 
+                pixel,
                 list(
                     map(
-                        self.adjust_brightness, 
-                        color, 
+                        self.adjust_brightness,
+                        color,
                         (blevel,) * 3)))
 
     def show(self):
@@ -68,23 +78,29 @@ class Led(MycroftLed):
         pass
 
     def set_led(self, pixel, color):
-        """ external interface enforces led 
+        """ external interface enforces led
             reservation and honors brightness """
         self._set_led(
-                pixel % self.num_leds, 
+                pixel % self.num_leds,
                 list(
                     map(
-                        self.adjust_brightness, 
-                        color, 
+                        self.adjust_brightness,
+                        color,
                         (self.brightness,) * 3)))
 
     def fill(self, color):
         """fill all leds with the same color"""
-        for x in range(0,10):
-            self._set_led(x, color)
+        red_val   = int(color[0])
+        green_val = int(color[1])
+        blue_val  = int(color[2])
+
+        # Write all colors at once
+        self.bus.write_i2c_block_data(
+            self.device_addr, 0,
+            [red_val, green_val, blue_val] * self.num_leds
+        )
 
     def set_leds(self, new_leds):
         """set leds from tuple array"""
-        for x in range(0,10):
+        for x in range(0, self.num_leds):
             self.set_led(x, new_leds[x])
-
