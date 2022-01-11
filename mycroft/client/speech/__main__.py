@@ -121,7 +121,8 @@ def handle_wake_up(event):
 
 def handle_mic_mute(event):
     """Mute the listener system."""
-    loop.mute()
+    if loop is not None:
+        loop.mute()
 
 
 def handle_mic_unmute(event):
