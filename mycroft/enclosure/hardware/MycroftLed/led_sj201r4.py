@@ -90,14 +90,13 @@ class Led(MycroftLed):
 
     def fill(self, color):
         """fill all leds with the same color"""
-        red_val   = int(color[0])
-        green_val = int(color[1])
-        blue_val  = int(color[2])
+        rgb = [int(self.adjust_brightness(c, self.brightness))
+               for c in color[:3]]
 
         # Write all colors at once
         self.bus.write_i2c_block_data(
             self.device_addr, 0,
-            [red_val, green_val, blue_val] * self.num_leds
+            rgb * self.num_leds
         )
 
     def set_leds(self, new_leds):

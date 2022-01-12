@@ -85,30 +85,39 @@ class TemperatureMonitorThread(threading.Thread):
 
 
 class LedThread(threading.Thread):
-
-    def __init__(self, animations: typing.Dict[str, LedAnimation]):
+    def __init__(self, led_obj, animations: typing.Dict[str, LedAnimation]):
+        self.led_obj = led_obj
         self.animations = animations
         self.queue = Queue()
-        self.current_animation: typing.Optional[LedAnimation] = None
+        self.animation_running = False
 
         super().__init__()
 
     def start_animation(self, name: str):
+        LOG.info(name)
         self.stop_animation()
         self.queue.put(name)
 
     def stop_animation(self):
-        if self.current_animation is not None:
-            self.current_animation.stop()
+        self.animation_running = False
 
     def run(self):
         try:
             while True:
                 name = self.queue.get()
-                self.stop_animation()
-                self.current_animation = self.animations.get(name)
-                if self.current_animation is not None:
-                    self.current_animation.run()
+                current_animation = self.animations.get(name)
+
+                if current_animation is not None:
+                    try:
+                        self.animation_running = True
+                        current_animation.start()
+                        while self.animation_running and current_animation.step():
+                            time.sleep(0)
+                        current_animation.stop()
+                    except Exception:
+                        self.led_obj.fill(self.led_obj.black)
+                        LOG.exception("error running animation '%s'", name)
+
                 else:
                     LOG.error("No animation named %s", name)
         except Exception:
@@ -171,23 +180,20 @@ class EnclosureMark2(Enclosure):
         if self.hardware.switches.SW_MUTE == 1:
             mute_led_color = self.hardware.palette.RED
 
-        self.hardware.leds._set_led_with_brightness(
-            self.mute_led, mute_led_color, 1.0
-        )
+        self.hardware.leds._set_led_with_brightness(self.mute_led, mute_led_color, 1.0)
 
         self.default_caps = EnclosureCapabilities()
 
         self.led_thread = LedThread(
-            animations = {
-                "pulse": PulseLedAnimation(
-                    self.hardware.leds, self.hardware.palette
-                ),
+            led_obj=self.hardware.leds,
+            animations={
+                "pulse": PulseLedAnimation(self.hardware.leds, self.hardware.palette),
                 "chase": ChaseLedAnimation(
                     self.hardware.leds,
                     background_color=self.hardware.palette.BLUE,
-                    foreground_color=self.hardware.palette.BLACK
-                )
-            }
+                    foreground_color=self.hardware.palette.BLACK,
+                ),
+            },
         )
         self.led_thread.start()
 
@@ -223,21 +229,15 @@ class EnclosureMark2(Enclosure):
     def _define_event_handlers(self):
         """Assigns methods to act upon message bus events."""
         for service in SERVICES:
-            self.bus.on(
-                f"{service}.initialize.ended", self.handle_service_initialized
-            )
+            self.bus.on(f"{service}.initialize.ended", self.handle_service_initialized)
         self.bus.on("mycroft.volume.set", self.on_volume_set)
         self.bus.on("mycroft.volume.get", self.on_volume_get)
         self.bus.on("mycroft.volume.duck", self.on_volume_duck)
         self.bus.on("mycroft.volume.unduck", self.on_volume_unduck)
-        self.bus.on(
-            "recognizer_loop:record_begin", self.handle_start_recording
-        )
+        self.bus.on("recognizer_loop:record_begin", self.handle_start_recording)
         self.bus.on("recognizer_loop:record_end", self.handle_stop_recording)
         self.bus.on("recognizer_loop:audio_output_end", self.handle_end_audio)
-        self.bus.on(
-            "mycroft.speech.recognition.unknown", self.handle_end_audio
-        )
+        self.bus.on("mycroft.speech.recognition.unknown", self.handle_end_audio)
         self.bus.on("mycroft.stop.handled", self.handle_end_audio)
         self.bus.on("mycroft.capabilities.get", self.on_capabilities_get)
         self.bus.on("mycroft.started", self.handle_mycroft_started)
@@ -247,16 +247,10 @@ class EnclosureMark2(Enclosure):
         self.bus.on("hardware.detect-internet", self._handle_detect_internet)
 
         self.bus.on("hardware.network-detected", self._handle_network_detected)
-        self.bus.on(
-            "hardware.internet-detected", self._handle_internet_connected
-        )
+        self.bus.on("hardware.internet-detected", self._handle_internet_connected)
 
-        self.bus.on(
-            "hardware.awconnect.create-ap", self._handle_create_access_point
-        )
-        self.bus.on(
-            "server-connect.authenticated", self.handle_server_authenticated
-        )
+        self.bus.on("hardware.awconnect.create-ap", self._handle_create_access_point)
+        self.bus.on("server-connect.authenticated", self.handle_server_authenticated)
 
     def handle_start_recording(self, message):
         LOG.debug("Gathering speech stuff")
@@ -306,9 +300,7 @@ class EnclosureMark2(Enclosure):
             self.current_volume = self.current_volume / 10
         LOG.info(f"Current volume {self.current_volume}")
         self.bus.emit(
-            message.response(
-                data={"percent": self.current_volume, "muted": False}
-            )
+            message.response(data={"percent": self.current_volume, "muted": False})
         )
 
     def on_capabilities_get(self, message):
@@ -426,25 +418,20 @@ class EnclosureMark2(Enclosure):
         bus_address = dbus_config.get("bus_address")
 
         network_activity = NetworkConnectActivity(
-            "hardware.network-detection",
-            self.bus,
-            dbus_address=bus_address,
+            "hardware.network-detection", self.bus, dbus_address=bus_address,
         )
         network_activity.run()
 
     def _detect_internet(self):
         """Check internet connectivity with network_utils"""
         internet_activity = InternetConnectActivity(
-            "hardware.internet-detection",
-            self.bus,
+            "hardware.internet-detection", self.bus,
         )
         internet_activity.run()
 
     def _synchronize_system_clock(self):
         """Waits for the system clock to be synchronized with a NTP service."""
-        sync_activity = SystemClockSyncActivity(
-            "hardware.clock-sync", self.bus
-        )
+        sync_activity = SystemClockSyncActivity("hardware.clock-sync", self.bus)
         sync_activity.run()
 
     def _create_access_point(self):

@@ -16,16 +16,31 @@ import time
 
 from mycroft.util.log import LOG
 
+
 class LedAnimation:
     """Base class for LED animations"""
+
     def __init__(self, led_obj):
         self.led_obj = led_obj
 
-    def run(self):
+    def start(self):
+        """Begin LED animation"""
         pass
 
+    def step(self) -> bool:
+        """Single step of the animation.
+
+        Put time.sleep inside here.
+
+        Returns:
+            True if animation should continue
+        """
+        return False
+
     def stop(self):
+        """End LED animation"""
         pass
+
 
 class PulseLedAnimation(LedAnimation):
     def __init__(self, led_obj, pal_obj):
@@ -39,39 +54,34 @@ class PulseLedAnimation(LedAnimation):
         self.step_size = 5
         self.tmp_leds = []
 
-    def run(self):
-        LOG.debug("pulse animation started")
+    def start(self):
         self.led_obj.fill(self.color_tup)
 
         self.brightness = 100
         self.led_obj.brightness = self.brightness / 100
         self.led_obj.fill(self.color_tup)
 
-        self.exit_flag = False
-        while not self.exit_flag:
+    def step(self):
+        if (self.brightness + self.step_size) > 100:
+            self.brightness = self.brightness - self.step_size
+            self.step_size = self.step_size * -1
 
-            if (self.brightness + self.step_size) > 100:
-                self.brightness = self.brightness - self.step_size
-                self.step_size = self.step_size * -1
+        elif (self.brightness + self.step_size) < 0:
+            self.brightness = self.brightness - self.step_size
+            self.step_size = self.step_size * -1
 
-            elif (self.brightness + self.step_size) < 0:
-                self.brightness = self.brightness - self.step_size
-                self.step_size = self.step_size * -1
+        else:
+            self.brightness += self.step_size
 
-            else:
-                self.brightness += self.step_size
+        self.led_obj.brightness = self.brightness / 100
+        self.led_obj.fill(self.color_tup)
 
-            self.led_obj.brightness = self.brightness / 100
-            self.led_obj.fill(self.color_tup)
-
-            time.sleep(self.delay)
-
-        LOG.debug("pulse animation stopped")
-        self.led_obj.brightness = 1.0
-        self.led_obj.fill(self.pal_obj.BLACK)
+        time.sleep(self.delay)
+        return True
 
     def stop(self):
-        self.exit_flag = True
+        self.led_obj.brightness = 1.0
+        self.led_obj.fill(self.pal_obj.BLACK)
 
 
 class ChaseLedAnimation(LedAnimation):
@@ -83,25 +93,24 @@ class ChaseLedAnimation(LedAnimation):
         self.exit_flag = False
         self.color_tup = foreground_color
         self.delay = 0.1
+        self.chase_ctr = 0
 
-    def run(self):
-        LOG.debug("chase animation started")
-        chase_ctr = 0
-        self.exit_flag = False
-
+    def start(self):
+        self.chase_ctr = 0
         self.led_obj.fill(self.bkgnd_col)
-        while not self.exit_flag:
-            chase_ctr += 1
-            LOG.debug("chase animation %s", chase_ctr)
-            for x in range(0, 10):
-                self.led_obj.set_led(x, self.fgnd_col)
-                time.sleep(self.delay)
-                self.led_obj.set_led(x, self.bkgnd_col)
-            if chase_ctr > 10:
-                self.exit_flag = True
+        LOG.info("chase started")
 
-        LOG.debug("chase animation stopped")
-        self.led_obj.fill(self.led_obj.black)
+    def step(self):
+        self.chase_ctr += 1
+        for x in range(0, 10):
+            self.led_obj.set_led(x, self.fgnd_col)
+            time.sleep(self.delay)
+            self.led_obj.set_led(x, self.bkgnd_col)
+
+        if self.chase_ctr > 10:
+            return False
+
+        return True
 
     def stop(self):
-        self.exit_flag = True
+        self.led_obj.fill(self.led_obj.black)
