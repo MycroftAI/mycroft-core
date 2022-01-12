@@ -121,8 +121,7 @@ def handle_wake_up(event):
 
 def handle_mic_mute(event):
     """Mute the listener system."""
-    if loop is not None:
-        loop.mute()
+    loop.mute()
 
 
 def handle_mic_unmute(event):
@@ -258,11 +257,14 @@ def main(ready_hook=on_ready, error_hook=on_error, stopping_hook=on_stopping,
     status = ProcessStatus('speech', bus, callbacks)
     status.set_started()
     try:
-        connect_bus_events(bus)
         config = Configuration.get()
 
-        # Register handlers on internal RecognizerLoop bus
+        # Loop must be created first because it's used in the bus handlers
         loop = RecognizerLoop(watchdog)
+
+        connect_bus_events(bus)
+
+        # Register handlers on internal RecognizerLoop bus
         connect_loop_events(loop)
         create_daemon(loop.run)
     except Exception as e:
