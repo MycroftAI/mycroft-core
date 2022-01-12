@@ -695,9 +695,15 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         audio_file = resolve_resource_file(
             self.config.get('sounds').get('start_listening'))
         if audio_file:
-            source.mute()
-            play_wav(audio_file).wait()
-            source.unmute()
+            if self.config.get('enclosure', {}).get('platform') == 'mycroft_mark_2':
+                # We have echo cancellation, so no need to wait
+                play_wav(audio_file)
+            else:
+                # Mute and wait for audio file to play
+                source.mute()
+                play_wav(audio_file).wait()
+                source.unmute()
+
             return True
         else:
             return False
