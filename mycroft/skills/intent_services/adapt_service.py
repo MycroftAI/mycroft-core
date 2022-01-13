@@ -254,7 +254,7 @@ class AdaptService:
             ret = None
         return ret
 
-    def match_intent_alexa(self, utterances, _=None, __=None):
+    def match_intent_specific(self, name, utterances, _=None, __=None):
         """Run the Adapt engine to search for an matching intent.
 
         Args:
@@ -298,7 +298,7 @@ class AdaptService:
             self.update_context(best_intent)
             skill_id = best_intent['intent_type'].split(":")[0]
 
-            if skill_id != "judgealexa-skill":
+            if skill_id != name:
                 LOG.info(best_intent)
                 return None
 

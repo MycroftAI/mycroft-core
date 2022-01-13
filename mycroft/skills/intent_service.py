@@ -335,15 +335,10 @@ class IntentService:
 
             points = self.getPoints()
 
-            start_time = time.time()
             sentiment = analyze(utterances[0], self.classifier)
 
             if "NEGATIVE" in str(sentiment[0]):
                 self.setPoints(points - 1)
-
-            duration = time.time() - start_time
-            
-            LOG.info(f"{duration} seconds")
 
             t = time.localtime()
             current_time = time.strftime("%d.%m.%Y %H:%M:%S", t)
@@ -359,7 +354,7 @@ class IntentService:
                         match = match_func(combined, lang, message)
                         if match:
                             break
-                judgealexa_intent = self.adapt_service.match_intent_alexa(combined, lang, message)
+                judgealexa_intent = self.adapt_service.match_intent_specific("judgealexa-skill", combined, lang, message)
                 if judgealexa_intent:
                     alexa_reply = message.reply(judgealexa_intent.intent_type, judgealexa_intent.intent_data)
                     self.bus.emit(alexa_reply)
@@ -393,7 +388,7 @@ class IntentService:
                 }
                 newCombined = _normalize_all_utterances(data['utterances'])
                 newMsg = Message(message.msg_type, data, message.context)
-                judgealexa_intent = self.adapt_service.match_intent_alexa(newCombined, lang, newMsg)
+                judgealexa_intent = self.adapt_service.match_intent_specific("taskbot-skill", newCombined, lang, newMsg)
                 alexa_reply = newMsg.reply(judgealexa_intent.intent_type, judgealexa_intent.intent_data)
             self.wakeword_found = False
             
