@@ -13,6 +13,7 @@
 # limitations under the License.
 #
 """ Interface for interacting with the Mycroft gui qml viewer. """
+import time
 from os.path import join
 
 from mycroft.configuration import Configuration
@@ -126,6 +127,7 @@ class SkillGUI:
         """
         self.__session_data = {}
         self.page = None
+        time.sleep(1)
         self.skill.bus.emit(Message("gui.clear.namespace",
                                     {"__from": self.skill.skill_id}))
 
