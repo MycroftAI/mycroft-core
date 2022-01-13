@@ -14,7 +14,7 @@
 #
 """Common functions for loading plugins."""
 
-import pkg_resources
+from importlib.metadata import entry_points
 
 from .log import LOG
 
@@ -31,7 +31,7 @@ def find_plugins(plug_type):
     return {
         entry_point.name: entry_point.load()
         for entry_point
-        in pkg_resources.iter_entry_points(plug_type)
+        in entry_points().get(plug_type, [])
     }
 
 
