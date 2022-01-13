@@ -694,8 +694,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
                 audio_data = audio_buffer.get_last(test_size) + silence
                 said_wake_word = \
                     self.wake_word_recognizer.found_wake_word(audio_data)
-
-        LOG.info('hallo')
+                    
         self._listen_triggered = False
         return WakeWordData(audio_data, said_wake_word,
                             self._stop_signaled, ww_frames)
@@ -772,7 +771,6 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
                 ww_frames = None
 
         # Notify system of recording start
-        LOG.info(ww_frames)
         emitter.emit("recognizer_loop:record_begin")
 
         frame_data = self._record_phrase(

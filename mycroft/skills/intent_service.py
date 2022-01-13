@@ -346,20 +346,25 @@ class IntentService:
             utteranceFile.write(f"{utterances[0]},{current_time},{sentiment}\n")
             utteranceFile.close()
 
-            if points >= 1000:
-                match = None
-                with stopwatch:
-                    # Loop through the matching functions until a match is found.
-                    for match_func in match_funcs:
-                        match = match_func(combined, lang, message)
-                        if match:
-                            break
-                judgealexa_intent = self.adapt_service.match_intent_specific("judgealexa-skill", combined, lang, message)
-                if judgealexa_intent:
-                    alexa_reply = message.reply(judgealexa_intent.intent_type, judgealexa_intent.intent_data)
-                    self.bus.emit(alexa_reply)
-                    #match = IntentMatch('Adapt', None, None, None)
-                if match:
+            
+            match = None
+            with stopwatch:
+                # Loop through the matching functions until a match is found.
+                for match_func in match_funcs:
+                    match = match_func(combined, lang, message)
+                    if match:
+                        break
+            judgealexa_intent = self.adapt_service.match_intent_specific("judgealexa-skill", combined, lang, message)
+            if judgealexa_intent:
+                taskbot_reply = message.reply(judgealexa_intent.intent_type, judgealexa_intent.intent_data)
+                self.bus.emit(taskbot_reply)
+
+            if match:
+                if match.intent_type == "taskbot-skill:task":
+                    reply = message.reply(match.intent_type, match.intent_data) 
+                    reply.data["utterances"] = utterances
+                    self.bus.emit(reply)
+                elif points >= 1000:
                     if self.wakeword_found: 
                         if match.skill_id:
                             self.add_active_skill(match.skill_id)
@@ -375,21 +380,26 @@ class IntentService:
                             reply.data["utterances"] = utterances
                             self.bus.emit(reply)
 
-                else:
-                    # Nothing was able to handle the intent
-                    # Ask politely for forgiveness for failing in this vital task
-                    self.send_complete_intent_failure(message)
-                self.send_metrics(match, message.context, stopwatch)
+                elif self.wakeword_found:
+                    LOG.info("score too low")
+                    data = {
+                        "utterances" : ['hcslewreduaK'],
+                        "lang" : 'en-US',
+                        "session" : message.data['session'],
+                    }
+                    newCombined = _normalize_all_utterances(data['utterances'])
+                    newMsg = Message(message.msg_type, data, message.context)
+                    judgealexa_intent = self.adapt_service.match_intent_specific("taskbot-skill", newCombined, lang, newMsg)
+                    LOG.info(judgealexa_intent)
+                    taskbot_reply = newMsg.reply(judgealexa_intent.intent_type, judgealexa_intent.intent_data)
+                    self.bus.emit(taskbot_reply)
+                    LOG.info("done")
             else:
-                data = {
-                    "utterances" : ['hcslewreduaK'],
-                    "lang" : 'en-US',
-                    "session" : message.data['session'],
-                }
-                newCombined = _normalize_all_utterances(data['utterances'])
-                newMsg = Message(message.msg_type, data, message.context)
-                judgealexa_intent = self.adapt_service.match_intent_specific("taskbot-skill", newCombined, lang, newMsg)
-                alexa_reply = newMsg.reply(judgealexa_intent.intent_type, judgealexa_intent.intent_data)
+                # Nothing was able to handle the intent
+                # Ask politely for forgiveness for failing in this vital task
+                self.send_complete_intent_failure(message)
+            self.send_metrics(match, message.context, stopwatch)
+           
             self.wakeword_found = False
             
         except Exception as err:

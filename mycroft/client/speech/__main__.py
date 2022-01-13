@@ -133,7 +133,6 @@ def handle_mic_listen(_):
 
     Starts listening as if wakeword was spoken.
     """
-    LOG.info("MICLISTENKNSKKNKSANKNKSA89")
     loop.responsive_recognizer.trigger_listen()
 
 
