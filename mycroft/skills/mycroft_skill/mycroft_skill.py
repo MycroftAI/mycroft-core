@@ -1198,7 +1198,8 @@ class MycroftSkill:
         self.enclosure.register(self.name)
         data = {'utterance': utterance,
                 'expect_response': expect_response,
-                'meta': meta}
+                'meta': meta,
+                'skill_id': self.skill_id}
         message = dig_for_message()
         m = message.forward("speak", data) if message \
             else Message("speak", data)
