@@ -98,7 +98,6 @@ class ChaseLedAnimation(LedAnimation):
     def start(self):
         self.chase_ctr = 0
         self.led_obj.fill(self.bkgnd_col)
-        LOG.info("chase started")
 
     def step(self):
         self.chase_ctr += 1

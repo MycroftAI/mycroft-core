@@ -90,25 +90,33 @@ class LedThread(threading.Thread):
         self.animations = animations
         self.queue = Queue()
         self.animation_running = False
+        self.animation_name: typing.Optional[str] = None
 
         super().__init__()
 
     def start_animation(self, name: str):
-        LOG.info(name)
         self.stop_animation()
         self.queue.put(name)
 
-    def stop_animation(self):
+    def stop_animation(self, name: typing.Optional[str] = None):
+        if name and (self.animation_name != name):
+            # Different animation is playing
+            return
+
         self.animation_running = False
 
     def run(self):
         try:
             while True:
+                self.animation_name = None
+                self.animation_running = False
+
                 name = self.queue.get()
                 current_animation = self.animations.get(name)
 
                 if current_animation is not None:
                     try:
+                        self.animation_name = name
                         self.animation_running = True
                         current_animation.start()
                         while self.animation_running and current_animation.step():
@@ -262,7 +270,7 @@ class EnclosureMark2(Enclosure):
 
     def handle_end_audio(self, message):
         LOG.debug("Finished playing audio")
-        self.led_thread.stop_animation()
+        self.led_thread.stop_animation("chase")
 
     def on_volume_duck(self, message):
         # TODO duck it anyway using set vol
