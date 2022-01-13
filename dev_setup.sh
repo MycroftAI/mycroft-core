@@ -527,24 +527,6 @@ if [[ -n $INSTALL_PRECOMMIT_HOOK ]] || grep -q 'MYCROFT DEV SETUP' $HOOK_FILE; t
     fi
 fi
 
-PYTHON=$(python -c "import sys;print('python{}.{}'.format(sys.version_info[0], sys.version_info[1]))")
-
-# Add mycroft-core to the virtualenv path
-# (This is equivalent to typing 'add2virtualenv $TOP', except
-# you can't invoke that shell function from inside a script)
-VENV_PATH_FILE="${VIRTUALENV_ROOT}/lib/$PYTHON/site-packages/_virtualenv_path_extensions.pth"
-if [[ ! -f $VENV_PATH_FILE ]] ; then
-    echo 'import sys; sys.__plen = len(sys.path)' > "$VENV_PATH_FILE" || return 1
-    echo "import sys; new=sys.path[sys.__plen:]; del sys.path[sys.__plen:]; p=getattr(sys,'__egginsert',0); sys.path[p:p]=new; sys.__egginsert = p+len(new)" >> "$VENV_PATH_FILE" || return 1
-fi
-
-if ! grep -q "$TOP" $VENV_PATH_FILE ; then
-    echo 'Adding mycroft-core to virtualenv path'
-    sed -i.tmp '1 a\
-'"$TOP"'
-' "$VENV_PATH_FILE"
-fi
-
 # install required python modules
 if ! pip install -r requirements/requirements.txt ; then
     echo 'Warning: Failed to install required dependencies. Continue? y/N'
