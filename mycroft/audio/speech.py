@@ -34,6 +34,9 @@ mimic_fallback_obj = None
 
 _last_stop_signal = 0
 
+# Id of last skill to speak
+_last_skill_id = None
+
 
 def handle_speak(event):
     """Handle "speak" message
@@ -43,6 +46,14 @@ def handle_speak(event):
     config = Configuration.get()
     Configuration.set_config_update_handlers(bus)
     global _last_stop_signal
+
+    global _last_skill_id
+    speak_skill_id = event.data.get('skill_id')
+    if speak_skill_id != _last_skill_id:
+        # Clear TTS queue if a new skill is speaking
+        _last_skill_id = speak_skill_id
+        tts.playback.clear()
+        LOG.info('Cleared TTS queue for skill %s', speak_skill_id)
 
     # if the message is targeted and audio is not the target don't
     # don't synthezise speech
@@ -194,16 +205,16 @@ def init(messagebus):
     bus = messagebus
     Configuration.set_config_update_handlers(bus)
     config = Configuration.get()
-    bus.on('mycroft.stop', handle_stop)
-    bus.on('mycroft.audio.speech.stop', handle_stop)
-    bus.on('mycroft.audio.speech.pause', handle_pause)
-    bus.on('mycroft.audio.speech.resume', handle_resume)
-    bus.on('speak', handle_speak)
 
     tts = TTSFactory.create()
     tts.init(bus)
     tts_hash = hash(str(config.get('tts', '')))
 
+    bus.on('mycroft.stop', handle_stop)
+    bus.on('mycroft.audio.speech.stop', handle_stop)
+    bus.on('mycroft.audio.speech.pause', handle_pause)
+    bus.on('mycroft.audio.speech.resume', handle_resume)
+    bus.on('speak', handle_speak)
 
 def shutdown():
     """Shutdown the audio service cleanly.
