@@ -13,6 +13,9 @@
 # limitations under the License.
 #
 import audioop
+import queue
+import threading
+import typing
 from time import sleep, time as get_time
 
 from collections import deque, namedtuple
@@ -52,83 +55,68 @@ WakeWordData = namedtuple('WakeWordData',
 
 
 class MutableStream:
-    def __init__(self, wrapped_stream, format, muted=False):
-        assert wrapped_stream is not None
-        self.wrapped_stream = wrapped_stream
+    def __init__(self, audio, format, frames_per_buffer:int, muted=False, **pyaudio_settings):
+        self.wrapped_stream = audio.open(
+            format=format,
+            frames_per_buffer=frames_per_buffer,
+            stream_callback=self._stream_callback,
+            **pyaudio_settings
+        )
 
-        self.SAMPLE_WIDTH = pyaudio.get_sample_size(format)
-        self.muted_buffer = b''.join([b'\x00' * self.SAMPLE_WIDTH])
+        self.format = format
+        self.frames_per_buffer = frames_per_buffer
+        self.SAMPLE_WIDTH = pyaudio.get_sample_size(self.format)
+        self.bytes_per_buffer = self.frames_per_buffer * self.SAMPLE_WIDTH
+
+        self.chunk = bytes(self.bytes_per_buffer)
+        self.chunk_ready = threading.Event()
+
         self.read_lock = Lock()
 
         self.muted = muted
-        if muted:
-            self.mute()
+
+        # Begin listening
+        self.wrapped_stream.start_stream()
 
     def mute(self):
         """Stop the stream and set the muted flag."""
-        with self.read_lock:
-            self.muted = True
-            self.wrapped_stream.stop_stream()
+        self.muted = True
 
     def unmute(self):
         """Start the stream and clear the muted flag."""
-        with self.read_lock:
-            self.muted = False
-            self.wrapped_stream.start_stream()
+        self.muted = False
+
+    def _stream_callback(self, in_data, frame_count, time_info, status):
+        """Callback from pyaudio.
+
+        Rather than buffer chunks, we simply assigned the current chunk to the
+        class instance and signal that it's ready.
+        """
+        self.chunk = in_data
+        self.chunk_ready.set()
+
+        return (None, pyaudio.paContinue)
 
     def read(self, size, of_exc=False):
-        """Read data from stream.
+        """Reads a single chunk from the microphone.
 
-        Args:
-            size (int): Number of bytes to read
-            of_exc (bool): flag determining if the audio producer thread
-                           should throw IOError at overflows.
-
-        Returns:
-            (bytes) Data read from device
+        NOTE: The size parameter is ignored here, as the Mark II only ever
+        returns chunks of 8000 bytes. No caller requires larger chunks, so this
+        works for now.
         """
-        frames = deque()
-        remaining = size
-        to_ctr = 0
         with self.read_lock:
-            while remaining > 0:
-                # If muted during read return empty buffer. This ensures no
-                # reads occur while the stream is stopped
-                if self.muted:
-                    return self.muted_buffer
+            # Wait for the next chunk
+            self.chunk_ready.clear()
+            self.chunk_ready.wait()
 
-                """
-                to_read = min(self.wrapped_stream.get_read_available(),
-                              remaining)
-                """
-                x = self.wrapped_stream.get_read_available()
-                to_read = min(x, remaining)
-                # LOG.info("size:%s, read_avail:%s, remain:%s" % (size, x, remaining))
-                if to_read <= 0:
-                    to_ctr += 1
-                    if to_ctr > 5:
-                        # this signals to the user they must restart the mic
-                        raise Exception
+            if self.muted:
+                # Empty buffer when muted
+                return bytes(len(self.chunk))
 
-                    sleep(0.0625)   # default latency
-                    continue
-                try:
-                    result = self.wrapped_stream.read(to_read,
-                                                      exception_on_overflow=True)
-                except:
-                    LOG.warning("Overflow exception caught")
-                    return self.muted_buffer
-
-                frames.append(result)
-                remaining -= to_read
-
-        input_latency = self.wrapped_stream.get_input_latency()
-        if input_latency > 0.2:
-            LOG.warning("High input latency: %f" % input_latency)
-        audio = b"".join(list(frames))
-        return audio
+            return bytes(self.chunk)
 
     def close(self):
+        self.wrapped_stream.stop_stream()
         self.wrapped_stream.close()
         self.wrapped_stream = None
 
@@ -159,7 +147,7 @@ class MutableMicrophone(Microphone):
             try:
                 return self._start()
             except Exception:
-                LOG.error("Can't start mic!")
+                LOG.exception("Can't start mic!")
             sleep(1)
 
 
@@ -168,12 +156,16 @@ class MutableMicrophone(Microphone):
         assert self.stream is None, \
             "This audio source is already inside a context manager"
         self.audio = pyaudio.PyAudio()
-        self.stream = MutableStream(self.audio.open(
-            input_device_index=self.device_index, channels=1,
-            format=self.format, rate=self.SAMPLE_RATE,
+        self.stream = MutableStream(
+            self.audio,
+            format=self.format,
             frames_per_buffer=self.CHUNK,
+            input_device_index=self.device_index,
+            rate=self.SAMPLE_RATE,
+            channels=1,
             input=True,  # stream is an input stream
-        ), self.format, self.muted)
+            muted=self.muted
+        )
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
@@ -632,11 +624,6 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
 
         silence = get_silence(num_silent_bytes)
 
-        # Max bytes for byte_data before audio is removed from the front
-        max_size = source.duration_to_bytes(ww_duration)
-        test_size = source.duration_to_bytes(ww_test_duration)
-        audio_buffer = CyclicAudioBuffer(max_size, silence)
-
         # Rolling buffer to track the audio energy (loudness) heard on
         # the source recently.  An average audio energy is maintained
         # based on these levels.
@@ -652,7 +639,6 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         while (not said_wake_word and not self._stop_signaled and
                not self._skip_wake_word()):
             chunk = self.record_sound_chunk(source)
-            audio_buffer.append(chunk)
             ww_frames.append(chunk)
 
             energy = self.calc_energy(chunk, source.SAMPLE_WIDTH)
@@ -697,7 +683,9 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         if audio_file:
             if self.config.get('enclosure', {}).get('platform') == 'mycroft_mark_2':
                 # We have echo cancellation, so no need to wait
+                # source.mute()
                 play_wav(audio_file)
+                # source.unmute()
             else:
                 # Mute and wait for audio file to play
                 source.mute()
