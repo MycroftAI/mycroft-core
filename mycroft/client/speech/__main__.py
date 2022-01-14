@@ -232,7 +232,7 @@ def main(ready_hook=on_ready, error_hook=on_error, stopping_hook=on_stopping,
         status = ProcessStatus('speech', bus, callbacks)
 
         # Register handlers on internal RecognizerLoop bus
-        loop = RecognizerLoop(watchdog)
+        loop = RecognizerLoop(watchdog, bus)
         connect_loop_events(loop)
         create_daemon(loop.run)
         status.set_started()

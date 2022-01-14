@@ -285,9 +285,10 @@ class RecognizerLoop(EventEmitter):
                   operational status.
     """
 
-    def __init__(self, watchdog=None):
+    def __init__(self, watchdog=None, bus=None):
         super(RecognizerLoop, self).__init__()
         self._watchdog = watchdog
+        self._bus = bus
         self.mute_calls = 0
         self._load_config()
 
@@ -315,7 +316,7 @@ class RecognizerLoop(EventEmitter):
         # TODO - localization
         self.wakeup_recognizer = self.create_wakeup_recognizer()
         self.responsive_recognizer = ResponsiveRecognizer(
-            self.wakeword_recognizer, self._watchdog)
+            self.wakeword_recognizer, self._bus, self._watchdog)
         self.state = RecognizerLoopState()
 
     def create_wake_word_recognizer(self):
