@@ -89,7 +89,11 @@ def handle_speak(event):
             # if a character (only alpha) ends with a period
             # ex: A. Lincoln -> A.Lincoln
             # so that we don't split at the period
-            utterance = re.sub(r'\b([A-za-z][\.])(\s+)', r'\g<1>', utterance)
+            # NOTE: This does not work because things like "a.m." and "I.P."
+            # will have their whitespace removed too.
+            #
+            # utterance = re.sub(r'\b([A-za-z][\.])(\s+)', r'\g<1>', utterance)
+
             chunks = re.split(r'(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\;|\?)\s',
                               utterance)
             # Apply the listen flag to the last chunk, set the rest to False
