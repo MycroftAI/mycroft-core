@@ -144,7 +144,7 @@ class GUIWebsocketHandler(WebSocketHandler):
 
         message = Message(msg_type, msg_data)
         LOG.info('Forwarding to bus...')
-        self.application.enclosure.bus.emit(message)
+        self.application.enclosure.core_bus.emit(message)
         LOG.info('Done!')
 
     def write_message(self, *arg, **kwarg):
