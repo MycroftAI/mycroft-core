@@ -242,7 +242,7 @@ class EnclosureMark2(Enclosure):
         self.bus.on("mycroft.volume.get", self.on_volume_get)
         self.bus.on("mycroft.volume.duck", self.on_volume_duck)
         self.bus.on("mycroft.volume.unduck", self.on_volume_unduck)
-        self.bus.on("recognizer_loop:record_begin", self.handle_start_recording)
+        self.bus.on("recognizer_loop:wakeword", self.handle_start_recording)
         self.bus.on("recognizer_loop:record_end", self.handle_stop_recording)
         self.bus.on("recognizer_loop:audio_output_end", self.handle_end_audio)
         self.bus.on("mycroft.speech.recognition.unknown", self.handle_end_audio)
