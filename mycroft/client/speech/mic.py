@@ -844,6 +844,20 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
 
         return audio_data, lang
 
+    def adjust_for_ambient_noise(self, source, seconds):
+        chunks_per_second = source.CHUNK / source.SAMPLE_RATE
+        num_chunks = int(seconds / chunks_per_second)
+
+        energies = []
+        for chunk in itertools.islice(source.stream.iter_chunks(), num_chunks):
+            energy = SilenceDetector.get_debiased_energy(chunk)
+            energies.append(energy)
+
+        if energies:
+            avg_energy = sum(energies) / len(energies)
+            self.silence_detector.current_energy_threshold = avg_energy
+            LOG.info(f"Silence threshold adjusted to {self.silence_detector.current_energy_threshold}")
+
     def _adjust_threshold(self, energy, seconds_per_buffer):
         if self.dynamic_energy_threshold and energy > 0:
             # account for different chunk sizes and rates
