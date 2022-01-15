@@ -607,7 +607,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         ww_frames = None
         said_wake_word = False
         for chunk in source.stream.iter_chunks():
-            if self._stop_signaled:
+            if self._stop_signaled or self._skip_wake_word():
                 break
 
             self.wake_word_recognizer.update(chunk)
@@ -695,7 +695,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         # any, as we expect the user and Mycroft to not be talking.
         # NOTE: adjust_for_ambient_noise() doc claims it will stop early if
         #       speech is detected, but there is no code to actually do that.
-        # self.adjust_for_ambient_noise(source, 1.0)
+        self.adjust_for_ambient_noise(source, 1.0)
 
         ww_data = self._wait_until_wake_word(source, sec_per_buffer)
 
@@ -742,6 +742,20 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
 
         return audio_data
 
+    def adjust_for_ambient_noise(self, source, seconds):
+        chunks_per_second = source.CHUNK / source.SAMPLE_RATE
+        num_chunks = int(seconds / chunks_per_second)
+
+        energies = []
+        for chunk in itertools.islice(source.stream.iter_chunks(), num_chunks):
+            energy = SilenceDetector.get_debiased_energy(chunk)
+            energies.append(energy)
+
+        if energies:
+            avg_energy = sum(energies) / len(energies)
+            self.silence_detector.current_energy_threshold = avg_energy
+            LOG.info("Silence threshold adjusted to %s",
+                    self.silence_detector.current_energy_threshold)
 
     def _adjust_threshold(self, energy, seconds_per_buffer):
         if self.dynamic_energy_threshold and energy > 0:

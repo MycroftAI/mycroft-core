@@ -77,7 +77,6 @@ class AudioProducer(Thread):
     def run(self):
         restart_attempts = 0
         with self.mic as source:
-            # self.recognizer.adjust_for_ambient_noise(source)
             while self.state.running:
                 try:
                     audio = self.recognizer.listen(source, self.emitter,
