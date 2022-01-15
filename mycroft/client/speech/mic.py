@@ -31,8 +31,6 @@ from speech_recognition import (
     AudioData
 )
 from tempfile import gettempdir
-from threading import Thread, Lock
-from mycroft.messagebus.message import Message
 from threading import Lock, Event
 from mycroft.api import DeviceApi
 from mycroft.configuration import Configuration
@@ -47,7 +45,8 @@ from mycroft.util.log import LOG
 
 from mycroft.client.speech.data_structures import RollingMean, \
     CyclicAudioBuffer
-from mycroft.util import resolve_resource_file
+from mycroft.client.speech.silence import SilenceDetector, SilenceResultType, SilenceMethod
+
 
 WakeWordData = namedtuple('WakeWordData',
                           ['audio', 'found', 'stopped', 'end_audio'])
@@ -420,6 +419,16 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         # The wake word must fit in this time
         self.test_ww_sec = listener_config.get("test_ww_sec", 3)
 
+        # Use webrtcvad for silence detection
+        self.silence_detector = SilenceDetector(
+            speech_seconds=0.1,
+            silence_seconds=0.5,
+            min_seconds=1,
+            max_seconds=self.recording_timeout,
+            silence_method=SilenceMethod.VAD_AND_CURRENT,
+            current_energy_threshold=1000.0,
+        )
+
     @property
     def account_id(self):
         """Fetch account from backend when needed.
@@ -500,51 +509,25 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
             bytearray: complete audio buffer recorded, including any
                        silence at the end of the user's utterance
         """
-        noise_tracker = NoiseTracker(0, 25, sec_per_buffer,
-                                     self.MIN_LOUD_SEC_PER_PHRASE,
-                                     self.recording_timeout_with_silence)
 
-        # Maximum number of chunks to record before timing out
-        max_chunks = int(self.recording_timeout / sec_per_buffer)
         num_chunks = 0
 
-        # bytearray to store audio in, initialized with a single sample of
-        # silence.
-        byte_data = get_silence(source.SAMPLE_WIDTH)
+        self.silence_detector.start()
+        for chunk in source.stream.iter_chunks():
+            if check_for_signal('buttonPress'):
+                break
 
-        if stream:
-            stream.stream_start()
-
-        phrase_complete = False
-        while num_chunks < max_chunks and not phrase_complete:
-            if ww_frames:
-                chunk = ww_frames.popleft()
-            else:
-                chunk = self.record_sound_chunk(source)
-            byte_data += chunk
-            num_chunks += 1
-
-            if stream:
-                stream.stream_chunk(chunk)
-
-            energy = self.calc_energy(chunk, source.SAMPLE_WIDTH)
-            test_threshold = self.energy_threshold * self.multiplier
-            is_loud = energy > test_threshold
-            noise_tracker.update(is_loud)
-            if not is_loud:
-                self._adjust_threshold(energy, sec_per_buffer)
-
-            # The phrase is complete if the noise_tracker end of sentence
-            # criteria is met or if the  top-button is pressed
-            phrase_complete = (noise_tracker.recording_complete() or
-                               check_for_signal('buttonPress'))
+            result = self.silence_detector.process(chunk)
+            if result.type in { SilenceResultType.PHRASE_END, SilenceResultType.TIMEOUT }:
+                break
 
             # Periodically write the energy level to the mic level file.
             if num_chunks % 10 == 0:
                 self._watchdog()
-                self.write_mic_level(energy, source)
+                self.write_mic_level(result.energy, source)
+            num_chunks += 1
 
-        return byte_data
+        return self.silence_detector.stop()
 
     def write_mic_level(self, energy, source):
         if self.mic_meter_ipc_enabled:
@@ -725,7 +708,6 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         ww_duration = self.test_ww_sec
         ww_test_duration = max(3, ww_duration)
 
-        mic_write_counter = 0
         num_silent_bytes = int(self.SILENCE_SEC * source.SAMPLE_RATE *
                                source.SAMPLE_WIDTH)
 
@@ -739,11 +721,10 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         buffers_per_check = self.SEC_BETWEEN_WW_CHECKS / sec_per_buffer
         buffers_since_check = 0.0
 
-        # Rolling buffer to track the audio energy (loudness) heard on
-        # the source recently.  An average audio energy is maintained
-        # based on these levels.
-        average_samples = int(5 / sec_per_buffer)  # average over last 5 secs
-        audio_mean = RollingMean(average_samples)
+        # History of audio energies.
+        # Used to adjust threshold for ambient noise.
+        energies = []
+        energy = 0.0
 
         # These are frames immediately after wake word is detected
         # that we want to keep to send to STT
@@ -760,23 +741,6 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
 
                 audio_buffer.append(chunk)
                 ww_frames.append(chunk)
-
-                energy = self.calc_energy(chunk, source.SAMPLE_WIDTH)
-                audio_mean.append_sample(energy)
-
-                if energy < self.energy_threshold * self.multiplier:
-                    self._adjust_threshold(energy, sec_per_buffer)
-                # maintain the threshold using average
-                if self.energy_threshold < energy < audio_mean.value * 1.5:
-                    # bump the threshold to just above this value
-                    self.energy_threshold = energy * 1.2
-
-                # Periodically output energy level stats. This can be used to
-                # visualize the microphone input, e.g. a needle on a meter.
-                if mic_write_counter % 3:
-                    self._watchdog()
-                    self.write_mic_level(energy, source)
-                mic_write_counter += 1
 
                 buffers_since_check += 1.0
                 self.feed_hotwords(chunk)
@@ -797,6 +761,19 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
                         # reset bytearray to store wake word audio in, else many
                         # serial detections
                         audio_buffer.clear()
+                    else:
+                        energy = SilenceDetector.get_debiased_energy(chunk)
+                        energies.append(energy)
+
+                        if len(energies) >= 4:
+                            # Adjust energy threshold once per second
+                            # avg_energy = sum(energies) / len(energies)
+                            max_energy = max(energies)
+                            self.silence_detector.current_energy_threshold = max_energy * 2
+
+                        if len(energies) >= 12:
+                            # Clear energy history after 3 seconds
+                            energies = []
 
     @staticmethod
     def _create_audio_data(raw_data, source):

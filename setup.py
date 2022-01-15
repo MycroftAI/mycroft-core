@@ -53,7 +53,7 @@ def required(requirements_file):
         return [pkg for pkg in requirements
                 if pkg.strip() and not pkg.startswith("#")]
 
-
+print(get_version())
 setup(
     name='ovos-core',
     version=get_version(),

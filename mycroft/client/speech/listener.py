@@ -96,8 +96,12 @@ class AudioProducer(Thread):
                                   'Stopping...')
                         raise
                 except Exception:
-                    LOG.exception('Exception in AudioProducer')
-                    raise
+                    LOG.exception("error in audio producer")
+                    LOG.debug(
+                        'Probably XRUN Exception in AudioProducer, Restarting Mic')
+                    source.restart()
+                    LOG.debug('Mic Restarted.')
+                    # raise
                 else:
                     # Reset restart attempt counter on sucessful audio read
                     restart_attempts = 0
