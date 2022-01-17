@@ -23,6 +23,8 @@ from os import walk
 from os.path import join, abspath, dirname, basename, exists
 from pathlib import Path
 from threading import Event, Timer
+from contextlib import contextmanager
+from uuid import uuid4
 
 from xdg import BaseDirectory
 
@@ -166,6 +168,9 @@ class MycroftSkill:
         self.public_api = {}
 
         self.skill_control = SkillControl()
+
+        # Unique id generated for every started/ended
+        self._activity_id: str = ""
 
     def change_state(self, new_state):
         """change skill state to new value.
@@ -1471,3 +1476,33 @@ class MycroftSkill:
     def cancel_all_repeating_events(self):
         """Cancel any repeating events started by the skill."""
         return self.event_scheduler.cancel_all_repeating_events()
+
+
+    def activity_started(self):
+        """Indicate that a skill activity has started.
+
+        This will flush the TTS cache and keep LED animations going.
+        """
+        self._activity_id = str(uuid4())
+        self.bus.emit(Message("skill.started", data={ "skill_id": self.skill_id, "activity_id": self._activity_id }))
+        LOG.info("%s started (skill=%s, activity=%s)", self.name, self.skill_id, self._activity_id)
+
+    def activity_ended(self):
+        """Indicate that a skill activity has ended.
+
+        This will stop LED animations.
+        """
+        self.bus.emit(Message("skill.ended", data={ "skill_id": self.skill_id, "activity_id": self._activity_id }))
+        LOG.info("%s ended (skill=%s, activity=%s)", self.name, self.skill_id, self._activity_id)
+
+    @contextmanager
+    def activity(self):
+        """Return a context manager that calls activity started/ended.
+
+        Yields the activity id.
+        """
+        self.activity_started()
+        try:
+            yield self._activity_id
+        finally:
+            self.activity_ended()
