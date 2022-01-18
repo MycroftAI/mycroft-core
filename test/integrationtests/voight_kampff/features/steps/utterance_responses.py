@@ -17,7 +17,7 @@ Predefined step definitions for handling dialog interaction with Mycroft for
 use with behave.
 """
 from os.path import join, exists, basename
-from glob import glob
+from pathlib import Path
 import re
 import time
 
@@ -65,6 +65,26 @@ def load_dialog_list(skill_path, dialog):
     return load_dialog_file(dialog_path), debug
 
 
+def _get_dialog_files(skill_path, lang):
+    """Generator expression returning all dialog files.
+
+    This includes both the 'locale' and the older style 'dialog' folder.
+
+    Args:
+        skill_path (str): skill root folder
+        lang (str): language code to check
+
+    yields:
+        (Path) path of each found dialog file
+    """
+    in_dialog_dir = Path(skill_path, 'dialog', lang).rglob('*.dialog')
+    for dialog_path in in_dialog_dir:
+        yield dialog_path
+    in_locale_dir = Path(skill_path, 'locale', lang).rglob('*.dialog')
+    for dialog_path in in_locale_dir:
+        yield dialog_path
+
+
 def dialog_from_sentence(sentence, skill_path, lang):
     """Find dialog file from example sentence.
 
@@ -75,9 +95,8 @@ def dialog_from_sentence(sentence, skill_path, lang):
 
     Returns (str): Dialog file best matching the sentence.
     """
-    dialog_paths = join(skill_path, 'dialog', lang, '*.dialog')
     best = (None, 0)
-    for path in glob(dialog_paths):
+    for path in _get_dialog_files(skill_path, lang):
         patterns = load_dialog_file(path)
         match, _ = _match_dialog_patterns(patterns, sentence.lower())
         if match is not False:
