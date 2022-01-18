@@ -19,7 +19,9 @@ from threading import Lock
 from mycroft.configuration import Configuration
 from mycroft.metrics import report_timing, Stopwatch
 from mycroft.tts import TTSFactory
-from mycroft.util import check_for_signal
+from mycroft.util import (
+    check_for_signal, play_wav, resolve_resource_file
+)
 from mycroft.util.log import LOG
 from mycroft.messagebus.message import Message
 from mycroft.tts.remote_tts import RemoteTTSException
@@ -184,8 +186,20 @@ def handle_resume(event):
     tts.playback.resume()
 
 def handle_skill_started(event):
+    """Handle start of a skill activity"""
+    # Clear TTS queue
+    tts.playback.clear()
+
     skill_id = event.data.get("skill_id", "")
     LOG.info('Cleared TTS queue for skill %s', skill_id)
+
+    # Play acknowledge beep
+    audio_file = resolve_resource_file(
+        config.get('sounds').get('acknowledge')
+    )
+
+    if audio_file:
+        play_wav(audio_file)
 
 def init(messagebus):
     """Start speech related handlers.
