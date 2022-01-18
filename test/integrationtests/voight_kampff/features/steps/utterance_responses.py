@@ -117,7 +117,6 @@ def _match_dialog_patterns(dialogs, sentence):
     dialogs = [re.sub(r'{.*?\}', r'.*', dia) for dia in dialogs]
     # Remove left over '}'
     dialogs = [re.sub(r'\}', r'', dia) for dia in dialogs]
-    dialogs = [re.sub(r' .* ', r' .*', dia) for dia in dialogs]
     # Merge consequtive .*'s into a single .*
     dialogs = [re.sub(r'\.\*( \.\*)+', r'.*', dia) for dia in dialogs]
     # Remove double whitespaces
