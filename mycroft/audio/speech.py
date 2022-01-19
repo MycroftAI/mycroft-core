@@ -20,7 +20,7 @@ from mycroft.configuration import Configuration
 from mycroft.metrics import report_timing, Stopwatch
 from mycroft.tts import TTSFactory
 from mycroft.util import (
-    check_for_signal, play_wav, resolve_resource_file
+    check_for_signal, resolve_resource_file
 )
 from mycroft.util.log import LOG
 from mycroft.messagebus.message import Message
@@ -199,7 +199,8 @@ def handle_skill_started(event):
     )
 
     if audio_file:
-        play_wav(audio_file)
+        bus.emit(Message("mycroft.audio.service.play",
+                         data={"tracks": [f"file://{audio_file}"]}))
 
 def init(messagebus):
     """Start speech related handlers.
