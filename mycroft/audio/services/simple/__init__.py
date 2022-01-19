@@ -67,7 +67,7 @@ class SimpleAudioService(AudioBackend):
         self.bus.on('SimpleAudioServicePlay', self._play)
 
     def supported_uris(self):
-        return ['file', 'http']
+        return ['file']
 
     def clear_list(self):
         with self.track_lock:

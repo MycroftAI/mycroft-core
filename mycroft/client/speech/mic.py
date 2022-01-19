@@ -13,6 +13,10 @@
 # limitations under the License.
 #
 import audioop
+import queue
+import itertools
+import threading
+import typing
 from time import sleep, time as get_time
 
 from collections import deque, namedtuple
@@ -46,89 +50,73 @@ from mycroft.util.log import LOG
 
 from .data_structures import RollingMean, CyclicAudioBuffer
 
+from .silence import SilenceDetector, SilenceResultType, SilenceMethod
+
 
 WakeWordData = namedtuple('WakeWordData',
                           ['audio', 'found', 'stopped', 'end_audio'])
 
 
 class MutableStream:
-    def __init__(self, wrapped_stream, format, muted=False):
-        assert wrapped_stream is not None
-        self.wrapped_stream = wrapped_stream
+    def __init__(self, audio, format, frames_per_buffer:int, muted=False, **pyaudio_settings):
+        self.wrapped_stream = audio.open(
+            format=format,
+            frames_per_buffer=frames_per_buffer,
+            stream_callback=self._stream_callback,
+            **pyaudio_settings
+        )
 
-        self.SAMPLE_WIDTH = pyaudio.get_sample_size(format)
-        self.muted_buffer = b''.join([b'\x00' * self.SAMPLE_WIDTH])
+        self.format = format
+        self.frames_per_buffer = frames_per_buffer
+        self.SAMPLE_WIDTH = pyaudio.get_sample_size(self.format)
+        self.bytes_per_buffer = self.frames_per_buffer * self.SAMPLE_WIDTH
+
+        self.chunk = bytes(self.bytes_per_buffer)
+        self.chunk_ready = threading.Event()
+
+        self.chunk_deque = deque(maxlen=2)
+
         self.read_lock = Lock()
 
         self.muted = muted
-        if muted:
-            self.mute()
+
+        # Begin listening
+        self.wrapped_stream.start_stream()
 
     def mute(self):
         """Stop the stream and set the muted flag."""
-        with self.read_lock:
-            self.muted = True
-            self.wrapped_stream.stop_stream()
+        self.muted = True
 
     def unmute(self):
         """Start the stream and clear the muted flag."""
+        self.muted = False
+
+    def _stream_callback(self, in_data, frame_count, time_info, status):
+        """Callback from pyaudio.
+
+        Rather than buffer chunks, we simply assigned the current chunk to the
+        class instance and signal that it's ready.
+        """
+        # self.chunk = in_data
+        self.chunk_deque.append(in_data)
+        self.chunk_ready.set()
+
+        return (None, pyaudio.paContinue)
+
+    def iter_chunks(self) -> typing.Iterable[bytes]:
         with self.read_lock:
-            self.muted = False
-            self.wrapped_stream.start_stream()
+            while True:
+                while self.chunk_deque:
+                    yield self.chunk_deque.popleft()
+
+                self.chunk_ready.clear()
+                self.chunk_ready.wait()
 
     def read(self, size, of_exc=False):
-        """Read data from stream.
-
-        Args:
-            size (int): Number of bytes to read
-            of_exc (bool): flag determining if the audio producer thread
-                           should throw IOError at overflows.
-
-        Returns:
-            (bytes) Data read from device
-        """
-        frames = deque()
-        remaining = size
-        to_ctr = 0
-        with self.read_lock:
-            while remaining > 0:
-                # If muted during read return empty buffer. This ensures no
-                # reads occur while the stream is stopped
-                if self.muted:
-                    return self.muted_buffer
-
-                """
-                to_read = min(self.wrapped_stream.get_read_available(),
-                              remaining)
-                """
-                x = self.wrapped_stream.get_read_available()
-                to_read = min(x, remaining)
-                # LOG.info("size:%s, read_avail:%s, remain:%s" % (size, x, remaining))
-                if to_read <= 0:
-                    to_ctr += 1
-                    if to_ctr > 5:
-                        # this signals to the user they must restart the mic
-                        raise Exception
-
-                    sleep(0.0625)   # default latency
-                    continue
-                try:
-                    result = self.wrapped_stream.read(to_read,
-                                                      exception_on_overflow=True)
-                except:
-                    LOG.warning("Overflow exception caught")
-                    return self.muted_buffer
-
-                frames.append(result)
-                remaining -= to_read
-
-        input_latency = self.wrapped_stream.get_input_latency()
-        if input_latency > 0.2:
-            LOG.warning("High input latency: %f" % input_latency)
-        audio = b"".join(list(frames))
-        return audio
+        raise NotImplementedError()
 
     def close(self):
+        self.wrapped_stream.stop_stream()
         self.wrapped_stream.close()
         self.wrapped_stream = None
 
@@ -159,7 +147,7 @@ class MutableMicrophone(Microphone):
             try:
                 return self._start()
             except Exception:
-                LOG.error("Can't start mic!")
+                LOG.exception("Can't start mic!")
             sleep(1)
 
 
@@ -168,12 +156,16 @@ class MutableMicrophone(Microphone):
         assert self.stream is None, \
             "This audio source is already inside a context manager"
         self.audio = pyaudio.PyAudio()
-        self.stream = MutableStream(self.audio.open(
-            input_device_index=self.device_index, channels=1,
-            format=self.format, rate=self.SAMPLE_RATE,
+        self.stream = MutableStream(
+            self.audio,
+            format=self.format,
             frames_per_buffer=self.CHUNK,
+            input_device_index=self.device_index,
+            rate=self.SAMPLE_RATE,
+            channels=1,
             input=True,  # stream is an input stream
-        ), self.format, self.muted)
+            muted=self.muted
+        )
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
@@ -399,6 +391,16 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         self.recording_timeout_with_silence = listener_config.get(
             'recording_timeout_with_silence', 3.0)
 
+        # Use webrtcvad for silence detection
+        self.silence_detector = SilenceDetector(
+            speech_seconds=0.1,
+            silence_seconds=0.5,
+            min_seconds=1,
+            max_seconds=self.recording_timeout,
+            silence_method=SilenceMethod.VAD_AND_CURRENT,
+            current_energy_threshold=1000.0,
+        )
+
     @property
     def account_id(self):
         """Fetch account from backend when needed.
@@ -450,51 +452,25 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
             bytearray: complete audio buffer recorded, including any
                        silence at the end of the user's utterance
         """
-        noise_tracker = NoiseTracker(0, 25, sec_per_buffer,
-                                     self.MIN_LOUD_SEC_PER_PHRASE,
-                                     self.recording_timeout_with_silence)
 
-        # Maximum number of chunks to record before timing out
-        max_chunks = int(self.recording_timeout / sec_per_buffer)
         num_chunks = 0
 
-        # bytearray to store audio in, initialized with a single sample of
-        # silence.
-        byte_data = get_silence(source.SAMPLE_WIDTH)
+        self.silence_detector.start()
+        for chunk in source.stream.iter_chunks():
+            if check_for_signal('buttonPress'):
+                break
 
-        if stream:
-            stream.stream_start()
-
-        phrase_complete = False
-        while num_chunks < max_chunks and not phrase_complete:
-            if ww_frames:
-                chunk = ww_frames.popleft()
-            else:
-                chunk = self.record_sound_chunk(source)
-            byte_data += chunk
-            num_chunks += 1
-
-            if stream:
-                stream.stream_chunk(chunk)
-
-            energy = self.calc_energy(chunk, source.SAMPLE_WIDTH)
-            test_threshold = self.energy_threshold * self.multiplier
-            is_loud = energy > test_threshold
-            noise_tracker.update(is_loud)
-            if not is_loud:
-                self._adjust_threshold(energy, sec_per_buffer)
-
-            # The phrase is complete if the noise_tracker end of sentence
-            # criteria is met or if the  top-button is pressed
-            phrase_complete = (noise_tracker.recording_complete() or
-                               check_for_signal('buttonPress'))
+            result = self.silence_detector.process(chunk)
+            if result.type in { SilenceResultType.PHRASE_END, SilenceResultType.TIMEOUT }:
+                break
 
             # Periodically write the energy level to the mic level file.
             if num_chunks % 10 == 0:
                 self._watchdog()
-                self.write_mic_level(energy, source)
+                self.write_mic_level(result.energy, source)
+            num_chunks += 1
 
-        return byte_data
+        return self.silence_detector.stop()
 
     def write_mic_level(self, energy, source):
         if not self.mic_level_enabled:
@@ -620,50 +596,38 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
             source (AudioSource):  Source producing the audio chunks
             sec_per_buffer (float):  Fractional number of seconds in each chunk
         """
-
-        # The maximum audio in seconds to keep for transcribing a phrase
-        # The wake word must fit in this time
-        ww_duration = self.wake_word_recognizer.expected_duration
-        ww_test_duration = max(3, ww_duration)
-
         mic_write_counter = 0
-        num_silent_bytes = int(self.SILENCE_SEC * source.SAMPLE_RATE *
-                               source.SAMPLE_WIDTH)
 
-        silence = get_silence(num_silent_bytes)
+        # History of audio energies.
+        # Used to adjust threshold for ambient noise.
+        energies: typing.List[float] = []
+        energy: float = 0.0
 
-        # Max bytes for byte_data before audio is removed from the front
-        max_size = source.duration_to_bytes(ww_duration)
-        test_size = source.duration_to_bytes(ww_test_duration)
-        audio_buffer = CyclicAudioBuffer(max_size, silence)
-
-        # Rolling buffer to track the audio energy (loudness) heard on
-        # the source recently.  An average audio energy is maintained
-        # based on these levels.
-        average_samples = int(5 / sec_per_buffer)  # average over last 5 secs
-        audio_mean = RollingMean(average_samples)
-
-        # These are frames immediately after wake word is detected
-        # that we want to keep to send to STT
-        ww_frames = deque(maxlen=7)
-
-        said_wake_word = False
         audio_data = None
-        while (not said_wake_word and not self._stop_signaled and
-               not self._skip_wake_word()):
-            chunk = self.record_sound_chunk(source)
-            audio_buffer.append(chunk)
-            ww_frames.append(chunk)
+        ww_frames = None
+        said_wake_word = False
+        for chunk in source.stream.iter_chunks():
+            if self._stop_signaled or self._skip_wake_word():
+                break
 
-            energy = self.calc_energy(chunk, source.SAMPLE_WIDTH)
-            audio_mean.append_sample(energy)
+            self.wake_word_recognizer.update(chunk)
+            said_wake_word = self.wake_word_recognizer.found_wake_word(None)
 
-            if energy < self.energy_threshold * self.multiplier:
-                self._adjust_threshold(energy, sec_per_buffer)
-            # maintain the threshold using average
-            if self.energy_threshold < energy < audio_mean.value * 1.5:
-                # bump the threshold to just above this value
-                self.energy_threshold = energy * 1.2
+            if said_wake_word:
+                break
+            else:
+                energy = SilenceDetector.get_debiased_energy(chunk)
+                energies.append(energy)
+
+                if len(energies) >= 4:
+                    # Adjust energy threshold once per second
+                    # avg_energy = sum(energies) / len(energies)
+                    max_energy = max(energies)
+                    self.silence_detector.current_energy_threshold = max_energy * 2
+
+                if len(energies) >= 12:
+                    # Clear energy history after 3 seconds
+                    energies = []
 
             # Periodically output energy level stats. This can be used to
             # visualize the microphone input, e.g. a needle on a meter.
@@ -671,13 +635,6 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
                 self._watchdog()
                 self.write_mic_level(energy, source)
             mic_write_counter += 1
-
-            # Send chunk to wake_word_recognizer
-            self.wake_word_recognizer.update(chunk)
-
-            # Parameter to found_wake_word is deprecated
-            said_wake_word = \
-                self.wake_word_recognizer.found_wake_word(None)
 
         self._listen_triggered = False
         return WakeWordData(audio_data, said_wake_word,
@@ -697,7 +654,9 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         if audio_file:
             if self.config.get('enclosure', {}).get('platform') == 'mycroft_mark_2':
                 # We have echo cancellation, so no need to wait
+                # source.mute()
                 play_wav(audio_file)
+                # source.unmute()
             else:
                 # Mute and wait for audio file to play
                 source.mute()
@@ -782,6 +741,21 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
             LOG.debug("Thinking...")
 
         return audio_data
+
+    def adjust_for_ambient_noise(self, source, seconds):
+        chunks_per_second = source.CHUNK / source.SAMPLE_RATE
+        num_chunks = int(seconds / chunks_per_second)
+
+        energies = []
+        for chunk in itertools.islice(source.stream.iter_chunks(), num_chunks):
+            energy = SilenceDetector.get_debiased_energy(chunk)
+            energies.append(energy)
+
+        if energies:
+            avg_energy = sum(energies) / len(energies)
+            self.silence_detector.current_energy_threshold = avg_energy
+            LOG.info("Silence threshold adjusted to %s",
+                    self.silence_detector.current_energy_threshold)
 
     def _adjust_threshold(self, energy, seconds_per_buffer):
         if self.dynamic_energy_threshold and energy > 0:

@@ -13,6 +13,7 @@
 # limitations under the License.
 #
 import time
+import typing
 
 from mycroft.util.log import LOG
 
@@ -27,10 +28,13 @@ class LedAnimation:
         """Begin LED animation"""
         pass
 
-    def step(self) -> bool:
+    def step(self, context: typing.Dict[str, typing.Any]) -> bool:
         """Single step of the animation.
 
         Put time.sleep inside here.
+
+        Arguments:
+            context: dict with user-defined values
 
         Returns:
             True if animation should continue
@@ -61,7 +65,7 @@ class PulseLedAnimation(LedAnimation):
         self.led_obj.brightness = self.brightness / 100
         self.led_obj.fill(self.color_tup)
 
-    def step(self):
+    def step(self, context):
         if (self.brightness + self.step_size) > 100:
             self.brightness = self.brightness - self.step_size
             self.step_size = self.step_size * -1
@@ -93,20 +97,21 @@ class ChaseLedAnimation(LedAnimation):
         self.exit_flag = False
         self.color_tup = foreground_color
         self.delay = 0.1
-        self.chase_ctr = 0
 
     def start(self):
-        self.chase_ctr = 0
-        self.led_obj.fill(self.bkgnd_col)
+        self.led_obj.fill(self.fgnd_col)
 
-    def step(self):
-        self.chase_ctr += 1
+    def step(self, context):
+        fgnd_col = context.get("chase.foreground_color", self.fgnd_col)
+        bkgnd_col = context.get("chase.background_color", self.bkgnd_col)
+        stop = context.get("chase.stop", False)
+
         for x in range(0, 10):
-            self.led_obj.set_led(x, self.fgnd_col)
+            self.led_obj.set_led(x, fgnd_col)
             time.sleep(self.delay)
-            self.led_obj.set_led(x, self.bkgnd_col)
+            self.led_obj.set_led(x, bkgnd_col)
 
-        if self.chase_ctr > 10:
+        if stop:
             return False
 
         return True

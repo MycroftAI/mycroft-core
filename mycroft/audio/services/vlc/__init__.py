@@ -39,6 +39,9 @@ class VlcService(AudioBackend):
         self.normal_volume = None
         self.low_volume = self.config.get('low_volume', 30)
 
+        # Default to full volume
+        self.player.audio_set_volume(100)
+
     def track_start(self, data, other):
         if self._track_start_callback:
             self._track_start_callback(self.track_info()['name'])
@@ -108,17 +111,19 @@ class VlcService(AudioBackend):
         """
         # Lower volume if playing, volume isn't already lowered
         # and ducking is enabled
-        if (self.normal_volume is None and self.player.is_playing() and
-                self.config.get('duck', False)):
-            self.normal_volume = self.player.audio_get_volume()
-            self.player.audio_set_volume(self.low_volume)
+        # if (self.normal_volume is None and self.player.is_playing() and
+        #         self.config.get('duck', False)):
+        #     self.normal_volume = self.player.audio_get_volume()
+        #     self.player.audio_set_volume(self.low_volume)
+        self.player.audio_set_volume(0)
 
     def restore_volume(self):
         """ Restore volume to previous level. """
         # if vlc has been lowered restore the volume
-        if self.normal_volume:
-            self.player.audio_set_volume(self.normal_volume)
-            self.normal_volume = None
+        # if self.normal_volume:
+        #     self.player.audio_set_volume(self.normal_volume)
+        #     self.normal_volume = None
+        self.player.audio_set_volume(100)
 
     def track_info(self):
         """ Extract info of current track. """

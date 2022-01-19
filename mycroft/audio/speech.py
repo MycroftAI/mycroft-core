@@ -19,7 +19,9 @@ from threading import Lock
 from mycroft.configuration import Configuration
 from mycroft.metrics import report_timing, Stopwatch
 from mycroft.tts import TTSFactory
-from mycroft.util import check_for_signal
+from mycroft.util import (
+    check_for_signal, play_wav, resolve_resource_file
+)
 from mycroft.util.log import LOG
 from mycroft.messagebus.message import Message
 from mycroft.tts.remote_tts import RemoteTTSException
@@ -34,9 +36,6 @@ mimic_fallback_obj = None
 
 _last_stop_signal = 0
 
-# Id of last skill to speak
-_last_skill_id = None
-
 
 def handle_speak(event):
     """Handle "speak" message
@@ -46,14 +45,6 @@ def handle_speak(event):
     config = Configuration.get()
     Configuration.set_config_update_handlers(bus)
     global _last_stop_signal
-
-    global _last_skill_id
-    speak_skill_id = event.data.get('skill_id')
-    if speak_skill_id != _last_skill_id:
-        # Clear TTS queue if a new skill is speaking
-        _last_skill_id = speak_skill_id
-        tts.playback.clear()
-        LOG.info('Cleared TTS queue for skill %s', speak_skill_id)
 
     # if the message is targeted and audio is not the target don't
     # don't synthezise speech
@@ -89,7 +80,11 @@ def handle_speak(event):
             # if a character (only alpha) ends with a period
             # ex: A. Lincoln -> A.Lincoln
             # so that we don't split at the period
-            utterance = re.sub(r'\b([A-za-z][\.])(\s+)', r'\g<1>', utterance)
+            # NOTE: This does not work because things like "a.m." and "I.P."
+            # will have their whitespace removed too.
+            #
+            # utterance = re.sub(r'\b([A-za-z][\.])(\s+)', r'\g<1>', utterance)
+
             chunks = re.split(r'(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\;|\?)\s',
                               utterance)
             # Apply the listen flag to the last chunk, set the rest to False
@@ -190,6 +185,22 @@ def handle_pause(event):
 def handle_resume(event):
     tts.playback.resume()
 
+def handle_skill_started(event):
+    """Handle start of a skill activity"""
+    # Clear TTS queue
+    tts.playback.clear()
+
+    skill_id = event.data.get("skill_id", "")
+    LOG.info('Cleared TTS queue for skill %s', skill_id)
+
+    # Play acknowledge beep
+    audio_file = resolve_resource_file(
+        config.get('sounds').get('acknowledge')
+    )
+
+    if audio_file:
+        play_wav(audio_file)
+
 def init(messagebus):
     """Start speech related handlers.
 
@@ -215,6 +226,7 @@ def init(messagebus):
     bus.on('mycroft.audio.speech.pause', handle_pause)
     bus.on('mycroft.audio.speech.resume', handle_resume)
     bus.on('speak', handle_speak)
+    bus.on('skill.started', handle_skill_started)
 
 def shutdown():
     """Shutdown the audio service cleanly.

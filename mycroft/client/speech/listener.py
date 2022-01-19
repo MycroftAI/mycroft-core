@@ -77,7 +77,6 @@ class AudioProducer(Thread):
     def run(self):
         restart_attempts = 0
         with self.mic as source:
-            self.recognizer.adjust_for_ambient_noise(source)
             while self.state.running:
                 try:
                     audio = self.recognizer.listen(source, self.emitter,
@@ -106,6 +105,7 @@ class AudioProducer(Thread):
                                   'Stopping...')
                         raise
                 except Exception:
+                    LOG.exception("error in audio producer")
                     LOG.debug(
                         'Probably XRUN Exception in AudioProducer, Restarting Mic')
                     source.restart()
@@ -240,8 +240,7 @@ class AudioConsumer(Thread):
             LOG.error(e.__class__.__name__ + ': ' + str(e))
         except Exception as e:
             send_unknown_intent()
-            LOG.error(e)
-            LOG.error("Speech Recognition could not understand audio")
+            LOG.exception("Speech Recognition could not understand audio")
             return None
 
         if connected():

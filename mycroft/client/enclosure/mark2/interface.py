@@ -91,6 +91,7 @@ class LedThread(threading.Thread):
         self.queue = Queue()
         self.animation_running = False
         self.animation_name: typing.Optional[str] = None
+        self._context: typing.Dict[str, Any] = dict()
 
         super().__init__()
 
@@ -105,6 +106,10 @@ class LedThread(threading.Thread):
 
         self.animation_running = False
 
+    @property
+    def context(self):
+        return self._context
+
     def run(self):
         try:
             while True:
@@ -116,10 +121,11 @@ class LedThread(threading.Thread):
 
                 if current_animation is not None:
                     try:
+                        self._context = {}
                         self.animation_name = name
                         self.animation_running = True
                         current_animation.start()
-                        while self.animation_running and current_animation.step():
+                        while self.animation_running and current_animation.step(context=self._context):
                             time.sleep(0)
                         current_animation.stop()
                     except Exception:
@@ -205,6 +211,8 @@ class EnclosureMark2(Enclosure):
         )
         self.led_thread.start()
 
+        self._in_skill_activity = False
+
     def run(self):
         """Make it so."""
         super().run()
@@ -242,7 +250,7 @@ class EnclosureMark2(Enclosure):
         self.bus.on("mycroft.volume.get", self.on_volume_get)
         self.bus.on("mycroft.volume.duck", self.on_volume_duck)
         self.bus.on("mycroft.volume.unduck", self.on_volume_unduck)
-        self.bus.on("recognizer_loop:record_begin", self.handle_start_recording)
+        self.bus.on("recognizer_loop:wakeword", self.handle_start_recording)
         self.bus.on("recognizer_loop:record_end", self.handle_stop_recording)
         self.bus.on("recognizer_loop:audio_output_end", self.handle_end_audio)
         self.bus.on("mycroft.speech.recognition.unknown", self.handle_end_audio)
@@ -260,8 +268,12 @@ class EnclosureMark2(Enclosure):
         self.bus.on("hardware.awconnect.create-ap", self._handle_create_access_point)
         self.bus.on("server-connect.authenticated", self.handle_server_authenticated)
 
+        self.bus.on("skill.started", self.handle_skill_started)
+        self.bus.on("skill.ended", self.handle_skill_ended)
+
     def handle_start_recording(self, message):
         LOG.debug("Gathering speech stuff")
+        self._in_skill_activity = False
         self.led_thread.start_animation("pulse")
 
     def handle_stop_recording(self, message):
@@ -270,7 +282,20 @@ class EnclosureMark2(Enclosure):
 
     def handle_end_audio(self, message):
         LOG.debug("Finished playing audio")
-        self.led_thread.stop_animation("chase")
+        if not self._in_skill_activity:
+            # Stop the chase animation gently
+            self.led_thread.context["chase.background_color"] = self.hardware.palette.BLACK
+            self.led_thread.context["chase.stop"] = True
+
+    def handle_skill_started(self, message):
+        self._in_skill_activity = True
+
+    def handle_skill_ended(self, message):
+        self._in_skill_activity = False
+
+        # Stop the chase animation gently
+        self.led_thread.context["chase.background_color"] = self.hardware.palette.BLACK
+        self.led_thread.context["chase.stop"] = True
 
     def on_volume_duck(self, message):
         # TODO duck it anyway using set vol
