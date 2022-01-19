@@ -1,20 +1,40 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE.md) 
-[![CLA](https://img.shields.io/badge/CLA%3F-Required-blue.svg)](https://mycroft.ai/cla) 
-[![Team](https://img.shields.io/badge/Team-Mycroft_Core-violetblue.svg)](https://github.com/MycroftAI/contributors/blob/master/team/Mycroft%20Core.md) 
-![Status](https://img.shields.io/badge/-Production_ready-green.svg)
-
-![Unit Tests](https://github.com/mycroftai/mycroft-core/workflows/Unit%20Tests/badge.svg)
-[![codecov](https://codecov.io/gh/MycroftAI/mycroft-core/branch/dev/graph/badge.svg?token=zQzRlkXxAr)](https://codecov.io/gh/MycroftAI/mycroft-core)
+![Unit Tests](https://github.com/OpenVoiceOS/ovos-core/actions/workflows/build_tests.yml/badge.svg)
+[![codecov](https://codecov.io/gh/OpenVoiceOS/ovos-core/branch/dev/graph/badge.svg?token=CS7WJH4PO2)](https://codecov.io/gh/OpenVoiceOS/ovos-core)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
-[![Join chat](https://img.shields.io/badge/Mattermost-join_chat-brightgreen.svg)](https://chat.mycroft.ai)
+[![Chat](https://img.shields.io/matrix/openvoiceos-general:matrix.org)](https://matrix.to/#/#OpenVoiceOS-general:matrix.org)
+[![GitHub Discussions](https://img.shields.io/github/discussions/OpenVoiceOS/OpenVoiceOS?label=OVOS%20Discussions)](https://github.com/OpenVoiceOS/OpenVoiceOS/discussions)
 
-# Mycroft
+# OVOS-core
+[OpenVoiceOS](https://openvoiceos.com/) is an open source platform for smart speakers and other voice-centric devices.
 
-Mycroft is a hackable open source voice assistant.
+[Mycroft](https://mycroft.ai) is a hackable, open source voice assistant by MycroftAI. OVOS-core is a backwards-compatible descendant of [Mycroft-core](https://github.com/MycroftAI/mycroft-core), the central component of Mycroft. It contains extensions and features not present upstream. All Mycroft Skills and Plugins should work normally with OVOS-core. Other Mycroft-based assistants are also believed, but not guaranteed, to be compatible.
+
+The biggest difference between OVOS-core and Mycroft-core is that OVOS-core is fully modular. Furthermore, common components have been repackaged as plugins. That means it isn't just a great assistant on its own, but also a pretty small library!
+
+Furthermore, it offers a number of cli bindings. The old Mycroft shell scripts still exist, and still work, but that stuff is now built into the Python program (docs to follow in the form of `--help`, because it's a lot.)
+
+---
+
+**Installing OVOS-core** (NOTE: at this early stage, required system libs are presumed, and your distribution might be a question mark.)
+
+We suggest you do this in a virtualenv:
+
+`pip install ovos-core[all]`
+
+---
+
+As always, the OpenVoiceOS team thanks the following entities (in addition to MycroftAI) for making certain code and/or manpower resources available to us which may not have been compatible with our practices before:
+
+  - NeonGecko
+  - HelloChatterbox
+  - KDE
+  - Blue Systems
+
+**For now, the rest of this document is part of the README from Mycroft-core.**
 
 ## Table of Contents
 
-- [Getting Started](#getting-started)
 - [Running Mycroft](#running-mycroft)
 - [Using Mycroft](#using-mycroft)
   * [*Home* Device and Account Manager](#home-device-and-account-manager)
@@ -30,25 +50,14 @@ Mycroft is a hackable open source voice assistant.
 - [Getting Involved](#getting-involved)
 - [Links](#links)
 
-## Getting Started
-
-First, get the code on your system!  The simplest method is via git ([git installation instructions](https://gist.github.com/derhuerst/1b15ff4652a867391f03)):
-- `cd ~/`
-- `git clone https://github.com/MycroftAI/mycroft-core.git`
-- `cd mycroft-core`
-- `bash dev_setup.sh`
-
-
-This script sets up dependencies and a [virtualenv][about-virtualenv].  If running in an environment besides Ubuntu/Debian, Arch or Fedora you may need to manually install packages as instructed by dev_setup.sh.
-
-[about-virtualenv]:https://virtualenv.pypa.io/en/stable/
-
-NOTE: The default branch for this repository is 'dev', which should be considered a work-in-progress. If you want to clone a more stable version, switch over to the 'master' branch.
-
 ## Running Mycroft
 
-Mycroft provides `start-mycroft.sh` to perform common tasks. This script uses a virtualenv created by `dev_setup.sh`.  Assuming you installed mycroft-core in your home directory run:
-- `cd ~/mycroft-core`
+`start-mycroft.sh` is available to perform common tasks.
+
+ **Note**: MycroftAI's `dev_setup.sh` does not exist in OVOS-core.
+
+Assuming you installed mycroft-core in your home directory, run:
+- `cd ~/ovos-core`
 - `./start-mycroft.sh debug`
 
 The "debug" command will start the background services (microphone listener, skill, messagebus, and audio subsystems) as well as bringing up a text-based Command Line Interface (CLI) you can use to interact with Mycroft and see the contents of the various logs. Alternatively you can run `./start-mycroft.sh all` to begin the services without the command line interface.  Later you can bring up the CLI using `./start-mycroft.sh cli`.
