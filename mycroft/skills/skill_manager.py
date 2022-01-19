@@ -130,7 +130,6 @@ class SkillManager(Thread):
 
         self.skill_loaders = {}
         self.enclosure = EnclosureAPI(bus)
-        self.initial_load_complete = False
         self.num_install_retries = 0
         self.settings_downloader = SkillSettingsDownloader(self.bus)
 
@@ -270,6 +269,7 @@ class SkillManager(Thread):
 
     def _load_skill(self, skill_directory):
         skill_loader = SkillLoader(self.bus, skill_directory)
+        skill_loader.skill_service_initializing = not self._loaded_status
         try:
             load_status = skill_loader.load()
         except Exception:
@@ -329,7 +329,7 @@ class SkillManager(Thread):
         if do_skill_update:
             self.skill_updater.update_skills()
 
-    def is_all_loaded(self, message=None):
+    def is_all_loaded(self):
         """ Respond to all_loaded status request."""
         return self._loaded_status
 

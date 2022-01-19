@@ -130,6 +130,7 @@ class SkillLoader:
         self.skill_control = SkillControl()
         self.skill_directory = skill_directory
         self.skill_id = os.path.basename(skill_directory)
+        self.skill_service_initializing = False
         self.load_attempted = False
         self.loaded = False
         self.last_modified = 0
@@ -137,7 +138,6 @@ class SkillLoader:
         self.instance = None
         self.active = True
         self.config = Configuration.get()
-
         self.modtime_error_log_written = False
 
     @property
@@ -300,6 +300,9 @@ class SkillLoader:
         if self.instance:
             self.instance.skill_id = self.skill_id
             self.instance.bind(self.bus)
+            self.instance.skill_service_initializing = (
+                self.skill_service_initializing
+            )
             try:
                 self.instance.load_data_files()
                 # Set up intent handlers
