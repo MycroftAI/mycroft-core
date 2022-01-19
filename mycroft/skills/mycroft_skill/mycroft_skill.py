@@ -123,6 +123,7 @@ class MycroftSkill:
         self.name = name or self.__class__.__name__
         self.skill_id = ''  # will be set from the path, so guaranteed unique
         self.settings_meta = None  # set when skill is loaded in SkillLoader
+        self.skill_service_initializing = False
 
         # Get directory of skill
         #: Member variable containing the absolute path of the skill's root
@@ -362,6 +363,10 @@ class MycroftSkill:
             self.add_event('mycroft.stop', self.__handle_stop)
 
         self.add_event(
+            'mycroft.skills.initialized',
+            self.handle_skills_initialized
+        )
+        self.add_event(
             'mycroft.skill.enable_intent',
             self.handle_enable_intent
         )
@@ -381,6 +386,9 @@ class MycroftSkill:
             'mycroft.skills.settings.changed',
             self.handle_settings_change
         )
+
+    def handle_skills_initialized(self, _):
+        self.skill_service_initializing = False
 
     def handle_settings_change(self, message):
         """Update settings if the remote settings changes apply to this skill.
