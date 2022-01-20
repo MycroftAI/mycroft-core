@@ -360,7 +360,7 @@ class IntentService:
                 self.bus.emit(taskbot_reply)
 
             if match:
-                if match.intent_type == "taskbot-skill:task":
+                if match.intent_type == "taskbot-skill:animalTask":
                     reply = message.reply(match.intent_type, match.intent_data) 
                     reply.data["utterances"] = utterances
                     self.bus.emit(reply)
