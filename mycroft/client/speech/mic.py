@@ -648,24 +648,24 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         """
         return AudioData(raw_data, source.SAMPLE_RATE, source.SAMPLE_WIDTH)
 
-    def mute_and_confirm_listening(self, source):
-        audio_file = resolve_resource_file(
-            self.config.get('sounds').get('start_listening'))
-        if audio_file:
-            if self.config.get('enclosure', {}).get('platform') == 'mycroft_mark_2':
-                # We have echo cancellation, so no need to wait
-                # source.mute()
-                play_wav(audio_file)
-                # source.unmute()
-            else:
-                # Mute and wait for audio file to play
-                source.mute()
-                play_wav(audio_file).wait()
-                source.unmute()
+    # def mute_and_confirm_listening(self, source):
+    #     audio_file = resolve_resource_file(
+    #         self.config.get('sounds').get('start_listening'))
+    #     if audio_file:
+    #         if self.config.get('enclosure', {}).get('platform') == 'mycroft_mark_2':
+    #             # We have echo cancellation, so no need to wait
+    #             # source.mute()
+    #             play_wav(audio_file)
+    #             # source.unmute()
+    #         else:
+    #             # Mute and wait for audio file to play
+    #             source.mute()
+    #             play_wav(audio_file).wait()
+    #             source.unmute()
 
-            return True
-        else:
-            return False
+    #         return True
+    #     else:
+    #         return False
 
     def listen(self, source, emitter, stream=None):
         """Listens for chunks of audio that Mycroft should perform STT on.
@@ -712,11 +712,11 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         LOG.info("Recording...")
         # If enabled, play a wave file with a short sound to audibly
         # indicate recording has begun.
-        if self.config.get('confirm_listening'):
-            if self.mute_and_confirm_listening(source):
-                # Clear frames from wakeword detctions since they're
-                # irrelevant after mute - play wav - unmute sequence
-                ww_frames = None
+        # if self.config.get('confirm_listening'):
+        #     if self.mute_and_confirm_listening(source):
+        #         # Clear frames from wakeword detctions since they're
+        #         # irrelevant after mute - play wav - unmute sequence
+        #         ww_frames = None
 
         # Notify system of recording start
         emitter.emit("recognizer_loop:record_begin")

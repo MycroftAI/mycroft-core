@@ -27,8 +27,8 @@ from mycroft.util.log import LOG
 from mycroft.util.process_utils import ProcessStatus, StatusCallbackMap
 
 import mycroft.audio.speech as speech
-from .audioservice import AudioService
 
+from .audio_ui import AudioUserInterface
 
 def on_ready():
     LOG.info('Audio service is ready.')
@@ -55,24 +55,20 @@ def main(ready_hook=on_ready, error_hook=on_error, stopping_hook=on_stopping):
     status = ProcessStatus('audio', bus, callbacks)
     status.set_started()
     try:
+        aui = AudioUserInterface(bus)
+        aui.initialize()
+
         speech.init(bus)
-        # Connect audio service instance to message bus
-        audio = AudioService(bus)
     except Exception as e:
         LOG.exception("loading audio service")
         status.set_error(e)
     else:
-        if audio.wait_for_load() and len(audio.service) > 0:
-            # If at least one service exists, report ready
-            bus.emit(Message("audio.initialize.ended"))
-            status.set_ready()
-            wait_for_exit_signal()
-            status.set_stopping()
-        else:
-            status.set_error('No audio services loaded')
+        status.set_ready()
+        wait_for_exit_signal()
+        status.set_stopping()
 
         speech.shutdown()
-        audio.shutdown()
+        aui.shutdown()
 
 
 if __name__ == '__main__':
