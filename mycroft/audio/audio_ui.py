@@ -72,6 +72,8 @@ class AudioUserInterface:
         self._bus_events = {
             "mycroft.stop": self.handle_mycroft_stop,
             "recognizer_loop:record_begin": self.handle_start_listening,
+            "mycroft.volume.duck": self.handle_duck_volume,
+            "mycroft.volume.unduck": self.handle_unduck_volume,
             "skill.started": self.handle_skill_started,
             "mycroft.audio.play-sound": self.handle_play_sound,
             "mycroft.tts.speak-chunk": self.handle_tts_chunk,
@@ -97,8 +99,6 @@ class AudioUserInterface:
         """Adds bus event handlers"""
         for event_name, handler in self._bus_events.items():
             self.bus.on(event_name, handler)
-
-        # TODO: Handle mycroft.stop
 
         # TODO: Seek events
 
@@ -133,7 +133,17 @@ class AudioUserInterface:
         self._ahal.stop_foreground(ForegroundChannel.SOUND)
         self._ahal.stop_foreground(ForegroundChannel.SPEECH)
 
+        # Don't ever actually stop the background stream.
+        # This lets us resume it later at any point.
         self._ahal.pause_background(BackgroundChannel.STREAM)
+
+    def handle_duck_volume(self, _message):
+        self._ahal.set_foreground_volume(ForegroundChannel.SPEECH, 50)
+        self._ahal.set_background_volume(BackgroundChannel.STREAM, 50)
+
+    def handle_unduck_volume(self, _message):
+        self._ahal.set_foreground_volume(ForegroundChannel.SPEECH, 100)
+        self._ahal.set_background_volume(BackgroundChannel.STREAM, 100)
 
     # -------------------------------------------------------------------------
 
@@ -142,13 +152,18 @@ class AudioUserInterface:
 
         if uri:
             self._ahal.stop_foreground(ForegroundChannel.SOUND)
-            self._ahal.play_foreground(ForegroundChannel.SOUND, uri)
-            LOG.info("Played sound: %s", uri)
+            duration_ms = self._ahal.play_foreground(
+                ForegroundChannel.SOUND, uri, return_duration=True
+            )
+            LOG.info("Played sound: %s (%s ms)", uri, duration_ms)
 
     def handle_start_listening(self, _message):
-        """Play sound when Mycroft is awoken"""
+        """Play sound when Mycroft begins recording a command"""
         self._ahal.stop_foreground(ForegroundChannel.SOUND)
-        self._ahal.play_foreground(ForegroundChannel.SOUND, self._start_listening_uri)
+        duration_ms = self._ahal.play_foreground(
+            ForegroundChannel.SOUND, self._start_listening_uri, return_duration=True
+        )
+        LOG.info("Played start listening sound (%s ms)", duration_ms)
 
     def handle_skill_started(self, message):
         skill_id = message.data.get("skill_id")

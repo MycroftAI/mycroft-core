@@ -139,6 +139,11 @@ class AudioHAL:
         player = self._fg_players[channel]
         player.stop()
 
+    def set_foreground_volume(self, channel: str, volume: int):
+        assert channel in self._fg_players, f"No player for channel: {channel}"
+        player = self._fg_players[channel]
+        player.audio_set_volume(volume)
+
     # -------------------------------------------------------------------------
 
     def start_background(self, channel: str, uri_playlist: typing.Iterable[str]):
@@ -162,12 +167,20 @@ class AudioHAL:
     def pause_background(self, channel: str):
         assert channel in self._bg_players, f"No player for channel: {channel}"
         list_player = self._bg_players[channel]
-        list_player.pause()
+        player = list_player.get_media_player()
+
+        if player.is_playing():
+            player.pause()
 
     def resume_background(self, channel: str):
         assert channel in self._bg_players, f"No player for channel: {channel}"
         list_player = self._bg_players[channel]
-        list_player.play()
+        player = list_player.get_media_player()
 
-    def handle_background_finished(self, channel, _event):
-        pass
+        if not player.is_playing():
+            player.play()
+
+    def set_background_volume(self, channel: str, volume: int):
+        assert channel in self._bg_players, f"No player for channel: {channel}"
+        list_player = self._bg_players[channel]
+        list_player.get_media_player().audio_set_volume(volume)
