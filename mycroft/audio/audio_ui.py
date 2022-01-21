@@ -16,25 +16,37 @@ from .audio_hal import AudioHAL
 
 
 class ForegroundChannel(str, Enum):
+    """Available foreground channels (sound effects, TTS)"""
+
     SOUND = "sound"
     SPEECH = "speech"
 
 
 class BackgroundChannel(str, Enum):
+    """Available background channels (music, news, etc.)"""
+
     STREAM = "stream"
 
 
-class Sounds(str, Enum):
-    START_LISTENING = "start_listening"
-    ACKNOWLEDGE = "acknowledge"
-
-
+# Channel names
 DEFAULT_FOREGROUND = [channel.value for channel in ForegroundChannel]
 DEFAULT_BACKGROUND = [channel.value for channel in BackgroundChannel]
 
 
+# -----------------------------------------------------------------------------
+
+
 @dataclass
 class TTSRequest:
+    """Chunk of TTS audio to play.
+
+    A single sentence or paragraph is typically split into multiple chunks for
+    faster time to first audio.
+
+    Chunks belonging to the same original sentence or paragraph share the same
+    session id.
+    """
+
     uri: str
     session_id: str
     chunk_index: int
@@ -45,10 +57,17 @@ class TTSRequest:
         return self.chunk_index >= (self.num_chunks - 1)
 
 
+# -----------------------------------------------------------------------------
+
+
 class AudioUserInterface:
+    """Audio interface between Mycroft and the Audio HAL.
+
+    Listens for relevant bus events and manipulates the audio system.
+    """
+
     def __init__(self):
         self.config = Configuration.get()
-        self.lock = threading.Lock()
 
         self._ahal = AudioHAL(
             fg_channels=DEFAULT_FOREGROUND, bg_channels=DEFAULT_BACKGROUND
@@ -127,9 +146,11 @@ class AudioUserInterface:
     # -------------------------------------------------------------------------
 
     def handle_mycroft_stop(self, _message):
+        """Called in response to a 'stop' command"""
         LOG.info("Stopping all audio")
         self._drain_speech_queue()
 
+        # Stop foreground channels
         self._ahal.stop_foreground(ForegroundChannel.SOUND)
         self._ahal.stop_foreground(ForegroundChannel.SPEECH)
 
@@ -138,20 +159,28 @@ class AudioUserInterface:
         self._ahal.pause_background(BackgroundChannel.STREAM)
 
     def handle_duck_volume(self, _message):
+        """Lower TTS and background stream volumes during voice commands"""
         self._ahal.set_foreground_volume(ForegroundChannel.SPEECH, 50)
         self._ahal.set_background_volume(BackgroundChannel.STREAM, 50)
 
     def handle_unduck_volume(self, _message):
+        """Restore volumes after voice commands"""
         self._ahal.set_foreground_volume(ForegroundChannel.SPEECH, 100)
         self._ahal.set_background_volume(BackgroundChannel.STREAM, 100)
 
     # -------------------------------------------------------------------------
 
     def handle_play_sound(self, message):
+        """Handler for skills' play_sound_uri"""
         uri = message.data.get("uri")
 
         if uri:
             self._ahal.stop_foreground(ForegroundChannel.SOUND)
+
+            # Request media duration to force parsing of media upfront.
+            #
+            # This seems to avoid the race condition where VLC finishes
+            # "playing" the sound before parsing it.
             duration_ms = self._ahal.play_foreground(
                 ForegroundChannel.SOUND, uri, return_duration=True
             )
@@ -160,12 +189,18 @@ class AudioUserInterface:
     def handle_start_listening(self, _message):
         """Play sound when Mycroft begins recording a command"""
         self._ahal.stop_foreground(ForegroundChannel.SOUND)
+
+        # Request media duration to force parsing of media upfront.
+        #
+        # This seems to avoid the race condition where VLC finishes
+        # "playing" the sound before parsing it.
         duration_ms = self._ahal.play_foreground(
             ForegroundChannel.SOUND, self._start_listening_uri, return_duration=True
         )
         LOG.info("Played start listening sound (%s ms)", duration_ms)
 
     def handle_skill_started(self, message):
+        """Handler for skills' activity_started"""
         skill_id = message.data.get("skill_id")
         if skill_id != self._last_skill_id:
             LOG.info("Clearing TTS cache for skill: %s", skill_id)
@@ -201,18 +236,21 @@ class AudioUserInterface:
         LOG.info("Queued TTS chunk %s/%s: %s", chunk_index + 1, num_chunks, uri)
 
     def handle_media_finished(self, message):
+        """Callback when VLC media item has finished playing"""
         channel = message.data.get("channel")
         if channel == ForegroundChannel.SPEECH:
             # Signal speech thread to play next TTS chunk
             self._speech_finished.set()
 
     def _speech_run(self):
+        """Thread proc for text to speech"""
         try:
             while True:
                 request = self._speech_queue.get()
                 if request is None:
                     break
 
+                # Play TTS chunk
                 self._speech_finished.clear()
                 duration_ms = self._ahal.play_foreground(
                     ForegroundChannel.SPEECH, request.uri, return_duration=True
@@ -227,12 +265,15 @@ class AudioUserInterface:
                     request.session_id,
                 )
 
-                # Wait at most a second after audio should have finished
+                # Wait at most a second after audio should have finished.
+                #
+                # This is done in case VLC fails to inform us that the media
+                # item has finished playing.
                 timeout = 1 + (duration_ms / 1000)
                 self._speech_finished.wait(timeout=timeout)
 
                 if request.is_last_chunk:
-                    # Report speaking finished
+                    # Report speaking finished for speak(wait=True)
                     self.bus.emit(
                         Message(
                             "mycroft.tts.speaking-finished",
@@ -251,6 +292,10 @@ class AudioUserInterface:
     # -------------------------------------------------------------------------
 
     def handle_stream_play(self, message):
+        """Handler for mycroft.audio.service.play
+
+        Play tracks using the background stream.
+        """
         tracks = message.data.get("tracks", [])
         if not tracks:
             LOG.warning("Play message received with not tracks: %s", message.data)
@@ -273,13 +318,19 @@ class AudioUserInterface:
         self._ahal.start_background(BackgroundChannel.STREAM, uri_playlist=uri_playlist)
 
     def handle_stream_pause(self, _message):
+        """Handler for mycroft.audio.service.pause"""
         LOG.debug("Pausing background stream")
         self._ahal.pause_background(BackgroundChannel.STREAM)
 
     def handle_stream_resume(self, _message):
+        """Handler for mycroft.audio.service.resume"""
         LOG.debug("Resuming background stream")
         self._ahal.resume_background(BackgroundChannel.STREAM)
 
     def handle_stream_stop(self, _message):
+        """Handler for mycroft.audio.service.stop"""
         LOG.info("Stopping background stream")
+
+        # Don't ever actually stop the background stream.
+        # This lets us resume it later at any point.
         self._ahal.pause_background(BackgroundChannel.STREAM)

@@ -27,7 +27,18 @@ from mycroft.messagebus.client import MessageBusClient
 
 
 class AudioHAL:
-    """Audio hardware abstraction layer"""
+    """Audio hardware abstraction layer.
+
+    Provides access to the audio output device through VLC.
+    Output "channels" are categorized as:
+
+    * Foreground
+      * Transient sounds effects or speech from text to speech
+    * Background
+      * Long-running audio streams (playlists)
+
+    Each channel may only have one media item or playlist at a time.
+    """
 
     def __init__(
         self, fg_channels: typing.Iterable[str], bg_channels: typing.Iterable[str],
@@ -48,6 +59,7 @@ class AudioHAL:
         self._bg_media_ids: typing.Dict[str, typing.Optional[str]] = {}
 
     def initialize(self, bus: MessageBusClient):
+        """Create VLC object and channel media players"""
         self.bus = bus
 
         self._vlc = vlc.Instance("--no-video")
@@ -69,11 +81,13 @@ class AudioHAL:
         self._bg_media_ids = {}
 
     def shutdown(self):
+        """Delete VLC object and media players"""
         self._vlc = None
         self._fg_players = {}
         self._bg_players = {}
 
     def _attach_fg_events(self):
+        """Listen for 'end reached' events in foreground media players"""
         for fg_channel, fg_player in self._fg_players.items():
             event_manager = fg_player.event_manager()
             event_manager.event_attach(
@@ -82,6 +96,7 @@ class AudioHAL:
             )
 
     def _fg_media_finished(self, channel, _event):
+        """Callback when foreground media item is finished playing"""
         media_id = self._fg_media_ids.get(channel)
 
         if media_id is not None:
@@ -93,6 +108,7 @@ class AudioHAL:
             )
 
     def _attach_bg_events(self):
+        """Listen for 'player played' events in background media players"""
         for bg_channel, bg_player in self._bg_players.items():
             event_manager = bg_player.event_manager()
             event_manager.event_attach(
@@ -101,6 +117,7 @@ class AudioHAL:
             )
 
     def _bg_media_finished(self, channel, _event):
+        """Callback when background playlist is finished playing"""
         media_id = self._bg_media_ids.get(channel)
 
         if media_id is not None:
@@ -116,6 +133,11 @@ class AudioHAL:
     def play_foreground(
         self, channel: str, uri: str, return_duration: bool = False
     ) -> typing.Optional[int]:
+        """Play a URI on a foreground channel.
+
+        Returns:
+            duration of media item in milliseconds if return_duration = True
+        """
         assert channel in self._fg_players, f"No player for channel: {channel}"
         player = self._fg_players[channel]
 
@@ -134,12 +156,14 @@ class AudioHAL:
         return duration_ms
 
     def stop_foreground(self, channel: str):
+        """Stop media on a foreground channel"""
         assert channel in self._fg_players, f"No player for channel: {channel}"
 
         player = self._fg_players[channel]
         player.stop()
 
     def set_foreground_volume(self, channel: str, volume: int):
+        """Set volume of a foreground channel"""
         assert channel in self._fg_players, f"No player for channel: {channel}"
         player = self._fg_players[channel]
         player.audio_set_volume(volume)
@@ -147,6 +171,7 @@ class AudioHAL:
     # -------------------------------------------------------------------------
 
     def start_background(self, channel: str, uri_playlist: typing.Iterable[str]):
+        """Start a playlist playing on a background channel"""
         assert channel in self._bg_players, f"No player for channel: {channel}"
         list_player = self._bg_players[channel]
 
@@ -160,11 +185,13 @@ class AudioHAL:
         list_player.play()
 
     def stop_background(self, channel: str):
+        """Stop the playlist on a background channel"""
         assert channel in self._bg_players, f"No player for channel: {channel}"
         list_player = self._bg_players[channel]
         list_player.stop()
 
     def pause_background(self, channel: str):
+        """Pause the playlist on a background channel"""
         assert channel in self._bg_players, f"No player for channel: {channel}"
         list_player = self._bg_players[channel]
         player = list_player.get_media_player()
@@ -173,6 +200,7 @@ class AudioHAL:
             player.pause()
 
     def resume_background(self, channel: str):
+        """Resume the playlist on a background channel"""
         assert channel in self._bg_players, f"No player for channel: {channel}"
         list_player = self._bg_players[channel]
         player = list_player.get_media_player()
@@ -181,6 +209,7 @@ class AudioHAL:
             player.play()
 
     def set_background_volume(self, channel: str, volume: int):
+        """Set volume for a background channel"""
         assert channel in self._bg_players, f"No player for channel: {channel}"
         list_player = self._bg_players[channel]
         list_player.get_media_player().audio_set_volume(volume)
