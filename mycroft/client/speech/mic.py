@@ -72,7 +72,10 @@ class MutableStream:
         self.chunk = bytes(self.bytes_per_buffer)
         self.chunk_ready = threading.Event()
 
-        self.chunk_deque = deque(maxlen=2)
+        # The size of this queue is important.
+        # Too small, and chunks could be missed.
+        # Too large, and there will be a delay in wake word recognition.
+        self.chunk_deque = deque(maxlen=8)
 
         self.read_lock = Lock()
 
