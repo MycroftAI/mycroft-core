@@ -37,7 +37,12 @@ DEFAULT_BACKGROUND = [channel.value for channel in BackgroundChannel]
 class TTSRequest:
     uri: str
     session_id: str
-    is_last_chunk: bool = True
+    chunk_index: int
+    num_chunks: int
+
+    @property
+    def is_last_chunk(self):
+        return self.chunk_index >= (self.num_chunks - 1)
 
 
 class AudioUserInterface:
@@ -129,10 +134,12 @@ class AudioUserInterface:
 
     def handle_start_listening(self, _message):
         """Play sound when Mycroft is awoken"""
+        self._ahal.stop_foreground(ForegroundChannel.SOUND)
         self._ahal.play_foreground(ForegroundChannel.SOUND, self._start_listening_uri)
 
     def handle_skill_started(self, message):
         """Play sound when a skill activity begins"""
+        self._ahal.stop_foreground(ForegroundChannel.SOUND)
         self._ahal.play_foreground(ForegroundChannel.SOUND, self._acknowledge_uri)
 
         skill_id = message.data.get("skill_id")
@@ -159,12 +166,11 @@ class AudioUserInterface:
         chunk_index = message.data.get("chunk_index", 0)
         num_chunks = message.data.get("num_chunks", 1)
 
-        # The mycroft.tts.speaking-finished event is sent after the last chunk
-        # is played.
-        is_last_chunk = chunk_index >= (num_chunks - 1)
-
         request = TTSRequest(
-            uri=uri, session_id=session_id, is_last_chunk=is_last_chunk
+            uri=uri,
+            session_id=session_id,
+            chunk_index=chunk_index,
+            num_chunks=num_chunks,
         )
         self._speech_queue.put(request)
 
@@ -188,7 +194,14 @@ class AudioUserInterface:
                     ForegroundChannel.SPEECH, request.uri, return_duration=True
                 )
 
-                assert duration is not None
+                assert duration_ms is not None
+                LOG.info(
+                    "Speaking TTS chunk %s/%s for %s ms from session %s",
+                    request.chunk_index + 1,
+                    request.num_chunks,
+                    duration_ms,
+                    request.session_id,
+                )
 
                 # Wait at most a second after audio should have finished
                 timeout = 1 + (duration_ms / 1000)
@@ -197,8 +210,10 @@ class AudioUserInterface:
                 if request.is_last_chunk:
                     # Report speaking finished
                     self.bus.emit(
-                        "mycroft.tts.speaking-finished",
-                        data={"session_id": request.session_id},
+                        Message(
+                            "mycroft.tts.speaking-finished",
+                            data={"session_id": request.session_id},
+                        )
                     )
 
                     # This check will clear the "signal"

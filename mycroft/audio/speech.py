@@ -19,9 +19,7 @@ from threading import Lock
 from mycroft.configuration import Configuration
 from mycroft.metrics import report_timing, Stopwatch
 from mycroft.tts import TTSFactory
-from mycroft.util import (
-    check_for_signal, play_wav, resolve_resource_file
-)
+from mycroft.util import check_for_signal, resolve_resource_file
 from mycroft.util.log import LOG
 from mycroft.messagebus.message import Message
 from mycroft.tts.remote_tts import RemoteTTSException
@@ -49,23 +47,24 @@ def handle_speak(event):
     # if the message is targeted and audio is not the target don't
     # don't synthezise speech
     event.context = event.context or {}
-    if event.context.get('destination') and not \
-            ('debug_cli' in event.context['destination'] or
-             'audio' in event.context['destination']):
+    if event.context.get("destination") and not (
+        "debug_cli" in event.context["destination"]
+        or "audio" in event.context["destination"]
+    ):
         return
 
     # Get conversation ID
-    if event.context and 'ident' in event.context:
-        ident = event.context['ident']
+    if event.context and "ident" in event.context:
+        ident = event.context["ident"]
     else:
-        ident = 'unknown'
+        ident = "unknown"
 
     start = time.time()  # Time of speech request
     with lock:
         stopwatch = Stopwatch()
         stopwatch.start()
-        utterance = event.data['utterance']
-        listen = event.data.get('expect_response', False)
+        utterance = event.data["utterance"]
+        listen = event.data.get("expect_response", False)
         # This is a bit of a hack for Picroft.  The analog audio on a Pi blocks
         # for 30 seconds fairly often, so we don't want to break on periods
         # (decreasing the chance of encountering the block).  But we will
@@ -74,8 +73,10 @@ def handle_speak(event):
         #
         # TODO: Remove or make an option?  This is really a hack, anyway,
         # so we likely will want to get rid of this when not running on Mimic
-        if (config.get('enclosure', {}).get('platform') != "picroft" and
-                len(re.findall('<[^>]*>', utterance)) == 0):
+        if (
+            config.get("enclosure", {}).get("platform") != "picroft"
+            and len(re.findall("<[^>]*>", utterance)) == 0
+        ):
             # Remove any whitespace present after the period,
             # if a character (only alpha) ends with a period
             # ex: A. Lincoln -> A.Lincoln
@@ -85,15 +86,17 @@ def handle_speak(event):
             #
             # utterance = re.sub(r'\b([A-za-z][\.])(\s+)', r'\g<1>', utterance)
 
-            chunks = re.split(r'(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\;|\?)\s',
-                              utterance)
+            chunks = re.split(
+                r"(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\;|\?)\s", utterance
+            )
             # Apply the listen flag to the last chunk, set the rest to False
-            chunks = [(chunks[i], listen if i == len(chunks) - 1 else False)
-                      for i in range(len(chunks))]
+            chunks = [
+                (chunks[i], listen if i == len(chunks) - 1 else False)
+                for i in range(len(chunks))
+            ]
             for chunk, listen in chunks:
                 # Check if somthing has aborted the speech
-                if (_last_stop_signal > start or
-                        check_for_signal('buttonPress')):
+                if _last_stop_signal > start or check_for_signal("buttonPress"):
                     # Clear any newly queued speech
                     tts.playback.clear()
                     break
@@ -102,13 +105,17 @@ def handle_speak(event):
                 except KeyboardInterrupt:
                     raise
                 except Exception:
-                    LOG.error('Error in mute_and_speak', exc_info=True)
+                    LOG.error("Error in mute_and_speak", exc_info=True)
         else:
             mute_and_speak(utterance, ident, listen)
 
         stopwatch.stop()
-    report_timing(ident, 'speech', stopwatch, {'utterance': utterance,
-                                               'tts': tts.__class__.__name__})
+    report_timing(
+        ident,
+        "speech",
+        stopwatch,
+        {"utterance": utterance, "tts": tts.__class__.__name__},
+    )
 
 
 def mute_and_speak(utterance, ident, listen=False):
@@ -120,7 +127,7 @@ def mute_and_speak(utterance, ident, listen=False):
     """
     global tts_hash
     # update TTS object if configuration has changed
-    if tts_hash != hash(str(config.get('tts', ''))):
+    if tts_hash != hash(str(config.get("tts", ""))):
         global tts
         # Stop tts playback thread
         tts.playback.stop()
@@ -128,7 +135,7 @@ def mute_and_speak(utterance, ident, listen=False):
         # Create new tts instance
         tts = TTSFactory.create()
         tts.init(bus)
-        tts_hash = hash(str(config.get('tts', '')))
+        tts_hash = hash(str(config.get("tts", "")))
 
     LOG.debug("Listen=%s, Speak:%s" % (listen, utterance))
     try:
@@ -137,7 +144,7 @@ def mute_and_speak(utterance, ident, listen=False):
         LOG.error(e)
         mimic_fallback_tts(utterance, ident, listen)
     except Exception:
-        LOG.exception('TTS execution failed.')
+        LOG.exception("TTS execution failed.")
 
 
 def _get_mimic_fallback():
@@ -145,7 +152,7 @@ def _get_mimic_fallback():
     global mimic_fallback_obj
     if not mimic_fallback_obj:
         config = Configuration.get()
-        tts_config = config.get('tts', {}).get("mimic", {})
+        tts_config = config.get("tts", {}).get("mimic", {})
         lang = config.get("lang", "en-us")
         tts = Mimic(lang, tts_config)
         tts.validator.validate()
@@ -179,27 +186,14 @@ def handle_stop(event):
         tts.playback.clear()  # Clear here to get instant stop
         bus.emit(Message("mycroft.stop.handled", {"by": "TTS"}))
 
+
 def handle_pause(event):
     tts.playback.pause()
+
 
 def handle_resume(event):
     tts.playback.resume()
 
-def handle_skill_started(event):
-    """Handle start of a skill activity"""
-    # Clear TTS queue
-    tts.playback.clear()
-
-    skill_id = event.data.get("skill_id", "")
-    LOG.info('Cleared TTS queue for skill %s', skill_id)
-
-    # Play acknowledge beep
-    audio_file = resolve_resource_file(
-        config.get('sounds').get('acknowledge')
-    )
-
-    if audio_file:
-        play_wav(audio_file)
 
 def init(messagebus):
     """Start speech related handlers.
@@ -219,14 +213,14 @@ def init(messagebus):
 
     tts = TTSFactory.create()
     tts.init(bus)
-    tts_hash = hash(str(config.get('tts', '')))
+    tts_hash = hash(str(config.get("tts", "")))
 
-    bus.on('mycroft.stop', handle_stop)
-    bus.on('mycroft.audio.speech.stop', handle_stop)
-    bus.on('mycroft.audio.speech.pause', handle_pause)
-    bus.on('mycroft.audio.speech.resume', handle_resume)
-    bus.on('speak', handle_speak)
-    bus.on('skill.started', handle_skill_started)
+    bus.on("mycroft.stop", handle_stop)
+    bus.on("mycroft.audio.speech.stop", handle_stop)
+    bus.on("mycroft.audio.speech.pause", handle_pause)
+    bus.on("mycroft.audio.speech.resume", handle_resume)
+    bus.on("speak", handle_speak)
+
 
 def shutdown():
     """Shutdown the audio service cleanly.

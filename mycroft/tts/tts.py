@@ -21,6 +21,7 @@ from pathlib import Path
 from threading import Thread
 from time import time, sleep
 from warnings import warn
+from uuid import uuid4
 
 import os.path
 from os.path import dirname, exists, isdir, join
@@ -372,7 +373,10 @@ class TTS(metaclass=ABCMeta):
         chunks = [(chunks[i], listen if i == len(chunks) - 1 else False)
                   for i in range(len(chunks))]
 
-        for sentence, l in chunks:
+        session_id = str(uuid4())
+        num_chunks = len(chunks)
+
+        for chunk_idx, (sentence, l) in enumerate(chunks):
             sentence_hash = hash_sentence(sentence)
             if sentence_hash in self.cache:
                 audio_file, phoneme_file = self._get_sentence_from_cache(
@@ -414,9 +418,19 @@ class TTS(metaclass=ABCMeta):
                     audio_file, phoneme_file
                 )
             viseme = self.viseme(phonemes) if phonemes else None
-            self.queue.put(
-                (self.audio_ext, str(audio_file.path), viseme, ident, l)
-            )
+            # self.queue.put(
+            #     (self.audio_ext, str(audio_file.path), viseme, ident, l)
+            # )
+            #
+            # Ask audio user interface (AUI) to play
+            audio_uri = "file://" + str(audio_file.path)
+            self.bus.emit(Message("mycroft.tts.speak-chunk",
+                                  data={
+                                      "uri": audio_uri,
+                                      "session_id": session_id,
+                                      "chunk_index": chunk_idx,
+                                      "num_chunks": num_chunks
+                                  }))
 
     def _get_sentence_from_cache(self, sentence_hash):
         cached_sentence = self.cache.cached_sentences[sentence_hash]

@@ -43,8 +43,6 @@ from mycroft.session import SessionManager
 from mycroft.util import (
     check_for_signal,
     get_ipc_directory,
-    resolve_resource_file,
-    play_wav
 )
 from mycroft.util.log import LOG
 
@@ -648,24 +646,6 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         """
         return AudioData(raw_data, source.SAMPLE_RATE, source.SAMPLE_WIDTH)
 
-    # def mute_and_confirm_listening(self, source):
-    #     audio_file = resolve_resource_file(
-    #         self.config.get('sounds').get('start_listening'))
-    #     if audio_file:
-    #         if self.config.get('enclosure', {}).get('platform') == 'mycroft_mark_2':
-    #             # We have echo cancellation, so no need to wait
-    #             # source.mute()
-    #             play_wav(audio_file)
-    #             # source.unmute()
-    #         else:
-    #             # Mute and wait for audio file to play
-    #             source.mute()
-    #             play_wav(audio_file).wait()
-    #             source.unmute()
-
-    #         return True
-    #     else:
-    #         return False
 
     def listen(self, source, emitter, stream=None):
         """Listens for chunks of audio that Mycroft should perform STT on.
