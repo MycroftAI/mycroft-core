@@ -528,7 +528,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
 
     def trigger_listen(self):
         """Externally trigger listening."""
-        LOG.debug('Listen triggered from external source.')
+        LOG.info('Listen triggered from external source.')
         self._listen_triggered = True
 
     def _upload_wakeword(self, audio, metadata):

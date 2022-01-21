@@ -547,8 +547,9 @@ class MycroftSkill:
         dialog_exists = self.dialog_renderer.render(dialog, data)
         if dialog_exists:
             self.speak_dialog(dialog, data, expect_response=True, wait=True)
-        else:
-            self.bus.emit(Message('mycroft.mic.listen'))
+
+        self.bus.emit(Message('mycroft.mic.listen'))
+
         return self._wait_response(is_cancel, validator, on_fail_fn,
                                    num_retries)
 

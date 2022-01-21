@@ -71,7 +71,7 @@ class AudioUserInterface:
 
         self._bus_events = {
             "mycroft.stop": self.handle_mycroft_stop,
-            "recognizer_loop:wakeword": self.handle_start_listening,
+            "recognizer_loop:record_begin": self.handle_start_listening,
             "skill.started": self.handle_skill_started,
             "mycroft.audio.play-sound": self.handle_play_sound,
             "mycroft.tts.speak-chunk": self.handle_tts_chunk,
@@ -149,7 +149,6 @@ class AudioUserInterface:
         """Play sound when Mycroft is awoken"""
         self._ahal.stop_foreground(ForegroundChannel.SOUND)
         self._ahal.play_foreground(ForegroundChannel.SOUND, self._start_listening_uri)
-        LOG.info("Awake")
 
     def handle_skill_started(self, message):
         skill_id = message.data.get("skill_id")
