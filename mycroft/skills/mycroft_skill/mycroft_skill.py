@@ -42,7 +42,6 @@ from mycroft.messagebus.message import Message, dig_for_message
 from mycroft.metrics import report_metric
 from mycroft.util import (
     resolve_resource_file,
-    play_audio_file,
     camel_case_split
 )
 from mycroft.util.log import LOG
@@ -1260,9 +1259,8 @@ class MycroftSkill:
             LOG.warning("Could not find 'acknowledge' audio file!")
             return
 
-        process = play_audio_file(audio_file)
-        if not process:
-            LOG.warning("Unable to play 'acknowledge' audio file!")
+        uri = "file://{audio_file}"
+        self.play_sound_uri(uri)
 
     def init_dialog(self, root_directory):
         # If "<skill>/dialog/<lang>" exists, load from there.  Otherwise
@@ -1495,6 +1493,8 @@ class MycroftSkill:
         self.bus.emit(Message("skill.started", data={ "skill_id": self.skill_id, "activity_id": self._activity_id }))
         LOG.info("%s started (skill=%s, activity=%s)", self.name, self.skill_id, self._activity_id)
 
+        self.acknowledge()
+
     def activity_ended(self):
         """Indicate that a skill activity has ended.
 
@@ -1514,3 +1514,9 @@ class MycroftSkill:
             yield self._activity_id
         finally:
             self.activity_ended()
+
+    def play_sound_uri(self, uri: str):
+        self.bus.emit(Message(
+            "mycroft.audio.play-sound",
+            data={"uri": uri}
+        ))

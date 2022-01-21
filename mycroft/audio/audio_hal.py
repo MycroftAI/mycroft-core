@@ -30,33 +30,48 @@ class AudioHAL:
     """Audio hardware abstraction layer"""
 
     def __init__(
-        self,
-        bus: MessageBusClient,
-        fg_channels: typing.Iterable[str],
-        bg_channels: typing.Iterable[str],
+        self, fg_channels: typing.Iterable[str], bg_channels: typing.Iterable[str],
     ):
-        self.bus = bus
-
         self._fg_channels = list(fg_channels)
         self._bg_channels = list(bg_channels)
+
+        self._vlc = None
+
+        # Foreground channels use a standard media player
+        self._fg_players = {}
+
+        self._fg_media_ids: typing.Dict[str, typing.Optional[str]] = {}
+
+        # Background channels use a list media player
+        self._bg_players = {}
+
+        self._bg_media_ids: typing.Dict[str, typing.Optional[str]] = {}
+
+    def initialize(self, bus: MessageBusClient):
+        self.bus = bus
 
         self._vlc = vlc.Instance("--no-video")
 
         # Foreground channels use a standard media player
         self._fg_players = {
-            channel: self._vlc.media_player_new() for channel in fg_channels
+            channel: self._vlc.media_player_new() for channel in self._fg_channels
         }
 
-        self._fg_media_ids: typing.Dict[str, typing.Optional[str]] = {}
+        self._fg_media_ids = {}
 
         self._attach_fg_events()
 
         # Background channels use a list media player
         self._bg_players = {
-            channel: self._vlc.media_list_player_new() for channel in bg_channels
+            channel: self._vlc.media_list_player_new() for channel in self._bg_channels
         }
 
-        self._bg_media_ids: typing.Dict[str, typing.Optional[str]] = {}
+        self._bg_media_ids = {}
+
+    def shutdown(self):
+        self._vlc = None
+        self._fg_players = {}
+        self._bg_players = {}
 
     def _attach_fg_events(self):
         for fg_channel, fg_player in self._fg_players.items():

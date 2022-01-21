@@ -46,13 +46,12 @@ class TTSRequest:
 
 
 class AudioUserInterface:
-    def __init__(self, bus: MessageBusClient):
-        self.bus = bus
+    def __init__(self):
         self.config = Configuration.get()
         self.lock = threading.Lock()
 
         self._ahal = AudioHAL(
-            bus, fg_channels=DEFAULT_FOREGROUND, bg_channels=DEFAULT_BACKGROUND
+            fg_channels=DEFAULT_FOREGROUND, bg_channels=DEFAULT_BACKGROUND
         )
 
         self._start_listening_uri = "file://" + resolve_resource_file(
@@ -74,6 +73,7 @@ class AudioUserInterface:
             "mycroft.stop": self.handle_mycroft_stop,
             "recognizer_loop:wakeword": self.handle_start_listening,
             "skill.started": self.handle_skill_started,
+            "mycroft.audio.play-sound": self.handle_play_sound,
             "mycroft.tts.speak-chunk": self.handle_tts_chunk,
             "mycroft.audio.hal.media-finished": self.handle_media_finished,
             "mycroft.audio.service.play": self.handle_stream_play,
@@ -82,8 +82,11 @@ class AudioUserInterface:
             "mycroft.audio.service.stop": self.handle_stream_stop,
         }
 
-    def initialize(self):
+    def initialize(self, bus: MessageBusClient):
         """Initializes the service"""
+        self.bus = bus
+        self._ahal.initialize(self.bus)
+
         self._speech_queue = queue.Queue()
         self._speech_thread = threading.Thread(target=self._speech_run, daemon=True)
         self._speech_thread.start()
@@ -111,6 +114,8 @@ class AudioUserInterface:
                 self._speech_queue.put(None)
                 self._speech_thread.join()
                 self._speech_thread = None
+
+            self._ahal.shutdown()
         except Exception:
             LOG.exception("error shutting down")
 
@@ -132,16 +137,20 @@ class AudioUserInterface:
 
     # -------------------------------------------------------------------------
 
+    def handle_play_sound(self, message):
+        uri = message.data.get("uri")
+
+        if uri:
+            self._ahal.stop_foreground(ForegroundChannel.SOUND)
+            self._ahal.play_foreground(ForegroundChannel.SOUND, uri)
+            LOG.info("Played sound: %s", uri)
+
     def handle_start_listening(self, _message):
         """Play sound when Mycroft is awoken"""
         self._ahal.stop_foreground(ForegroundChannel.SOUND)
         self._ahal.play_foreground(ForegroundChannel.SOUND, self._start_listening_uri)
 
     def handle_skill_started(self, message):
-        """Play sound when a skill activity begins"""
-        self._ahal.stop_foreground(ForegroundChannel.SOUND)
-        self._ahal.play_foreground(ForegroundChannel.SOUND, self._acknowledge_uri)
-
         skill_id = message.data.get("skill_id")
         if skill_id != self._last_skill_id:
             LOG.info("Clearing TTS cache for skill: %s", skill_id)

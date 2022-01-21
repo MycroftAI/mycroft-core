@@ -55,8 +55,8 @@ def main(ready_hook=on_ready, error_hook=on_error, stopping_hook=on_stopping):
     status = ProcessStatus('audio', bus, callbacks)
     status.set_started()
     try:
-        aui = AudioUserInterface(bus)
-        aui.initialize()
+        aui = AudioUserInterface()
+        aui.initialize(bus)
 
         speech.init(bus)
     except Exception as e:
