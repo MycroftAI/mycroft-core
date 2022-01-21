@@ -149,6 +149,7 @@ class AudioUserInterface:
         """Play sound when Mycroft is awoken"""
         self._ahal.stop_foreground(ForegroundChannel.SOUND)
         self._ahal.play_foreground(ForegroundChannel.SOUND, self._start_listening_uri)
+        LOG.info("Awake")
 
     def handle_skill_started(self, message):
         skill_id = message.data.get("skill_id")

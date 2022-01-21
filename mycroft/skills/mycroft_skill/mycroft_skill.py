@@ -1259,7 +1259,7 @@ class MycroftSkill:
             LOG.warning("Could not find 'acknowledge' audio file!")
             return
 
-        uri = "file://{audio_file}"
+        uri = f"file://{audio_file}"
         self.play_sound_uri(uri)
 
     def init_dialog(self, root_directory):
