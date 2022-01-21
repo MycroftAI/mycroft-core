@@ -65,6 +65,18 @@ class AudioUserInterface:
         self._speech_thread: typing.Optional[threading.Thead] = None
         self._speech_finished = threading.Event()
 
+        self._bus_events = {
+            "mycroft.stop": self.handle_mycroft_stop,
+            "recognizer_loop:wakeword": self.handle_start_listening,
+            "skill.started": self.handle_skill_started,
+            "mycroft.tts.speak-chunk": self.handle_tts_chunk,
+            "mycroft.audio.hal.media-finished": self.handle_media_finished,
+            "mycroft.audio.service.play": self.handle_stream_play,
+            "mycroft.audio.service.pause": self.handle_stream_pause,
+            "mycroft.audio.service.resume": self.handle_stream_resume,
+            "mycroft.audio.service.stop": self.handle_stream_stop,
+        }
+
     def initialize(self):
         """Initializes the service"""
         self._speech_queue = queue.Queue()
@@ -75,17 +87,8 @@ class AudioUserInterface:
 
     def _attach_events(self):
         """Adds bus event handlers"""
-        self.bus.on("recognizer_loop:wakeword", self.handle_start_listening)
-
-        self.bus.on("skill.started", self.handle_skill_started)
-        self.bus.on("mycroft.tts.speak-chunk", self.handle_tts_chunk)
-
-        self.bus.on("mycroft.audio.hal.media-finished", self.handle_media_finished)
-
-        self.bus.on("mycroft.audio.service.play", self.handle_play)
-        self.bus.on("mycroft.audio.service.pause", self.handle_pause)
-        self.bus.on("mycroft.audio.service.resume", self.handle_resume)
-        self.bus.on("mycroft.audio.service.stop", self.handle_stop)
+        for event_name, handler in self._bus_events.items():
+            self.bus.on(event_name, handler)
 
         # TODO: Handle mycroft.stop
 
@@ -104,25 +107,27 @@ class AudioUserInterface:
                 self._speech_thread.join()
                 self._speech_thread = None
         except Exception:
-            pass
+            LOG.exception("error shutting down")
 
     def _detach_events(self):
         """Removes bus event handlers"""
-        self.bus.remove("recognizer_loop:wakeword", self.handle_start_listening)
-
-        self.bus.remove("skill.started", self.handle_skill_started)
-        self.bus.remove("mycroft.tts.speak-chunk", self.handle_tts_chunk)
-
-        self.bus.remove("mycroft.audio.hal.media-finished", self.handle_media_finished)
-
-        self.bus.remove("mycroft.audio.service.play", self.handle_play)
-        self.bus.remove("mycroft.audio.service.pause", self.handle_pause)
-        self.bus.remove("mycroft.audio.service.resume", self.handle_resume)
-        self.bus.remove("mycroft.audio.service.stop", self.handle_stop)
+        for event_name, handler in self._bus_events.items():
+            self.bus.remove(event_name, handler)
 
     # -------------------------------------------------------------------------
 
-    def handle_start_listening(self, _message=None):
+    def handle_mycroft_stop(self, _message):
+        LOG.info("Stopping all audio")
+        self._drain_speech_queue()
+
+        self._ahal.stop_foreground(ForegroundChannel.SOUND)
+        self._ahal.stop_foreground(ForegroundChannel.SPEECH)
+
+        self._ahal.pause_background(BackgroundChannel.STREAM)
+
+    # -------------------------------------------------------------------------
+
+    def handle_start_listening(self, _message):
         """Play sound when Mycroft is awoken"""
         self._ahal.play_foreground(ForegroundChannel.SOUND, self._start_listening_uri)
 
@@ -132,6 +137,8 @@ class AudioUserInterface:
 
         skill_id = message.data.get("skill_id")
         if skill_id != self._last_skill_id:
+            LOG.info("Clearing TTS cache for skill: %s", skill_id)
+
             self._drain_speech_queue()
 
             # Stop TTS speaking
@@ -160,6 +167,8 @@ class AudioUserInterface:
             uri=uri, session_id=session_id, is_last_chunk=is_last_chunk
         )
         self._speech_queue.put(request)
+
+        LOG.info("Queued TTS chunk %s/%s: %s", chunk_index + 1, num_chunks, uri)
 
     def handle_media_finished(self, message):
         channel = message.data.get("channel")
@@ -195,12 +204,14 @@ class AudioUserInterface:
                     # This check will clear the "signal"
                     check_for_signal("isSpeaking")
 
+                    LOG.info("TTS session finished: %s", request.session_id)
+
         except Exception:
             LOG.exception("error is speech thread")
 
     # -------------------------------------------------------------------------
 
-    def handle_play(self, message):
+    def handle_stream_play(self, message):
         tracks = message.data.get("tracks", [])
         if not tracks:
             LOG.warning("Play message received with not tracks: %s", message.data)
@@ -216,17 +227,20 @@ class AudioUserInterface:
                 uri = next(iter(track))
                 uri_playlist.append(uri)
 
-        LOG.info("Playing %s", uri_playlist)
+        # Stop previous stream
+        self._ahal.stop_background(BackgroundChannel.STREAM)
+
+        LOG.info("Playing background stream: %s", uri_playlist)
         self._ahal.start_background(BackgroundChannel.STREAM, uri_playlist=uri_playlist)
 
-    def handle_pause(self, _message):
-        LOG.debug("Pausing background")
+    def handle_stream_pause(self, _message):
+        LOG.debug("Pausing background stream")
         self._ahal.pause_background(BackgroundChannel.STREAM)
 
-    def handle_resume(self, _message):
-        LOG.debug("Resuming background")
+    def handle_stream_resume(self, _message):
+        LOG.debug("Resuming background stream")
         self._ahal.resume_background(BackgroundChannel.STREAM)
 
-    def handle_stop(self, _message):
-        LOG.info("Stopping background")
-        self._ahal.stop_background(BackgroundChannel.STREAM)
+    def handle_stream_stop(self, _message):
+        LOG.info("Stopping background stream")
+        self._ahal.pause_background(BackgroundChannel.STREAM)
