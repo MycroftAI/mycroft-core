@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import queue
 import threading
+import time
 import typing
 from collections import deque
 from dataclasses import dataclass
@@ -57,6 +58,49 @@ class TTSRequest:
         return self.chunk_index >= (self.num_chunks - 1)
 
 
+class RepeatingTimer(threading.Thread):
+    def __init__(self, interval: float, function):
+        self.interval = interval
+        self.function = function
+        self.cancelled = False
+
+        super().__init__()
+
+    def cancel(self):
+        self.cancelled = True
+
+    def start(self):
+        self.cancelled = False
+        super().start()
+
+    def run(self):
+        seconds_to_wait = self.interval
+
+        while True:
+            if self.cancelled:
+                break
+
+            time.sleep(seconds_to_wait)
+
+            if self.cancelled:
+                break
+
+            start_time = time.time()
+
+            try:
+                self.function()
+            except:
+                LOG.exception("timer")
+
+            end_time = time.time()
+
+            if self.cancelled:
+                break
+
+            seconds_elapsed = end_time - start_time
+            seconds_to_wait = max(0, self.interval - seconds_elapsed)
+
+
 # -----------------------------------------------------------------------------
 
 
@@ -77,12 +121,9 @@ class AudioUserInterface:
             self.config["sounds"]["start_listening"]
         )
 
-        self._acknowledge_uri = "file://" + resolve_resource_file(
-            self.config["sounds"]["acknowledge"]
-        )
-
         self._last_skill_id: typing.Optional[str] = None
-        # self._tts_session_id: typing.Optional[str] = None
+
+        self._bg_position_timer = RepeatingTimer(1.0, self.send_stream_position)
 
         self._speech_queue = queue.Queue()
         self._speech_thread: typing.Optional[threading.Thead] = None
@@ -112,6 +153,8 @@ class AudioUserInterface:
         self._speech_thread = threading.Thread(target=self._speech_run, daemon=True)
         self._speech_thread.start()
 
+        self._bg_position_timer.start()
+
         self._attach_events()
 
     def _attach_events(self):
@@ -124,6 +167,8 @@ class AudioUserInterface:
     def shutdown(self):
         """Shuts down the service"""
         try:
+            self._bg_position_timer.cancel()
+
             self._detach_events()
 
             # Stop text to speech
@@ -334,3 +379,11 @@ class AudioUserInterface:
         # Don't ever actually stop the background stream.
         # This lets us resume it later at any point.
         self._ahal.pause_background(BackgroundChannel.STREAM)
+
+    def send_stream_position(self):
+        """Sends out background stream position to skills"""
+        position = self._ahal.get_background_position(BackgroundChannel.STREAM)
+        if position >= 0:
+            self.bus.emit(
+                Message("mycroft.audio.service.position", data={"position": position})
+            )

@@ -213,3 +213,9 @@ class AudioHAL:
         assert channel in self._bg_players, f"No player for channel: {channel}"
         list_player = self._bg_players[channel]
         list_player.get_media_player().audio_set_volume(volume)
+
+    def get_background_position(self, channel: str) -> float:
+        """Get media position for a background channel"""
+        assert channel in self._bg_players, f"No player for channel: {channel}"
+        list_player = self._bg_players[channel]
+        return list_player.get_media_player().get_position()
