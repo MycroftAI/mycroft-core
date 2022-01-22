@@ -269,13 +269,13 @@ class IntentService:
         self.wakeword_found = True
 
     def getPoints(self):
-        pointsFile = open("/home/leonhermann/.config/mycroft/skills/Judgealexa/scoreFile.txt", "r")
+        pointsFile = open("./scoreFile.txt", "r")
         points = pointsFile.read()
         pointsFile.close()
         return int(points)
 
     def setPoints(self, number):
-        pointsFile = open("/home/leonhermann/.config/mycroft/skills/Judgealexa/scoreFile.txt", "w+")
+        pointsFile = open("./scoreFile.txt", "w+")
         pointsFile.write(str(number))
         pointsFile.close()
 
@@ -303,8 +303,8 @@ class IntentService:
             message (Message): The messagebus data
         """
 
-        # /home/leonhermann/.config/mycroft/skills/Judgealexa/scoreFile.txt
-        # /home/leonhermann/.config/mycroft/skills/Judgealexa/utterances.txt
+        # ./scoreFile.txt
+        # ./utterances.txt
 
         try:
             lang = _get_message_lang(message)
@@ -334,7 +334,6 @@ class IntentService:
             ]
 
             points = self.getPoints()
-
             sentiment = analyze(utterances[0], self.classifier)
 
             if "NEGATIVE" in str(sentiment[0]):
@@ -342,7 +341,7 @@ class IntentService:
 
             t = time.localtime()
             current_time = time.strftime("%d.%m.%Y %H:%M:%S", t)
-            utteranceFile = open("/home/leonhermann/.config/mycroft/skills/Judgealexa/utterances.txt", "a")
+            utteranceFile = open("./utterances.txt", "a")
             utteranceFile.write(f"{utterances[0]},{current_time},{sentiment}\n")
             utteranceFile.close()
 
@@ -360,7 +359,7 @@ class IntentService:
                 self.bus.emit(taskbot_reply)
 
             if match:
-                if match.intent_type == "taskbot-skill:animalTask":
+                if match.intent_type == "taskbot-skill:task":
                     reply = message.reply(match.intent_type, match.intent_data) 
                     reply.data["utterances"] = utterances
                     self.bus.emit(reply)
@@ -381,7 +380,7 @@ class IntentService:
                             self.bus.emit(reply)
 
                 elif self.wakeword_found:
-                    LOG.info("score too low")
+                    LOG.info("Score too low!")
                     data = {
                         "utterances" : ['hcslewreduaK'],
                         "lang" : 'en-US',
@@ -394,6 +393,8 @@ class IntentService:
                     taskbot_reply = newMsg.reply(judgealexa_intent.intent_type, judgealexa_intent.intent_data)
                     self.bus.emit(taskbot_reply)
                     LOG.info("done")
+                else:
+                    LOG.info("Can't answer at this time")
             else:
                 # Nothing was able to handle the intent
                 # Ask politely for forgiveness for failing in this vital task

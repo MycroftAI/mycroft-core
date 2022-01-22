@@ -26,6 +26,9 @@ doc/_build/
 .theia
 .venv/
 
+utterances.txt
+scoreFile.txt
+
 # Created by unit tests
 test/unittests/skills/test_skill/settings.json
 test_conf.json
