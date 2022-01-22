@@ -63,6 +63,7 @@ def main(ready_hook=on_ready, error_hook=on_error, stopping_hook=on_stopping):
         LOG.exception("loading audio service")
         status.set_error(e)
     else:
+        bus.emit(Message("audio.initialize.ended"))
         status.set_ready()
         wait_for_exit_signal()
         status.set_stopping()
