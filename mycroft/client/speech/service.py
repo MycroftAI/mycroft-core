@@ -188,7 +188,7 @@ class SpeechClient(Thread):
     def handle_open(self):
         # TODO: Move this into the Enclosure (not speech client)
         # Reset the UI to indicate ready for speech processing
-        EnclosureAPI(bus).reset()
+        EnclosureAPI(self.bus).reset()
 
     def connect_loop_events(self):
         self.loop.on('recognizer_loop:utterance', self.handle_utterance)
@@ -230,6 +230,3 @@ class SpeechClient(Thread):
             self.status.set_error(e)
         self.status.set_stopping()
 
-
-if __name__ == "__main__":
-    main()
