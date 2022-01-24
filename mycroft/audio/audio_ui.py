@@ -1,11 +1,15 @@
 #!/usr/bin/env python3
 import queue
+import shlex
+import subprocess
+import tempfile
 import threading
 import time
 import typing
 from collections import deque
 from dataclasses import dataclass
 from enum import Enum
+from pathlib import Path
 
 from mycroft.configuration import Configuration
 from mycroft.messagebus import Message
@@ -19,7 +23,6 @@ from .audio_hal import AudioHAL
 class ForegroundChannel(str, Enum):
     """Available foreground channels (sound effects, TTS)"""
 
-    SOUND = "sound"
     SPEECH = "speech"
 
 
@@ -32,6 +35,9 @@ class BackgroundChannel(str, Enum):
 # Channel names
 DEFAULT_FOREGROUND = [channel.value for channel in ForegroundChannel]
 DEFAULT_BACKGROUND = [channel.value for channel in BackgroundChannel]
+
+# Fixed sample rate for sound effects
+EFFECT_SAMPLE_RATE = 48000  # Hz
 
 
 # -----------------------------------------------------------------------------
@@ -59,6 +65,8 @@ class TTSRequest:
 
 
 class RepeatingTimer(threading.Thread):
+    """Repeatedly calls a function at a fixed interval in a separate thread"""
+
     def __init__(self, interval: float, function):
         self.interval = interval
         self.function = function
@@ -97,6 +105,7 @@ class RepeatingTimer(threading.Thread):
             if self.cancelled:
                 break
 
+            # Take run time of function into account to avoid drift
             seconds_elapsed = end_time - start_time
             seconds_to_wait = max(0, self.interval - seconds_elapsed)
 
@@ -113,12 +122,25 @@ class AudioUserInterface:
     def __init__(self):
         self.config = Configuration.get()
 
+        play_wav_command = shlex.split(self.config["play_wav_cmdline"])
+
         self._ahal = AudioHAL(
-            fg_channels=DEFAULT_FOREGROUND, bg_channels=DEFAULT_BACKGROUND
+            foreground_channels=DEFAULT_FOREGROUND,
+            background_channels=DEFAULT_BACKGROUND,
+            effect_command=play_wav_command,
         )
+
+        self._cache_dir: typing.Optional[tempfile.TemporaryDirectory] = None
+
+        # uri -> Path
+        self._effect_paths: typing.Dict[str, Path] = {}
 
         self._start_listening_uri = "file://" + resolve_resource_file(
             self.config["sounds"]["start_listening"]
+        )
+
+        self._acknowledge_uri = "file://" + resolve_resource_file(
+            self.config["sounds"]["acknowledge"]
         )
 
         self._last_skill_id: typing.Optional[str] = None
@@ -149,6 +171,17 @@ class AudioUserInterface:
         self.bus = bus
         self._ahal.initialize(self.bus)
 
+        # Cache for sound effects.
+        # We convert them to WAV files with the appropriate sample rate.
+        self._cleanup_effect_cache()
+        self._cache_dir = tempfile.TemporaryDirectory(prefix="mycroft-audio-cache")
+        self._effect_paths = {}
+
+        # Pre-cache sound effects
+        self._get_or_cache_uri(self._start_listening_uri)
+        self._get_or_cache_uri(self._acknowledge_uri)
+
+        # TTS queue/thread
         self._speech_queue = queue.Queue()
         self._speech_thread = threading.Thread(target=self._speech_run, daemon=True)
         self._speech_thread.start()
@@ -180,8 +213,16 @@ class AudioUserInterface:
                 self._speech_thread = None
 
             self._ahal.shutdown()
+
+            self._cleanup_effect_cache()
         except Exception:
             LOG.exception("error shutting down")
+
+    def _cleanup_effect_cache(self):
+        """Delete sound effect cache"""
+        if self._cache_dir is not None:
+            self._cache_dir.cleanup()
+            self._cache_dir = None
 
     def _detach_events(self):
         """Removes bus event handlers"""
@@ -196,7 +237,6 @@ class AudioUserInterface:
         self._drain_speech_queue()
 
         # Stop foreground channels
-        self._ahal.stop_foreground(ForegroundChannel.SOUND)
         self._ahal.stop_foreground(ForegroundChannel.SPEECH)
 
         # Don't ever actually stop the background stream.
@@ -218,31 +258,46 @@ class AudioUserInterface:
     def handle_play_sound(self, message):
         """Handler for skills' play_sound_uri"""
         uri = message.data.get("uri")
-
-        if uri:
-            self._ahal.stop_foreground(ForegroundChannel.SOUND)
-
-            # Request media duration to force parsing of media upfront.
-            #
-            # This seems to avoid the race condition where VLC finishes
-            # "playing" the sound before parsing it.
-            duration_ms = self._ahal.play_foreground(
-                ForegroundChannel.SOUND, uri, return_duration=True
-            )
-            LOG.info("Played sound: %s (%s ms)", uri, duration_ms)
+        self._play_effect(uri)
 
     def handle_start_listening(self, _message):
         """Play sound when Mycroft begins recording a command"""
-        self._ahal.stop_foreground(ForegroundChannel.SOUND)
 
-        # Request media duration to force parsing of media upfront.
-        #
-        # This seems to avoid the race condition where VLC finishes
-        # "playing" the sound before parsing it.
-        duration_ms = self._ahal.play_foreground(
-            ForegroundChannel.SOUND, self._start_listening_uri, return_duration=True
-        )
-        LOG.info("Played start listening sound (%s ms)", duration_ms)
+        self._play_effect(self._start_listening_uri)
+
+    def _get_or_cache_uri(self, uri: str) -> str:
+        """Gets file path for uri, transcoding/caching as WAV if necessary"""
+        file_path = self._effect_paths.get(uri)
+        if file_path is None:
+            # Transcode and cache WAV to temporary file
+            with tempfile.NamedTemporaryFile(
+                mode="wb", dir=self._cache_dir.name, suffix=".wav", delete=False
+            ) as cache_file:
+                file_path = cache_file.name
+                LOG.info("Caching %s to %s", uri, file_path)
+
+                # Use VLC to transcode
+                subprocess.check_call(
+                    [
+                        "vlc",
+                        "-I",
+                        "dummy",
+                        "--sout",
+                        f"#transcode{{acodec=s16l,samplerate=48000,channels=1}}:std{{access=file,mux=wav,dst={file_path}}}",
+                        str(uri),
+                        "vlc://quit",
+                    ]
+                )
+                self._effect_paths[uri] = file_path
+
+        return file_path
+
+    def _play_effect(self, uri: str):
+        """Play sound effect from uri"""
+        if uri:
+            file_path = self._get_or_cache_uri(uri)
+            self._ahal.play_effect(file_path)
+            LOG.info("Played sound: %s", uri)
 
     def handle_skill_started(self, message):
         """Handler for skills' activity_started"""
