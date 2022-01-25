@@ -154,9 +154,19 @@ class AudioHAL:
 
     def shutdown(self):
         """Delete VLC object and media players"""
-        self._vlc = None
+        for player in self._fg_players.values():
+            player.release()
+
         self._fg_players = {}
+
+        for list_player in self._bg_players.values():
+            list_player.release()
+
         self._bg_players = {}
+
+        if self._vlc is not None:
+            self._vlc.release()
+            self._vlc = None
 
     # -------------------------------------------------------------------------
     # Effects
@@ -193,6 +203,8 @@ class AudioHAL:
             media.parse()
             duration_ms = media.get_duration()
 
+
+        player.stop()
         player.set_media(media)
         player.play()
 
@@ -226,6 +238,7 @@ class AudioHAL:
             media = self._vlc.media_new(uri)
             playlist.add_media(media)
 
+        list_player.stop()
         list_player.set_media_list(playlist)
         list_player.play()
 

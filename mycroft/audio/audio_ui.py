@@ -58,6 +58,11 @@ class TTSRequest:
     session_id: str
     chunk_index: int
     num_chunks: int
+    listen: bool = False
+
+    @property
+    def is_first_chunk(self):
+        return self.chunk_index <= 0
 
     @property
     def is_last_chunk(self):
@@ -245,13 +250,14 @@ class AudioUserInterface:
 
     def handle_duck_volume(self, _message):
         """Lower TTS and background stream volumes during voice commands"""
-        self._ahal.set_foreground_volume(ForegroundChannel.SPEECH, 50)
+        self._ahal.stop_foreground(ForegroundChannel.SPEECH)
         self._ahal.set_background_volume(BackgroundChannel.STREAM, 50)
+        LOG.info("Ducked volume")
 
     def handle_unduck_volume(self, _message):
         """Restore volumes after voice commands"""
-        self._ahal.set_foreground_volume(ForegroundChannel.SPEECH, 100)
         self._ahal.set_background_volume(BackgroundChannel.STREAM, 100)
+        LOG.info("Unducked volume")
 
     # -------------------------------------------------------------------------
 
@@ -324,12 +330,14 @@ class AudioUserInterface:
         session_id = message.data.get("session_id", "")
         chunk_index = message.data.get("chunk_index", 0)
         num_chunks = message.data.get("num_chunks", 1)
+        listen = message.data.get("listen", False)
 
         request = TTSRequest(
             uri=uri,
             session_id=session_id,
             chunk_index=chunk_index,
             num_chunks=num_chunks,
+            listen=listen,
         )
         self._speech_queue.put(request)
 
@@ -350,6 +358,9 @@ class AudioUserInterface:
                 if request is None:
                     break
 
+                if request.is_first_chunk:
+                    self.bus.emit(Message("recognizer_loop:audio_output_start"))
+
                 # Play TTS chunk
                 self._speech_finished.clear()
                 duration_ms = self._ahal.play_foreground(
@@ -365,11 +376,11 @@ class AudioUserInterface:
                     request.session_id,
                 )
 
-                # Wait at most a second after audio should have finished.
+                # Wait at most a half a second after audio should have finished.
                 #
                 # This is done in case VLC fails to inform us that the media
                 # item has finished playing.
-                timeout = 1 + (duration_ms / 1000)
+                timeout = 0.5 + (duration_ms / 1000)
                 self._speech_finished.wait(timeout=timeout)
 
                 if request.is_last_chunk:
@@ -380,6 +391,10 @@ class AudioUserInterface:
                             data={"session_id": request.session_id},
                         )
                     )
+
+                    self.bus.emit(Message("recognizer_loop:audio_output_end"))
+                    if request.listen:
+                        self.bus.emit(Message("mycroft.mic.listen"))
 
                     # This check will clear the "signal"
                     check_for_signal("isSpeaking")
@@ -415,6 +430,7 @@ class AudioUserInterface:
         self._ahal.stop_background(BackgroundChannel.STREAM)
 
         LOG.info("Playing background stream: %s", uri_playlist)
+        self._ahal.set_background_volume(BackgroundChannel.STREAM, 100)
         self._ahal.start_background(BackgroundChannel.STREAM, uri_playlist=uri_playlist)
 
     def handle_stream_pause(self, _message):

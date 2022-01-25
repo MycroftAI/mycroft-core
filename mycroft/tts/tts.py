@@ -429,7 +429,8 @@ class TTS(metaclass=ABCMeta):
                                       "uri": audio_uri,
                                       "session_id": session_id,
                                       "chunk_index": chunk_idx,
-                                      "num_chunks": num_chunks
+                                      "num_chunks": num_chunks,
+                                      "listen": listen,
                                   }))
 
     def _get_sentence_from_cache(self, sentence_hash):
