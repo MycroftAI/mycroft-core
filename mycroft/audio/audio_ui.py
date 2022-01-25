@@ -349,6 +349,10 @@ class AudioUserInterface:
         if channel == ForegroundChannel.SPEECH:
             # Signal speech thread to play next TTS chunk
             self._speech_finished.set()
+        elif channel == BackgroundChannel.STREAM:
+            # Signal background stream complete
+            LOG.info("Background stream finished")
+            self.bus.emit(Message("mycroft.audio.queue_end"))
 
     def _speech_run(self):
         """Thread proc for text to speech"""

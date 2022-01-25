@@ -108,6 +108,8 @@ class AudioHAL:
 
         self._bg_media_ids = {}
 
+        self._attach_bg_events()
+
     def _attach_fg_events(self):
         """Listen for 'end reached' events in foreground media players"""
         for fg_channel, fg_player in self._fg_players.items():
@@ -120,15 +122,13 @@ class AudioHAL:
     # NOTE: Cannot include type hints here because of vlc
     def _fg_media_finished(self, channel, _event):
         """Callback when foreground media item is finished playing"""
-        media_id = self._fg_media_ids.get(channel)
-
-        if media_id is not None:
-            self.bus.emit(
-                Message(
-                    "mycroft.audio.hal.media-finished",
-                    data={"channel": channel, "media_id": media_id},
-                )
+        media_id = self._fg_media_ids.pop(channel, "")
+        self.bus.emit(
+            Message(
+                "mycroft.audio.hal.media-finished",
+                data={"channel": channel, "background": False, "media_id": media_id},
             )
+        )
 
     def _attach_bg_events(self):
         """Listen for 'player played' events in background media players"""
@@ -142,15 +142,13 @@ class AudioHAL:
     # NOTE: Cannot include type hints here because of vlc
     def _bg_media_finished(self, channel, _event):
         """Callback when background playlist is finished playing"""
-        media_id = self._bg_media_ids.get(channel)
-
-        if media_id is not None:
-            self.bus.emit(
-                Message(
-                    "mycroft.audio.hal.media-finished",
-                    data={"channel": channel, backgroud: True, "media_id": media_id},
-                )
+        media_id = self._bg_media_ids.pop(channel, "")
+        self.bus.emit(
+            Message(
+                "mycroft.audio.hal.media-finished",
+                data={"channel": channel, "background": True, "media_id": media_id},
             )
+        )
 
     def shutdown(self):
         """Delete VLC object and media players"""
@@ -184,7 +182,11 @@ class AudioHAL:
     # -------------------------------------------------------------------------
 
     def play_foreground(
-        self, channel: Channel, uri: str, return_duration: bool = False
+        self,
+        channel: Channel,
+        uri: str,
+        media_id: typing.Optional[MediaId] = None,
+        return_duration: bool = False,
     ) -> typing.Optional[int]:
         """Play a URI on a foreground channel.
 
@@ -203,9 +205,10 @@ class AudioHAL:
             media.parse()
             duration_ms = media.get_duration()
 
-
         player.stop()
         player.set_media(media)
+
+        self._fg_media_ids[channel] = media_id
         player.play()
 
         return duration_ms
@@ -216,6 +219,7 @@ class AudioHAL:
 
         player = self._fg_players[channel]
         player.stop()
+        self._fg_media_ids.pop(channel, None)
 
     def set_foreground_volume(self, channel: Channel, volume: int):
         """Set volume of a foreground channel"""
@@ -227,7 +231,12 @@ class AudioHAL:
     # Background
     # -------------------------------------------------------------------------
 
-    def start_background(self, channel: Channel, uri_playlist: typing.Iterable[str]):
+    def start_background(
+        self,
+        channel: Channel,
+        uri_playlist: typing.Iterable[str],
+        media_id: typing.Optional[MediaId] = None,
+    ):
         """Start a playlist playing on a background channel"""
         assert channel in self._bg_players, f"No player for channel: {channel}"
         list_player = self._bg_players[channel]
@@ -240,6 +249,8 @@ class AudioHAL:
 
         list_player.stop()
         list_player.set_media_list(playlist)
+
+        self._bg_media_ids[channel] = media_id
         list_player.play()
 
     def stop_background(self, channel: Channel):
