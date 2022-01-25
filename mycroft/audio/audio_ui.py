@@ -154,6 +154,7 @@ class AudioUserInterface:
 
         self._speech_queue = queue.Queue()
         self._speech_thread: typing.Optional[threading.Thead] = None
+        self._tts_session_id: typing.Optional[str] = None
         self._speech_finished = threading.Event()
 
         self._bus_events = {
@@ -346,9 +347,12 @@ class AudioUserInterface:
     def handle_media_finished(self, message):
         """Callback when VLC media item has finished playing"""
         channel = message.data.get("channel")
+        media_id = message.data.get("media_id")
+
         if channel == ForegroundChannel.SPEECH:
-            # Signal speech thread to play next TTS chunk
-            self._speech_finished.set()
+            if media_id == self._tts_session_id:
+                # Signal speech thread to play next TTS chunk
+                self._speech_finished.set()
         elif channel == BackgroundChannel.STREAM:
             # Signal background stream complete
             LOG.info("Background stream finished")
@@ -362,13 +366,18 @@ class AudioUserInterface:
                 if request is None:
                     break
 
+                self._tts_session_id = request.session_id
+
                 if request.is_first_chunk:
                     self.bus.emit(Message("recognizer_loop:audio_output_start"))
 
                 # Play TTS chunk
                 self._speech_finished.clear()
                 duration_ms = self._ahal.play_foreground(
-                    ForegroundChannel.SPEECH, request.uri, return_duration=True
+                    ForegroundChannel.SPEECH,
+                    request.uri,
+                    media_id=request.session_id,
+                    return_duration=True,
                 )
 
                 assert duration_ms is not None
@@ -457,8 +466,10 @@ class AudioUserInterface:
 
     def send_stream_position(self):
         """Sends out background stream position to skills"""
-        position = self._ahal.get_background_position(BackgroundChannel.STREAM)
-        if position >= 0:
+        position_ms = self._ahal.get_background_time(BackgroundChannel.STREAM)
+        if position_ms >= 0:
             self.bus.emit(
-                Message("mycroft.audio.service.position", data={"position": position})
+                Message(
+                    "mycroft.audio.service.position", data={"position_ms": position_ms}
+                )
             )
