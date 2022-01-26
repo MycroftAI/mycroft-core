@@ -25,6 +25,7 @@ from behave import given, when, then
 
 from mycroft.messagebus import Message
 from mycroft.audio import wait_while_speaking
+from mycroft.util.format import expand_options
 
 from test.integrationtests.voight_kampff import (mycroft_responses, then_wait,
                                                  then_wait_fail)
@@ -45,8 +46,14 @@ def load_dialog_file(dialog_path):
     """Load dialog files and get the contents."""
     with open(dialog_path) as f:
         lines = f.readlines()
-    return [l.strip().lower() for l in lines
-            if l.strip() != '' and l.strip()[0] != '#']
+
+    # Expand parentheses in lines
+    expanded_lines = []
+    for line in lines:
+        expanded_lines += expand_options(line)
+
+    return [line.strip().lower() for line in expanded_lines
+            if line.strip() != '' and line.strip()[0] != '#']
 
 
 def load_dialog_list(skill_path, dialog):
