@@ -19,10 +19,12 @@ use with behave.
 from os.path import join, exists, basename
 from pathlib import Path
 import re
+from string import Formatter
 import time
 
 from behave import given, when, then
 
+from mycroft.dialog import MustacheDialogRenderer
 from mycroft.messagebus import Message
 from mycroft.audio import wait_while_speaking
 from mycroft.util.format import expand_options
@@ -44,14 +46,13 @@ def find_dialog(skill_path, dialog, lang):
 
 def load_dialog_file(dialog_path):
     """Load dialog files and get the contents."""
-    with open(dialog_path) as f:
-        lines = f.readlines()
-
-    # Expand parentheses in lines
+    renderer = MustacheDialogRenderer()
+    renderer.load_template_file('template', dialog_path)
     expanded_lines = []
-    for line in lines:
-        expanded_lines += expand_options(line)
-
+    for template in renderer.templates:
+        # Expand parentheses in lines
+        for line in renderer.templates[template]:
+            expanded_lines += expand_options(line)
     return [line.strip().lower() for line in expanded_lines
             if line.strip() != '' and line.strip()[0] != '#']
 
@@ -118,18 +119,25 @@ def dialog_from_sentence(sentence, skill_path, lang):
 def _match_dialog_patterns(dialogs, sentence):
     """Match sentence against a list of dialog patterns.
 
-    Returns index of found match.
+    dialogs (list of str): dialog file entries to match against
+    sentence (str): string to match.
+
+    Returns:
+        (tup) index of found match, debug text
     """
     # Allow custom fields to be anything
-    dialogs = [re.sub(r'{.*?\}', r'.*', dia) for dia in dialogs]
-    # Remove left over '}'
-    dialogs = [re.sub(r'\}', r'', dia) for dia in dialogs]
-    # Merge consequtive .*'s into a single .*
-    dialogs = [re.sub(r'\.\*( \.\*)+', r'.*', dia) for dia in dialogs]
-    # Remove double whitespaces
-    dialogs = ['^' + ' '.join(dia.split()) for dia in dialogs]
+    # i.e {field} gets turned into ".*"
+    regexes = []
+    for dialog in dialogs:
+        data = {element[1]: '.*'
+                for element in Formatter().parse(dialog)}
+        regexes.append(dialog.format(**data))
+
+    # Remove double whitespaces and ensure that it matches from
+    # the beginning of the line.
+    regexes = ['^' + ' '.join(reg.split()) for reg in regexes]
     debug = 'MATCHING: {}\n'.format(sentence)
-    for index, regex in enumerate(dialogs):
+    for index, regex in enumerate(regexes):
         match = re.match(regex, sentence)
         debug += '---------------\n'
         debug += '{} {}\n'.format(regex, match is not None)
