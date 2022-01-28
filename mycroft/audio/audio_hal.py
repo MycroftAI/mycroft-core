@@ -18,12 +18,15 @@ Used by the audio user interface (AUI) to play sound effects and streams.
 """
 import ctypes
 import functools
+import os
+import signal
 import subprocess
 import tempfile
 import threading
 import typing
 from pathlib import Path
 
+import numpy as np
 import sdl2
 import sdl2.sdlmixer as mixer
 
@@ -115,15 +118,21 @@ class AudioHAL:
         def bg_music_hook(udata, stream, length):
             if self._bg_paused or (self._bg_proc is None):
                 # Write silence
-                for i in range(length):
-                    stream[i] = 0
+                ctypes.memset(stream, 0, length)
             else:
                 if self._bg_proc.poll() is not None:
+                    # Stream finished
                     self.stop_background()
                     self._bg_finished()
                 else:
                     # Music data
                     data = self._bg_proc.stdout.read(length)
+
+                    if 0 <= self._bg_volume < 1:
+                        array = np.frombuffer(data, dtype=np.int16) * self._bg_volume
+                        data = array.astype(np.int16).tobytes()
+
+                    # ctypes.memset(stream, data, length)
                     for i in range(len(data)):
                         stream[i] = data[i]
 
@@ -164,7 +173,13 @@ class AudioHAL:
 
     def _stop_bg_process(self):
         if self._bg_proc is not None:
-            self._bg_proc.kill()
+            if self._bg_proc.poll() is None:
+                self._bg_proc.terminate()
+                try:
+                    self._bg_proc.communicate(timeout=0.5)
+                except subprocess.TimeoutExpired:
+                    self._bg_proc.kill()
+
             self._bg_proc = None
 
     def _bg_media_finished(self, channel, _event):
@@ -270,8 +285,16 @@ class AudioHAL:
         """Pause the background channel"""
         self._bg_paused = True
 
+        if self._bg_proc is not None:
+            # Pause process
+            os.kill(self._bg_proc.pid, signal.SIGSTOP)
+
     def resume_background(self):
         """Resume the background channel"""
+        if self._bg_proc is not None:
+            # Resume process
+            os.kill(self._bg_proc.pid, signal.SIGCONT)
+
         self._bg_paused = False
 
     def set_background_volume(self, volume: float):

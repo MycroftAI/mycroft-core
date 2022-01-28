@@ -239,14 +239,12 @@ class AudioUserInterface:
     def handle_duck_volume(self, _message):
         """Lower TTS and background stream volumes during voice commands"""
         self._ahal.stop_foreground(ForegroundChannel.SPEECH)
-        self._ahal.set_background_volume(0.5)
-        # self._ahal.pause_background()
+        self._ahal.set_background_volume(0.3)
         LOG.info("Ducked volume")
 
     def handle_unduck_volume(self, _message):
         """Restore volumes after voice commands"""
         self._ahal.set_background_volume(1.0)
-        # self._ahal.resume_background()
         LOG.info("Unducked volume")
 
     # -------------------------------------------------------------------------
