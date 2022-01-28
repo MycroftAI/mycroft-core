@@ -274,6 +274,7 @@ class AudioHAL:
         )
 
         self._bg_position = 0
+        self._bg_paused = False
         mixer.Mix_HookMusic(self._bg_music_hook, None)
 
         LOG.info("Playing background music")
