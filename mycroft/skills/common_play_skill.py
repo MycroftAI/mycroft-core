@@ -86,7 +86,7 @@ class CommonPlaySkill(MycroftSkill, ABC):
             self.add_event('play:stop', self.__handle_play_stop)
 
     def __handle_play_stop(self, message):
-        self.stop()
+        self.CPS_release_output_focus()
 
     def __handle_play_query(self, message):
         """Query skill if it can start playback from given phrase."""
@@ -199,13 +199,21 @@ class CommonPlaySkill(MycroftSkill, ABC):
         self.CPS_send_status(uri=args[0],
                              status=CPSTrackStatus.PLAYING_AUDIOSERVICE)
 
-    def stop(self):
+    def CPS_release_output_focus(self):
         """Stop anything playing on the audioservice."""
-        if self.audioservice.is_playing:
+        # audioservice gets confused sometimes 
+        # so we unconfuse it here
+        #if self.audioservice.is_playing:
+        # TODO fix me
+        if True:
             self.audioservice.stop()
             return True
         else:
             return False
+
+    def stop(self):
+        self.log.warning("Creepy Internal Error 102 - skill missing stop method")
+
 
     ######################################################################
     # Abstract methods

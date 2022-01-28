@@ -223,7 +223,6 @@ class AudioUserInterface:
 
     def handle_tts_stop(self, _message):
         """Called in response to a 'stop' command"""
-        LOG.info("Stopping all audio")
         self._drain_speech_queue()
 
         # Stop foreground channels
@@ -439,8 +438,6 @@ class AudioUserInterface:
 
     def handle_stream_stop(self, _message):
         """Handler for mycroft.audio.service.stop"""
-        LOG.info("Stopping background stream")
-
         # Don't ever actually stop the background stream.
         # This lets us resume it later at any point.
         self._ahal.pause_background()
