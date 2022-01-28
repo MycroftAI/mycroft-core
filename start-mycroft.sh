@@ -143,10 +143,10 @@ function launch-background() {
 
 function launch-all() {
     echo "Starting all mycroft-core services"
-    launch-background bus
+    #launch-background bus
     launch-background skills
     launch-background audio
-    launch-background voice
+    #launch-background voice
     launch-background enclosure
 }
 

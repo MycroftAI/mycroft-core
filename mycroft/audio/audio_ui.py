@@ -6,9 +6,8 @@ import tempfile
 import threading
 import time
 import typing
-from collections import deque
 from dataclasses import dataclass
-from enum import Enum, IntEnum
+from enum import IntEnum
 from pathlib import Path
 
 from mycroft.configuration import Configuration
@@ -93,7 +92,7 @@ class RepeatingTimer(threading.Thread):
 
             try:
                 self.function()
-            except:
+            except Exception:
                 LOG.exception("timer")
 
             end_time = time.time()
@@ -117,8 +116,6 @@ class AudioUserInterface:
 
     def __init__(self):
         self.config = Configuration.get()
-
-        play_wav_command = shlex.split(self.config["play_wav_cmdline"])
 
         self._ahal = AudioHAL()
 
@@ -145,7 +142,7 @@ class AudioUserInterface:
         self._speech_finished = threading.Event()
 
         self._bus_events = {
-            "mycroft.stop": self.handle_mycroft_stop,
+            "mycroft.tts.stop": self.handle_tts_stop,
             "recognizer_loop:record_begin": self.handle_start_listening,
             "mycroft.volume.duck": self.handle_duck_volume,
             "mycroft.volume.unduck": self.handle_unduck_volume,
@@ -224,17 +221,13 @@ class AudioUserInterface:
 
     # -------------------------------------------------------------------------
 
-    def handle_mycroft_stop(self, _message):
+    def handle_tts_stop(self, _message):
         """Called in response to a 'stop' command"""
         LOG.info("Stopping all audio")
         self._drain_speech_queue()
 
         # Stop foreground channels
         self._ahal.stop_foreground(ForegroundChannel.SPEECH)
-
-        # Don't ever actually stop the background stream.
-        # This lets us resume it later at any point.
-        self._ahal.pause_background()
 
     def handle_duck_volume(self, _message):
         """Lower TTS and background stream volumes during voice commands"""

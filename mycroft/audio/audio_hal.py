@@ -17,12 +17,10 @@
 Used by the audio user interface (AUI) to play sound effects and streams.
 """
 import ctypes
-import functools
 import os
 import signal
 import subprocess
 import tempfile
-import threading
 import typing
 from pathlib import Path
 
@@ -190,7 +188,7 @@ class AudioHAL:
             self.bus.emit(
                 Message(
                     "mycroft.audio.hal.media-finished",
-                    data={"channel": channel, backgroud: True, "media_id": media_id},
+                    data={"channel": channel, "background": True, "media_id": media_id},
                 )
             )
 
