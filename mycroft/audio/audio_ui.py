@@ -142,12 +142,14 @@ class AudioUserInterface:
         self._speech_finished = threading.Event()
 
         self._bus_events = {
-            "mycroft.tts.stop": self.handle_tts_stop,
             "recognizer_loop:record_begin": self.handle_start_listening,
+            "recognizer_loop:audio_output_start": self.handle_tts_started,
+            "recognizer_loop:audio_output_end": self.handle_tts_finished,
             "mycroft.volume.duck": self.handle_duck_volume,
             "mycroft.volume.unduck": self.handle_unduck_volume,
             "skill.started": self.handle_skill_started,
             "mycroft.audio.play-sound": self.handle_play_sound,
+            "mycroft.tts.stop": self.handle_tts_stop,
             "mycroft.tts.speak-chunk": self.handle_tts_chunk,
             "mycroft.audio.hal.media-finished": self.handle_media_finished,
             "mycroft.audio.service.play": self.handle_stream_play,
@@ -322,6 +324,14 @@ class AudioUserInterface:
         self._speech_queue.put(request)
 
         LOG.info("Queued TTS chunk %s/%s: %s", chunk_index + 1, num_chunks, uri)
+
+    def handle_tts_started(self, message):
+        # Duck music
+        self._ahal.set_background_volume(0.3)
+
+    def handle_tts_finished(self, message):
+        # Unduck music
+        self._ahal.set_background_volume(1.0)
 
     def handle_media_finished(self, message):
         """Callback when VLC media item has finished playing"""
