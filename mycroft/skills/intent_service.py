@@ -118,6 +118,9 @@ class IntentService:
         # Wakeword
         self.bus.on('recognizer_loop:wakeword', self.handle_wakeword_found)
 
+        # Energy Level
+        self.bus.on('energy_level:too_high', self.handle_high_noise)
+
         def add_active_skill_handler(message):
             self.add_active_skill(message.data['skill_id'])
 
@@ -279,6 +282,19 @@ class IntentService:
         pointsFile.write(str(number))
         pointsFile.close()
 
+    def handle_high_noise(self, message):
+        LOG.info("peter was too loud")
+        data = {
+            "utterances" : ['esioN'],
+            "lang" : 'en-US',
+        }
+        newCombined = _normalize_all_utterances(data['utterances'])
+        newMsg = Message(message.msg_type, data, message.context)
+        lang = _get_message_lang(message)
+        judgealexa_intent = self.adapt_service.match_intent_specific("taskbot-skill", newCombined, lang, newMsg)
+        taskbot_reply = newMsg.reply(judgealexa_intent.intent_type, judgealexa_intent.intent_data)
+        self.bus.emit(taskbot_reply)
+
     def handle_utterance(self, message):
         """Main entrypoint for handling user utterances with Mycroft skills
 
@@ -312,6 +328,9 @@ class IntentService:
 
             utterances = message.data.get('utterances', [])
             combined = _normalize_all_utterances(utterances)
+
+            LOG.info(message.context)
+            LOG.info(message.msg_type)
 
             stopwatch = Stopwatch()
 
@@ -389,10 +408,8 @@ class IntentService:
                     newCombined = _normalize_all_utterances(data['utterances'])
                     newMsg = Message(message.msg_type, data, message.context)
                     judgealexa_intent = self.adapt_service.match_intent_specific("taskbot-skill", newCombined, lang, newMsg)
-                    LOG.info(judgealexa_intent)
                     taskbot_reply = newMsg.reply(judgealexa_intent.intent_type, judgealexa_intent.intent_data)
                     self.bus.emit(taskbot_reply)
-                    LOG.info("done")
                 else:
                     LOG.info("Can't answer at this time")
             else:

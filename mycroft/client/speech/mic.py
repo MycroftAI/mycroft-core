@@ -16,7 +16,7 @@ import audioop
 from time import sleep, time as get_time
 
 from collections import deque, namedtuple
-import datetime
+from datetime import date, timedelta, datetime
 import json
 import os
 from os.path import isdir, join
@@ -583,7 +583,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
             if upload_allowed:
                 self._upload_wakeword(audio, metadata)
 
-    def _wait_until_wake_word(self, source, sec_per_buffer):
+    def _wait_until_wake_word(self, source, sec_per_buffer, emitter):
         """Listen continuously on source until a wake word is spoken
 
         Args:
@@ -628,6 +628,8 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         said_wake_word = False
         audio_data = None
 
+        noise_timer = datetime.now()
+
         while energy < max(self.energy_threshold * 3, 200):
             chunk = self.record_sound_chunk(source)
             audio_buffer.append(chunk)
@@ -635,6 +637,12 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
 
             energy = self.calc_energy(chunk, source.SAMPLE_WIDTH)
             audio_mean.append_sample(energy)
+
+            current_time = datetime.now()
+            if audio_mean.value > 1000 and current_time > timedelta(seconds=5) + noise_timer:
+                LOG.info("Energy level too high")
+                noise_timer = current_time
+                emitter.emit("energy_level:too_high")
 
             if energy < self.energy_threshold * self.multiplier:
                 self._adjust_threshold(energy, sec_per_buffer)
@@ -670,6 +678,12 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
 
             energy = self.calc_energy(chunk, source.SAMPLE_WIDTH)
             audio_mean.append_sample(energy)
+
+            current_time = datetime.now()
+            if audio_mean.value > 1000 and current_time > timedelta(seconds=5) + noise_timer:
+                LOG.info("Energy level too high")
+                noise_timer = current_time
+                emitter.emit("energy_level:too_high")
 
             if energy < self.energy_threshold * self.multiplier:
                 self._adjust_threshold(energy, sec_per_buffer)
@@ -749,7 +763,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         self.adjust_for_ambient_noise(source, 1.0)
 
         LOG.debug("Waiting for wake word...")
-        ww_data = self._wait_until_wake_word(source, sec_per_buffer)
+        ww_data = self._wait_until_wake_word(source, sec_per_buffer, emitter)
 
         #ww_frames = None
         if ww_data.found:

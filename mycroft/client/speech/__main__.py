@@ -186,8 +186,13 @@ def on_stopping():
 
 
 def on_error(e='Unknown'):
-    LOG.error('Audio service failed to launch ({}).'.format(repr(e)))
+    LOG.error('Audio service failed to launch ({}).'.format(repr(e)))    
 
+def handle_high_noise():
+    context = {'client_name': 'mycroft_listener',
+               'source': 'audio',
+               'destination': ["skills"]}
+    bus.emit(Message('energy_level:too_high', context))
 
 def connect_loop_events(loop):
     loop.on('recognizer_loop:utterance', handle_utterance)
@@ -198,6 +203,7 @@ def connect_loop_events(loop):
     loop.on('recognizer_loop:wakeword', handle_wakeword)
     loop.on('recognizer_loop:record_end', handle_record_end)
     loop.on('recognizer_loop:no_internet', handle_no_internet)
+    loop.on('energy_level:too_high', handle_high_noise)
     #loop.on('speech_recognition_failed', handle_mic_listen)
 
 

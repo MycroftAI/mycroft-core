@@ -28,6 +28,8 @@ doc/_build/
 
 utterances.txt
 scoreFile.txt
+sentiments.txt
+.env
 
 # Created by unit tests
 test/unittests/skills/test_skill/settings.json
