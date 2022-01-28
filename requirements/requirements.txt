@@ -28,3 +28,4 @@ petact==0.1.2
 pyxdg==0.27
 dbus-next==0.2.3
 webrtcvad==2.0.10
+pysdl2==0.9.11

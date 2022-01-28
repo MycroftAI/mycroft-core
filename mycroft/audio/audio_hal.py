@@ -16,23 +16,25 @@
 
 Used by the audio user interface (AUI) to play sound effects and streams.
 """
+import ctypes
 import functools
-import shlex
 import subprocess
+import tempfile
 import threading
 import typing
 from pathlib import Path
 
-import vlc
+import sdl2
+import sdl2.sdlmixer as mixer
 
 from mycroft.messagebus import Message
 from mycroft.messagebus.client import MessageBusClient
 from mycroft.util.log import LOG
 
-Channel = str
-MediaId = str
-
-EFFECT_ARG = "%1"
+ChannelType = int
+HookMusicFunc = ctypes.CFUNCTYPE(
+    None, ctypes.c_void_p, ctypes.POINTER(ctypes.c_uint8), ctypes.c_int
+)
 
 
 class AudioHAL:
@@ -41,250 +43,236 @@ class AudioHAL:
     Provides access to the audio output device through VLC.
     Output "channels" are categorized as:
 
-    * Effect (1 channel)
-      * Short, transient sounds effects
-    * Foreground (any number of channels)
-      * Medium-length audio, such as text to speech
-    * Background (any number of channels)
-      * Long-running audio streams (playlists)
+    * Foreground
+      * Transient sounds effects or speech from text to speech
+    * Background
+      * Long-running audio stream
 
-    Each channel may only have one media item or playlist at a time.
+    Each channel may only have one media item at a time.
     """
 
-    def __init__(
-        self,
-        foreground_channels: typing.Iterable[Channel],
-        background_channels: typing.Iterable[Channel],
-        effect_command: typing.Optional[typing.Union[str, typing.Iterable[str]]] = None,
-    ):
-        self._fg_channels = list(foreground_channels)
-        self._bg_channels = list(background_channels)
+    def __init__(self, sample_rate: int = 48000):
+        self.sample_rate = sample_rate
 
-        # Default to aplay
-        self.effect_command: typing.List[str] = ["aplay", EFFECT_ARG]
+        # Cache of mixer chunks
+        self._fg_cache: typing.Dict[ChannelType, mixer.Mix_Chunk] = {}
 
-        if isinstance(effect_command, str):
-            # Split command
-            self.effect_command = shlex.split(effect_command)
-        elif effect_command is not None:
-            # Command + args
-            self.effect_command = list(effect_command)
+        # Mixer chunks to free after finished playing
+        self._fg_free: typing.Dict[ChannelType, mixer.Mix_Chunk] = {}
 
-        # Foreground/background channels use VLC
-        self._vlc: typing.Optional[vlc.Instance] = None
+        # Media ids by channel
+        self._fg_media_ids: typing.Dict[ChannelType, typing.Optional[str]] = {}
+        self._bg_media_id: typing.Optional[str] = None
 
-        # Foreground channels use a standard media player
-        self._fg_players = {}
+        # Background VLC process
+        self._bg_proc: typing.Optional[subprocess.Popen] = None
+        self._bg_paused: bool = False
+        self._bg_volume: float = 1.0
 
-        # User-supplied id of media playing on each foreground channel
-        self._fg_media_ids: typing.Dict[Channel, typing.Optional[MediaId]] = {}
+        # Callback must be defined inline in order to capture "self"
+        @ctypes.CFUNCTYPE(None, ctypes.c_int)
+        def fg_channel_finished(channel):
+            """Callback when foreground media item is finished playing"""
+            try:
+                media_id = self._fg_media_ids.get(channel)
 
-        # Background channels use a list media player
-        self._bg_players = {}
+                if media_id is not None:
+                    self.bus.emit(
+                        Message(
+                            "mycroft.audio.hal.media-finished",
+                            data={"channel": channel, "media_id": media_id},
+                        )
+                    )
 
-        # User-supplied id of media playing on each background channel
-        self._bg_media_ids: typing.Dict[Channel, typing.Optional[MediaId]] = {}
+                chunk = self._fg_free.get(channel)
+                if chunk is not None:
+                    mixer.Mix_FreeChunk(chunk)
+            except Exception:
+                LOG.exception("Error finishing channel: %s", channel)
+
+        self._fg_channel_finished = fg_channel_finished
+
+        # Callback must be defined inline in order to capture "self"
+        @ctypes.CFUNCTYPE(None)
+        def bg_finished():
+            """Callback when background media item is finished playing"""
+            try:
+                media_id = self._bg_media_id
+
+                if media_id is not None:
+                    self.bus.emit(
+                        Message(
+                            "mycroft.audio.hal.media-finished",
+                            data={"background": True, "media_id": media_id},
+                        )
+                    )
+            except Exception:
+                LOG.exception("Error finishing music")
+
+        self._bg_finished = bg_finished
+
+        @HookMusicFunc
+        def bg_music_hook(udata, stream, length):
+            if self._bg_paused or (self._bg_proc is None):
+                # Write silence
+                for i in range(length):
+                    stream[i] = 0
+            else:
+                if self._bg_proc.poll() is not None:
+                    self.stop_background()
+                    self._bg_finished()
+                else:
+                    # Music data
+                    data = self._bg_proc.stdout.read(length)
+                    for i in range(len(data)):
+                        stream[i] = data[i]
+
+        self._bg_music_hook = bg_music_hook
+
+        self._bg_playlist_file = tempfile.NamedTemporaryFile(suffix=".m3u", mode="w+")
 
     def initialize(self, bus: MessageBusClient):
-        """Create VLC object and channel media players"""
         self.bus = bus
 
-        # Create VLC objects
-        self._vlc = vlc.Instance("--no-video")
+        LOG.debug("Initializing SDL mixer")
 
-        # Foreground channels use a standard media player
-        self._fg_players = {
-            channel: self._vlc.media_player_new() for channel in self._fg_channels
-        }
+        # TODO: Parameterize
+        ret = mixer.Mix_OpenAudio(48000, sdl2.AUDIO_S16SYS, 2, 2048)
+        assert ret >= 0, mixer.Mix_GetError().decode("utf8")
 
-        self._fg_media_ids = {}
+        # TODO: Init MP3, FLAC, etc
 
-        self._attach_fg_events()
+        mixer.Mix_ChannelFinished(self._fg_channel_finished)
+        # mixer.Mix_HookMusicFinished(self._bg_finished)
 
-        # Background channels use a list media player
-        self._bg_players = {
-            channel: self._vlc.media_list_player_new() for channel in self._bg_channels
-        }
+        # mixer.Mix_SetMusicCMD("vlc -I dummy --no-video --no-repeat".encode())
 
-        self._bg_media_ids = {}
-
-        self._attach_bg_events()
-
-    def _attach_fg_events(self):
-        """Listen for 'end reached' events in foreground media players"""
-        for fg_channel, fg_player in self._fg_players.items():
-            event_manager = fg_player.event_manager()
-            event_manager.event_attach(
-                vlc.EventType.MediaPlayerEndReached,
-                functools.partial(self._fg_media_finished, fg_channel),
-            )
-
-    # NOTE: Cannot include type hints here because of vlc
-    def _fg_media_finished(self, channel, _event):
-        """Callback when foreground media item is finished playing"""
-        media_id = self._fg_media_ids.pop(channel, "")
-        self.bus.emit(
-            Message(
-                "mycroft.audio.hal.media-finished",
-                data={"channel": channel, "background": False, "media_id": media_id},
-            )
-        )
-
-    def _attach_bg_events(self):
-        """Listen for 'player played' events in background media players"""
-        for bg_channel, bg_player in self._bg_players.items():
-            event_manager = bg_player.event_manager()
-            event_manager.event_attach(
-                vlc.EventType.MediaListPlayerPlayed,
-                functools.partial(self._bg_media_finished, bg_channel),
-            )
-
-    # NOTE: Cannot include type hints here because of vlc
-    def _bg_media_finished(self, channel, _event):
-        """Callback when background playlist is finished playing"""
-        media_id = self._bg_media_ids.pop(channel, "")
-        self.bus.emit(
-            Message(
-                "mycroft.audio.hal.media-finished",
-                data={"channel": channel, "background": True, "media_id": media_id},
-            )
-        )
+        self._reset_caches()
 
     def shutdown(self):
-        """Delete VLC object and media players"""
-        for player in self._fg_players.values():
-            player.release()
+        self._reset_caches()
 
-        self._fg_players = {}
+        self.stop_background()
 
-        for list_player in self._bg_players.values():
-            list_player.release()
+        mixer.Mix_CloseAudio()
 
-        self._bg_players = {}
+    def _reset_caches(self):
+        self._fg_free = {}
+        self._fg_cache = {}
+        self._fg_media_ids = {}
+        self._bg_media_id = None
 
-        if self._vlc is not None:
-            self._vlc.release()
-            self._vlc = None
+    def _stop_bg_process(self):
+        if self._bg_proc is not None:
+            self._bg_proc.kill()
+            self._bg_proc = None
 
-    # -------------------------------------------------------------------------
-    # Effects
-    # -------------------------------------------------------------------------
+    def _bg_media_finished(self, channel, _event):
+        """Callback when background playlist is finished playing"""
+        media_id = self._bg_media_ids.get(channel)
 
-    def play_effect(self, wav_path: typing.Union[str, Path]):
-        """Plays a WAV sound effect from a file path"""
+        if media_id is not None:
+            self.bus.emit(
+                Message(
+                    "mycroft.audio.hal.media-finished",
+                    data={"channel": channel, backgroud: True, "media_id": media_id},
+                )
+            )
 
-        # Replace effect arg with path to WAV
-        command = [e if e != EFFECT_ARG else str(wav_path) for e in self.effect_command]
-        subprocess.run(command, check=False)
-
-    # -------------------------------------------------------------------------
-    # Foreground
     # -------------------------------------------------------------------------
 
     def play_foreground(
         self,
-        channel: Channel,
-        uri: str,
-        media_id: typing.Optional[MediaId] = None,
-        return_duration: bool = False,
-    ) -> typing.Optional[int]:
-        """Play a URI on a foreground channel.
+        channel: ChannelType,
+        file_path: typing.Union[str, Path],
+        media_id: typing.Optional[str] = None,
+        volume: typing.Optional[float] = None,
+        cache: bool = False,
+    ) -> float:
+        """Play an audio file on a foreground channel."""
+        file_path_str = str(file_path)
+        chunk: typing.Optional[mixer.Mix_Chunk] = None
 
-        Returns:
-            duration of media item in milliseconds if return_duration = True
-        """
-        assert channel in self._fg_players, f"No player for channel: {channel}"
-        player = self._fg_players[channel]
+        if cache:
+            chunk = self._fg_cache.get(file_path_str)
 
-        media = self._vlc.media_new(uri)
+        if chunk is None:
+            chunk = mixer.Mix_LoadWAV(file_path_str.encode())
+            assert chunk, mixer.Mix_GetError().decode("utf8")
 
-        duration_ms: typing.Optional[int] = None
-        if return_duration:
-            # Only parse media for duration on request, since it can block for a
-            # long time on URIs.
-            media.parse()
-            duration_ms = media.get_duration()
+            if cache:
+                self._fg_cache[file_path_str] = chunk
 
-        player.stop()
-        player.set_media(media)
-
+        duration_sec = chunk.contents.alen / (48000 * 2)
         self._fg_media_ids[channel] = media_id
-        player.play()
 
-        return duration_ms
+        self._fg_free[channel] = chunk if not cache else None
 
-    def stop_foreground(self, channel: Channel):
-        """Stop media on a foreground channel"""
-        assert channel in self._fg_players, f"No player for channel: {channel}"
+        if volume is not None:
+            mixer.Mix_Volume(channel, self._clamp_volume(volume))
 
-        player = self._fg_players[channel]
-        player.stop()
-        self._fg_media_ids.pop(channel, None)
+        mixer.Mix_PlayChannel(channel, chunk, 0)
 
-    def set_foreground_volume(self, channel: Channel, volume: int):
-        """Set volume of a foreground channel"""
-        assert channel in self._fg_players, f"No player for channel: {channel}"
-        player = self._fg_players[channel]
-        player.audio_set_volume(volume)
+        return duration_sec
+
+    def stop_foreground(self, channel: int = -1):
+        """Stop media on a foreground channel (-1 for all)"""
+        mixer.Mix_HaltChannel(channel)
+
+    def set_foreground_volume(self, volume: float, channel: int = -1):
+        """Set volume [0-1] of a foreground channel (-1 for all)"""
+        mixer.Mix_Volume(channel, self._clamp_volume(volume))
+
+    def _clamp_volume(volume: float) -> int:
+        volume_num = int(volume * mixer.MIX_MAX_VOLUME)
+        volume_num = max(0, volume_num)
+        volume_num = min(mixer.MIX_MAX_VOLUME, volume_num)
+
+        return volume_num
 
     # -------------------------------------------------------------------------
-    # Background
-    # -------------------------------------------------------------------------
 
-    def start_background(
-        self,
-        channel: Channel,
-        uri_playlist: typing.Iterable[str],
-        media_id: typing.Optional[MediaId] = None,
-    ):
+    def start_background(self, uri_playlist: typing.Iterable[str]):
         """Start a playlist playing on a background channel"""
-        assert channel in self._bg_players, f"No player for channel: {channel}"
-        list_player = self._bg_players[channel]
+        self._stop_bg_process()
 
-        # Create new playlist each time
-        playlist = self._vlc.media_list_new()
-        for uri in uri_playlist:
-            media = self._vlc.media_new(uri)
-            playlist.add_media(media)
+        self._bg_playlist_file.truncate(0)
 
-        list_player.stop()
-        list_player.set_media_list(playlist)
+        for item in uri_playlist:
+            print(item, file=self._bg_playlist_file)
 
-        self._bg_media_ids[channel] = media_id
-        list_player.play()
+        print("vlc://quit", file=self._bg_playlist_file)
+        self._bg_playlist_file.seek(0)
 
-    def stop_background(self, channel: Channel):
-        """Stop the playlist on a background channel"""
-        assert channel in self._bg_players, f"No player for channel: {channel}"
-        list_player = self._bg_players[channel]
-        list_player.stop()
+        self._bg_proc = subprocess.Popen(
+            [
+                "vlc",
+                "-I",
+                "dummy",
+                "--no-video",
+                "--sout",
+                f"#transcode{{acodec=s16l,samplerate={self.sample_rate},channels=2}}:std{{access=file,mux=wav,dst=-}}",
+                self._bg_playlist_file.name,
+            ],
+            stdout=subprocess.PIPE,
+        )
 
-    def pause_background(self, channel: Channel):
-        """Pause the playlist on a background channel"""
-        assert channel in self._bg_players, f"No player for channel: {channel}"
-        list_player = self._bg_players[channel]
-        player = list_player.get_media_player()
+        mixer.Mix_HookMusic(self._bg_music_hook, None)
 
-        if player.is_playing():
-            player.pause()
+        LOG.info("Playing background music")
 
-    def resume_background(self, channel: str):
-        """Resume the playlist on a background channel"""
-        assert channel in self._bg_players, f"No player for channel: {channel}"
-        list_player = self._bg_players[channel]
-        player = list_player.get_media_player()
+    def stop_background(self):
+        """Stop the background channel"""
+        mixer.Mix_HookMusic(HookMusicFunc(), None)
+        self._stop_bg_process()
 
-        if not player.is_playing():
-            player.play()
+    def pause_background(self):
+        """Pause the background channel"""
+        self._bg_paused = True
 
-    def set_background_volume(self, channel: Channel, volume: int):
-        """Set volume for a background channel"""
-        assert channel in self._bg_players, f"No player for channel: {channel}"
-        list_player = self._bg_players[channel]
-        list_player.get_media_player().audio_set_volume(volume)
+    def resume_background(self):
+        """Resume the background channel"""
+        self._bg_paused = False
 
-    def get_background_time(self, channel: Channel) -> int:
-        """Get media time in milliseconds for a background channel"""
-        assert channel in self._bg_players, f"No player for channel: {channel}"
-        list_player = self._bg_players[channel]
-        return list_player.get_media_player().get_time()
+    def set_background_volume(self, volume: float):
+        self._bg_volume = max(0, min(volume, 1))
