@@ -19,6 +19,7 @@ from .mycroft_skill import MycroftSkill
 
 from mycroft.configuration import Configuration
 from mycroft.util.file_utils import resolve_resource_file
+from mycroft.messagebus.message import Message
 
 
 class CQSMatchLevel(IntEnum):
@@ -187,6 +188,15 @@ class CommonQuerySkill(MycroftSkill, ABC):
         data = message.data.get("callback_data")
         # Invoke derived class to provide playback data
         self.CQS_action(phrase, data)
+
+    def stop(self):
+        # TODO check if active
+        self.log.error("Creepy Internal Error 101 - skill missing stop method")
+
+    def CQS_release_output_focus(self):
+        """Stop any active tts."""
+        self.log.debug("Release tts %s" % (self.skill_id,))
+        self.bus.emit(Message('mycroft.tts.stop'))
 
     @abstractmethod
     def CQS_match_query_phrase(self, phrase):

@@ -1332,6 +1332,13 @@ class MycroftSkill:
         """Handler for the "mycroft.stop" signal. Runs the user defined
         `stop()` method.
         """
+        msg = _
+        if msg.data.get('skill','') == self.skill_id:
+            LOG.debug("handle stop skill_id:%s" % (self.skill_id, ))
+        else:
+            LOG.debug("stop ignored. %s, %s" % (self.skill_id,msg.data))
+            return
+
         def __stop_timeout():
             # The self.stop() call took more than 100ms, assume it handled Stop
             self.bus.emit(Message('mycroft.stop.handled',

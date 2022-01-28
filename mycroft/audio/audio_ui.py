@@ -158,7 +158,6 @@ class AudioUserInterface:
         self._speech_finished = threading.Event()
 
         self._bus_events = {
-            "mycroft.stop": self.handle_mycroft_stop,
             "recognizer_loop:record_begin": self.handle_start_listening,
             "mycroft.volume.duck": self.handle_duck_volume,
             "mycroft.volume.unduck": self.handle_unduck_volume,
@@ -239,7 +238,6 @@ class AudioUserInterface:
 
     def handle_mycroft_stop(self, _message):
         """Called in response to a 'stop' command"""
-        LOG.info("Stopping all audio")
         self._drain_speech_queue()
 
         # Stop foreground channels
@@ -458,11 +456,12 @@ class AudioUserInterface:
 
     def handle_stream_stop(self, _message):
         """Handler for mycroft.audio.service.stop"""
-        LOG.info("Stopping background stream")
-
         # Don't ever actually stop the background stream.
         # This lets us resume it later at any point.
         self._ahal.pause_background(BackgroundChannel.STREAM)
+        # before or after?
+        self.handle_mycroft_stop(_message)
+
 
     def send_stream_position(self):
         """Sends out background stream position to skills"""
