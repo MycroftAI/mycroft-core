@@ -454,10 +454,10 @@ class AudioUserInterface:
 
     def send_stream_position(self):
         """Sends out background stream position to skills"""
-        # position_ms = self._ahal.get_background_time(BackgroundChannel.STREAM)
-        # if position_ms >= 0:
-        #     self.bus.emit(
-        #         Message(
-        #             "mycroft.audio.service.position", data={"position_ms": position_ms}
-        #         )
-        #     )
+        position_ms = self._ahal.get_background_time()
+        if position_ms >= 0:
+            self.bus.emit(
+                Message(
+                    "mycroft.audio.service.position", data={"position_ms": position_ms}
+                )
+            )

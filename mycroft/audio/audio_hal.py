@@ -69,6 +69,7 @@ class AudioHAL:
         self._bg_proc: typing.Optional[subprocess.Popen] = None
         self._bg_paused: bool = False
         self._bg_volume: float = 1.0
+        self._bg_position: int = 0
 
         # Callback must be defined inline in order to capture "self"
         @ctypes.CFUNCTYPE(None, ctypes.c_int)
@@ -133,6 +134,8 @@ class AudioHAL:
                     # ctypes.memset(stream, data, length)
                     for i in range(len(data)):
                         stream[i] = data[i]
+
+                    self._bg_position += length
 
         self._bg_music_hook = bg_music_hook
 
@@ -270,6 +273,7 @@ class AudioHAL:
             stdout=subprocess.PIPE,
         )
 
+        self._bg_position = 0
         mixer.Mix_HookMusic(self._bg_music_hook, None)
 
         LOG.info("Playing background music")
@@ -278,6 +282,7 @@ class AudioHAL:
         """Stop the background channel"""
         mixer.Mix_HookMusic(HookMusicFunc(), None)
         self._stop_bg_process()
+        self._bg_position = 0
 
     def pause_background(self):
         """Pause the background channel"""
@@ -297,3 +302,10 @@ class AudioHAL:
 
     def set_background_volume(self, volume: float):
         self._bg_volume = max(0, min(volume, 1))
+
+    def get_background_time(self) -> int:
+        """Get position of background stream in milliseconds"""
+        # Assume 48Khz, 16-bit stereo
+        bytes_per_ms = (48_000 * 2 * 2) // 1000
+
+        return self._bg_position // bytes_per_ms
