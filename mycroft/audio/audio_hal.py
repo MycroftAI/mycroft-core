@@ -52,8 +52,16 @@ class AudioHAL:
     Each channel may only have one media item at a time.
     """
 
-    def __init__(self, sample_rate: int = 48000):
-        self.sample_rate = sample_rate
+    def __init__(
+        self,
+        audio_sample_rate: int = 48000,
+        audio_channels: int = 2,
+        audio_chunk_size: int = 2048,
+    ):
+        # Mixer settings
+        self.audio_sample_rate = audio_sample_rate
+        self.audio_channels = audio_channels
+        self.audio_chunk_size = audio_chunk_size
 
         # Cache of mixer chunks
         self._fg_cache: typing.Dict[ChannelType, mixer.Mix_Chunk] = {}
@@ -76,17 +84,16 @@ class AudioHAL:
         def fg_channel_finished(channel):
             """Callback when foreground media item is finished playing"""
             try:
-                media_id = self._fg_media_ids.get(channel)
-
-                if media_id is not None:
-                    self.bus.emit(
-                        Message(
-                            "mycroft.audio.hal.media-finished",
-                            data={"channel": channel, "media_id": media_id},
-                        )
+                media_id = self._fg_media_ids.get(channel) or ""
+                self.bus.emit(
+                    Message(
+                        "mycroft.audio.hal.media-finished",
+                        data={"channel": channel, "media_id": media_id},
                     )
+                )
 
-                chunk = self._fg_free.get(channel)
+                # Free audio chunk if it wasn't cached
+                chunk = self._fg_free.pop(channel, None)
                 if chunk is not None:
                     mixer.Mix_FreeChunk(chunk)
             except Exception:
@@ -95,24 +102,6 @@ class AudioHAL:
         self._fg_channel_finished = fg_channel_finished
 
         # Callback must be defined inline in order to capture "self"
-        @ctypes.CFUNCTYPE(None)
-        def bg_finished():
-            """Callback when background media item is finished playing"""
-            try:
-                media_id = self._bg_media_id
-
-                if media_id is not None:
-                    self.bus.emit(
-                        Message(
-                            "mycroft.audio.hal.media-finished",
-                            data={"background": True, "media_id": media_id},
-                        )
-                    )
-            except Exception:
-                LOG.exception("Error finishing music")
-
-        self._bg_finished = bg_finished
-
         @HookMusicFunc
         def bg_music_hook(udata, stream, length):
             if self._bg_paused or (self._bg_proc is None):
@@ -122,7 +111,7 @@ class AudioHAL:
                 if self._bg_proc.poll() is not None:
                     # Stream finished
                     self.stop_background()
-                    self._bg_finished()
+                    self._bg_media_finished()
                 else:
                     # Music data
                     data = self._bg_proc.stdout.read(length)
@@ -139,27 +128,31 @@ class AudioHAL:
 
         self._bg_music_hook = bg_music_hook
 
+        # We need to give VLC a playlist so we can add vlc://quit at the end and
+        # have it actually terminate.
         self._bg_playlist_file = tempfile.NamedTemporaryFile(suffix=".m3u", mode="w+")
 
     def initialize(self, bus: MessageBusClient):
+        """Start audio HAL"""
         self.bus = bus
 
         LOG.debug("Initializing SDL mixer")
 
         # TODO: Parameterize
-        ret = mixer.Mix_OpenAudio(48000, sdl2.AUDIO_S16SYS, 2, 2048)
+        ret = mixer.Mix_OpenAudio(
+            self.audio_sample_rate,
+            sdl2.AUDIO_S16SYS,
+            self.audio_channels,
+            self.audio_chunk_size,
+        )
         assert ret >= 0, mixer.Mix_GetError().decode("utf8")
 
-        # TODO: Init MP3, FLAC, etc
-
         mixer.Mix_ChannelFinished(self._fg_channel_finished)
-        # mixer.Mix_HookMusicFinished(self._bg_finished)
-
-        # mixer.Mix_SetMusicCMD("vlc -I dummy --no-video --no-repeat".encode())
 
         self._reset_caches()
 
     def shutdown(self):
+        """Shut down audio HAL"""
         self._reset_caches()
 
         self.stop_background()
@@ -167,33 +160,40 @@ class AudioHAL:
         mixer.Mix_CloseAudio()
 
     def _reset_caches(self):
+        """Clear all media caches"""
         self._fg_free = {}
         self._fg_cache = {}
         self._fg_media_ids = {}
         self._bg_media_id = None
 
     def _stop_bg_process(self):
+        """Stop background VLC process if running"""
         if self._bg_proc is not None:
             if self._bg_proc.poll() is None:
+                LOG.debug("Stopping background media process")
                 self._bg_proc.terminate()
+
                 try:
+                    # Wait a bit before sending kill signal
                     self._bg_proc.communicate(timeout=0.5)
                 except subprocess.TimeoutExpired:
                     self._bg_proc.kill()
 
+                LOG.debug("Stopped background media process")
+
             self._bg_proc = None
 
-    def _bg_media_finished(self, channel, _event):
+    def _bg_media_finished(self):
         """Callback when background playlist is finished playing"""
-        media_id = self._bg_media_ids.get(channel)
+        media_id = self._bg_media_id or ""
+        LOG.debug("Background media finished: %s", media_id)
 
-        if media_id is not None:
-            self.bus.emit(
-                Message(
-                    "mycroft.audio.hal.media-finished",
-                    data={"channel": channel, "background": True, "media_id": media_id},
-                )
+        self.bus.emit(
+            Message(
+                "mycroft.audio.hal.media-finished",
+                data={"background": True, "media_id": media_id},
             )
+        )
 
     # -------------------------------------------------------------------------
 
@@ -219,15 +219,23 @@ class AudioHAL:
             if cache:
                 self._fg_cache[file_path_str] = chunk
 
-        duration_sec = chunk.contents.alen / (48000 * 2)
+        duration_sec = chunk.contents.alen / (
+            self.audio_sample_rate * self.audio_channels
+        )
+
         self._fg_media_ids[channel] = media_id
 
+        # Chunk will be freed after playing it not caching
         self._fg_free[channel] = chunk if not cache else None
 
         if volume is not None:
+            # Set channel volume
             mixer.Mix_Volume(channel, self._clamp_volume(volume))
+        else:
+            # Max volume
+            mixer.Mix_Volume(channel, self._clamp_volume(1.0))
 
-        mixer.Mix_PlayChannel(channel, chunk, 0)
+        mixer.Mix_PlayChannel(channel, chunk, 0)  # 0 = no looping
 
         return duration_sec
 
@@ -239,7 +247,8 @@ class AudioHAL:
         """Set volume [0-1] of a foreground channel (-1 for all)"""
         mixer.Mix_Volume(channel, self._clamp_volume(volume))
 
-    def _clamp_volume(volume: float) -> int:
+    def _clamp_volume(self, volume: float) -> int:
+        """Convert volume in [0, 1] to SDL volume in [0, 128)"""
         volume_num = int(volume * mixer.MIX_MAX_VOLUME)
         volume_num = max(0, volume_num)
         volume_num = min(mixer.MIX_MAX_VOLUME, volume_num)
@@ -248,7 +257,9 @@ class AudioHAL:
 
     # -------------------------------------------------------------------------
 
-    def start_background(self, uri_playlist: typing.Iterable[str]):
+    def start_background(
+        self, uri_playlist: typing.Iterable[str], media_id: typing.Optional[str] = None
+    ):
         """Start a playlist playing on a background channel"""
         self._stop_bg_process()
 
@@ -257,9 +268,16 @@ class AudioHAL:
         for item in uri_playlist:
             print(item, file=self._bg_playlist_file)
 
+        # Add quit URI to end of playlist so VLC will terminate when finished
+        # playing.
         print("vlc://quit", file=self._bg_playlist_file)
         self._bg_playlist_file.seek(0)
 
+        # Run VLC separately, reading raw audio chunks from its stdout and
+        # playing in the music hook function.
+        #
+        # NOTE: The output format here must exactly match what we use in
+        # Mix_OpenAudio.
         self._bg_proc = subprocess.Popen(
             [
                 "vlc",
@@ -267,12 +285,13 @@ class AudioHAL:
                 "dummy",
                 "--no-video",
                 "--sout",
-                f"#transcode{{acodec=s16l,samplerate={self.sample_rate},channels=2}}:std{{access=file,mux=wav,dst=-}}",
+                f"#transcode{{acodec=s16l,samplerate={self.audio_sample_rate},channels={self.audio_channels}}}:std{{access=file,mux=wav,dst=-}}",
                 self._bg_playlist_file.name,
             ],
             stdout=subprocess.PIPE,
         )
 
+        self._bg_media_id = media_id
         self._bg_position = 0
         self._bg_paused = False
         mixer.Mix_HookMusic(self._bg_music_hook, None)
@@ -281,9 +300,13 @@ class AudioHAL:
 
     def stop_background(self):
         """Stop the background channel"""
+        # Disable music hook.
+        # HookMusicFunc() creates a NULL pointer
         mixer.Mix_HookMusic(HookMusicFunc(), None)
+
         self._stop_bg_process()
         self._bg_position = 0
+        self._bg_media_id = None
 
     def pause_background(self):
         """Pause the background channel"""
@@ -302,11 +325,15 @@ class AudioHAL:
         self._bg_paused = False
 
     def set_background_volume(self, volume: float):
+        """Set the volume of the background music"""
         self._bg_volume = max(0, min(volume, 1))
 
     def get_background_time(self) -> int:
         """Get position of background stream in milliseconds"""
-        # Assume 48Khz, 16-bit stereo
-        bytes_per_ms = (48_000 * 2 * 2) // 1000
+        # Default: 48Khz, 16-bit stereo
+        bytes_per_sample = 2
+        bytes_per_ms = (
+            self.audio_sample_rate * self.audio_channels * bytes_per_sample
+        ) // 1000
 
         return self._bg_position // bytes_per_ms

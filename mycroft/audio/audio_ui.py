@@ -27,7 +27,8 @@ class ForegroundChannel(IntEnum):
 
 
 # Fixed sample rate for sound effects
-EFFECT_SAMPLE_RATE = 48000  # Hz
+EFFECT_SAMPLE_RATE = 48_000  # Hz
+EFFECT_CHANNELS = 2
 
 
 # -----------------------------------------------------------------------------
@@ -117,7 +118,9 @@ class AudioUserInterface:
     def __init__(self):
         self.config = Configuration.get()
 
-        self._ahal = AudioHAL()
+        self._ahal = AudioHAL(
+            audio_sample_rate=EFFECT_SAMPLE_RATE, audio_channels=EFFECT_CHANNELS
+        )
 
         self._cache_dir: typing.Optional[tempfile.TemporaryDirectory] = None
 
@@ -246,7 +249,8 @@ class AudioUserInterface:
     def handle_play_sound(self, message):
         """Handler for skills' play_sound_uri"""
         uri = message.data.get("uri")
-        self._play_effect(uri)
+        volume = message.data.get("volume")
+        self._play_effect(uri, volume=volume)
 
     def handle_start_listening(self, _message):
         """Play sound when Mycroft begins recording a command"""
@@ -271,7 +275,7 @@ class AudioUserInterface:
                         "-I",
                         "dummy",
                         "--sout",
-                        f"#transcode{{acodec=s16l,samplerate=48000,channels=1}}:std{{access=file,mux=wav,dst={file_path}}}",
+                        f"#transcode{{acodec=s16l,samplerate={EFFECT_SAMPLE_RATE},channels={EFFECT_CHANNELS}}}:std{{access=file,mux=wav,dst={file_path}}}",
                         str(uri),
                         "vlc://quit",
                     ]
@@ -280,11 +284,13 @@ class AudioUserInterface:
 
         return file_path
 
-    def _play_effect(self, uri: str):
+    def _play_effect(self, uri: str, volume: typing.Optional[float] = None):
         """Play sound effect from uri"""
         if uri:
             file_path = self._get_or_cache_uri(uri)
-            self._ahal.play_foreground(ForegroundChannel.EFFECT, file_path, cache=True)
+            self._ahal.play_foreground(
+                ForegroundChannel.EFFECT, file_path, cache=True, volume=volume
+            )
             LOG.info("Played sound: %s", uri)
 
     def handle_skill_started(self, message):
