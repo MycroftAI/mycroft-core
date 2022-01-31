@@ -80,7 +80,7 @@ class Switch:
         GPIO.setup(self._SW_ACTION, GPIO.IN, pull_up_down=GPIO.PUD_UP)
         GPIO.setup(self._SW_VOL_UP, GPIO.IN, pull_up_down=GPIO.PUD_UP)
         GPIO.setup(self._SW_VOL_DOWN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-        GPIO.setup(self._SW_MUTE, GPIO.IN)   # not sure about the slider
+        GPIO.setup(self._SW_MUTE, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
         # establish default values
         self.SW_ACTION = GPIO.input(self._SW_ACTION)
@@ -143,7 +143,10 @@ class Switch:
                 self.user_voldown_handler()
 
     def handle_mute(self, channel):
+        # No idea why this delay is necessary, but it makes the muting reliable
+        time.sleep(0.05)
         self.SW_MUTE = GPIO.input(self._SW_MUTE)
+
         if self.user_mute_handler is not None:
             self.user_mute_handler(self.SW_MUTE)
 
