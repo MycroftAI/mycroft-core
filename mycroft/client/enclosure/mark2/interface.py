@@ -419,6 +419,8 @@ class EnclosureMark2(Enclosure):
 
     def _handle_network_detected(self, _message=None):
         """Detect internet once network is connected"""
+        if self.force_system_clock_update:
+            self._synchronize_system_clock()
         self.bus.emit(Message("hardware.detect-internet"))
 
     def _handle_internet_connected(self, _message=None):
@@ -483,3 +485,4 @@ class EnclosureMark2(Enclosure):
         self.hardware.leds._set_led(10, (0, 0, 0))  # blank out reserved led
         self.hardware.leds._set_led(11, (0, 0, 0))  # BUG set to real value!
         self.hardware.terminate()
+
