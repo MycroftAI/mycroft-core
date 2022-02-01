@@ -148,9 +148,10 @@ class AudioUserInterface:
             "recognizer_loop:record_begin": self.handle_start_listening,
             "recognizer_loop:audio_output_start": self.handle_tts_started,
             "recognizer_loop:audio_output_end": self.handle_tts_finished,
-            "mycroft.volume.duck": self.handle_duck_volume,
-            "mycroft.volume.unduck": self.handle_unduck_volume,
+            # "mycroft.volume.duck": self.handle_duck_volume,
+            # "mycroft.volume.unduck": self.handle_unduck_volume,
             "skill.started": self.handle_skill_started,
+            "skill.ended": self.handle_skill_ended,
             "mycroft.audio.play-sound": self.handle_play_sound,
             "mycroft.tts.stop": self.handle_tts_stop,
             "mycroft.tts.speak-chunk": self.handle_tts_chunk,
@@ -233,13 +234,13 @@ class AudioUserInterface:
         # Stop foreground channels
         self._ahal.stop_foreground(ForegroundChannel.SPEECH)
 
-    def handle_duck_volume(self, _message):
+    def _duck_volume(self):
         """Lower TTS and background stream volumes during voice commands"""
         self._ahal.stop_foreground(ForegroundChannel.SPEECH)
         self._ahal.set_background_volume(0.3)
         LOG.info("Ducked volume")
 
-    def handle_unduck_volume(self, _message):
+    def _unduck_volume(self):
         """Restore volumes after voice commands"""
         self._ahal.set_background_volume(1.0)
         LOG.info("Unducked volume")
@@ -255,6 +256,7 @@ class AudioUserInterface:
     def handle_start_listening(self, _message):
         """Play sound when Mycroft begins recording a command"""
 
+        self._duck_volume()
         self._play_effect(self._start_listening_uri)
 
     def _get_or_cache_uri(self, uri: str) -> str:
@@ -306,6 +308,10 @@ class AudioUserInterface:
 
             # Transition to new skill
             self._last_skill_id = skill_id
+
+    def handle_skill_ended(self, message):
+        """Handler for skills' activity_ended"""
+        self._unduck_volume()
 
     def _drain_speech_queue(self):
         """Ensures the text to speech queue is emptied"""
