@@ -18,6 +18,7 @@ import re
 import sys
 import traceback
 from copy import deepcopy
+from inspect import signature
 from itertools import chain
 from os import walk, listdir
 from os.path import join, abspath, dirname, basename, exists, isdir
@@ -450,46 +451,32 @@ class MycroftSkill:
             self.add_event('{}.public_api'.format(self.skill_id),
                            self._send_public_api)
 
+    @property
+    def stop_is_implemented(self):
+        return self.__class__.stop is not MycroftSkill.stop
+
+    @property
+    def converse_is_implemented(self):
+        return self.__class__.converse is not MycroftSkill.converse
+
     def _register_system_event_handlers(self):
         """Add all events allowing the standard interaction with the Mycroft
         system.
         """
-
-        def stop_is_implemented():
-            return self.__class__.stop is not MycroftSkill.stop
-
         # Only register stop if it's been implemented
-        if stop_is_implemented():
+        if self.stop_is_implemented:
             self.add_event('mycroft.stop', self.__handle_stop)
-
-        self.add_event(
-            'mycroft.skill.enable_intent',
-            self.handle_enable_intent
-        )
-        self.add_event(
-            'mycroft.skill.disable_intent',
-            self.handle_disable_intent
-        )
-        self.add_event(
-            'mycroft.skill.set_cross_context',
-            self.handle_set_cross_context
-        )
-        self.add_event(
-            'mycroft.skill.remove_cross_context',
-            self.handle_remove_cross_context
-        )
-        self.events.add(
-            'mycroft.skills.settings.changed',
-            self.handle_settings_change
-        )
-        self.events.add(f"{self.skill_id}.deactivate",
-                        self.handle_deactivate)
-        self.events.add("intent.service.skills.deactivated",
-                        self._handle_skill_deactivated)
-        self.events.add(f"{self.skill_id}.activate",
-                        self.handle_activate)
-        self.events.add("intent.service.skills.activated",
-                        self._handle_skill_activated)
+        self.add_event('mycroft.skill.converse.ping', self._handle_converse_ack)
+        self.add_event('mycroft.skill.converse.request', self._handle_converse_request)
+        self.add_event(f"{self.skill_id}.activate", self.handle_activate)
+        self.add_event(f"{self.skill_id}.deactivate", self.handle_deactivate)
+        self.add_event("intent.service.skills.deactivated", self._handle_skill_deactivated)
+        self.add_event("intent.service.skills.activated", self._handle_skill_activated)
+        self.add_event('mycroft.skill.enable_intent', self.handle_enable_intent)
+        self.add_event('mycroft.skill.disable_intent', self.handle_disable_intent)
+        self.add_event('mycroft.skill.set_cross_context', self.handle_set_cross_context)
+        self.add_event('mycroft.skill.remove_cross_context', self.handle_remove_cross_context)
+        self.add_event('mycroft.skills.settings.changed', self.handle_settings_change)
 
     def handle_settings_change(self, message):
         """Update settings if the remote settings changes apply to this skill.
@@ -583,6 +570,37 @@ class MycroftSkill:
             msg.context["skill_id"] = self.skill_id
         self.bus.emit(msg.forward(f"intent.service.skills.deactivate",
                                   data={"skill_id": self.skill_id}))
+
+    def _handle_converse_ack(self, message):
+        """Inform skills service if we want to handle converse.
+        individual skills may override the property self.converse_is_implemented"""
+        self.bus.emit(message.reply(
+            "mycroft.skill.converse.pong",
+            data={"skill_id": self.skill_id,
+                  "can_handle": self.converse_is_implemented},
+            context={"skill_id": self.skill_id}))
+
+    def _handle_converse_request(self, message):
+        """Check if the targeted skill id can handle conversation
+        If supported, the conversation is invoked.
+        """
+        skill_id = message.data['skill_id']
+        if skill_id == self.skill_id:
+            try:
+                # converse can have multiple signatures
+                params = signature(self.converse).parameters
+                kwargs = {"message": message,
+                          "utterances": message.data['utterances'],
+                          "lang": message.data['lang']}
+                kwargs = {k: v for k, v in kwargs.items() if k in params}
+                result = self.converse(**kwargs)
+                self.bus.emit(message.reply('skill.converse.response',
+                                            {"skill_id": self.skill_id,
+                                             "result": result}))
+            except Exception:
+                self.bus.emit(message.reply('skill.converse.response',
+                                            {"skill_id": self.skill_id,
+                                             "result": False}))
 
     def converse(self, message=None):
         """Handle conversation.

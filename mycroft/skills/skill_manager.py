@@ -147,9 +147,6 @@ class SkillManager(Thread):
 
     def _define_message_bus_events(self):
         """Define message bus events with handlers defined in this class."""
-        # Conversation management
-        self.bus.on('skill.converse.request', self.handle_converse_request)
-
         # Update on initial connection
         self.bus.on(
             'mycroft.internet.connected',
@@ -491,56 +488,3 @@ class SkillManager(Thread):
         for skill_loader in self.skill_loaders.values():
             if skill_loader.instance is not None:
                 _shutdown_skill(skill_loader.instance)
-
-    def handle_converse_request(self, message):
-        """Check if the targeted skill id can handle conversation
-
-        If supported, the conversation is invoked.
-        """
-        skill_id = message.data['skill_id']
-
-        # loop trough skills list and call converse for skill with skill_id
-        skill_found = False
-        for skill_loader in self.skill_loaders.values():
-            if skill_loader.skill_id == skill_id:
-                skill_found = True
-                if not skill_loader.loaded:
-                    error_message = 'converse requested but skill not loaded'
-                    self._emit_converse_error(message, skill_id, error_message)
-                    break
-                try:
-                    # check the signature of a converse method
-                    # to either pass a message or not
-                    if len(signature(
-                            skill_loader.instance.converse).parameters) == 1:
-                        result = skill_loader.instance.converse(
-                            message=message)
-                    else:
-                        utterances = message.data['utterances']
-                        lang = message.data['lang']
-                        result = skill_loader.instance.converse(
-                            utterances=utterances, lang=lang)
-                    self._emit_converse_response(result, message, skill_loader)
-                except Exception:
-                    error_message = 'exception in converse method'
-                    LOG.exception(error_message)
-                    self._emit_converse_error(message, skill_id, error_message)
-                finally:
-                    break
-
-        if not skill_found:
-            error_message = 'skill id does not exist'
-            self._emit_converse_error(message, skill_id, error_message)
-
-    def _emit_converse_error(self, message, skill_id, error_msg):
-        """Emit a message reporting the error back to the intent service."""
-        reply = message.reply('skill.converse.response',
-                              data=dict(skill_id=skill_id, error=error_msg))
-        self.bus.emit(reply)
-
-    def _emit_converse_response(self, result, message, skill_loader):
-        reply = message.reply(
-            'skill.converse.response',
-            data=dict(skill_id=skill_loader.skill_id, result=result)
-        )
-        self.bus.emit(reply)

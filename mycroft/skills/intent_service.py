@@ -13,22 +13,21 @@
 # limitations under the License.
 #
 """Mycroft's intent service, providing intent parsing since forever!"""
-from copy import copy
 import time
+from threading import Event
 
 from mycroft.configuration import Configuration, setup_locale
+from mycroft.messagebus.message import Message
+from mycroft.metrics import report_timing, Stopwatch
+from mycroft.skills.intent_service_interface import open_intent_envelope
+from mycroft.skills.intent_services import (
+    AdaptService, FallbackService,
+    PadatiousService, PadatiousMatcher,
+    ConverseService, IntentMatch
+)
+from mycroft.skills.permissions import ConverseMode, ConverseActivationMode
 from mycroft.util.log import LOG
 from mycroft.util.parse import normalize
-from mycroft.metrics import report_timing, Stopwatch
-from mycroft.skills.intent_services import (
-    AdaptService, AdaptIntent,
-    FallbackService,
-    PadatiousService, PadatiousMatcher,
-    IntentMatch
-)
-from mycroft.skills.intent_service_interface import open_intent_envelope
-from mycroft.skills.permissions import ConverseMode, ConverseActivationMode
-from mycroft.messagebus.message import Message
 
 
 def _get_message_lang(message):
@@ -88,14 +87,13 @@ class IntentService:
 
         # Dictionary for translating a skill id to a name
         self.skill_names = {}
-
         self.adapt_service = AdaptService(config.get('context', {}))
         try:
             self.padatious_service = PadatiousService(bus, config['padatious'])
         except Exception as err:
-            LOG.exception('Failed to create padatious handlers '
-                          '({})'.format(repr(err)))
+            LOG.exception(f'Failed to create padatious handlers ({err})')
         self.fallback = FallbackService(bus)
+        self.converse = ConverseService(bus)
 
         self.bus.on('register_vocab', self.handle_register_vocab)
         self.bus.on('register_intent', self.handle_register_intent)
@@ -108,7 +106,6 @@ class IntentService:
         self.bus.on('clear_context', self.handle_clear_context)
 
         # Converse method
-        self.converse_config = config["skills"].get("converse") or {}
         self.bus.on('mycroft.speech.recognition.unknown', self.reset_converse)
         self.bus.on('mycroft.skills.loaded', self.update_skill_name_dict)
 
@@ -118,9 +115,6 @@ class IntentService:
                     self.handle_deactivate_skill_request)
         # TODO backwards compat, deprecate
         self.bus.on('active_skill_request', self.handle_activate_skill_request)
-
-        self.active_skills = []  # [skill_id , timestamp]
-        self._consecutive_activations = {}
 
         # Intents API
         self.registered_vocab = []
@@ -161,67 +155,18 @@ class IntentService:
         return self.skill_names.get(skill_id, skill_id)
 
     # converse handling
-    def handle_activate_skill_request(self, message):
+    @property
+    def active_skills(self):
+        return self.converse.active_skills  # [skill_id , timestamp]
 
+    def handle_activate_skill_request(self, message):
+        # TODO imperfect solution - only a skill can activate itself
+        # someone can forge this message and emit it raw, but in OpenVoiceOS all
+        # skill messages should have skill_id in context, so let's make sure
+        # this doesnt happen accidentally at very least
         skill_id = message.data['skill_id']
-
-        # cross activation control if skills can activate each other
-        if not self.converse_config.get("cross_activation"):
-            # TODO imperfect solution - only a skill can activate itself
-            # someone can forge this message and emit it raw, but in OpenVoiceOS all
-            # skill messages should have skill_id in context, so let's make sure
-            # this doesnt happen accidentally at very least
-            source_skill = message.context.get("skill_id") or skill_id
-            if skill_id != source_skill:
-                # different skill is trying to activate this skill
-                return
-
-        # mode of activation dictates under what conditions a skill is
-        # allowed to activate itself
-        acmode = self.converse_config.get("converse_activation") or \
-                 ConverseActivationMode.ACCEPT_ALL
-
-        if acmode == ConverseActivationMode.PRIORITY:
-            prio = self.converse_config.get("converse_priorities") or {}
-            # only allowed to activate if no skill with higher priority is
-            # active, currently there is no api for skills to
-            # define their default priority, this is a user/developer setting
-            priority = prio.get(skill_id, 50)
-            if any(p > priority for p in
-                   [prio.get(s[0], 50) for s in self.active_skills]):
-                return
-
-        if acmode == ConverseActivationMode.BLACKLIST:
-            if skill_id in self.converse_config.get("converse_blacklist", []):
-                return
-
-        if acmode == ConverseActivationMode.WHITELIST:
-            if skill_id not in self.converse_config.get("converse_whitelist", []):
-                return
-
-        # limit of consecutive activations
-        default_max = self.converse_config.get("max_activations", -1)
-        # per skill override limit of consecutive activations
-        skill_max = self.converse_config.get("skill_activations", {}).get(skill_id)
-        max_activations = skill_max or default_max
-        if skill_id not in self._consecutive_activations:
-            self._consecutive_activations[skill_id] = 0
-        if max_activations < 0:
-            pass  # no limit (mycroft-core default)
-        elif max_activations == 0:
-            return  # skill activation disabled
-        elif self._consecutive_activations.get(skill_id, 0) > max_activations:
-            return  # skill exceeded authorized consecutive number of
-                    # activations
-
-        # activate skill
-        self.add_active_skill(skill_id)
-        self._consecutive_activations[skill_id] += 1
-
-        # converse handling
-
-    def handle_activate_skill_request(self, message):
-        self.add_active_skill(message.data['skill_id'])
+        source_skill = message.context.get("skill_id")
+        self.converse.activate_skill(skill_id, source_skill)
 
     def handle_deactivate_skill_request(self, message):
         # TODO imperfect solution - only a skill can deactivate itself
@@ -230,18 +175,18 @@ class IntentService:
         # this doesnt happen accidentally
         skill_id = message.data['skill_id']
         source_skill = message.context.get("skill_id") or skill_id
-        if skill_id == source_skill:
-            self.remove_active_skill(message.data['skill_id'])
+        self.converse.deactivate_skill(skill_id, source_skill)
 
     def reset_converse(self, message):
         """Let skills know there was a problem with speech recognition"""
         lang = _get_message_lang(message)
         setup_locale(lang)  # restore default lang
-        for skill in copy(self.active_skills):
-            self.do_converse(None, skill[0], lang, message)
+        self.converse.converse_with_skills(None, lang, message)
 
     def do_converse(self, utterances, skill_id, lang, message):
-        """Call skill and ask if they want to process the utterance.
+        """DEPRECATED: do not use, method only for api backwards compatibility
+
+        Logs a warning and calls ConverseService.converse
 
         Args:
             utterances (list of tuples): utterances paired with normalized
@@ -250,81 +195,43 @@ class IntentService:
             lang (str): current language
             message (Message): message containing interaction info.
         """
-        opmode = self.converse_config.get("converse_mode",
-                                          ConverseMode.ACCEPT_ALL)
-
-        if opmode == ConverseMode.BLACKLIST and skill_id in \
-                self.converse_config.get("converse_blacklist", []):
-            return False
-
-        elif opmode == ConverseMode.WHITELIST and skill_id not in \
-                self.converse_config.get("converse_whitelist", []):
-            return False
-
-        converse_msg = (message.reply("skill.converse.request", {
-            "skill_id": skill_id, "utterances": utterances, "lang": lang}))
-        result = self.bus.wait_for_response(converse_msg,
-                                            'skill.converse.response')
-        if result and 'error' in result.data:
-            self.handle_converse_error(result)
-            ret = False
-        elif result is not None:
-            ret = result.data.get('result', False)
-        else:
-            ret = False
-        return ret
+        # NOTE: can not delete method for backwards compat with upstream
+        LOG.warning("self.do_converse has been deprecated!\n"
+                    "use self.converse.converse instead")
+        return self.converse.converse(utterances, skill_id, lang, message)
 
     def handle_converse_error(self, message):
-        """Handle error in converse system.
-
-        Args:
-            message (Message): info about the error.
+        """DEPRECATED: do not use, method only for api backwards compatibility
+        Logs a warning
         """
-        skill_id = message.data["skill_id"]
-        error_msg = message.data['error']
-        LOG.error("{}: {}".format(skill_id, error_msg))
-        if message.data["error"] == "skill id does not exist":
-            self.remove_active_skill(skill_id)
+        # NOTE: can not delete method for backwards compat with upstream
+        LOG.warning("handle_converse_error has been deprecated!")
 
     def remove_active_skill(self, skill_id):
-        """Remove a skill from being targetable by converse.
+        """DEPRECATED: do not use, method only for api backwards compatibility
+
+        Logs a warning and calls ConverseService.deactivate_skill
 
         Args:
             skill_id (str): skill to remove
         """
-        for skill in self.active_skills:
-            if skill[0] == skill_id:
-                self.active_skills.remove(skill)
-                self.bus.emit(
-                    Message("intent.service.skills.deactivated",
-                            {"skill_id": skill_id}))
-                if skill_id in self._consecutive_activations:
-                    self._consecutive_activations[skill_id] = 0
+        # NOTE: can not delete method for backwards compat with upstream
+        LOG.warning("self.remove_active_skill has been deprecated!\n"
+                    "use self.converse.deactivate_skill instead")
+        self.converse.deactivate_skill(skill_id)
 
     def add_active_skill(self, skill_id):
-        """Add a skill or update the position of an active skill.
+        """DEPRECATED: do not use, method only for api backwards compatibility
 
-        The skill is added to the front of the list, if it's already in the
-        list it's removed so there is only a single entry of it.
+        Logs a warning and calls ConverseService.activate_skill
 
         Args:
             skill_id (str): identifier of skill to be added.
         """
-        # search the list for an existing entry that already contains it
-        # and remove that reference
-        if skill_id != '':
-            # do not call remove method to not send deactivate bus event!
-            for skill in self.active_skills:
-                if skill[0] == skill_id:
-                    self.active_skills.remove(skill)
-            # add skill with timestamp to start of skill_list
-            self.active_skills.insert(0, [skill_id, time.time()])
-            self.bus.emit(
-                Message("intent.service.skills.activated",
-                        {"skill_id": skill_id}))
-        else:
-            LOG.warning('Skill ID was empty, won\'t add to list of '
-                        'active skills.')
+        # NOTE: can not delete method for backwards compat with upstream
+        LOG.warning("self.add_active_skill has been deprecated!\n"
+                    "use self.converse.activate_skill instead")
+        self.converse.activate_skill(skill_id)
 
     def send_metrics(self, intent, context, stopwatch):
         """Send timing metrics to the backend.
@@ -392,7 +299,7 @@ class IntentService:
             # List of functions to use to match the utterance with intent.
             # These are listed in priority order.
             match_funcs = [
-                self._converse, padatious_matcher.match_high,
+                self.converse.converse_with_skills, padatious_matcher.match_high,
                 self.adapt_service.match_intent, self.fallback.high_prio,
                 padatious_matcher.match_medium, self.fallback.medium_prio,
                 padatious_matcher.match_low, self.fallback.low_prio
@@ -407,7 +314,7 @@ class IntentService:
                         break
             if match:
                 if match.skill_id:
-                    self.add_active_skill(match.skill_id)
+                    self.converse.activate_skill(match.skill_id)
                     # If the service didn't report back the skill_id it
                     # takes on the responsibility of making the skill "active"
 
@@ -427,35 +334,6 @@ class IntentService:
             self.send_metrics(match, message.context, stopwatch)
         except Exception as err:
             LOG.exception(err)
-
-    def _converse(self, utterances, lang, message):
-        """Give active skills a chance at the utterance
-
-        Args:
-            utterances (list):  list of utterances
-            lang (string):      4 letter ISO language code
-            message (Message):  message to use to generate reply
-
-        Returns:
-            IntentMatch if handled otherwise None.
-        """
-        utterances = [item for tup in utterances for item in tup]
-
-        # check for conversation time-out
-        skill_timeouts = self.converse_config.get("skill_timeouts") or {}
-        default_timeout = self.converse_config.get("timeout", 300)
-        self.active_skills = [
-            skill for skill in self.active_skills
-            if time.time() - skill[1] <= skill_timeouts.get(skill[0],
-                                                            default_timeout)]
-
-        # check if any skill wants to handle utterance
-        for skill in copy(self.active_skills):
-            if self.do_converse(utterances, skill[0], lang, message):
-                # update timestamp, or there will be a timeout where
-                # intent stops conversing whether its being used or not
-                return IntentMatch('Converse', None, None, skill[0])
-        return None
 
     def send_complete_intent_failure(self, message):
         """Send a message that no skill could handle the utterance.
@@ -608,7 +486,7 @@ class IntentService:
             message: query message to reply to.
         """
         self.bus.emit(message.reply("intent.service.active_skills.reply",
-                                    {"skills": self.active_skills}))
+                                    {"skills": self.converse.active_skills}))
 
     def handle_get_adapt(self, message):
         """handler getting the adapt response for an utterance.
