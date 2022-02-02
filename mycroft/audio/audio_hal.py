@@ -337,3 +337,7 @@ class AudioHAL:
         ) // 1000
 
         return self._bg_position // bytes_per_ms
+
+    def is_background_playing(self):
+        """True if background stream is currently playing"""
+        return not self._bg_paused

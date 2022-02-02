@@ -467,6 +467,9 @@ class AudioUserInterface:
 
     def send_stream_position(self):
         """Sends out background stream position to skills"""
+        if not self._ahal.is_background_playing():
+            return
+
         position_ms = self._ahal.get_background_time()
         if position_ms >= 0:
             self.bus.emit(
