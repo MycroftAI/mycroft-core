@@ -16,8 +16,9 @@
 import gc
 import importlib
 import os
-import sys
 from os import path, makedirs
+import sys
+from inspect import isclass
 from time import time
 
 import xdg.BaseDirectory
@@ -25,9 +26,10 @@ import xdg.BaseDirectory
 from mycroft.configuration import Configuration
 from ovos_utils.configuration import get_xdg_base, is_using_xdg
 from mycroft.messagebus import Message
+from mycroft.skills import MycroftSkill
 from mycroft.skills.settings import SettingsMetaUploader
-from mycroft.skills.settings import save_settings
 from mycroft.util.log import LOG
+
 
 SKILL_MAIN_MODULE = '__init__.py'
 
@@ -168,15 +170,15 @@ def remove_submodule_refs(module_name):
         module_name: name of skill module.
     """
     submodules = []
-    LOG.debug('Skill module: {}'.format(module_name))
+    LOG.debug(f'Skill module: {module_name}')
     # Collect found submodules
     for m in sys.modules:
         if m.startswith(module_name + '.'):
             submodules.append(m)
     # Remove all references them to in sys.modules
     for m in submodules:
-        LOG.debug('Removing sys.modules ref for {}'.format(m))
-        del (sys.modules[m])
+        LOG.debug(f'Removing sys.modules ref for {m}')
+        del sys.modules[m]
 
 
 def load_skill_module(path, skill_id):
@@ -243,11 +245,56 @@ def _get_last_modified_time(path):
     # Ensure modification times are valid
     bad_times = _bad_mod_times(mod_times)
     if bad_times:
-        raise OSError('{} had bad modification times'.format(bad_times))
+        raise OSError(f'{bad_times} had bad modification times')
     if all_files:
         return max(os.path.getmtime(f) for f in all_files)
     else:
         return 0
+
+
+def get_skill_class(skill_module):
+    """Find MycroftSkill based class in skill module.
+
+    Arguments:
+        skill_module (module): module to search for Skill class
+
+    Returns:
+        (MycroftSkill): Found subclass of MycroftSkill or None.
+    """
+    candidates = []
+    for name, obj in skill_module.__dict__.items():
+        if isclass(obj):
+            if issubclass(obj, MycroftSkill) and obj is not MycroftSkill:
+                candidates.append(obj)
+
+    for candidate in list(candidates):
+        others = [clazz for clazz in candidates if clazz != candidate]
+        # if we found a subclass of this candidate, it is not the final skill
+        if any(issubclass(clazz, candidate) for clazz in others):
+            candidates.remove(candidate)
+
+    if candidates:
+        if len(candidates) > 1:
+            LOG.warning(f"Multiple skills found in a single file!\n"
+                        f"{candidates}")
+        LOG.debug(f"Loading skill class: {candidates[0]}")
+        return candidates[0]
+    return None
+
+
+def get_create_skill_function(skill_module):
+    """Find create_skill function in skill module.
+
+    Arguments:
+        skill_module (module): module to search for create_skill function
+
+    Returns:
+        (function): Found create_skill function or None.
+    """
+    if hasattr(skill_module, "create_skill") and \
+            callable(skill_module.create_skill):
+        return skill_module.create_skill
+    return None
 
 
 class SkillLoader:
@@ -287,8 +334,7 @@ class SkillLoader:
             self.last_modified = self.last_loaded
             if not self.modtime_error_log_written:
                 self.modtime_error_log_written = True
-                LOG.error('Failed to get last_modification time '
-                          '({})'.format(repr(err)))
+                LOG.error(f'Failed to get last_modification time ({err})')
         else:
             self.modtime_error_log_written = False
 
@@ -339,10 +385,9 @@ class SkillLoader:
         try:
             self.instance.default_shutdown()
         except Exception:
-            log_msg = 'An error occurred while shutting down {}'
-            LOG.exception(log_msg.format(self.instance.name))
+            LOG.exception(f'An error occurred while shutting down {self.skill_id}')
         else:
-            LOG.info('Skill {} shut down successfully'.format(self.skill_id))
+            LOG.info(f'Skill {self.skill_id} shut down successfully')
 
     def _garbage_collect(self):
         """Invoke Python garbage collector to remove false references"""
@@ -350,17 +395,14 @@ class SkillLoader:
         # Remove two local references that are known
         refs = sys.getrefcount(self.instance) - 2
         if refs > 0:
-            log_msg = (
-                "After shutdown of {} there are still {} references "
+            LOG.warning(
+                f"After shutdown of {self.skill_id} there are still {refs} references "
                 "remaining. The skill won't be cleaned from memory."
             )
-            LOG.warning(log_msg.format(self.instance.name, refs))
 
     def _emit_skill_shutdown_event(self):
-        message = Message(
-            "mycroft.skills.shutdown",
-            data=dict(path=self.skill_directory, id=self.skill_id)
-        )
+        message = Message("mycroft.skills.shutdown",
+                          {"path": self.skill_directory, "id": self.skill_id})
         self.bus.emit(message)
 
     def _load(self):
@@ -370,7 +412,6 @@ class SkillLoader:
         else:
             skill_module = self._load_skill_source()
             if skill_module and self._create_skill_instance(skill_module):
-                self._check_for_first_run()
                 self.loaded = True
 
         self.last_loaded = time()
@@ -390,95 +431,57 @@ class SkillLoader:
         self.instance = None
 
     def _skip_load(self):
-        log_msg = 'Skill {} is blacklisted - it will not be loaded'
-        LOG.info(log_msg.format(self.skill_id))
+        LOG.info(f'Skill {self.skill_id} is blacklisted - it will not be loaded')
 
     def _load_skill_source(self):
         """Use Python's import library to load a skill's source code."""
         main_file_path = os.path.join(self.skill_directory, SKILL_MAIN_MODULE)
+        skill_module = None
         if not os.path.exists(main_file_path):
-            error_msg = 'Failed to load {} due to a missing file.'
-            LOG.error(error_msg.format(self.skill_id))
+            LOG.error(f'Failed to load {self.skill_id} due to a missing file.')
         else:
             try:
                 skill_module = load_skill_module(main_file_path, self.skill_id)
             except Exception as e:
-                LOG.exception('Failed to load skill: '
-                              '{} ({})'.format(self.skill_id, repr(e)))
-            else:
-                module_is_skill = (
-                        hasattr(skill_module, 'create_skill') and
-                        callable(skill_module.create_skill)
-                )
-                if module_is_skill:
-                    return skill_module
-        return None  # Module wasn't loaded
+                LOG.exception(f'Failed to load skill: {self.skill_id} ({e})')
+        return skill_module
 
     def _create_skill_instance(self, skill_module):
-        """Use v2 skills framework to create the skill."""
-        try:
-            self.instance = skill_module.create_skill()
-        except Exception as e:
-            log_msg = 'Skill __init__ failed with {}'
-            LOG.exception(log_msg.format(repr(e)))
-            self.instance = None
+        """create the skill object.
 
-        if self.instance:
-            self.instance.skill_id = self.skill_id
-            self.instance.bind(self.bus)
-            try:
-                self.instance.load_data_files()
-                # Set up intent handlers
-                # TODO: can this be a public method?
-                self.instance._register_decorated()
-                self.instance.register_resting_screen()
-                self.instance.initialize()
-            except Exception as e:
-                LOG.exception(f'Skill initialization failed: {e}')
-                # If an exception occurs, attempt to clean up the skill
-                try:
-                    self.instance.default_shutdown()
-                except Exception as e2:
-                    # if initialize failed then it's likely
-                    # default_shutdown will fail
-                    LOG.debug(f'Skill cleanup failed: {e2}')
-                    LOG.debug(f'this is usually fine and often expected')
-                self.instance = None
+        Arguments:
+            skill_module (module): Module to load from
+
+        Returns:
+            (bool): True if skill was loaded successfully.
+        """
+        try:
+            skill_creator = get_create_skill_function(skill_module) or \
+                            get_skill_class(skill_module)
+
+            # create the skill
+            self.instance = skill_creator()
+
+            if not self.instance.is_fully_initialized:
+                # finish initialization of skill class
+                self.instance._startup(self.bus, self.skill_id)
+        except Exception as e:
+            LOG.exception(f'Skill __init__ failed with {e}')
+            self.instance = None
 
         return self.instance is not None
 
-    def _check_for_first_run(self):
-        """The very first time a skill is run, speak the intro."""
-        first_run = self.instance.settings.get(
-            "__mycroft_skill_firstrun",
-            True
-        )
-        if first_run:
-            LOG.info("First run of " + self.skill_id)
-            self.instance.settings["__mycroft_skill_firstrun"] = False
-            save_settings(self.instance.settings_write_path,
-                          self.instance.settings)
-            intro = self.instance.get_intro_message()
-            if intro:
-                self.instance.speak(intro)
-
     def _communicate_load_status(self):
         if self.loaded:
-            message = Message(
-                'mycroft.skills.loaded',
-                data=dict(
-                    path=self.skill_directory,
-                    id=self.skill_id,
-                    name=self.instance.name,
-                    modified=self.last_modified
-                )
-            )
+            message = Message('mycroft.skills.loaded',
+                              {"path": self.skill_directory,
+                               "id": self.skill_id,
+                               "name": self.instance.name,
+                               "modified": self.last_modified})
             self.bus.emit(message)
-            LOG.info('Skill {} loaded successfully'.format(self.skill_id))
+            LOG.info(f'Skill {self.skill_id} loaded successfully')
         else:
-            message = Message(
-                'mycroft.skills.loading_failure',
-                data=dict(path=self.skill_directory, id=self.skill_id)
-            )
+            message = Message('mycroft.skills.loading_failure',
+                              {"path": self.skill_directory, "id": self.skill_id})
             self.bus.emit(message)
-            LOG.error('Skill {} failed to load'.format(self.skill_id))
+            LOG.error(f'Skill {self.skill_id} failed to load')

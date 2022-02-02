@@ -114,13 +114,15 @@ class MycroftSkill:
     Args:
         name (str): skill name
         bus (MycroftWebsocketClient): Optional bus connection
-        use_settings (bool): Set to false to not use skill settings at all
+        use_settings (bool): Set to false to not use skill settings at all (DEPRECATED)
     """
 
     def __init__(self, name=None, bus=None, use_settings=True):
+        self._init_event = Event()
+
         self.name = name or self.__class__.__name__
         self.resting_name = None
-        self.skill_id = ''  # will be set from the path, so guaranteed unique
+        self.skill_id = ''  # will be set by SkillLoader, guaranteed unique
         self.settings_meta = None  # set when skill is loaded in SkillLoader
 
         # Get directory of skill
@@ -132,15 +134,16 @@ class MycroftSkill:
 
         self._bus = None
         self._enclosure = None
-        self.bind(bus)
+
         #: Mycroft global configuration. (dict)
         self.config_core = Configuration.get()
 
         self.settings = None
         self.settings_write_path = None
 
-        if use_settings:
-            self._init_settings()
+        # old kludge from fallback skills, unused according to grep
+        if use_settings is False:
+            LOG.warning("use_settings has been deprecated! skill settings are always enabled")
 
         #: Set to register a callback method that will be called every time
         #: the skills settings are updated. The referenced method should
@@ -165,6 +168,73 @@ class MycroftSkill:
 
         # Skill Public API
         self.public_api = {}
+
+    @property
+    def is_fully_initialized(self):
+        """Determines if the skill has been fully loaded and setup.
+        When True all data has been loaded and all internal state and events setup"""
+        return self._init_event.is_set()
+
+    def handle_first_run(self):
+        """The very first time a skill is run, speak the intro."""
+        intro = self.get_intro_message()
+        if intro:
+            # supports .dialog files for easy localization
+            # when .dialog does not exist, the text is spoken
+            # it is backwards compatible
+            self.speak_dialog(intro)
+
+    def _check_for_first_run(self):
+        """Determine if its the very first time a skill is run."""
+        first_run = self.settings.get("__mycroft_skill_firstrun", True)
+        if first_run:
+            LOG.info("First run of " + self.skill_id)
+            self.handle_first_run()
+            self.settings["__mycroft_skill_firstrun"] = False
+            save_settings(self.settings_write_path, self.settings)
+
+    def _startup(self, bus, skill_id=""):
+        """Startup the skill.
+
+        This connects the skill to the messagebus, loads vocabularies and
+        data files and in the end calls the skill creator's "intialize" code.
+
+        Arguments:
+            bus: Mycroft Messagebus connection object.
+            skill_id (str): need to be unique, by default is set from skill path
+                but skill loader can override this
+        """
+        if self.is_fully_initialized:
+            LOG.warning(f"Tried to initialize {self.skill_id} multiple times, ignoring")
+            return
+
+        # NOTE: this method is called by SkillLoader
+        # it is private to make it clear to skill devs they should not touch it
+        try:
+            # set the skill_id
+            self.skill_id = skill_id or basename(self.root_dir)
+            self.intent_service.set_id(self.skill_id)
+            self.event_scheduler.set_id(self.skill_id)
+            self._init_settings()
+
+            # initialize anything that depends on the messagebus
+            self.bind(bus)
+            self.load_data_files()
+            self._register_decorated()
+            self.register_resting_screen()
+
+            # run skill developer initialization code
+            self.initialize()
+            self._check_for_first_run()
+            self._init_event.set()
+        except Exception as e:
+            LOG.exception('Skill initialization failed')
+            # If an exception occurs, attempt to clean up the skill
+            try:
+                self.default_shutdown()
+            except Exception as e2:
+                pass
+            raise e
 
     @property
     def dialog_renderer(self):
@@ -323,9 +393,7 @@ class MycroftSkill:
             self._bus = bus
             self.events.set_bus(bus)
             self.intent_service.set_bus(bus)
-            self.intent_service.set_id(self.skill_id)
             self.event_scheduler.set_bus(bus)
-            self.event_scheduler.set_id(self.skill_id)
             self._enclosure = EnclosureAPI(bus, self.name)
             self._register_system_event_handlers()
             # Initialize the SkillGui
