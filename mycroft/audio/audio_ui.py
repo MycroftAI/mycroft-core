@@ -140,7 +140,7 @@ class AudioUserInterface:
         self._bg_position_timer = RepeatingTimer(1.0, self.send_stream_position)
 
         self._speech_queue = queue.Queue()
-        self._speech_thread: typing.Optional[threading.Thead] = None
+        self._speech_thread: typing.Optional[threading.Thread] = None
         self._tts_session_id: typing.Optional[str] = None
         self._speech_finished = threading.Event()
 
