@@ -17,16 +17,17 @@
 import re
 import sys
 import traceback
-from copy import deepcopy
+from copy import copy
 from inspect import signature
 from itertools import chain
 from os import walk, listdir
 from os.path import join, abspath, dirname, basename, exists, isdir
-from pathlib import Path
+import shutil
 from threading import Event
 
 import xdg.BaseDirectory
 from adapt.intent import Intent, IntentBuilder
+from json_database import JsonStorage
 
 from mycroft import dialog
 from mycroft.api import DeviceApi
@@ -41,7 +42,6 @@ from mycroft.skills.event_scheduler import EventSchedulerInterface
 from mycroft.skills.intent_service_interface import IntentServiceInterface
 from mycroft.skills.mycroft_skill.event_container import EventContainer, \
     create_wrapper, get_handler_name
-from mycroft.skills.settings import get_local_settings, save_settings
 from mycroft.skills.skill_data import (
     load_vocabulary,
     load_regex,
@@ -139,7 +139,8 @@ class MycroftSkill:
         #: Mycroft global configuration. (dict)
         self.config_core = Configuration.get()
 
-        self.settings = None
+        self.settings = {}
+        self._initial_settings = {}
         self.settings_write_path = None
 
         # old kludge from fallback skills, unused according to grep
@@ -192,7 +193,7 @@ class MycroftSkill:
             LOG.info("First run of " + self.skill_id)
             self.handle_first_run()
             self.settings["__mycroft_skill_firstrun"] = False
-            save_settings(self.settings_write_path, self.settings)
+            self.settings.store()
 
     def _startup(self, bus, skill_id=""):
         """Startup the skill.
@@ -237,6 +238,45 @@ class MycroftSkill:
                 pass
             raise e
 
+    def _init_settings(self):
+        """Setup skill settings."""
+        LOG.debug(f"initializing skill settings for {self.skill_id}")
+
+        # if settings were used in __init__ method self._startup won't have been called yet
+        # assume these are default values
+        if self.settings:
+            self._initial_settings = copy(self.settings)
+
+        # migrate settings if needed
+        if not exists(self.settings_path) and exists(self._old_settings_path):
+            shutil.copy(self._old_settings_path, self.settings_path)
+
+        # NOTE: lock is disabled due to usage of deepcopy and to allow json serialization
+        self.settings = JsonStorage(self.settings_path, disable_lock=True)
+
+        # copy default values set in __init__
+        for k, v in self._initial_settings.items():
+            if k not in self.settings:
+                self.settings[k] = v
+        self._initial_settings = copy(self.settings)
+
+    @property
+    def _old_settings_path(self):
+        old_dir = self.config_core.get("data_dir", "/opt/mycroft")
+        old_folder = self.config_core.get("skills", {}).get("msm", {}).get("directory", "skills")
+        return join(old_dir, old_folder, self.skill_id, 'settings.json')
+
+    @property
+    def settings_path(self):
+        is_xdg = is_using_xdg()
+        if self.settings_write_path:
+            LOG.warning("self.settings_write_path has been deprecated! "
+                        "Support will be dropped in a future release")
+            return join(self.settings_write_path, 'settings.json')
+        if not is_xdg:
+            return self._old_settings_path
+        return join(xdg.BaseDirectory.save_config_path(get_xdg_base(), 'skills', self.skill_id), 'settings.json')
+
     @property
     def dialog_renderer(self):
         if self.lang in self.dialog_renderers:
@@ -247,36 +287,6 @@ class MycroftSkill:
             return self.dialog_renderers[self.lang]
         # Fall back to main language
         return self.dialog_renderers.get(self._core_lang)
-
-    def _init_settings(self):
-        """Setup skill settings."""
-
-        # TODO remove this ugly ugly kludge
-        # To not break existing setups,
-        # save to skill directory if the file exists already
-        self.settings_write_path = Path(self.root_dir)
-
-        # Otherwise save to XDG_CONFIG_DIR
-        if not self.settings_write_path.joinpath('settings.json').exists():
-            self.settings_write_path = Path(xdg.BaseDirectory.save_config_path(
-                get_xdg_base(), 'skills', basename(self.root_dir)))
-
-        # To not break existing setups,
-        # read from skill directory if the settings file exists there
-        settings_read_path = Path(self.root_dir)
-
-        # Then, check XDG_CONFIG_DIR
-        if not settings_read_path.joinpath('settings.json').exists():
-            for path in xdg.BaseDirectory.load_config_paths(get_xdg_base(), 'skills',
-                                                            basename(self.root_dir)):
-                path = Path(path)
-                # If there is a settings file here, use it
-                if path.joinpath('settings.json').exists():
-                    settings_read_path = path
-                    break
-
-        self.settings = get_local_settings(settings_read_path, self.name)
-        self._initial_settings = deepcopy(self.settings)
 
     @property
     def enclosure(self):
@@ -495,7 +505,7 @@ class MycroftSkill:
             if remote_settings is not None:
                 LOG.info('Updating settings for skill ' + self.name)
                 self.settings.update(**remote_settings)
-                save_settings(self.settings_write_path, self.settings)
+                self.settings.store()
                 if self.settings_change_callback is not None:
                     self.settings_change_callback()
 
@@ -1175,8 +1185,8 @@ class MycroftSkill:
             """Store settings and indicate that the skill handler has completed
             """
             if self.settings != self._initial_settings:
-                save_settings(self.settings_write_path, self.settings)
-                self._initial_settings = deepcopy(self.settings)
+                self.settings.store()
+                self._initial_settings = copy(self.settings)
             if handler_info:
                 msg_type = handler_info + '.complete'
                 message.context["skill_id"] = self.skill_id
@@ -1636,10 +1646,8 @@ class MycroftSkill:
         self.settings_change_callback = None
 
         # Store settings
-        if self.settings != self._initial_settings and Path(
-                self.root_dir).exists():
-            save_settings(self.settings_write_path, self.settings)
-
+        if self.settings != self._initial_settings:
+            self.settings.store()
         if self.settings_meta:
             self.settings_meta.stop()
 
