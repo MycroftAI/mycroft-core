@@ -36,7 +36,7 @@ from mycroft.audio import wait_while_speaking
 from mycroft.enclosure.api import EnclosureAPI
 from mycroft.enclosure.gui import SkillGUI
 from mycroft.configuration import Configuration
-from mycroft.dialog import load_dialogs
+from mycroft.dialog import load_dialogs, MustacheDialogRenderer
 from mycroft.filesystem import FileSystemAccess
 from mycroft.messagebus.message import Message, dig_for_message
 from mycroft.metrics import report_metric
@@ -59,8 +59,8 @@ from ..skill_data import (
     munge_regex,
     munge_intent_parser,
     read_vocab_file,
-    read_value_file,
-    read_translated_file
+    ResourceFileLocator,
+    Translator
 )
 from .skill_control import SkillControl
 
@@ -118,6 +118,9 @@ class MycroftSkill:
         bus (MycroftWebsocketClient): Optional bus connection
         use_settings (bool): Set to false to not use skill settings at all
     """
+    _resource_file_locator = None
+    _translator = None
+
     def __init__(self, name=None, bus=None, use_settings=True):
         self.name = name or self.__class__.__name__
         self.skill_id = ''  # will be set from the path, so guaranteed unique
@@ -283,6 +286,26 @@ class MycroftSkill:
     def lang(self):
         """Get the configured language."""
         return self.config_core.get('lang')
+
+    @property
+    def resource_file_locator(self):
+        """Lazily instantiates a ResourceFileLocator instance when needed."""
+        if self._resource_file_locator is None:
+            self._resource_file_locator = ResourceFileLocator(self.root_dir,
+                                                              self.lang)
+
+        return self._resource_file_locator
+
+    @property
+    def translator(self):
+        """Lazily instantiates a resource file translator when needed."""
+        if self._translator is None or self.dialog_renderer is None:
+            if self.dialog_renderer is None:
+                self.dialog_renderer = MustacheDialogRenderer()
+            self._translator = Translator(self.resource_file_locator,
+                                          self.dialog_renderer)
+
+        return self._translator
 
     def bind(self, bus):
         """Register messagebus emitter with skill.
@@ -765,22 +788,8 @@ class MycroftSkill:
                     self.register_intent_file(intent_file, method)
 
     def translate(self, text, data=None):
-        """Load a translatable single string resource
-
-        The string is loaded from a file in the skill's dialog subdirectory
-        'dialog/<lang>/<text>.dialog'
-
-        The string is randomly chosen from the file and rendered, replacing
-        mustache placeholders with values found in the data dictionary.
-
-        Args:
-            text (str): The base filename  (no extension needed)
-            data (dict, optional): a JSON dictionary
-
-        Returns:
-            str: A randomly chosen string from the file
-        """
-        return self.dialog_renderer.render(text, data or {})
+        """Deprecated method for translating a dialog file."""
+        return self.translator.translate_dialog(text, data or {})
 
     def find_resource(self, res_name, res_dirname=None):
         """Find a resource file.
@@ -844,73 +853,16 @@ class MycroftSkill:
         return None
 
     def translate_namedvalues(self, name, delim=','):
-        """Load translation dict containing names and values.
-
-        This loads a simple CSV from the 'dialog' folders.
-        The name is the first list item, the value is the
-        second.  Lines prefixed with # or // get ignored
-
-        Args:
-            name (str): name of the .value file, no extension needed
-            delim (char): delimiter character used, default is ','
-
-        Returns:
-            dict: name and value dictionary, or empty dict if load fails
-        """
-
-        if not name.endswith('.value'):
-            name += '.value'
-
-        try:
-            filename = self.find_resource(name, 'dialog')
-            return read_value_file(filename, delim)
-
-        except Exception:
-            return {}
+        """Deprecated method for translating a name/value file."""
+        return self.translator.translate_named_values(name, delim)
 
     def translate_template(self, template_name, data=None):
-        """Load a translatable template.
-
-        The strings are loaded from a template file in the skill's dialog
-        subdirectory.
-        'dialog/<lang>/<template_name>.template'
-
-        The strings are loaded and rendered, replacing mustache placeholders
-        with values found in the data dictionary.
-
-        Args:
-            template_name (str): The base filename (no extension needed)
-            data (dict, optional): a JSON dictionary
-
-        Returns:
-            list of str: The loaded template file
-        """
-        return self.__translate_file(template_name + '.template', data)
+        """Deprecated method for translating a template file"""
+        return self.translator.translate_template(template_name, data)
 
     def translate_list(self, list_name, data=None):
-        """Load a list of translatable string resources
-
-        The strings are loaded from a list file in the skill's dialog
-        subdirectory.
-        'dialog/<lang>/<list_name>.list'
-
-        The strings are loaded and rendered, replacing mustache placeholders
-        with values found in the data dictionary.
-
-        Args:
-            list_name (str): The base filename (no extension needed)
-            data (dict, optional): a JSON dictionary
-
-        Returns:
-            list of str: The loaded list of strings with items in consistent
-                         positions regardless of the language.
-        """
-        return self.__translate_file(list_name + '.list', data)
-
-    def __translate_file(self, name, data):
-        """Load and render lines from dialog/<lang>/<name>"""
-        filename = self.find_resource(name, 'dialog')
-        return read_translated_file(filename, data)
+        """Deprecated method for translating a list."""
+        return self.translator.translate_list(list_name, data)
 
     def add_event(self, name, handler, handler_info=None, once=False):
         """Create event handler for executing intent or other event.
