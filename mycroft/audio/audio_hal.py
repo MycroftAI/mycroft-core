@@ -64,7 +64,7 @@ class AudioHAL:
         self.audio_chunk_size = audio_chunk_size
 
         # Cache of mixer chunks
-        self._fg_cache: typing.Dict[ChannelType, mixer.Mix_Chunk] = {}
+        self._fg_cache: typing.Dict[str, mixer.Mix_Chunk] = {}
 
         # Mixer chunks to free after finished playing
         self._fg_free: typing.Dict[ChannelType, mixer.Mix_Chunk] = {}

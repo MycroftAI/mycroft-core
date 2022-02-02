@@ -259,15 +259,16 @@ class AudioUserInterface:
         self._duck_volume()
         self._play_effect(self._start_listening_uri)
 
-    def _get_or_cache_uri(self, uri: str) -> str:
+    def _get_or_cache_uri(self, uri: str) -> Path:
         """Gets file path for uri, transcoding/caching as WAV if necessary"""
         file_path = self._effect_paths.get(uri)
         if file_path is None:
             # Transcode and cache WAV to temporary file
+            assert self._cache_dir is not None
             with tempfile.NamedTemporaryFile(
                 mode="wb", dir=self._cache_dir.name, suffix=".wav", delete=False
             ) as cache_file:
-                file_path = cache_file.name
+                file_path = Path(cache_file.name)
                 LOG.info("Caching %s to %s", uri, file_path)
 
                 # Use VLC to transcode
