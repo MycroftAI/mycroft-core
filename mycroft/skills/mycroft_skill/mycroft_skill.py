@@ -36,7 +36,7 @@ from mycroft.audio import wait_while_speaking
 from mycroft.enclosure.api import EnclosureAPI
 from mycroft.enclosure.gui import SkillGUI
 from mycroft.configuration import Configuration
-from mycroft.dialog import load_dialogs, MustacheDialogRenderer
+from mycroft.dialog import load_dialogs
 from mycroft.filesystem import FileSystemAccess
 from mycroft.messagebus.message import Message, dig_for_message
 from mycroft.metrics import report_metric
@@ -300,8 +300,6 @@ class MycroftSkill:
     def translator(self):
         """Lazily instantiates a resource file translator when needed."""
         if self._translator is None or self.dialog_renderer is None:
-            if self.dialog_renderer is None:
-                self.dialog_renderer = MustacheDialogRenderer()
             self._translator = Translator(self.resource_file_locator,
                                           self.dialog_renderer)
 
@@ -1226,6 +1224,7 @@ class MycroftSkill:
             self.dialog_renderer = load_dialogs(locale_path)
         else:
             LOG.debug('No dialog loaded')
+        self.translator.dialog_renderer = self.dialog_renderer
 
     def load_data_files(self, root_directory=None):
         """Called by the skill loader to load intents, dialogs, etc.
