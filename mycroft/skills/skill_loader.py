@@ -16,18 +16,145 @@
 import gc
 import importlib
 import os
-from os.path import dirname
 import sys
+from os import path, makedirs
 from time import time
 
+import xdg.BaseDirectory
+
 from mycroft.configuration import Configuration
+from ovos_utils.configuration import get_xdg_base, is_using_xdg
 from mycroft.messagebus import Message
+from mycroft.skills.settings import SettingsMetaUploader
 from mycroft.skills.settings import save_settings
 from mycroft.util.log import LOG
 
-from mycroft.skills.settings import SettingsMetaUploader
-
 SKILL_MAIN_MODULE = '__init__.py'
+
+
+def _get_skill_folder_name(conf=None):
+    # TODO deprecate on version 0.0.3 when the warning is no longer needed
+    conf = conf or Configuration.get(remote=False)
+    folder = conf["skills"].get("directory")
+
+    if not folder:
+        # also check under old "msm" section for backwards compat
+        folder = conf["skills"].get("msm", {}).get("directory")
+        if folder:
+            LOG.warning("msm has been deprecated\n"
+                        "please move 'skills.msm.directory' to 'skills.directory' in mycroft.conf\n"
+                        "support will be removed on version 0.0.3")
+        else:
+            folder = "skills"
+    return folder
+
+
+def get_skill_directories(conf=None):
+    """ returns list of skill directories ordered by expected loading order
+
+    This corresponds to:
+    - XDG_DATA_DIRS
+    - default directory (see get_default_skills_directory method for details)
+    - user defined extra directories
+
+    Each directory contains individual skill folders to be loaded
+
+    If a skill exists in more than one directory (same folder name) previous instances will be ignored
+        ie. directories at the end of the list have priority over earlier directories
+
+    NOTE: empty folders are interpreted as disabled skills
+
+    new directories can be defined in mycroft.conf by specifying a full path
+    each extra directory is expected to contain individual skill folders to be loaded
+
+    the xdg folder name can also be changed, it defaults to "skills"
+        eg. ~/.local/share/mycroft/FOLDER_NAME
+
+    {
+        "skills": {
+            "directory": "skills",
+            "extra_directories": ["path/to/extra/dir/to/scan/for/skills"]
+        }
+    }
+
+    Args:
+        conf (dict): mycroft.conf dict, will be loaded automatically if None
+    """
+    # the contents of each skills directory must be individual skill folders
+    # we are still dependent on the mycroft-core structure of skill_id/__init__.py
+
+    conf = conf or Configuration.get(remote=False)
+    folder = _get_skill_folder_name(conf)
+
+    # load all valid XDG paths
+    # NOTE: skills are actually code, but treated as user data!
+    # they should be considered applets rather than full applications
+    skill_locations = list(reversed(
+        [os.path.join(p, folder)
+         for p in xdg.BaseDirectory.load_data_paths(get_xdg_base())]
+    ))
+
+    # load the default skills folder
+    # only meaningful if xdg support is disabled
+    default = get_default_skills_directory(conf)
+    if default not in skill_locations:
+        skill_locations.append(default)
+
+    # load additional explicitly configured directories
+    conf = conf.get("skills") or {}
+    # extra_directories is a list of directories containing skill subdirectories
+    # NOT a list of individual skill folders
+    skill_locations += conf.get("extra_directories") or []
+    return skill_locations
+
+
+def get_default_skills_directory(conf=None):
+    """ return default directory to scan for skills
+
+    This is only meaningful if xdg is disabled in ovos.conf
+    If xdg is enabled then data_dir is always XDG_DATA_DIR
+    If xdg is disabled then data_dir by default corresponds to /opt/mycroft
+
+    users can define the data directory in mycroft.conf
+    the skills folder name (relative to data_dir) can also be defined there
+
+    NOTE: folder name also impacts all XDG skill directories!
+
+    {
+        "data_dir": "/opt/mycroft",
+        "skills": {
+            "directory": "skills"
+        }
+    }
+
+    Args:
+        conf (dict): mycroft.conf dict, will be loaded automatically if None
+    """
+    conf = conf or Configuration.get(remote=False)
+    path_override = conf["skills"].get("directory_override")
+    folder = _get_skill_folder_name()
+
+    # if .conf wants to use a specific path, use it!
+    if path_override:
+        LOG.warning("'directory_override' is deprecated!\n"
+                    "It will no longer be supported after version 0.0.3\n"
+                    "add the new path to 'extra_directories' instead")
+        skills_folder = path_override
+    # if xdg is disabled, ignore it!
+    elif not is_using_xdg():
+        # old style mycroft-core skills path definition
+        data_dir = conf.get("data_dir") or "/opt/" + get_xdg_base()
+        skills_folder = path.join(data_dir, folder)
+    else:
+        skills_folder = xdg.BaseDirectory.save_data_path(get_xdg_base() + '/' + folder)
+    # create folder if needed
+    try:
+        makedirs(skills_folder, exist_ok=True)
+    except PermissionError:  # old style /opt/mycroft/skills not available
+        skills_folder = xdg.BaseDirectory.save_data_path(get_xdg_base() + '/' + folder)
+        makedirs(skills_folder, exist_ok=True)
+
+    return path.expanduser(skills_folder)
 
 
 def remove_submodule_refs(module_name):
@@ -254,7 +381,7 @@ class SkillLoader:
 
     def _prepare_settings_meta(self):
         settings_meta = SettingsMetaUploader(self.skill_directory,
-                                             self.instance.name)
+                                             self.instance.skill_id)
         self.instance.settings_meta = settings_meta
 
     def _prepare_for_load(self):

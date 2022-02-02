@@ -26,13 +26,10 @@ from ovos_utils.configuration import get_xdg_base
 from mycroft.messagebus.message import Message
 from mycroft.util.log import LOG
 from mycroft.util import connected
-from mycroft.skills.msm_wrapper import create_msm as msm_creator, \
-    build_msm_config, get_skills_directory
 from mycroft.skills.settings import SkillSettingsDownloader
-from mycroft.skills.skill_loader import SkillLoader
+from mycroft.skills.skill_loader import SkillLoader, get_skill_directories
 from mycroft.skills.skill_updater import SkillUpdater
 from mycroft.messagebus import MessageBusClient
-import xdg.BaseDirectory
 
 SKILL_MAIN_MODULE = '__init__.py'
 
@@ -114,35 +111,7 @@ def _shutdown_skill(instance):
                       '{}'.format(instance.skill_id))
 
 
-def _get_skill_locations(conf=None):
-    # the contents of each skills directory must be individual skill folders
-    # we are still dependent on the mycroft-core structure of skill_id/__init__.py
-
-    conf = conf or Configuration.get(remote=False)
-    # load all valid XDG paths
-    # NOTE: skills are actually code, but treated as user data!
-    # they should be considered applets rather than full applications
-    skill_locations = list(reversed(
-        [os.path.join(p, "skills")
-         for p in xdg.BaseDirectory.load_data_paths(get_xdg_base())]
-    ))
-
-    # load the old hardcoded /opt/mycroft/skills folder
-    # needed for integration with msm, assume external tools will install skills here!
-    default = get_skills_directory(conf)
-    if default not in skill_locations:
-        skill_locations.append(default)
-
-    # load additional explicitly configured directories
-    conf = conf.get("skills") or {}
-    # extra_directories is a list of directories containing skill subdirectories
-    # NOT a list of individual skill folders
-    skill_locations += conf.get("extra_directories") or []
-    return skill_locations
-
-
 class SkillManager(Thread):
-    _msm = None
 
     def __init__(self, bus, watchdog=None):
         """Constructor
@@ -188,7 +157,6 @@ class SkillManager(Thread):
         )
 
         # Update upon request
-        self.bus.on('skillmanager.update', self.schedule_now)
         self.bus.on('skillmanager.list', self.send_skill_list)
         self.bus.on('skillmanager.deactivate', self.deactivate_skill)
         self.bus.on('skillmanager.keep', self.deactivate_except)
@@ -257,22 +225,22 @@ class SkillManager(Thread):
 
     @property
     def msm(self):
-        if self._msm is None:
-            msm_config = build_msm_config(self.config)
-            self._msm = msm_creator(msm_config)
-
-        return self._msm
+        """DEPRECATED: do not use, method only for api backwards compatibility
+        Logs a warning and returns None
+        """
+        return None
 
     @staticmethod
     def create_msm():
-        LOG.debug('instantiating msm via static method...')
-        msm_config = build_msm_config(Configuration.get())
-        msm_instance = msm_creator(msm_config)
-
-        return msm_instance
+        """DEPRECATED: do not use, method only for api backwards compatibility
+        Logs a warning and returns None
+        """
+        return None
 
     def schedule_now(self, _):
-        self.skill_updater.next_download = time() - 1
+        """DEPRECATED: do not use, method only for api backwards compatibility
+        Logs a warning
+        """
 
     def _start_settings_update(self):
         LOG.info('Start settings update')
@@ -287,34 +255,11 @@ class SkillManager(Thread):
         self._start_settings_update()
 
     def load_priority(self):
-        # NOTE: mycroft uses the skill name, this is not deterministic! msm
-        # decides what the name is based on the meta info from selene,
-        # if missing it uses folder name (skill_id), for backwards compat
-        # name is still support but skill_id is recommended! the name can be
-        # changed at any time and mess up the .conf, if the skill_id changes
-        # lots of other stuff will break so you are assured to notice
-        # TODO deprecate usage of skill_name once mycroft catches up
-        msm_skills = {skill.name: skill for skill in self.msm.all_skills}
-
         skill_ids = {os.path.basename(skill_path): skill_path
                      for skill_path in self._get_skill_directories()}
         priority_skills = self.skills_config.get("priority_skills", [])
         for skill_id in priority_skills:
-            if skill_id in msm_skills and skill_id not in skill_ids:
-                LOG.warning("ovos-core expects a skill_id in 'priority_skills'\n"
-                            "support for skill_name will be removed in version 0.0.3\n"
-                            "This is a bug in mycrof-core, skill_name is not deterministic!")
-                skill = msm_skills[skill_id]
-                if not skill.is_local:
-                    try:
-                        self.msm.install(skill)
-                    except Exception:
-                        LOG.exception(f'Downloading priority skill: {skill_id} failed')
-                        continue
-                skill_path = skill.path
-            else:
-                skill_path = skill_ids.get(skill_id)
-
+            skill_path = skill_ids.get(skill_id)
             if skill_path is not None:
                 loader = self._load_skill(skill_path)
                 if loader:
@@ -332,15 +277,11 @@ class SkillManager(Thread):
                 sleep(1)
             self._connected_event.set()
 
-        if (not self.skill_updater.defaults_installed() and
-                self.skills_config["auto_update"]):
-            LOG.info('Not all default skills are installed, '
-                     'performing skill update...')
-            self.skill_updater.update_skills()
         self._load_on_startup()
 
         # Sync backend and skills.
         if is_paired() and not self.upload_queue.started:
+            self.skill_updater.post_manifest()
             self._start_settings_update()
 
         # Scan the file folder that contains Skills.  If a Skill is updated,
@@ -350,13 +291,6 @@ class SkillManager(Thread):
                 self._unload_removed_skills()
                 self._reload_modified_skills()
                 self._load_new_skills()
-                self._update_skills()
-                if (is_paired() and self.upload_queue.started and
-                        len(self.upload_queue) > 0):
-                    self.msm.clear_cache()
-                    self.skill_updater.post_manifest()
-                    self.upload_queue.send()
-
                 self._watchdog()
                 sleep(2)  # Pause briefly before beginning next scan
             except Exception:
@@ -367,8 +301,8 @@ class SkillManager(Thread):
 
     def _remove_git_locks(self):
         """If git gets killed from an abrupt shutdown it leaves lock files."""
-        for skill_folder in _get_skill_locations():
-            lock_path = os.path.join(skill_folder, '*/.git/index.lock')
+        for skills_dir in get_skill_directories():
+            lock_path = os.path.join(skills_dir, '*/.git/index.lock')
             for i in glob(lock_path):
                 LOG.warning('Found and removed git lock file: ' + i)
                 os.remove(i)
@@ -451,7 +385,7 @@ class SkillManager(Thread):
         # let's scan all valid directories, if a skill folder name exists in
         # more than one of these then it should override the previous
         skillmap = {}
-        for skills_dir in _get_skill_locations():
+        for skills_dir in get_skill_directories():
             if not os.path.isdir(skills_dir):
                 continue
             for skill_id in os.listdir(skills_dir):
@@ -488,15 +422,6 @@ class SkillManager(Thread):
         # mycroft backend.
         if removed_skills:
             self.skill_updater.post_manifest(reload_skills_manifest=True)
-
-    def _update_skills(self):
-        """Update skills once an hour if update is enabled"""
-        do_skill_update = (
-                time() >= self.skill_updater.next_download and
-                self.skills_config.get("auto_update", False)
-        )
-        if do_skill_update:
-            self.skill_updater.update_skills()
 
     def is_alive(self, message=None):
         """Respond to is_alive status request."""

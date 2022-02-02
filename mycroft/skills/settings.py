@@ -57,7 +57,7 @@ SkillSettings Usage Example:
 """
 import json
 import os
-from os.path import dirname
+from os.path import dirname, basename
 import re
 from pathlib import Path
 from threading import Timer
@@ -72,7 +72,6 @@ from mycroft.messagebus.message import Message
 from mycroft.util import camel_case_split
 from mycroft.util.log import LOG
 from mycroft.util.file_utils import ensure_directory_exists
-from mycroft.skills.msm_wrapper import build_msm_config, create_msm
 
 ONE_MINUTE = 60
 
@@ -133,7 +132,7 @@ class SettingsMetaUploader:
 
     def __init__(self, skill_directory: str, skill_name: str):
         self.skill_directory = Path(skill_directory)
-        self.skill_name = skill_name
+        self.skill_name = skill_name  # TODO rename to skill_id
         self.json_path = self.skill_directory.joinpath('settingsmeta.json')
         self.yaml_path = self.skill_directory.joinpath('settingsmeta.yaml')
         self.config = Configuration.get()
@@ -151,65 +150,50 @@ class SettingsMetaUploader:
 
         self._stopped = None
 
-        # Property placeholders
-        self._msm = None
-        self._skill_gid = None
-
     @property
     def msm(self):
-        """Instance of the Mycroft Skills Manager"""
-        if self._msm is None:
-            msm_config = build_msm_config(self.config)
-            self._msm = create_msm(msm_config)
-
-        return self._msm
+        """DEPRECATED: do not use, method only for api backwards compatibility
+        Logs a warning and returns None
+        """
+        # unused but need to keep api backwards compatible
+        # log a warning and move on
+        LOG.warning("msm has been deprecated\n"
+                    "DO NOT use self.msm property")
+        return None
 
     def get_local_skills(self):
-        """Generate a mapping of skill path to skill name for all local skills.
+        """DEPRECATED: do not use, method only for api backwards compatibility
+        Logs a warning and returns empty dictionary
         """
-        return {skill.path: skill for skill in self.msm.local_skills.values()}
+        # unused but need to keep api backwards compatible
+        # log a warning and move on
+        LOG.warning("msm has been deprecated, do not use this utility method\n"
+                    "get_local_skills always returns an empty dict")
+        return {}
 
     @property
     def skill_gid(self):
-        """Skill identifier recognized by backend and core.
-
-        The skill_gid contains the device ID if the skill has been modified
-        on that device.  MSM does not know the ID of the device.  So, if it
-        finds a modified skill, it prepends the skill name portion of the ID
-        with "@|".
-
-        The device ID is known to this class.  To "finalize" the skill_gid,
-        insert the device ID between the "@" and the "|"
-        """
+        """Skill identifier recognized by selene backend"""
         api = self.api or DeviceApi()
+        skill_id = basename(self.skill_directory)
         if api.identity.uuid:
-            skills = self.get_local_skills()
-            skill_dir = str(self.skill_directory)
-            if skill_dir not in skills:
-                self.msm.clear_cache()
-                skills = self.get_local_skills()
-            skill = skills[skill_dir]
-            # If modified prepend the device uuid
-            self._skill_gid = skill.skill_gid.replace(
-                '@|',
-                '@{}|'.format(api.identity.uuid)
-            )
-
-            return self._skill_gid
-        else:
-            return None
+            return f'@{api.identity.uuid}|{skill_id}'
+        return f'@|{skill_id}'
 
     @property
     def msm_skill_display_name(self):
-        """Display name defined in MSM for use in settings meta."""
-        if self._msm_skill_display_name is None:
-            skills = {
-                skill.path: skill for skill in self.msm.local_skills.values()
-            }
-            skill = skills[str(self.skill_directory)]
-            self._msm_skill_display_name = skill.meta_info.get('display_name')
+        """DEPRECATED: do not use, method only for api backwards compatibility
+        Logs a warning and returns self.skill_display_name
+        """
+        LOG.warning("msm_skill_display_name has been deprecated\n"
+                    "use skill_display_name instead")
+        return self.skill_display_name
 
-        return self._msm_skill_display_name
+    @property
+    def skill_display_name(self):
+        """Display name for use in settings meta."""
+        skill_id = basename(self.skill_directory).split(".")[0]
+        return get_display_name(skill_id)
 
     @property
     def settings_meta_path(self):
@@ -284,9 +268,9 @@ class SettingsMetaUploader:
         self.settings_meta.update(
             skill_gid=self.skill_gid,
             display_name=(
-                    self.msm_skill_display_name or
-                    self.settings_meta.get('name') or
-                    get_display_name(self.skill_name)
+                self.skill_display_name or
+                self.settings_meta.get('name') or
+                get_display_name(self.skill_name)
             )
         )
         for deprecated in ('color', 'identifier', 'name'):

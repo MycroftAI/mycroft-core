@@ -19,7 +19,6 @@ from unittest.mock import Mock, patch
 from mycroft.skills.skill_loader import SkillLoader
 from mycroft.skills.skill_manager import SkillManager, UploadQueue
 from ..base import MycroftUnitTestBase
-from ..mocks import mock_msm
 
 
 class TestUploadQueue(TestCase):
@@ -61,7 +60,6 @@ class TestUploadQueue(TestCase):
 
 class TestSkillManager(MycroftUnitTestBase):
     mock_package = 'mycroft.skills.skill_manager.'
-    use_msm_mock = True
 
     def setUp(self):
         super().setUp()
@@ -69,14 +67,6 @@ class TestSkillManager(MycroftUnitTestBase):
         self._mock_skill_settings_downloader()
         self.skill_manager = SkillManager(self.message_bus_mock)
         self._mock_skill_loader_instance()
-
-    def _mock_msm(self):
-        if self.use_msm_mock:
-            msm_patch = patch(self.mock_package + 'msm_creator')
-            self.addCleanup(msm_patch.stop)
-            self.create_msm_mock = msm_patch.start()
-            self.msm_mock = mock_msm(str(self.temp_dir))
-            self.create_msm_mock.return_value = self.msm_mock
 
     def _mock_skill_settings_downloader(self):
         settings_download_patch = patch(
@@ -127,7 +117,6 @@ class TestSkillManager(MycroftUnitTestBase):
             self.message_bus_mock.event_handlers
         )
 
-    @skip("TODO msm cached_property is acting up")
     def test_remove_git_locks(self):
         git_dir = self.temp_dir.joinpath('foo/.git')
         git_dir.mkdir(parents=True)
@@ -138,48 +127,6 @@ class TestSkillManager(MycroftUnitTestBase):
         self.skill_manager._remove_git_locks()
 
         self.assertFalse(path.exists(git_lock_file_path))
-
-    def test_load_priority(self):
-        load_mock = Mock()
-        self.skill_manager._load_skill = load_mock
-        skill, self.skill_manager.msm.list = self._build_mock_msm_skill_list()
-        self.msm_mock.all_skills = [skill]
-        self.skill_manager.load_priority()
-
-        self.assertFalse(skill.install.called)
-        load_mock.assert_called_once_with(skill.path)
-
-    def test_install_priority(self):
-        load_mock = Mock()
-        self.skill_manager._load_skill = load_mock
-        skill, self.skill_manager.msm.list = self._build_mock_msm_skill_list()
-        skill.is_local = False
-        self.msm_mock.all_skills = [skill]
-        self.skill_manager.load_priority()
-
-        self.assertTrue(self.msm_mock.install.called)
-        load_mock.assert_called_once_with(skill.path)
-
-    def test_priority_skill_not_recognized(self):
-        load_or_reload_mock = Mock()
-        self.skill_manager._load_or_reload_skill = load_or_reload_mock
-        skill, self.skill_manager.msm.list = self._build_mock_msm_skill_list()
-        skill.name = 'barfoo'
-        self.skill_manager.load_priority()
-
-        self.assertFalse(skill.install.called)
-        self.assertFalse(load_or_reload_mock.called)
-
-    def test_priority_skill_install_failed(self):
-        load_or_reload_mock = Mock()
-        self.skill_manager._load_or_reload_skill = load_or_reload_mock
-        skill, self.skill_manager.msm.list = self._build_mock_msm_skill_list()
-        skill.is_local = False
-        skill.install.side_effect = ValueError
-        self.skill_manager.load_priority()
-
-        self.assertRaises(ValueError, skill.install)
-        self.assertFalse(load_or_reload_mock.called)
 
     def _build_mock_msm_skill_list(self):
         skill = Mock()
@@ -193,13 +140,11 @@ class TestSkillManager(MycroftUnitTestBase):
 
         return skill, skill_list_func
 
-    @skip("TODO msm cached_property is acting up")
     def test_no_skill_in_skill_dir(self):
         self.skill_dir.mkdir(parents=True)
         skill_directories = self.skill_manager._get_skill_directories()
         self.assertListEqual([], skill_directories)
 
-    @skip("TODO msm cached_property is acting up")
     def test_get_skill_directories(self):
         self.skill_dir.mkdir(parents=True)
         self.skill_dir.joinpath('__init__.py').touch()
@@ -338,7 +283,6 @@ class TestSkillManager(MycroftUnitTestBase):
         self.skill_manager.activate_skill(message)
         test_skill_loader.activate.assert_called_once_with()
 
-    @skip("TODO msm cached_property is acting up")
     def test_load_on_startup(self):
         self.skill_dir.mkdir(parents=True)
         self.skill_dir.joinpath('__init__.py').touch()
@@ -356,7 +300,6 @@ class TestSkillManager(MycroftUnitTestBase):
             self.message_bus_mock.message_types
         )
 
-    @skip("TODO msm cached_property is acting up")
     def test_load_newly_installed_skill(self):
         self.skill_dir.mkdir(parents=True)
         self.skill_dir.joinpath('__init__.py').touch()
@@ -370,7 +313,6 @@ class TestSkillManager(MycroftUnitTestBase):
                 self.skill_manager.skill_loaders[str(self.skill_dir)]
             )
 
-    @skip("TODO msm cached_property is acting up")
     def test_reload_modified(self):
         self.skill_dir.mkdir(parents=True)
         self.skill_dir.joinpath('__init__.py').touch()

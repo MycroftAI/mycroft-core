@@ -13,11 +13,11 @@
 # limitations under the License.
 #
 """Periodically run by skill manager to update skills and post the manifest."""
+import json
 import os
-import sys
-from datetime import datetime
-from time import time
+from os.path import join, isfile, isdir
 import xdg.BaseDirectory
+from json_database import JsonStorage
 
 from mycroft.api import DeviceApi, is_paired
 from mycroft.configuration import Configuration
@@ -25,16 +25,78 @@ from ovos_utils.configuration import get_xdg_base, is_using_xdg
 from mycroft.util import connected
 from combo_lock import ComboLock
 from mycroft.util.log import LOG
-from mycroft.skills.msm_wrapper import build_msm_config, create_msm, MsmException
 from mycroft.util.file_utils import get_temp_path
+from mycroft.skills.skill_loader import get_skill_directories
+
 
 ONE_HOUR = 3600
 FIVE_MINUTES = 300  # number of seconds in a minute
 
 
 def skill_is_blacklisted(skill):
-    blacklist = Configuration.get()['skills']['blacklisted_skills']
-    return os.path.basename(skill.path) in blacklist or skill.name in blacklist
+    """DEPRECATED: do not use, method only for api backwards compatibility
+    Logs a warning and returns False
+    """
+    # this is a internal msm helper
+    # it should have been private
+    # cant remove to keep api compatibility
+    # nothing in the wild should be using this
+    LOG.warning("skill_is_blacklisted is an internal method and has been deprecated. Stop using it!")
+    return False
+
+
+class _SeleneSkillsManifest(JsonStorage):
+    """dict subclass with save/load support
+
+    This dictionary contains the metadata expected by selene backend
+    This data is used to populate entries in selene skill settings page
+    It is only uploaded if enabled in mycroft.conf and device is paired
+
+    Direct usage is strongly discouraged, the purpose of this class is api backwards compatibility
+    """
+    def __init__(self, api=None):
+        path = os.path.join(xdg.BaseDirectory.save_data_path(get_xdg_base()), 'skills.json')
+        super().__init__(path)
+        if "skills" not in self:
+            self["skills"] = {}
+        self.api = api or DeviceApi()
+
+    def device_skill_state_hash(self):
+        return hash(json.dumps(self, sort_keys=True))
+
+    def add_skill(self, skill_id):
+        if self.api.identity.uuid:
+            skill_gid = f'@{self.api.identity.uuid}|{skill_id}'
+        else:
+            skill_gid = f'@|{skill_id}'
+        skill = {
+            "name": skill_id,
+            "origin": "non-msm",
+            "beta": True,
+            "status": 'active',
+            "installed": 0,
+            "updated": 0,
+            "installation": 'installed',
+            "skill_gid": skill_gid
+        }
+        self["skills"].append(skill)
+
+    def get_skill_state(self, skill_id):
+        """Find a skill entry in the device skill state and returns it."""
+        for skill_state in self.get('skills', []):
+            if skill_state.get('name') == skill_id:
+                return skill_state
+        return {}
+
+    def scan_skills(self):
+        for directory in get_skill_directories():
+            if not isdir(directory):
+                continue
+            for skill_id in os.listdir(directory):
+                skill_init = join(directory, skill_id, "__init__.py")
+                if isfile(skill_init):
+                    self.add_skill(skill_id)
+        self.store()
 
 
 class SkillUpdater:
@@ -45,228 +107,88 @@ class SkillUpdater:
                                 with the mycroft core system and handle
                                 commands.
     """
-    _installed_skills_file_path = None
-    _msm = None
 
     def __init__(self, bus=None):
+        self.__skill_manifest = _SeleneSkillsManifest()
+        self.post_manifest(True)
+
+        self.installed_skills = set()
+
+        # below are unused, only for api backwards compat
         self.msm_lock = ComboLock(get_temp_path('mycroft-msm.lck'))
         self.install_retries = 0
         self.config = Configuration.get()
         update_interval = self.config['skills'].get('update_interval', 1.0)
         self.update_interval = int(update_interval) * ONE_HOUR
-        self.dot_msm_path = os.path.join(self.msm.skills_dir, '.msm')
-        self.next_download = self._determine_next_download_time()
-        self._log_next_download_time()
-        self.installed_skills = set()
+        self.dot_msm_path = "/tmp/.msm"
+        self.next_download = 0
         self.default_skill_install_error = False
 
         if bus:
-            self._register_bus_handlers()
-
-    def _register_bus_handlers(self):
-        """TODO: Register bus handlers for triggering updates and such."""
-
-    def _determine_next_download_time(self):
-        """Determine the initial values of the next/last download times.
-
-        Update immediately if the .msm or installed skills file is missing
-        otherwise use the timestamp on .msm as a basis.
-        """
-        msm_files_exist = (
-                os.path.exists(self.dot_msm_path) and
-                os.path.exists(self.installed_skills_file_path)
-        )
-        if msm_files_exist:
-            mtime = os.path.getmtime(self.dot_msm_path)
-            next_download = mtime + self.update_interval
-        else:
-            # Last update can't be found or the requirements don't seem to be
-            # installed trigger update before skill loading
-            next_download = time() - 1
-
-        return next_download
+            LOG.warning("bus argument has been deprecated")
 
     @property
     def installed_skills_file_path(self):
         """Property representing the path of the installed skills file."""
-        if self._installed_skills_file_path is None:
-            virtual_env_path = os.path.dirname(os.path.dirname(sys.executable))
-            if os.access(virtual_env_path, os.W_OK | os.R_OK | os.X_OK):
-                self._installed_skills_file_path = os.path.join(
-                    virtual_env_path,
-                    '.mycroft-skills'
-                )
-            else:
-                if not is_using_xdg():
-                    self._installed_skills_file_path = os.path.expanduser(
-                        f'~/.{get_xdg_base()}/.mycroft-skills')
-                else:
-                    self._installed_skills_file_path = os.path.join(
-                        xdg.BaseDirectory.xdg_data_home, get_xdg_base(), '.mycroft-skills')
-
-        return self._installed_skills_file_path
+        return self.__skill_manifest.path
 
     @property
     def msm(self):
-        if self._msm is None:
-            msm_config = build_msm_config(self.config)
-            self._msm = create_msm(msm_config)
-
-        return self._msm
+        """DEPRECATED: do not use, method only for api backwards compatibility
+        Logs a warning and returns None
+        """
+        # unused but need to keep api backwards compatible
+        # log a warning and move on
+        LOG.warning("msm has been deprecated\n"
+                    "DO NOT use self.msm property")
+        return None
 
     @property
     def default_skill_names(self) -> tuple:
         """Property representing the default skills expected to be installed"""
-        default_skill_groups = dict(self.msm.repo.get_default_skill_names())
-        default_skills = set(default_skill_groups['default'])
-        platform_default_skills = default_skill_groups.get(self.msm.platform)
-        if platform_default_skills is None:
-            log_msg = 'No default skills found for platform {}'
-            LOG.info(log_msg.format(self.msm.platform))
-        else:
-            default_skills.update(platform_default_skills)
-
-        return tuple(default_skills)
-
-    def _load_installed_skills(self):
-        """Load the last known skill listing from a file."""
-        if os.path.isfile(self.installed_skills_file_path):
-            with open(self.installed_skills_file_path) as skills_file:
-                self.installed_skills = {
-                    i.strip() for i in skills_file.readlines() if i.strip()
-                }
-
-    def _save_installed_skills(self):
-        """Save the skill listing after the download to a file."""
-        with open(self.installed_skills_file_path, 'w') as skills_file:
-            for skill_name in self.installed_skills:
-                skills_file.write(skill_name + '\n')
+        LOG.warning("msm has been deprecated\n"
+                    "skill install/update is no longer handled by ovos-core")
+        return ()
 
     def update_skills(self, quick=False):
-        """Invoke MSM to install default skills and/or update installed skills
-
-        Args:
-            quick (bool): Expedite the download by running with more threads?
+        """DEPRECATED: do not use, method only for api backwards compatibility
+        Logs a warning and returns True
         """
-        LOG.info('Beginning skill update...')
-        self.msm._device_skill_state = None  # TODO: Proper msm method
-        success = True
-        if connected():
-            self._load_installed_skills()
-            with self.msm_lock, self.msm.lock:
-                self._apply_install_or_update(quick)
-            self._save_installed_skills()
-            # Schedule retry in 5 minutes on failure, after 10 shorter periods
-            # Go back to 60 minutes wait
-            if self.default_skill_install_error and self.install_retries < 10:
-                self._schedule_retry()
-                success = False
-            else:
-                self.install_retries = 0
-                self._update_download_time()
-        else:
-            self.handle_not_connected()
-            success = False
-
-        if success:
-            LOG.info('Skill update complete')
-
-        return success
+        LOG.warning("msm has been deprecated\n"
+                    "skill install/update is no longer handled by ovos-core")
+        return True
 
     def handle_not_connected(self):
-        """Notifications of the device not being connected to the internet"""
-        LOG.error('msm failed, network connection not available')
-        self.next_download = time() + FIVE_MINUTES
-
-    def _apply_install_or_update(self, quick):
-        """Invoke MSM to install or update a skill."""
-        try:
-            # Determine if all defaults are installed
-            defaults = all(
-                [s.is_local for s in self.msm.default_skills.values()]
-            )
-            num_threads = 20 if not defaults or quick else 2
-            self.msm.apply(
-                self.install_or_update,
-                self.msm.list(),
-                max_threads=num_threads
-            )
-            self.post_manifest()
-
-        except MsmException as e:
-            LOG.error('Failed to update skills: {}'.format(repr(e)))
+        """"DEPRECATED: do not use, method only for api backwards compatibility
+        Logs a warning
+        """
+        LOG.warning("msm has been deprecated\n"
+                    "no update will be scheduled")
 
     def post_manifest(self, reload_skills_manifest=False):
-        """Post the manifest of the device's skills to the backend.
-        If msm is disabled nothing is uploaded, skill state is MSM specific"""
-        upload_allowed = self.config['skills'].get('upload_skill_manifest')
-        use_msm = self.config['skills'].get('msm', {}).get("disabled", True)
-        if upload_allowed and use_msm and is_paired():
+        """Post the manifest of the device's skills to the backend."""
+        upload_allowed = Configuration.get()['skills'].get('upload_skill_manifest')
+        if upload_allowed and is_paired():
             if reload_skills_manifest:
-                self.msm.clear_cache()
+                self.__skill_manifest.clear()
+                self.__skill_manifest.scan_skills()
             try:
                 device_api = DeviceApi()
-                device_api.upload_skills_data(self.msm.device_skill_state)
+                device_api.upload_skills_data(self.__skill_manifest)
             except Exception:
                 LOG.error('Could not upload skill manifest')
 
     def install_or_update(self, skill):
-        """Install missing defaults and update existing skills"""
-        if self._get_device_skill_state(skill.name).get('beta', False):
-            skill.sha = None  # Will update to latest head
-        if skill.is_local:
-            skill.update()
-            if skill.name not in self.installed_skills:
-                skill.update_deps()
-        elif skill.name in self.default_skill_names:
-            try:
-                self.msm.install(skill, origin='default')
-            except Exception:
-                if skill.name in self.default_skill_names:
-                    LOG.warning(
-                        'Failed to install default skill: ' + skill.name
-                    )
-                    self.default_skill_install_error = True
-                raise
-        self.installed_skills.add(skill.name)
+        """DEPRECATED: do not use, method only for api backwards compatibility
+        Logs a warning
+        """
+        LOG.warning("msm has been deprecated\n"
+                    f"{skill} will not be changed")
 
     def defaults_installed(self):
-        """Check if all default skills are installed.
-
-        Returns:
-            True if all default skills are installed, else False.
+        """DEPRECATED: do not use, method only for api backwards compatibility
+        Logs a warning and returns True
         """
-        defaults = []
-        for skill in self.msm.default_skills.values():
-            if not skill_is_blacklisted(skill):
-                defaults.append(skill)
-        return all([skill.is_local for skill in defaults])
-
-    def _get_device_skill_state(self, skill_name):
-        """Get skill data structure from name."""
-        device_skill_state = {}
-        for msm_skill_state in self.msm.device_skill_state.get('skills', []):
-            if msm_skill_state.get('name') == skill_name:
-                device_skill_state = msm_skill_state
-
-        return device_skill_state
-
-    def _schedule_retry(self):
-        """Schedule the next skill update in the event of a failure."""
-        self.install_retries += 1
-        self.next_download = time() + FIVE_MINUTES
-        self._log_next_download_time()
-        self.default_skill_install_error = False
-
-    def _update_download_time(self):
-        """Update timestamp on .msm file to be used when system is restarted"""
-        with open(self.dot_msm_path, 'a'):
-            os.utime(self.dot_msm_path, None)
-        self.next_download = time() + self.update_interval
-        self._log_next_download_time()
-
-    def _log_next_download_time(self):
-        LOG.info(
-            'Next scheduled skill update: ' +
-            str(datetime.fromtimestamp(self.next_download))
-        )
+        LOG.warning("msm has been deprecated\n"
+                    "skill install/update is no longer handled by ovos-core")
+        return True

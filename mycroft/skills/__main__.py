@@ -24,9 +24,14 @@ import mycroft.lock
 from mycroft import dialog
 from mycroft.api import is_paired, BackendDown, DeviceApi
 from mycroft.audio import wait_while_speaking
-from mycroft.enclosure.api import EnclosureAPI
 from mycroft.configuration import Configuration, setup_locale
+from mycroft.enclosure.api import EnclosureAPI
 from mycroft.messagebus.message import Message
+from mycroft.skills.api import SkillApi
+from mycroft.skills.core import FallbackSkill
+from mycroft.skills.event_scheduler import EventScheduler
+from mycroft.skills.intent_service import IntentService
+from mycroft.skills.skill_manager import SkillManager
 from mycroft.util import (
     connected,
     reset_sigint_handler,
@@ -35,13 +40,6 @@ from mycroft.util import (
 )
 from mycroft.util.log import LOG
 from mycroft.util.process_utils import ProcessStatus, StatusCallbackMap
-
-from mycroft.skills.api import SkillApi
-from mycroft.skills.core import FallbackSkill
-from mycroft.skills.event_scheduler import EventScheduler
-from mycroft.skills.intent_service import IntentService
-from mycroft.skills.skill_manager import SkillManager
-from mycroft.skills.msm_wrapper import MsmException
 
 RASPBERRY_PI_PLATFORMS = ('mycroft_mark_1', 'picroft', 'mycroft_mark_2pi')
 
@@ -275,19 +273,8 @@ def _initialize_skill_manager(bus, watchdog):
     Returns:
         SkillManager instance or None if it couldn't be initialized
     """
-    try:
-        skill_manager = SkillManager(bus, watchdog)
-        skill_manager.load_priority()
-    except MsmException:
-        # skill manager couldn't be created, wait for network connection and
-        # retry
-        skill_manager = None
-        LOG.info(
-            'MSM is uninitialized and requires network connection to fetch '
-            'skill information\nWill retry after internet connection is '
-            'established.'
-        )
-
+    skill_manager = SkillManager(bus, watchdog)
+    skill_manager.load_priority()
     return skill_manager
 
 

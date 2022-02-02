@@ -12,29 +12,39 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-"""Common logic for instantiating the Mycroft Skills Manager.
 
-The Mycroft Skills Manager (MSM) does a lot of interactions with git.  The
-more skills that are installed on a device, the longer these interactions
-take.  This is especially true at boot time when MSM is instantiated
-frequently.  To improve performance, the MSM instance is cached.
 """
+NOTE: this is dead code! do not use!
+This file is only present to ensure backwards compatibility
+in case someone is importing from here
+This is only meant for 3rd party code expecting ovos-core
+to be a drop in replacement for mycroft-core
+"""
+
 from collections import namedtuple
 from functools import lru_cache
 from os import path, makedirs
 import xdg.BaseDirectory
 
-from mycroft.configuration import Configuration
-from mycroft.configuration.ovos import is_using_xdg
 from combo_lock import ComboLock
+from mycroft.util.log import LOG
+from mycroft.util.file_utils import get_temp_path
+from mycroft.skills.skill_loader import get_default_skills_directory
 
 from mock_msm import \
     MycroftSkillsManager as MockMSM, \
     SkillRepo as MockSkillRepo
 
 from ovos_utils.configuration import get_xdg_base
-from mycroft.util.file_utils import get_temp_path
-from mycroft.util.log import LOG
+
+import warnings
+
+warnings.warn(
+    "The OpenVoiceOS team regards msm_wrapper.py as dead code. "
+    "It's available for backwards compatibility with upstream projects, and may be removed in a future update. "
+    "If you need this functionality use the msm package directly instead"
+)
+
 
 try:
     from msm.exceptions import MsmException
@@ -59,33 +69,6 @@ MsmConfig = namedtuple(
 )
 
 
-def get_skills_directory(conf=None):
-    conf = conf or Configuration.get(remote=False)
-    path_override = conf["skills"].get("directory_override")
-    # if .conf wants to use a specific path, use it!
-    if path_override:
-        LOG.warning("'directory_override' is deprecated!\n"
-                    "It will no longer be supported after version 0.0.3\n"
-                    "add the new path to 'extra_directories' instead")
-        skills_folder = path_override
-    # if xdg is disabled, ignore it!
-    elif not is_using_xdg():
-        # old style mycroft-core skills path definition
-        data_dir = conf.get("data_dir") or "/opt/" + get_xdg_base()
-        folder = conf["skills"].get("msm", {}).get("directory", "skills")
-        skills_folder = path.join(data_dir, folder)
-    else:
-        skills_folder = xdg.BaseDirectory.save_data_path(get_xdg_base() + '/skills')
-    # create folder if needed
-    try:
-        makedirs(skills_folder, exist_ok=True)
-    except PermissionError:  # old style /opt/mycroft/skills not available
-        skills_folder = xdg.BaseDirectory.save_data_path(get_xdg_base() + '/skills')
-        makedirs(skills_folder, exist_ok=True)
-
-    return path.expanduser(skills_folder)
-
-
 def _init_msm_lock():
     msm_lock = None
     try:
@@ -98,20 +81,13 @@ def _init_msm_lock():
 
 
 def build_msm_config(device_config: dict) -> MsmConfig:
-    """Extract from the device configs values needed to instantiate MSM
-
-    Why not just pass the device_config to the create_msm function, you ask?
-    Rationale is that the create_msm function is cached.  The lru_cached
-    decorator will instantiate MSM anew each time it is called with a different
-    configuration argument.  Calling this function before create_msm will
-    ensure that changes to configs not related to MSM will not result in new
-    instances of MSM being created.
-    """
+    LOG.warning("build_msm_config has been deprecated\n"
+                "use msm package directly instead")
     msm_config = device_config['skills'].get('msm', {})
     msm_repo_config = msm_config.get('repo', {})
     enclosure_config = device_config.get('enclosure', {})
     data_dir = path.expanduser(device_config.get('data_dir', xdg.BaseDirectory.save_data_path(get_xdg_base())))
-    skills_dir = get_skills_directory(device_config)
+    skills_dir = get_default_skills_directory(device_config)
     old_skills_dir = path.join(data_dir, msm_config.get('directory', "skills"))
 
     return MsmConfig(
@@ -128,7 +104,6 @@ def build_msm_config(device_config: dict) -> MsmConfig:
     )
 
 
-@lru_cache()
 def create_msm(msm_config: MsmConfig) -> MycroftSkillsManager:
     """Returns an instantiated MSM object.
 

@@ -28,7 +28,6 @@ from ..base import MycroftUnitTestBase
 
 
 class TestSettingsMetaUploader(MycroftUnitTestBase):
-    use_msm_mock = True
     mock_package = 'mycroft.skills.settings.'
 
     def setUp(self):

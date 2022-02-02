@@ -14,44 +14,32 @@
 #
 """Common functionality relating to the implementation of mycroft skills."""
 
-from copy import deepcopy
-import sys
 import re
+import sys
 import traceback
+from copy import deepcopy
 from itertools import chain
 from os import walk, listdir
 from os.path import join, abspath, dirname, basename, exists, isdir
 from pathlib import Path
-from threading import Event, Timer
+from threading import Event
 
 import xdg.BaseDirectory
-
 from adapt.intent import Intent, IntentBuilder
 
 from mycroft import dialog
 from mycroft.api import DeviceApi
 from mycroft.audio import wait_while_speaking
-from ovos_utils.enclosure.api import EnclosureAPI
-from mycroft.gui import SkillGUI
-from ovos_utils.configuration import is_using_xdg, get_xdg_base
 from mycroft.configuration import Configuration
 from mycroft.dialog import load_dialogs
 from mycroft.filesystem import FileSystemAccess
+from mycroft.gui import SkillGUI
 from mycroft.messagebus.message import Message, dig_for_message
 from mycroft.metrics import report_metric
-from mycroft.util import (
-    resolve_resource_file,
-    play_audio_file,
-    camel_case_split
-)
-from mycroft.util.log import LOG
-from mycroft.util.format import pronounce_number, join_list
-from mycroft.util.parse import match_one, extract_number
-
-from mycroft.skills.mycroft_skill.event_container import EventContainer, \
-    create_wrapper, get_handler_name
 from mycroft.skills.event_scheduler import EventSchedulerInterface
 from mycroft.skills.intent_service_interface import IntentServiceInterface
+from mycroft.skills.mycroft_skill.event_container import EventContainer, \
+    create_wrapper, get_handler_name
 from mycroft.skills.settings import get_local_settings, save_settings
 from mycroft.skills.skill_data import (
     load_vocabulary,
@@ -63,6 +51,16 @@ from mycroft.skills.skill_data import (
     read_value_file,
     read_translated_file
 )
+from mycroft.util import (
+    resolve_resource_file,
+    play_audio_file,
+    camel_case_split
+)
+from mycroft.util.format import pronounce_number, join_list
+from mycroft.util.log import LOG
+from mycroft.util.parse import match_one, extract_number
+from ovos_utils.configuration import is_using_xdg, get_xdg_base
+from ovos_utils.enclosure.api import EnclosureAPI
 
 
 def simple_trace(stack_trace):
