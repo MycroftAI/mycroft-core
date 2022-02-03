@@ -283,7 +283,6 @@ class IntentService:
         pointsFile.close()
 
     def handle_high_noise(self, message):
-        LOG.info("peter was too loud")
         data = {
             "utterances" : ['esioN'],
             "lang" : 'en-US',
@@ -328,9 +327,6 @@ class IntentService:
 
             utterances = message.data.get('utterances', [])
             combined = _normalize_all_utterances(utterances)
-
-            LOG.info(message.context)
-            LOG.info(message.msg_type)
 
             stopwatch = Stopwatch()
 
@@ -399,7 +395,7 @@ class IntentService:
                             self.bus.emit(reply)
 
                 elif self.wakeword_found:
-                    LOG.info("Score too low!")
+                    LOG.info("##\t\tlow score - request denied")
                     data = {
                         "utterances" : ['hcslewreduaK'],
                         "lang" : 'en-US',
