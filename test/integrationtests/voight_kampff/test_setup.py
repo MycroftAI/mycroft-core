@@ -144,8 +144,10 @@ def collect_test_cases(msm, skills):
         skills: list of skills
     """
     for skill_name in skills:
-        skill = msm.find_skill(skill_name)
-        behave_dir = join(skill.path, 'test', 'behave')
+        # skill = msm.find_skill(skill_name)
+        # behave_dir = join(skill.path, 'test', 'behave')
+        skill_dir = f"/opt/mycroft/skills/{skill_name}.mycroftai"
+        behave_dir = join(skill_dir, 'test', 'behave')
         if exists(behave_dir):
             copy_feature_files(behave_dir, FEATURE_DIR)
             copy_config_definition_files(behave_dir, FEATURE_DIR)
@@ -158,7 +160,8 @@ def collect_test_cases(msm, skills):
             print('No feature files exists for {}, '
                   'generating...'.format(skill_name))
             # No feature files setup, generate automatically
-            feature = generate_feature(skill_name, skill.path)
+            feature = generate_feature(skill_name, skill_dir)
+            # feature = generate_feature(skill_name, skill.path)
             with open(join(FEATURE_DIR, skill_name + '.feature'), 'w') as f:
                 f.write(feature)
 
@@ -219,15 +222,18 @@ def main(args):
     msm = create_skills_manager(args.platform, args.skills_dir,
                                 args.repo_url, args.branch)
 
-    random_skills = get_random_skills(msm, args.random_skills)
-    all_skills = args.test_skills + args.extra_skills + random_skills
+    # random_skills = get_random_skills(msm, args.random_skills)
+    # all_skills = args.test_skills + args.extra_skills + random_skills
 
-    install_or_upgrade_skills(msm, all_skills)
+    # install_or_upgrade_skills(msm, all_skills)
     collect_test_cases(msm, args.test_skills)
 
-    print_install_report(msm.platform, args.test_skills,
-                         args.extra_skills + random_skills)
+    # print_install_report(msm.platform, args.test_skills,
+    #                      args.extra_skills + random_skills)
+
+    print_install_report(msm.platform, args.test_skills, [])
 
 
 if __name__ == '__main__':
     main(get_arguments(sys.argv[1:]))
+
