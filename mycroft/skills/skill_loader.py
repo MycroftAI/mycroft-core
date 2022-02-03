@@ -16,20 +16,20 @@
 import gc
 import importlib
 import os
-from os import path, makedirs
 import sys
-from inspect import isclass
+from inspect import isclass, signature
+from os import path, makedirs
 from time import time
 
 import xdg.BaseDirectory
+from ovos_utils.configuration import get_xdg_base, is_using_xdg
+from ovos_plugin_manager.skills import find_skill_plugins
 
 from mycroft.configuration import Configuration
-from ovos_utils.configuration import get_xdg_base, is_using_xdg
 from mycroft.messagebus import Message
-from mycroft.skills import MycroftSkill
+from mycroft.skills.mycroft_skill.mycroft_skill import MycroftSkill
 from mycroft.skills.settings import SettingsMetaUploader
 from mycroft.util.log import LOG
-
 
 SKILL_MAIN_MODULE = '__init__.py'
 
@@ -261,6 +261,11 @@ def get_skill_class(skill_module):
     Returns:
         (MycroftSkill): Found subclass of MycroftSkill or None.
     """
+    if callable(skill_module):
+        # it's a skill plugin
+        # either a func that returns the skill or the skill class itself
+        return skill_module
+
     candidates = []
     for name, obj in skill_module.__dict__.items():
         if isclass(obj):
@@ -485,3 +490,33 @@ class SkillLoader:
                               {"path": self.skill_directory, "id": self.skill_id})
             self.bus.emit(message)
             LOG.error(f'Skill {self.skill_id} failed to load')
+
+
+class PluginSkillLoader(SkillLoader):
+    def __init__(self, bus, skill_id):
+        super().__init__(bus, skill_id)
+        self.skill_directory = skill_id
+        self.skill_id = skill_id
+
+    def reload_needed(self):
+        return False
+
+    def _create_skill_instance(self, skill_module):
+        if super()._create_skill_instance(skill_module):
+            self.skill_directory = self.instance.root_dir
+            return True
+        return False
+
+    def load(self, skill_module):
+        LOG.info('ATTEMPTING TO LOAD PLUGIN SKILL: ' + self.skill_id)
+        self._prepare_for_load()
+        if self.is_blacklisted:
+            self._skip_load()
+        else:
+            self.loaded = self._create_skill_instance(skill_module)
+
+        self.last_loaded = time()
+        self._communicate_load_status()
+        if self.loaded:
+            self._prepare_settings_meta()
+        return self.loaded

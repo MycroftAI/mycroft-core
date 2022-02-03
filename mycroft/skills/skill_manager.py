@@ -14,20 +14,19 @@
 #
 """Load, update and manage skills on this device."""
 import os
+from os.path import basename
 from glob import glob
 from threading import Thread, Event, Lock
-from time import sleep, time, monotonic
-from inspect import signature
+from time import sleep, monotonic
 
 from mycroft.api import is_paired
 from mycroft.enclosure.api import EnclosureAPI
 from mycroft.configuration import Configuration
-from ovos_utils.configuration import get_xdg_base
 from mycroft.messagebus.message import Message
 from mycroft.util.log import LOG
 from mycroft.util import connected
 from mycroft.skills.settings import SkillSettingsDownloader
-from mycroft.skills.skill_loader import SkillLoader, get_skill_directories
+from mycroft.skills.skill_loader import get_skill_directories, SkillLoader, PluginSkillLoader, find_skill_plugins
 from mycroft.skills.skill_updater import SkillUpdater
 from mycroft.messagebus import MessageBusClient
 
@@ -130,6 +129,7 @@ class SkillManager(Thread):
         self.upload_queue = UploadQueue()
 
         self.skill_loaders = {}
+        self.plugin_skills = {}
         self.enclosure = EnclosureAPI(bus)
         self.initial_load_complete = False
         self.num_install_retries = 0
@@ -251,6 +251,25 @@ class SkillManager(Thread):
         """Trigger upload of skills manifest after pairing."""
         self._start_settings_update()
 
+    def load_plugin_skills(self):
+        plugins = find_skill_plugins()
+        loaded_skill_ids = [basename(p) for p in self.skill_loaders]
+        for skill_id, plug in plugins.items():
+            if skill_id not in self.plugin_skills and skill_id not in loaded_skill_ids:
+                self._load_plugin_skill(skill_id, plug)
+
+    def _load_plugin_skill(self, skill_id, skill_plugin):
+        skill_loader = PluginSkillLoader(self.bus, skill_id)
+        try:
+            load_status = skill_loader.load(skill_plugin)
+        except Exception:
+            LOG.exception(f'Load of skill {skill_id} failed!')
+            load_status = False
+        finally:
+            self.plugin_skills[skill_id] = skill_loader
+
+        return skill_loader if load_status else None
+
     def load_priority(self):
         skill_ids = {os.path.basename(skill_path): skill_path
                      for skill_path in self._get_skill_directories()}
@@ -306,6 +325,7 @@ class SkillManager(Thread):
 
     def _load_on_startup(self):
         """Handle initial skill load."""
+        self.load_plugin_skills()
         LOG.info('Loading installed skills...')
         self._load_new_skills()
         LOG.info("Skills all loaded!")
@@ -331,6 +351,12 @@ class SkillManager(Thread):
             replaced_skills = []
             # by definition skill_id == folder name
             skill_id = os.path.basename(skill_dir)
+
+            # a local source install is replacing this plugin, unload it!
+            if skill_id in self.plugin_skills:
+                LOG.info(f"{skill_id} plugin will be replaced by a local version: {skill_dir}")
+                self._unload_plugin_skill(skill_id)
+
             for old_skill_dir, skill_loader in self.skill_loaders.items():
                 if old_skill_dir != skill_dir and \
                         skill_loader.skill_id == skill_id:
@@ -420,6 +446,17 @@ class SkillManager(Thread):
         if removed_skills:
             self.skill_updater.post_manifest(reload_skills_manifest=True)
 
+    def _unload_plugin_skill(self, skill_id):
+        if skill_id in self.plugin_skills:
+            LOG.info('Unloading plugin skill: ' + skill_id)
+            skill_loader = self.plugin_skills[skill_id]
+            if skill_loader.instance is not None:
+                try:
+                    skill_loader.instance.default_shutdown()
+                except Exception:
+                    LOG.exception('Failed to shutdown plugin skill: ' + skill_loader.skill_id)
+            self.plugin_skills.pop(skill_id)
+
     def is_alive(self, message=None):
         """Respond to is_alive status request."""
         return self._alive_status
@@ -432,11 +469,14 @@ class SkillManager(Thread):
         """Send list of loaded skills."""
         try:
             message_data = {}
-            for skill_dir, skill_loader in self.skill_loaders.items():
-                message_data[skill_loader.skill_id] = dict(
-                    active=skill_loader.active and skill_loader.loaded,
-                    id=skill_loader.skill_id
-                )
+            # TODO handle external skills, OVOSAbstractApp/Hivemind skills are not accounted for
+            skills = {**self.skill_loaders, **self.plugin_skills}
+
+            for skill_loader in skills.values():
+                message_data[skill_loader.skill_id] = {
+                    "active": skill_loader.active and skill_loader.loaded,
+                    "id": skill_loader.skill_id}
+
             self.bus.emit(Message('mycroft.skills.list', data=message_data))
         except Exception:
             LOG.exception('Failed to send skill list')
@@ -444,7 +484,9 @@ class SkillManager(Thread):
     def deactivate_skill(self, message):
         """Deactivate a skill."""
         try:
-            for skill_loader in self.skill_loaders.values():
+            # TODO handle external skills, OVOSAbstractApp/Hivemind skills are not accounted for
+            skills = {**self.skill_loaders, **self.plugin_skills}
+            for skill_loader in skills.values():
                 if message.data['skill'] == skill_loader.skill_id:
                     LOG.info("Deactivating skill: " + skill_loader.skill_id)
                     skill_loader.deactivate()
@@ -455,26 +497,27 @@ class SkillManager(Thread):
         """Deactivate all skills except the provided."""
         try:
             skill_to_keep = message.data['skill']
-            LOG.info('Deactivating all skills except {}'.format(skill_to_keep))
-            loaded_skill_file_names = [
-                os.path.basename(skill_dir) for skill_dir in self.skill_loaders
-            ]
-            if skill_to_keep in loaded_skill_file_names:
-                for skill in self.skill_loaders.values():
-                    if skill.skill_id != skill_to_keep:
-                        skill.deactivate()
-            else:
-                LOG.info('Couldn\'t find skill ' + message.data['skill'])
+            LOG.info(f'Deactivating all skills except {skill_to_keep}')
+            # TODO handle external skills, OVOSAbstractApp/Hivemind skills are not accounted for
+            skills = {**self.skill_loaders, **self.plugin_skills}
+            for skill in skills.values():
+                if skill.skill_id != skill_to_keep:
+                    skill.deactivate()
+                    return
+            LOG.info('Couldn\'t find skill ' + message.data['skill'])
         except Exception:
             LOG.exception('An error occurred during skill deactivation!')
 
     def activate_skill(self, message):
         """Activate a deactivated skill."""
         try:
-            for skill_loader in self.skill_loaders.values():
-                if (message.data['skill'] in ('all', skill_loader.skill_id) and
-                        not skill_loader.active):
+            # TODO handle external skills, OVOSAbstractApp/Hivemind skills are not accounted for
+            skills = {**self.skill_loaders, **self.plugin_skills}
+            for skill_loader in skills.values():
+                if (message.data['skill'] in ('all', skill_loader.skill_id)
+                        and not skill_loader.active):
                     skill_loader.activate()
+                    return
         except Exception:
             LOG.exception('Couldn\'t activate skill')
 
@@ -488,3 +531,7 @@ class SkillManager(Thread):
         for skill_loader in self.skill_loaders.values():
             if skill_loader.instance is not None:
                 _shutdown_skill(skill_loader.instance)
+
+        # Do a clean shutdown of all plugin skills
+        for skill_id in self.plugin_skills:
+            self._unload_plugin_skill(skill_id)
