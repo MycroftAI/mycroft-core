@@ -1249,7 +1249,7 @@ class MycroftSkill:
         `stop()` method.
         """
         msg = _
-        if msg.data.get('skill', '') == self.skill_id:
+        if msg.data.get('skill', '') == self.skill_id or msg.data.get('skill','') == '*':
             LOG.debug("handle stop skill_id:%s" % (self.skill_id, ))
         else:
             LOG.debug("stop ignored. %s, %s" % (self.skill_id, msg.data))
