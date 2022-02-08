@@ -222,6 +222,7 @@ class AdaptService:
                 best_intent = intent
                 # TODO - Shouldn't Adapt do this?
                 best_intent['utterance'] = utt
+                LOG.info(best_intent)
 
         for utt_tup in utterances:
             for utt in utt_tup:
@@ -245,6 +246,8 @@ class AdaptService:
             ret = IntentMatch(
                 'Adapt', best_intent['intent_type'], best_intent, skill_id
             )
+
+            LOG.info("Best adapt match: %s", best_intent)
         else:
             ret = None
         return ret

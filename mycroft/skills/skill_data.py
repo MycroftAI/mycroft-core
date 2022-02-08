@@ -500,3 +500,13 @@ def munge_intent_parser(intent_parser, name, skill_id):
         element = [skill_id + e.replace(skill_id, "") for e in i]
         at_least_one.append(tuple(element))
     intent_parser.at_least_one = at_least_one
+
+    # Munge excluded keywords
+    excludes = []
+    for i in intent_parser.excludes:
+        if not i.startswith(skill_id):
+            kw = skill_id + i
+            excludes.append(kw)
+        else:
+            excludes.append(i)
+    intent_parser.excludes = excludes
