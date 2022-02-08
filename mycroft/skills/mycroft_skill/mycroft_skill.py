@@ -53,16 +53,15 @@ from ..event_scheduler import EventSchedulerInterface
 from ..intent_service_interface import IntentServiceInterface
 from ..settings import get_local_settings, save_settings
 from ..skill_data import (
-    load_vocabulary,
     load_regex,
-    to_alnum,
     munge_regex,
     munge_intent_parser,
-    read_vocab_file,
-    ResourceFileLocator,
-    Translator
+    ResourceFile,
+    SkillResources
 )
 from .skill_control import SkillControl
+
+
 
 
 def simple_trace(stack_trace):
@@ -118,8 +117,7 @@ class MycroftSkill:
         bus (MycroftWebsocketClient): Optional bus connection
         use_settings (bool): Set to false to not use skill settings at all
     """
-    _resource_file_locator = None
-    _translator = None
+    _resources = None
 
     def __init__(self, name=None, bus=None, use_settings=True):
         self.name = name or self.__class__.__name__
@@ -288,22 +286,18 @@ class MycroftSkill:
         return self.config_core.get('lang')
 
     @property
-    def resource_file_locator(self):
-        """Lazily instantiates a ResourceFileLocator instance when needed."""
-        if self._resource_file_locator is None:
-            self._resource_file_locator = ResourceFileLocator(self.root_dir,
-                                                              self.lang)
-
-        return self._resource_file_locator
+    def alphanumeric_skill_id(self):
+        return "".join(
+            char if char.isalnum() else "_" for char in str(self.skill_id)
+        )
 
     @property
-    def translator(self):
-        """Lazily instantiates a resource file translator when needed."""
-        if self._translator is None or self.dialog_renderer is None:
-            self._translator = Translator(self.resource_file_locator,
-                                          self.dialog_renderer)
+    def resources(self):
+        if self._resources is None:
+            self._resources = SkillResources(self.root_dir, self.lang,
+                                             self.dialog_renderer)
 
-        return self._translator
+        return self._resources
 
     def bind(self, bus):
         """Register messagebus emitter with skill.
@@ -711,32 +705,23 @@ class MycroftSkill:
         Returns:
             bool: True if the utterance has the given vocabulary it
         """
+        match = False
         lang = lang or self.lang
         cache_key = lang + voc_filename
         if cache_key not in self.voc_match_cache:
-            # Check for both skill resources and mycroft-core resources
-            voc = self.find_resource(voc_filename + '.voc', 'vocab')
-            if not voc:  # Check for vocab in mycroft core resources
-                voc = resolve_resource_file(join('text', lang,
-                                                 voc_filename + '.voc'))
-
-            if not voc or not exists(voc):
-                raise FileNotFoundError(
-                    'Could not find {}.voc file'.format(voc_filename))
-            # load vocab and flatten into a simple list
-            vocab = read_vocab_file(voc)
+            vocab = self.resources.load_vocabulary_file(voc_filename)
             self.voc_match_cache[cache_key] = list(chain(*vocab))
         if utt:
             if exact:
                 # Check for exact match
-                return any(i.strip() == utt
-                           for i in self.voc_match_cache[cache_key])
+                match = any(i.strip() == utt
+                            for i in self.voc_match_cache[cache_key])
             else:
                 # Check for matches against complete words
-                return any([re.match(r'.*\b' + i + r'\b.*', utt)
+                match = any([re.match(r'.*\b' + i + r'\b.*', utt)
                             for i in self.voc_match_cache[cache_key]])
-        else:
-            return False
+
+        return match
 
     def report_metric(self, name, data):
         """Report a skill metric to the Mycroft servers.
@@ -787,26 +772,20 @@ class MycroftSkill:
 
     def translate(self, text, data=None):
         """Deprecated method for translating a dialog file."""
-        return self.translator.translate_dialog(text, data or {})
+        return self.resources.render_dialog(text, data)
 
     def find_resource(self, res_name, res_dirname=None):
         """Find a resource file.
 
         Searches for the given filename using this scheme:
+            1. Search the resource lang directory:
+                <skill>/<res_dirname>/<lang>/<res_name>
+            2. Search the resource directory:
+                <skill>/<res_dirname>/<res_name>
 
-        1. Search the resource lang directory:
-
-           <skill>/<res_dirname>/<lang>/<res_name>
-
-        2. Search the resource directory:
-
-           <skill>/<res_dirname>/<res_name>
-
-        3. Search the locale lang directory or other subdirectory:
-
-           <skill>/locale/<lang>/<res_name> or
-
-           <skill>/locale/<lang>/.../<res_name>
+            3. Search the locale lang directory or other subdirectory:
+                <skill>/locale/<lang>/<res_name> or
+                <skill>/locale/<lang>/.../<res_name>
 
         Args:
             res_name (string): The resource name to be found
@@ -852,15 +831,11 @@ class MycroftSkill:
 
     def translate_namedvalues(self, name, delim=','):
         """Deprecated method for translating a name/value file."""
-        return self.translator.translate_named_values(name, delim)
-
-    def translate_template(self, template_name, data=None):
-        """Deprecated method for translating a template file"""
-        return self.translator.translate_template(template_name, data)
+        return self.resources.load_named_value_file(name, delim)
 
     def translate_list(self, list_name, data=None):
         """Deprecated method for translating a list."""
-        return self.translator.translate_list(list_name, data)
+        return self.resources.load_list_file(list_name, data)
 
     def add_event(self, name, handler, handler_info=None, once=False):
         """Create event handler for executing intent or other event.
@@ -954,22 +929,20 @@ class MycroftSkill:
         """Register an Intent file with the intent service.
 
         For example:
-
-        === food.order.intent ===
-        Order some {food}.
-        Order some {food} from {place}.
-        I'm hungry.
-        Grab some {food} from {place}.
+            food.order.intent:
+                Order some {food}.
+                Order some {food} from {place}.
+                I'm hungry.
+                Grab some {food} from {place}.
 
         Optionally, you can also use <register_entity_file>
         to specify some examples of {food} and {place}
 
         In addition, instead of writing out multiple variations
         of the same sentence you can write:
-
-        === food.order.intent ===
-        (Order | Grab) some {food} (from {place} | ).
-        I'm hungry.
+            food.order.intent:
+                (Order | Grab) some {food} (from {place} | ).
+                I'm hungry.
 
         Args:
             intent_file: name of file that contains example queries
@@ -978,10 +951,12 @@ class MycroftSkill:
             handler:     function to register with intent
         """
         name = '{}:{}'.format(self.skill_id, intent_file)
-        filename = self.find_resource(intent_file, 'vocab')
-        if not filename:
+        resource_file = ResourceFile(self.resources.types.intent, intent_file)
+        if resource_file.file_path is None:
             raise FileNotFoundError('Unable to find "{}"'.format(intent_file))
-        self.intent_service.register_padatious_intent(name, filename)
+        self.intent_service.register_padatious_intent(
+             name, str(resource_file.file_path)
+        )
         if handler:
             self.add_event(name, handler, 'mycroft.skill.handler')
 
@@ -990,26 +965,24 @@ class MycroftSkill:
 
         An Entity file lists the exact values that an entity can hold.
         For example:
-
-        === ask.day.intent ===
-        Is it {weekend}?
-
-        === weekend.entity ===
-        Saturday
-        Sunday
+            ask.day.intent:
+                Is it {weekend}?
+            weekend.entity:
+                Saturday
+                Sunday
 
         Args:
             entity_file (string): name of file that contains examples of an
-                                  entity.  Must end with '.entity'
+                                  entity.
         """
-        if entity_file.endswith('.entity'):
-            entity_file = entity_file.replace('.entity', '')
-        filename = self.find_resource(entity_file + ".entity", 'vocab')
-        if not filename:
+        entity = ResourceFile(self.resources.types.entity, entity_file)
+        if entity.file_path is None:
             raise FileNotFoundError('Unable to find "{}"'.format(entity_file))
 
         name = '{}:{}'.format(self.skill_id, entity_file)
-        self.intent_service.register_padatious_entity(name, filename)
+        self.intent_service.register_padatious_entity(
+            name, str(entity.file_path)
+        )
 
     def handle_enable_intent(self, message):
         """Listener to enable a registered intent if it belongs to this skill.
@@ -1082,7 +1055,7 @@ class MycroftSkill:
         if not isinstance(word, str):
             raise ValueError('Word should be a string')
 
-        context = to_alnum(self.skill_id) + context
+        context = self.alphanumeric_skill_id + context
         self.intent_service.set_adapt_context(context, word, origin)
 
     def handle_set_cross_context(self, message):
@@ -1120,7 +1093,7 @@ class MycroftSkill:
         """Remove a keyword from the context manager."""
         if not isinstance(context, str):
             raise ValueError('context should be a string')
-        context = to_alnum(self.skill_id) + context
+        context = self.alphanumeric_skill_id + context
         self.intent_service.remove_adapt_context(context)
 
     def register_vocabulary(self, entity, entity_type):
@@ -1130,7 +1103,7 @@ class MycroftSkill:
             entity:         word to register
             entity_type:    Intent handler entity to tie the word to
         """
-        keyword_type = to_alnum(self.skill_id) + entity_type
+        keyword_type = self.alphanumeric_skill_id + entity_type
         self.intent_service.register_adapt_keyword(keyword_type, entity)
 
     def register_regex(self, regex_str):
@@ -1224,7 +1197,7 @@ class MycroftSkill:
             self.dialog_renderer = load_dialogs(locale_path)
         else:
             LOG.debug('No dialog loaded')
-        self.translator.dialog_renderer = self.dialog_renderer
+        self.resources.dialog_renderer = self.dialog_renderer
 
     def load_data_files(self, root_directory=None):
         """Called by the skill loader to load intents, dialogs, etc.
@@ -1237,30 +1210,22 @@ class MycroftSkill:
         self.load_vocab_files(root_directory)
         self.load_regex_files(root_directory)
 
-    def load_vocab_files(self, root_directory):
-        """ Load vocab files found under root_directory.
-
-        Args:
-            root_directory (str): root folder to use when loading files
-        """
-        keywords = []
-        vocab_dir = join(root_directory, 'vocab', self.lang)
-        locale_dir = join(root_directory, 'locale', self.lang)
-        if exists(vocab_dir):
-            keywords = load_vocabulary(vocab_dir, self.skill_id)
-        elif exists(locale_dir):
-            keywords = load_vocabulary(locale_dir, self.skill_id)
+    def load_vocab_files(self, _):
+        """ Load vocab files found under skill's root directory."""
+        if self.resources.types.vocabulary.base_directory is None:
+            self.log.info("Skill has no vocabulary")
         else:
-            LOG.debug('No vocab loaded')
-
-        # For each found intent register the default along with any aliases
-        for vocab_type in keywords:
-            for line in keywords[vocab_type]:
-                entity = line[0]
-                aliases = line[1:]
-                self.intent_service.register_adapt_keyword(vocab_type,
-                                                           entity,
-                                                           aliases)
+            skill_vocabulary = self.resources.load_skill_vocabulary(
+                self.alphanumeric_skill_id
+            )
+            # For each found intent register the default along with any aliases
+            for vocab_type in skill_vocabulary:
+                for line in skill_vocabulary[vocab_type]:
+                    entity = line[0]
+                    aliases = line[1:]
+                    self.intent_service.register_adapt_keyword(vocab_type,
+                                                               entity,
+                                                               aliases)
 
     def load_regex_files(self, root_directory):
         """ Load regex files found under the skill directory.
@@ -1284,10 +1249,10 @@ class MycroftSkill:
         `stop()` method.
         """
         msg = _
-        if msg.data.get('skill','') == self.skill_id:
+        if msg.data.get('skill', '') == self.skill_id:
             LOG.debug("handle stop skill_id:%s" % (self.skill_id, ))
         else:
-            LOG.debug("stop ignored. %s, %s" % (self.skill_id,msg.data))
+            LOG.debug("stop ignored. %s, %s" % (self.skill_id, msg.data))
             return
 
         def __stop_timeout():

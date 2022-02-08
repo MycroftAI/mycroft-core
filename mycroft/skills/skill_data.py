@@ -13,119 +13,125 @@
 # limitations under the License.
 #
 """Handling of skill data such as intents and regular expressions."""
-
 import re
-from os import walk
-from os.path import splitext, join
-from pathlib import Path
-from typing import List, Optional
+from collections import namedtuple
 
+from os import walk
+from os.path import join
+from pathlib import Path
+from typing import List, Optional, Tuple
+
+from mycroft.util.file_utils import resolve_resource_file
 from mycroft.util.format import expand_options
 from mycroft.util.log import LOG
 
+SkillResourceTypes = namedtuple(
+    "SkillResourceTypes",
+    [
+        "dialog",
+        "entity",
+        "intent",
+        "list",
+        "named_value",
+        "regex",
+        "vocabulary",
+        "word"
+    ]
+)
 
-class ResourceFileLocator:
-    """Locates resource files using a variety of methodologies.
+
+class ResourceType:
+    """Defines the attributes of a type of skill resource.
+
+    Examples:
+        dialog = ResourceType("dialog", ".dialog")
+        dialog.locate_base_directory(self.root_dir, self.lang)
+
+        named_value = ResourceType("named_value", ".value")
+        named_value.locate_base_directory(self.root_dir, self.lang)
 
     Attributes:
-        skill_directory: the root directory of the skill
-        language: the language specified in the device configuration
-        locale_directory: the skill's locale directory for the specified language
-        dialog_directory: the skill's directory for dialog files
-        vocab_directory: the skill's directory for vocabulary files
-        regex_directory: the skill's directory for regular expression files
+        resource_type: one of a predefined set of resource types for skills
+        file_extension: the file extension associated with the resource type
+        base_directory: directory containing all files for the resource type
     """
 
-    def __init__(self, skill_directory, language):
-        self.skill_directory = skill_directory
+    def __init__(self, resource_type: str, file_extension: str, language: str):
+        self.resource_type = resource_type
+        self.file_extension = file_extension
         self.language = language
-        self.locale_directory = Path(skill_directory, "locale", language)
-        self.dialog_directory = self._find_resource_type_directory("dialog")
-        self.vocab_directory = self._find_resource_type_directory("vocab")
-        self.regex_directory = self._find_resource_type_directory("regex")
-        self.gui_directory = self._find_resource_type_directory("ui")
+        self.base_directory = None
 
-    def _find_resource_type_directory(self, resource_type: str) -> Path:
-        """Find the skill's directory for the specified resource type.
+    def locate_base_directory(self, skill_directory):
+        """Find the skill's base directory for the specified resource type.
 
         There are three supported methodologies for storing resource files.
         The preferred method is to use the "locale" directory but older methods
         are included in the search for backwards compatibility.  The three
         directory schemes are:
-           <skill>/<resource_directory>/<lang>
-           <skill>/<resource_directory>
-           <skill>/locale/<lang>/.../<res_name>
+           <skill>/locale/<lang>/.../<resource_type>
+           <skill>/<resource_subdirectory>/<lang>/
+           <skill>/<resource_subdirectory>
+        If the directory for the specified language doesn't exist, fall back to
+        the default "en-us".
 
         Args:
-            resource_type: the type of resource file (e.g. 'dialog', 'vocab')
+            skill_directory: the root directory of a skill
 
         Returns:
             the skill's directory for the resource type or None if not found
         """
-        resource_type_directory = None
+        resource_subdirectory = self._get_resource_subdirectory()
         possible_directories = (
-            self.locale_directory,
-            Path(self.skill_directory, resource_type),
-            Path(self.skill_directory, resource_type, self.language),
+            Path(skill_directory, "locale", self.language),
+            Path(skill_directory, "locale", "en-us"),
+            Path(skill_directory, resource_subdirectory, self.language),
+            Path(skill_directory, resource_subdirectory, "en-us"),
+            Path(skill_directory, resource_subdirectory),
         )
         for directory in possible_directories:
             if directory.exists():
-                resource_type_directory = directory
+                self.base_directory = directory
+                if "en-us" in str(directory) and self.language != "en-us":
+                    self.language = "en-us"
+                break
 
-        return resource_type_directory
+    def _get_resource_subdirectory(self) -> str:
+        """Returns the subdirectory for this resource type.
 
-    def find_dialog_file(self, file_name: str) -> Optional[str]:
-        """Locates a dialog file in the skill's dialog directory.
-
-        Args:
-            file_name: the name of the dialog file to search for
+        In the older directory schemes, several resource types were stored
+        in the same set of three directories (dialog, regex, vocab).
         """
-        return self._find_resource_file(file_name, self.dialog_directory)
+        subdirectories = dict(
+            dialog="dialog",
+            entity="vocab",
+            intent="vocab",
+            list="dialog",
+            named_value="dialog",
+            regex="regex",
+            template="dialog",
+            vocab="vocab",
+            word="dialog"
+        )
 
-    def find_vocab_file(self, file_name: str) -> Optional[str]:
-        """Locates a vocabulary file in the skill's vocab directory.
+        return subdirectories[self.resource_type]
 
-        Args:
-            file_name: the name of the dialog file to search for
-        """
-        return self._find_resource_file(file_name, self.vocab_directory)
 
-    def find_regex_file(self, file_name: str) -> Optional[str]:
-        """Locates a regex file in the skill's regular expressions directory.
+class ResourceFile:
+    """Loads a resource file for the user's configured language.
 
-        Args:
-            file_name: the name of the dialog file to search for
-        """
-        return self._find_resource_file(file_name, self.regex_directory)
+    Attributes:
+        resource_type: attributes of the resource type (dialog, vocab, etc.)
+        resource_name: file name of the resource, with or without extension
+        file_path: absolute path to the file
+    """
 
-    def find_value_file(self, file_name) -> Optional[str]:
-        """Locates a name/value pair file in the skill's dialog directory.
+    def __init__(self, resource_type, resource_name):
+        self.resource_type = resource_type
+        self.resource_name = resource_name
+        self.file_path = self._locate()
 
-        Args:
-            file_name: the name of the dialog file to search for
-        """
-        return self._find_resource_file(file_name, self.dialog_directory)
-
-    def _find_resource_file(self, file_name: str, directory: Path) -> Optional[str]:
-        """Locates a resource file in a directory
-
-        Args:
-            file_name: the name of the file to locate
-            directory: the directory to look in
-
-        Returns:
-            the fully qualified path to the file
-        """
-        if directory == self.locale_directory:
-            file_path = self._find_file_in_locale_directory(file_name)
-        else:
-            file_path = directory.joinpath(file_name)
-            if not file_path.exists():
-                file_path = None
-
-        return None if file_path is None else str(file_path)
-
-    def _find_file_in_locale_directory(self, file_name):
+    def _locate(self):
         """Locates a resource file in the skill's locale directory.
 
         A skill's locale directory can contain a subdirectory structure defined
@@ -133,137 +139,319 @@ class ResourceFileLocator:
         find the resource file.
         """
         file_path = None
-        for directory, _, file_names in walk(str(self.locale_directory)):
+        if self.resource_name.endswith(self.resource_type.file_extension):
+            file_name = self.resource_name
+        else:
+            file_name = self.resource_name + self.resource_type.file_extension
+
+        walk_directory = str(self.resource_type.base_directory)
+        for directory, _, file_names in walk(walk_directory):
             if file_name in file_names:
                 file_path = Path(directory, file_name)
 
+        if file_path is None:
+            sub_path = Path("text", self.resource_type.language, file_name)
+            file_path = resolve_resource_file(str(sub_path))
+
+        if file_path is None:
+            LOG.error(f"Could not find resource file {file_name}")
+
         return file_path
 
+    def load(self):
+        """Override in subclass to define resource type loading behavior."""
+        pass
 
-class Translator:
-    """Loads a resource file for the user's configured language.
+    def _read(self) -> str:
+        """Reads the specified file, removing comment and empty lines."""
+        with open(self.file_path) as resource_file:
+            for line in [line.strip() for line in resource_file.readlines()]:
+                if not line or line.startswith("#"):
+                    continue
+                yield line
 
-    Attributes:
-        file_locator: instance of the ResourceFileLocator for a skill
-        dialog_renderer: instance of the skill's dialog renderer
-    """
 
-    def __init__(self, file_locator: ResourceFileLocator, dialog_renderer):
-        self.file_locator = file_locator
-        self.dialog_renderer = dialog_renderer
+class DialogFile(ResourceFile):
+    """Defines a dialog file, which is used instruct TTS what to speak."""
 
-    def translate_named_values(self, value_name: str, delimiter=",") -> dict:
-        """Load translation file containing names and values.
+    def __init__(self, resource_type, resource_name):
+        super().__init__(resource_type, resource_name)
+        self.data = None
 
-        Loads a simple delimited file from the skill's "dialog" folder.
-        The name is the first item, the value is the second.  Lines prefixed
-        with # or // are considered comments and get ignored
-
-        Args:
-            value_name: name of the .value file, no extension needed
-            delimiter: delimiter character used
-
-        Returns:
-            name and value dictionary, or empty dictionary if load fails
-        """
-        if value_name.endswith(".value"):
-            value_file_name = value_name
-        else:
-            value_file_name = value_name + ".value"
-        file_path = self.file_locator.find_value_file(value_file_name)
-        named_values = dict()
-        if file_path is not None:
-            with open(file_path) as value_file:
-                for line in [line.strip() for line in value_file.readlines()]:
-                    # skip blank or comment lines
-                    if not line or line.startswith("#"):
-                        continue
-                    try:
-                        name, value = line.strip().split(delimiter)
-                        named_values[name] = value
-                    except ValueError:
-                        LOG.exception(
-                            f"Failed to load value file {value_name} "
-                            f"record containing {line}"
-                        )
-
-        return named_values
-
-    def translate_dialog(self, dialog_name: str, data: dict = None) -> str:
-        """Load a random line from a dialog translation file.
-
-        The dialog is randomly chosen from the file.  Named variables in the
-        dialog are populated with values found in the data dictionary.
-
-        Args:
-            dialog_name: name of the dialog file (no extension needed)
-            data: keyword arguments used to populate dialog variables
-
-        Returns:
-            A randomly chosen dialog
-        """
-        return self.dialog_renderer.render(dialog_name, data or {})
-
-    def translate_list(self, list_name, data=None) -> List[str]:
-        """Load a translation file containing a list of words or phrases
-
-        Named variables in the dialog are populated with values found in the
-        data dictionary.
-
-        Args:
-            list_name (str): name of the list file (no extension needed)
-            data: keyword arguments used to populate variables
-
-        Returns:
-            List of words or phrases read from the list file.
-        """
-        return self._translate_dialog_file(list_name + ".list", data)
-
-    def translate_template(self, template_name, data=None) -> List[str]:
-        """Load a translatable template.
-
-        Named variables in the dialog are populated with values found in the
-        data dictionary.
-
-        Args:
-            template_name: the name of the template file (no extension needed)
-            data: keyword arguments used to populate variables
-
-        Returns:
-            The loaded template file
-        """
-        return self._translate_dialog_file(template_name + ".template", data)
-
-    def _translate_dialog_file(self, file_name, data=None) -> List[str]:
+    def load(self) -> List[str]:
         """Load and lines from a file and populate the variables.
-
-        Args:
-            file_name: the name of the dialog file to read
-            data: keyword arguments used to populate variables
 
         Returns:
             Contents of the file with variables resolved.
         """
         dialogs = None
-        file_path = self.file_locator.find_dialog_file(file_name)
-        if file_path is not None:
+        if self.file_path is not None:
             dialogs = []
-            with open(file_path) as dialog_file:
-                for line in [line.strip() for line in dialog_file.readlines()]:
-                    line = line.replace("{{", "{").replace("}}", "}")
-                    if data is not None:
-                        line = line.format(**data)
-                    dialogs.append(line)
+            for line in self._read():
+                line = line.replace("{{", "{").replace("}}", "}")
+                if self.data is not None:
+                    line = line.format(**self.data)
+                dialogs.append(line)
 
         return dialogs
 
+    def render(self, dialog_renderer):
+        """Renders a random phrase from a dialog file.
+
+        If no file is found, the requested phrase is returned as the string. This
+        will use the default language for translations.
+
+        Returns:
+            str: a randomized version of the phrase
+        """
+        return dialog_renderer.render(self.resource_name)
+
+
+class VocabularyFile(ResourceFile):
+    """Defines a vocabulary file, which skill use to form intents."""
+
+    def load(self) -> List[List[str]]:
+        """Loads a vocabulary file.
+
+        If a record in a vocabulary file contains sets of words inside
+        parentheses, generate a vocabulary item for each permutation within
+        the parentheses.
+
+        Returns:
+            List of lines in the file.  Each item in the list is a list of
+            strings that represent different options based on regular
+            expression.
+        """
+        vocabulary = []
+        if self.file_path is not None:
+            for line in self._read():
+                vocabulary.append(expand_options(line.lower()))
+
+        return vocabulary
+
+
+class NamedValueFile(ResourceFile):
+    """Defines a named value file, which maps a variable to a values."""
+    def __init__(self, resource_type, resource_name):
+        super().__init__(resource_type, resource_name)
+        self.delimiter = ","
+
+    def load(self) -> dict:
+        """Load file containing names and values.
+
+        Returns:
+            A dictionary representation of the records in the file.
+        """
+        named_values = dict()
+        if self.file_path is not None:
+            for line in self._read():
+                name, value = self._load_line(line)
+                if name is not None and value is not None:
+                    named_values[name] = value
+
+        return named_values
+
+    def _load_line(self, line: str) -> Tuple[str, str]:
+        """Attempts to split the name and value for dictionary loading.
+
+        Args:
+            line: a record in a .value file
+
+        Returns:
+            The name/value pair that will be loaded into a dictionary.
+        """
+        name = None
+        value = None
+        try:
+            name, value = line.split(self.delimiter)
+        except ValueError:
+            LOG.exception(
+                f"Failed to load value file {self.file_path} "
+                f"record containing {line}"
+            )
+
+        return name, value
+
+
+class ListFile(DialogFile):
+    pass
+
+
+class RegexFile(ResourceFile):
+    def load(self):
+        regex_patterns = []
+        if self.file_path:
+            regex_patterns = [line for line in self._read()]
+
+        return regex_patterns
+
+
+class SkillResources:
+    def __init__(self, skill_directory, language, dialog_renderer):
+        self.skill_directory = skill_directory
+        self.language = language
+        self.types = self._define_resource_types()
+        self.dialog_renderer = dialog_renderer
+        self.static = dict()
+
+    def _define_resource_types(self) -> SkillResourceTypes:
+        """Defines all known types of skill resource files.
+
+        A resource file contains information the skill needs to function.
+        Examples include dialog files to be spoken and vocab files for intent
+        matching.
+        """
+        resource_types = dict(
+            dialog=ResourceType("dialog", ".dialog", self.language),
+            entity=ResourceType("entity", ".entity", self.language),
+            intent=ResourceType("intent", ".intent", self.language),
+            list=ResourceType("list", ".list", self.language),
+            named_value=ResourceType("named_value", ".value", self.language),
+            regex=ResourceType("regex", ".rx", self.language),
+            vocabulary=ResourceType("vocab", ".voc", self.language),
+            word=ResourceType("word", ".word", self.language)
+        )
+        for resource_type in resource_types.values():
+            resource_type.locate_base_directory(self.skill_directory)
+
+        return SkillResourceTypes(**resource_types)
+
+    def load_dialog_file(self, name, data=None):
+        """Loads the contents of a dialog file into memory.
+
+        Named variables in the dialog are populated with values found in the
+        data dictionary.
+
+        Args:
+            name: name of the dialog file (no extension needed)
+            data: keyword arguments used to populate variables
+
+        Returns:
+            A list of phrases with variables resolved
+        """
+        dialog_file = DialogFile(self.types.dialog, name)
+        dialog_file.data = data
+
+        return dialog_file.load()
+
+    def load_list_file(self, name, data=None):
+        """Load a file containing a list of words or phrases
+
+        Named variables in the dialog are populated with values found in the
+        data dictionary.
+
+        Args:
+            name: name of the list file (no extension needed)
+            data: keyword arguments used to populate variables
+
+        Returns:
+            List of words or phrases read from the list file.
+        """
+        list_file = ListFile(self.types.list, name)
+        list_file.data = data
+
+        return list_file.load()
+
+    def load_named_value_file(self, name, delimiter=None):
+        """Load file containing a set names and values.
+
+        Loads a simple delimited file of name/value pairs.
+        The name is the first item, the value is the second.
+
+        Args:
+            name: name of the .value file, no extension needed
+            delimiter: delimiter character used
+
+        Returns:
+            File contents represented as a dictionary
+        """
+        if name in self.static:
+            named_values = self.static[name]
+        else:
+            named_value_file = NamedValueFile(self.types.named_value, name)
+            if delimiter is not None:
+                named_value_file.delimiter = delimiter
+            named_values = named_value_file.load()
+            self.static[name] = named_values
+
+        return named_values
+
+    def load_regex_file(self, name):
+        """Loads a file containing regular expression patterns.
+
+        The regular expression patterns are generally used to find a value
+        in a user utterance the skill needs to properly perform the requested
+        function.
+
+        Args:
+            name: name of the regular expression file, no extension needed
+
+        Returns:
+            List representation of the regular expression file.
+        """
+        regex_file = RegexFile(self.types.regex, name)
+
+        return regex_file.load()
+
+    def load_vocabulary_file(self, name):
+        """Loads a file containing variations of words meaning the same thing.
+
+        A vocabulary file defines words a skill uses for intent matching.
+        It can also be used to match words in an utterance after intent
+        intent matching is complete.
+
+        Args:
+            name: name of the regular expression file, no extension needed
+
+        Returns:
+            List representation of the regular expression file.
+        """
+        vocabulary_file = VocabularyFile(self.types.vocabulary, name)
+
+        return vocabulary_file.load()
+
+    def render_dialog(self, name, data=None):
+        """Selects a record from a dialog file at random for TTS purposes.
+
+        Args:
+            name: name of the list file (no extension needed)
+            data: keyword arguments used to populate variables
+
+        Returns:
+            Random record from the file with variables resolved.
+        """
+        resource_file = DialogFile(self.types.dialog, name)
+        resource_file.data = data
+
+        return resource_file.render(self.dialog_renderer)
+
+    def load_skill_vocabulary(self, alphanumeric_skill_id: str) -> dict:
+        skill_vocabulary = {}
+        base_directory = self.types.vocabulary.base_directory
+        for directory, _, files in walk(base_directory):
+            vocabulary_files = [
+                file_name for file_name in files if file_name.endswith(".voc")
+            ]
+            for file_name in vocabulary_files:
+                vocab_type = alphanumeric_skill_id + file_name[:-4].title()
+                vocabulary = self.load_vocabulary_file(file_name)
+                if vocabulary:
+                    skill_vocabulary[vocab_type] = vocabulary
+
+        return skill_vocabulary
+
 
 class RegexExtractor:
-    """Extracts data from an utterance using regular expressions."""
+    """Extracts data from an utterance using regular expressions.
 
-    def __init__(self, file_finder, regex_name):
-        self.regex_file_path = file_finder.find_regex_file(regex_name + ".rx")
-        self.group_name = regex_name
+    Attributes:
+        group_name:
+        regex_patterns: regular expressions read from a .rx file
+    """
+
+    def __init__(self, group_name, regex_patterns):
+        self.group_name = group_name
+        self.regex_patterns = regex_patterns
 
     def extract(self, utterance) -> Optional[str]:
         """Attempt to find a value in a user request.
@@ -275,43 +463,27 @@ class RegexExtractor:
             The value extracted from the utterance, if found
         """
         extract = None
-        if self.regex_file_path:
-            regex_patterns = self._get_search_patterns()
-            pattern_match = self._match_utterance_to_patterns(utterance, regex_patterns)
-            if pattern_match is not None:
-                extract = self._extract_group_from_match(pattern_match)
+        pattern_match = self._match_utterance_to_patterns(utterance)
+        if pattern_match is not None:
+            extract = self._extract_group_from_match(pattern_match)
         self._log_extraction_result(extract)
 
         return extract
 
-    def _get_search_patterns(self) -> List[str]:
-        """Read a file containing one or more regular expressions.
-
-        Returns:
-            list of regular expression patterns to match against.
-        """
-        regex_patterns = []
-        with open(self.regex_file_path) as regex_file:
-            for pattern in [line.strip() for line in regex_file.readlines()]:
-                if pattern and pattern[0] != "#":
-                    regex_patterns.append(pattern)
-
-        return regex_patterns
-
-    @staticmethod
-    def _match_utterance_to_patterns(utterance: str, regex_patterns: List[str]):
+    def _match_utterance_to_patterns(self, utterance: str):
         """Match regular expressions to user request.
 
         Args:
             utterance: request spoken by the user
-            regex_patterns: regular expressions read from a .rx file
 
         Returns:
             a regular expression match object if a match is found
         """
+        print(utterance)
         pattern_match = None
-        for pattern in regex_patterns:
+        for pattern in self.regex_patterns:
             pattern_match = re.search(pattern, utterance)
+            print(f"pattern: {pattern}    match: {bool(pattern_match)}")
             if pattern_match:
                 break
 
@@ -343,28 +515,6 @@ class RegexExtractor:
             LOG.info(f"{self.group_name} extracted from utterance: " + extract)
 
 
-def read_vocab_file(path):
-    """Read a vocabulary file.
-
-    This reads a .voc file, stripping out empty lines comments and expand
-    parentheses. It returns each line as a list of all expanded
-    alternatives.
-
-    Args:
-        path (str): path to vocab file.
-
-    Returns:
-        List of Lists of strings.
-    """
-    vocab = []
-    with open(path, "r", encoding="utf8") as voc_file:
-        for line in voc_file.readlines():
-            if line.startswith("#") or line.strip() == "":
-                continue
-            vocab.append(expand_options(line.lower()))
-    return vocab
-
-
 def load_regex_from_file(path, skill_id):
     """Load regex from file
     The regex is sent to the intent handler using the message bus
@@ -387,26 +537,6 @@ def load_regex_from_file(path, skill_id):
                 regexes.append(regex)
 
     return regexes
-
-
-def load_vocabulary(basedir, skill_id):
-    """Load vocabulary from all files in the specified directory.
-
-    Args:
-        basedir (str): path of directory to load from (will recurse)
-        skill_id: skill the data belongs to
-    Returns:
-        dict with intent_type as keys and list of list of lists as value.
-    """
-    vocabs = {}
-    for path, _, files in walk(basedir):
-        for f in files:
-            if f.endswith(".voc"):
-                vocab_type = to_alnum(skill_id) + splitext(f)[0]
-                vocs = read_vocab_file(join(path, f))
-                if vocs:
-                    vocabs[vocab_type] = vocs
-    return vocabs
 
 
 def load_regex(basedir, skill_id):
