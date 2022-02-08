@@ -60,7 +60,7 @@ class DeviceState(str, Enum):
 class NetworkDevice:
     """DBus network device"""
 
-    DISCONNECT_WAIT = 8.0
+    DISCONNECT_WAIT = 30.0
     """Seconds to wait before double-checking disconnected state.
 
     Devices pass through a disconnected state when switching modes, so we don't
