@@ -395,4 +395,6 @@ def open_intent_envelope(message):
     return Intent(intent_dict.get('name'),
                   intent_dict.get('requires'),
                   intent_dict.get('at_least_one'),
-                  intent_dict.get('optional'))
+                  intent_dict.get('optional'),
+                  intent_dict.get('excludes'),
+                  intent_dict.get('exactly'))
