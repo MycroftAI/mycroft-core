@@ -46,6 +46,7 @@ class IdleDisplaySkill(MycroftSkill):
     def handle_mycroft_ready(self, _):
         """Shows idle screen when device is ready for use."""
         self._show_idle_screen()
+        self.bus.emit(Message("skill.idle.displayed"))
 
     def _show_idle_screen(self):
         """Override this method to display the idle screen."""
