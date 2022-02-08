@@ -479,11 +479,9 @@ class RegexExtractor:
         Returns:
             a regular expression match object if a match is found
         """
-        print(utterance)
         pattern_match = None
         for pattern in self.regex_patterns:
             pattern_match = re.search(pattern, utterance)
-            print(f"pattern: {pattern}    match: {bool(pattern_match)}")
             if pattern_match:
                 break
 
