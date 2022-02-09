@@ -204,7 +204,7 @@ class DialogFile(ResourceFile):
         Returns:
             str: a randomized version of the phrase
         """
-        return dialog_renderer.render(self.resource_name)
+        return dialog_renderer.render(self.resource_name, self.data)
 
 
 class VocabularyFile(ResourceFile):
@@ -316,7 +316,7 @@ class SkillResources:
 
         return SkillResourceTypes(**resource_types)
 
-    def load_dialog_file(self, name, data=None):
+    def load_dialog_file(self, name, data=None) -> List[str]:
         """Loads the contents of a dialog file into memory.
 
         Named variables in the dialog are populated with values found in the
@@ -334,7 +334,7 @@ class SkillResources:
 
         return dialog_file.load()
 
-    def load_list_file(self, name, data=None):
+    def load_list_file(self, name, data=None) -> List[str]:
         """Load a file containing a list of words or phrases
 
         Named variables in the dialog are populated with values found in the
@@ -352,7 +352,7 @@ class SkillResources:
 
         return list_file.load()
 
-    def load_named_value_file(self, name, delimiter=None):
+    def load_named_value_file(self, name, delimiter=None) -> dict:
         """Load file containing a set names and values.
 
         Loads a simple delimited file of name/value pairs.
@@ -376,7 +376,7 @@ class SkillResources:
 
         return named_values
 
-    def load_regex_file(self, name):
+    def load_regex_file(self, name) -> List[str]:
         """Loads a file containing regular expression patterns.
 
         The regular expression patterns are generally used to find a value
@@ -393,7 +393,7 @@ class SkillResources:
 
         return regex_file.load()
 
-    def load_vocabulary_file(self, name):
+    def load_vocabulary_file(self, name) -> List[List[str]]:
         """Loads a file containing variations of words meaning the same thing.
 
         A vocabulary file defines words a skill uses for intent matching.
