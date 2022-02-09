@@ -472,6 +472,13 @@ class NamespaceManager:
             namespace.remove(namespace_position)
             self.active_namespaces.remove(namespace)
 
+        if self.active_namespaces:
+            displaying_namespace = self.active_namespaces[0]
+            message_data = dict(skill_id=displaying_namespace.name)
+            self.core_bus.emit(
+                Message("gui.namespace.displayed", data=message_data)
+            )
+
     def handle_status_request(self, message: Message):
         """Handles a GUI status request by replying with the connection status.
 
