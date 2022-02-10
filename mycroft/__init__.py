@@ -36,4 +36,9 @@ __all__ = ['MYCROFT_ROOT_PATH',
            'Api',
            'Message']
 
-LOG.init()  # read log level from config
+from mycroft.configuration import  Configuration
+_cfg = Configuration.get()
+_log_level = _cfg.get("log_level", "INFO")
+_logs_conf = _cfg.get("logs") or {}
+_logs_conf["level"] = _log_level
+LOG.init(_logs_conf)  # read log level from config
