@@ -141,7 +141,7 @@ class MycroftSkill:
         #: Mycroft global configuration. (dict)
         self.config_core = Configuration.get()
 
-        self.settings = {}
+        self._settings = None
         self._initial_settings = {}
         self.settings_write_path = None
 
@@ -247,22 +247,12 @@ class MycroftSkill:
         """Setup skill settings."""
         LOG.debug(f"initializing skill settings for {self.skill_id}")
 
-        # if settings were used in __init__ method self._startup won't have been called yet
-        # assume these are default values
-        if self.settings:
-            self._initial_settings = copy(self.settings)
-
         # migrate settings if needed
-        if not exists(self.settings_path) and exists(self._old_settings_path):
-            shutil.copy(self._old_settings_path, self.settings_path)
+        if not exists(self._settings_path) and exists(self._old_settings_path):
+            shutil.copy(self._old_settings_path, self._settings_path)
 
         # NOTE: lock is disabled due to usage of deepcopy and to allow json serialization
-        self.settings = JsonStorage(self.settings_path, disable_lock=True)
-
-        # copy default values set in __init__
-        for k, v in self._initial_settings.items():
-            if k not in self.settings:
-                self.settings[k] = v
+        self._settings = JsonStorage(self._settings_path, disable_lock=True)
         self._initial_settings = copy(self.settings)
 
     @property
@@ -272,7 +262,7 @@ class MycroftSkill:
         return join(old_dir, old_folder, self.skill_id, 'settings.json')
 
     @property
-    def settings_path(self):
+    def _settings_path(self):
         is_xdg = is_using_xdg()
         if self.settings_write_path:
             LOG.warning("self.settings_write_path has been deprecated! "
@@ -281,6 +271,23 @@ class MycroftSkill:
         if not is_xdg:
             return self._old_settings_path
         return join(xdg.BaseDirectory.save_config_path(get_xdg_base(), 'skills', self.skill_id), 'settings.json')
+
+    @property
+    def settings(self):
+        if self._settings is not None:
+            return self._settings
+        else:
+            LOG.error('Skill not fully initialized. Move code ' +
+                      'from  __init__() to initialize() to correct this.')
+            LOG.error(simple_trace(traceback.format_stack()))
+            raise Exception('Accessed self.settings in __init__')
+
+    @settings.setter
+    def settings(self, val):
+        assert isinstance(val, dict)
+        # ensure self._settings remains a JsonDatabase
+        self._settings.clear()  # clear data
+        self._settings.merge(val)  # merge new data
 
     @property
     def dialog_renderer(self):
