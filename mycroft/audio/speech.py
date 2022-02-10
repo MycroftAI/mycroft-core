@@ -24,16 +24,11 @@ from mycroft.util.log import LOG
 from mycroft.messagebus.message import Message
 from mycroft.tts.remote_tts import RemoteTTSException
 
-try:
-    from ovos_tts_plugin_mimic import MimicTTSPlugin
-except ImportError:
-    MimicTTSPlugin = None
-
 bus = None  # Mycroft messagebus connection
 tts = None
 tts_hash = None
 lock = Lock()
-mimic_fallback_obj = None
+fallback_tts = None
 
 _last_stop_signal = 0
 
@@ -99,26 +94,27 @@ def mute_and_speak(utterance, ident, listen=False):
         tts.execute(utterance, ident, listen)
     except RemoteTTSException as e:
         LOG.error(e)
-        mimic_fallback_tts(utterance, ident, listen)
+        execute_fallback_tts(utterance, ident, listen)
     except Exception:
         LOG.exception('TTS execution failed.')
 
 
-def _get_mimic_fallback():
+def _get_tts_fallback():
     """Lazily initializes the fallback TTS if needed."""
-    global mimic_fallback_obj
-    if not mimic_fallback_obj:
+    global fallback_tts, bus
+    if not fallback_tts:
         config = Configuration.get()
-        tts_config = config.get('tts', {}).get("mimic", {})
-        lang = config.get("lang", "en-us")
-        mimic_fallback_obj = MimicTTSPlugin(lang, tts_config)
-        mimic_fallback_obj.validator.validate()
-        mimic_fallback_obj.init(bus)
+        engine = config.get('tts', {}).get("fallback_module", "mimic")
+        cfg = {"tts": {"module": engine,
+                       engine: config.get('tts', {}).get(engine, {})}}
+        fallback_tts = TTSFactory.create(cfg)
+        fallback_tts.validator.validate()
+        fallback_tts.init(bus)
 
-    return mimic_fallback_obj
+    return fallback_tts
 
 
-def mimic_fallback_tts(utterance, ident, listen):
+def execute_fallback_tts(utterance, ident, listen):
     """Speak utterance using fallback TTS if connection is lost.
 
     Args:
@@ -126,16 +122,23 @@ def mimic_fallback_tts(utterance, ident, listen):
         ident (str): interaction id for metrics
         listen (bool): True if interaction should end with mycroft listening
     """
-    if MimicTTSPlugin is not None:
-        try:
-            tts = _get_mimic_fallback()
-            LOG.debug("Mimic fallback, utterance : " + str(utterance))
-            tts.execute(utterance, ident, listen)
-            return
-        except Exception as e:
-            LOG.exception(e)
+    try:
+        tts = _get_tts_fallback()
+        LOG.debug("TTS fallback, utterance : " + str(utterance))
+        tts.execute(utterance, ident, listen)
+        return
+    except Exception as e:
+        LOG.error("TTS FAILURE! utterance : " + str(utterance))
 
-    LOG.error("TTS FAILURE! utterance : " + str(utterance))
+
+def mimic_fallback_tts(utterance, ident, listen):
+    """
+    DEPRECATED: use execute_fallback_tts instead
+    This method is only kept around for backwards api compat
+    """
+    LOG.warning("mimic_fallback_tts is deprecated! use execute_fallback_tts instead")
+    execute_fallback_tts(utterance, ident=ident, listen=listen)
+
 
 
 def handle_stop(event):
@@ -181,6 +184,6 @@ def shutdown():
     if tts:
         tts.playback.stop()
         tts.playback.join()
-    if mimic_fallback_obj:
-        mimic_fallback_obj.playback.stop()
-        mimic_fallback_obj.playback.join()
+    if fallback_tts:
+        fallback_tts.playback.stop()
+        fallback_tts.playback.join()

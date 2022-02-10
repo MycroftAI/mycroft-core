@@ -6,6 +6,6 @@ from mycroft.configuration import Configuration
 
 class TTSFactory(OVOSTTSFactory):
     @staticmethod
-    def create():
-        config = Configuration.get()
+    def create(config=None):
+        config = config or Configuration.get()
         return OVOSTTSFactory.create(config)
