@@ -25,6 +25,7 @@ to be a drop in replacement for mycroft-core
 
 from mycroft.configuration import setup_locale
 from mycroft.configuration import Configuration
+from mycroft.gui.service import GUIService
 from mycroft.util.log import LOG
 from mycroft.util import wait_for_exit_signal, reset_sigint_handler
 
@@ -38,7 +39,7 @@ def on_stopping():
 
 
 def on_error(e='Unknown'):
-    LOG.error('Enclosure failed: {}'.format(repr(e)))
+    LOG.error(f'Enclosure failed: {e}')
 
 
 def create_enclosure(platform):
@@ -82,30 +83,63 @@ def main(ready_hook=on_ready, error_hook=on_error, stopping_hook=on_stopping):
     NOTE: in ovos-core the GUI protocol is handled in it's own service and not part of the enclosure like in mycroft-core!
           You need to also run mycroft.gui process separately, it has been extracted into it's own module
     """
-    LOG.warning("mycroft.client.enclosure is in the process of being deprecated in ovos-core!\n"
-                "see https://github.com/OpenVoiceOS/ovos_PHAL\n"
-                "Be sure to run mycroft.gui process separately, it has been extracted into it's own module!\n"
-                "The only reason to run mycroft.client.enclosure is mark1 support\n"
-                "this module will be removed in version 0.0.3")
     # Read the system configuration
     config = Configuration.get(remote=False)
+
+    LOG.warning("mycroft.client.enclosure is DEPRECATED in ovos-core!")
+    LOG.warning("see https://github.com/OpenVoiceOS/ovos_PHAL")
+
+    if not config.get("backwards_compat", True):
+        raise DeprecationWarning("Please run PHAL instead of enclosure")
+
+    reset_sigint_handler()
+    setup_locale()
+
     platform = config.get("enclosure", {}).get("platform")
 
-    enclosure = create_enclosure(platform)
-    if enclosure:
-        LOG.debug("Enclosure created")
+    if platform == "PHAL":
+        LOG.debug("Launching PHAL")
+        # config read from mycroft.conf
+        # "PHAL": {
+        #     "ovos-PHAL-plugin-display-manager-ipc": {"enabled": true},
+        #     "ovos-PHAL-plugin-mk1": {"enabled": True}
+        # }
         try:
-            reset_sigint_handler()
-            setup_locale()
-            enclosure.run()
-            ready_hook()
-            wait_for_exit_signal()
-            enclosure.stop()
-            stopping_hook()
+            from ovos_PHAL import PHAL
+            phal = PHAL()
+            phal.start()
         except Exception as e:
+            LOG.exception("PHAL failed to launch!")
             error_hook(e)
     else:
-        LOG.info("No enclosure available for this hardware, running headless")
+        enclosure = create_enclosure(platform)
+        if enclosure:
+            LOG.debug("Enclosure created")
+            try:
+                enclosure.run()
+                ready_hook()
+            except Exception as e:
+                error_hook(e)
+        else:
+            LOG.info("No enclosure available for this hardware, running headless")
+
+        LOG.warning("Backwards compatibility is enabled, attempting to launch gui service...")
+        LOG.warning("Please run PHAL + gui service as separate processes instead!")
+        try:
+            service = GUIService()
+            service.run()
+        except Exception as e:
+            LOG.error(f"GUI : {e}")
+            service = None
+
+        ready_hook()
+        wait_for_exit_signal()
+
+        if enclosure:
+            enclosure.stop()
+        if service:
+            service.stop()
+        stopping_hook()
 
 
 if __name__ == "__main__":

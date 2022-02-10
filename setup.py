@@ -60,6 +60,7 @@ setup(
     extras_require={
         'audio-backend': required('requirements/extra-audiobackend.txt'),
         'mark1': required('requirements/extra-mark1.txt'),
+        'PHAL': required('requirements/extra-PHAL.txt'),
         'stt': required('requirements/extra-stt.txt'),
         'tts': required('requirements/extra-tts.txt'),
         "skills_minimal": required('requirements/extra-skills-minimal.txt'),
@@ -79,7 +80,7 @@ setup(
             'mycroft-audio=mycroft.audio.__main__:main',
             'mycroft-echo-observer=mycroft.messagebus.client.ws:echo',
             'mycroft-audio-test=mycroft.util.audio_test:main',
-            'mycroft-enclosure-client=mycroft.client.enclosure.__main__:main',
+            'mycroft-enclosure-client=ovos_PHAL.__main__:main',
             'mycroft-cli-client=mycroft.client.text.__main__:main',
             'mycroft-gui-service=mycroft.gui.__main__:main'
         ]

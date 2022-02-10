@@ -16,7 +16,8 @@ ovos-tts-plugin-google-tx~=0.0.2
 ovos-ww-plugin-pocketsphinx~=0.1.1
 ovos-ww-plugin-precise-lite~=0.1.0
 ovos-ww-plugin-precise~=0.1.0
-# TODO add ovos ocp + ovos vlc
+ovos_workshop>=0.0.5a7
+ovos_PHAL>=0.0.1
 
 ovos-lingua-franca~=0.4.3a1
 mock_msm~=0.9.2
