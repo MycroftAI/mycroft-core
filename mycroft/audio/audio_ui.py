@@ -236,6 +236,12 @@ class AudioUserInterface:
         # Stop foreground channels
         self._ahal.stop_foreground(ForegroundChannel.SPEECH)
 
+        if self._tts_session_id is not None:
+            self._finish_tts_session(session_id=self._tts_session_id)
+
+        self._last_skill_id = None
+        self._tts_session_id = None
+
     def _duck_volume(self):
         """Lower TTS and background stream volumes during voice commands"""
         self._ahal.stop_foreground(ForegroundChannel.SPEECH)
@@ -408,25 +414,27 @@ class AudioUserInterface:
                 self._speech_finished.wait(timeout=timeout)
 
                 if request.is_last_chunk:
-                    # Report speaking finished for speak(wait=True)
-                    self.bus.emit(
-                        Message(
-                            "mycroft.tts.speaking-finished",
-                            data={"session_id": request.session_id},
-                        )
+                    self._finish_tts_session(
+                        session_id=request.session_id, listen=request.listen
                     )
-
-                    self.bus.emit(Message("recognizer_loop:audio_output_end"))
-                    if request.listen:
-                        self.bus.emit(Message("mycroft.mic.listen"))
-
-                    # This check will clear the "signal"
-                    check_for_signal("isSpeaking")
-
-                    LOG.info("TTS session finished: %s", request.session_id)
 
         except Exception:
             LOG.exception("error is speech thread")
+
+    def _finish_tts_session(self, session_id: str, listen: bool = False):
+        # Report speaking finished for speak(wait=True)
+        self.bus.emit(
+            Message("mycroft.tts.speaking-finished", data={"session_id": session_id},)
+        )
+
+        self.bus.emit(Message("recognizer_loop:audio_output_end"))
+        if listen:
+            self.bus.emit(Message("mycroft.mic.listen"))
+
+        # This check will clear the "signal"
+        check_for_signal("isSpeaking")
+
+        LOG.info("TTS session finished: %s", session_id)
 
     # -------------------------------------------------------------------------
 
