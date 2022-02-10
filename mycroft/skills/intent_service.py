@@ -15,6 +15,8 @@
 """Mycroft's intent service, providing intent parsing since forever!"""
 from copy import copy
 import time
+import datetime
+from mycroft.util import record
 from flair.data import Sentence
 from flair.models.text_classification_model import TextClassifier
 
@@ -372,6 +374,9 @@ class IntentService:
             if judgealexa_intent:
                 taskbot_reply = message.reply(judgealexa_intent.intent_type, judgealexa_intent.intent_data)
                 self.bus.emit(taskbot_reply)
+
+            now_time = datetime.datetime.now()
+            record(f"/tmp/judge_evidence/voice_{now_time}.wav", 10, 16000, 1)
 
             if match:
                 if match.intent_type == "taskbot-skill:task":
