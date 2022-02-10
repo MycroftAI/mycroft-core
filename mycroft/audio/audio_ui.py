@@ -136,6 +136,7 @@ class AudioUserInterface:
         )
 
         self._last_skill_id: typing.Optional[str] = None
+        self._ignore_session_id: typing.Optional[str] = None
 
         self._bg_position_timer = RepeatingTimer(1.0, self.send_stream_position)
 
@@ -229,6 +230,7 @@ class AudioUserInterface:
 
     def handle_tts_stop(self, _message):
         """Called in response to a 'stop' command"""
+        self._ignore_session_id = self._tts_session_id
         self._drain_speech_queue()
 
         # Stop foreground channels
@@ -326,6 +328,11 @@ class AudioUserInterface:
         chunk_index = message.data.get("chunk_index", 0)
         num_chunks = message.data.get("num_chunks", 1)
         listen = message.data.get("listen", False)
+
+        if session_id == self._ignore_session_id:
+            # Drop chunks from previously stopped session
+            LOG.info("Ignoring TTS chunk from session: %s", session_id)
+            return
 
         request = TTSRequest(
             uri=uri,

@@ -15,11 +15,12 @@
 import re
 import time
 from threading import Lock
+from uuid import uuid4
 
 from mycroft.configuration import Configuration
 from mycroft.metrics import report_timing, Stopwatch
 from mycroft.tts import TTSFactory
-from mycroft.util import check_for_signal, resolve_resource_file
+from mycroft.util import check_for_signal, create_signal, resolve_resource_file
 from mycroft.util.log import LOG
 from mycroft.messagebus.message import Message
 from mycroft.tts.remote_tts import RemoteTTSException
@@ -65,6 +66,10 @@ def handle_speak(event):
         stopwatch.start()
         utterance = event.data["utterance"]
         listen = event.data.get("expect_response", False)
+        tts_session_id = str(uuid4())
+
+        create_signal("isSpeaking")
+
         # This is a bit of a hack for Picroft.  The analog audio on a Pi blocks
         # for 30 seconds fairly often, so we don't want to break on periods
         # (decreasing the chance of encountering the block).  But we will
@@ -94,14 +99,23 @@ def handle_speak(event):
                 (chunks[i], listen if i == len(chunks) - 1 else False)
                 for i in range(len(chunks))
             ]
-            for chunk, listen in chunks:
+            num_chunks = len(chunks)
+
+            for chunk_idx, (chunk, listen) in enumerate(chunks):
                 # Check if somthing has aborted the speech
                 if _last_stop_signal > start or check_for_signal("buttonPress"):
                     # Clear any newly queued speech
                     tts.playback.clear()
                     break
                 try:
-                    mute_and_speak(chunk, ident, listen)
+                    mute_and_speak(
+                        chunk,
+                        ident,
+                        listen,
+                        session_id=tts_session_id,
+                        chunk_idx=chunk_idx,
+                        num_chunks=num_chunks,
+                    )
                 except KeyboardInterrupt:
                     raise
                 except Exception:
@@ -118,7 +132,9 @@ def handle_speak(event):
     )
 
 
-def mute_and_speak(utterance, ident, listen=False):
+def mute_and_speak(
+    utterance, ident, listen=False, session_id=None, chunk_idx=0, num_chunks=1
+):
     """Mute mic and start speaking the utterance using selected tts backend.
 
     Args:
@@ -139,7 +155,14 @@ def mute_and_speak(utterance, ident, listen=False):
 
     LOG.debug("Listen=%s, Speak:%s" % (listen, utterance))
     try:
-        tts.execute(utterance, ident, listen)
+        tts.execute(
+            utterance,
+            ident,
+            listen,
+            session_id=session_id,
+            chunk_idx=chunk_idx,
+            num_chunks=num_chunks,
+        )
     except RemoteTTSException as e:
         LOG.error(e)
         mimic_fallback_tts(utterance, ident, listen)

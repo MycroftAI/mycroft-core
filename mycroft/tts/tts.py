@@ -338,7 +338,8 @@ class TTS(metaclass=ABCMeta):
         """
         return [sentence]
 
-    def execute(self, sentence, ident=None, listen=False):
+    def execute(self, sentence, ident=None, listen=False,
+                session_id=None, chunk_idx=0, num_chunks=1):
         """Convert sentence to speech, preprocessing out unsupported ssml
 
         The method caches results if possible using the hash of the
@@ -349,89 +350,88 @@ class TTS(metaclass=ABCMeta):
             ident: (str) Id reference to current interaction
             listen: (bool) True if listen should be triggered at the end
                     of the utterance.
+            session_id: (str) TTS session id used to determine when speaking is
+                        finished. None if a new id should be created here.
+            chunk_idx: (int) Index of current session chunk.
+            num_chunks: (int) Total number of TTS chunks in this session.
         """
         sentence = self.validate_ssml(sentence)
 
-        create_signal("isSpeaking")
         try:
-            self._execute(sentence, ident, listen)
+            self._execute(sentence, ident, listen, session_id=session_id,
+                          chunk_idx=chunk_idx, num_chunks=num_chunks)
         except Exception:
             # If an error occurs end the audio sequence through an empty entry
             self.queue.put(EMPTY_PLAYBACK_QUEUE_TUPLE)
             # Re-raise to allow the Exception to be handled externally as well.
             raise
 
-    def _execute(self, sentence, ident, listen):
-        if self.phonetic_spelling:
-            for word in re.findall(r"[\w']+", sentence):
-                if word.lower() in self.spellings:
-                    sentence = sentence.replace(word,
-                                                self.spellings[word.lower()])
+    def _execute(self, sentence, ident, listen,
+                 session_id=None, chunk_idx=0, num_chunks=1):
+        # if self.phonetic_spelling:
+        #     for word in re.findall(r"[\w']+", sentence):
+        #         if word.lower() in self.spellings:
+        #             sentence = sentence.replace(word,
+        #                                         self.spellings[word.lower()])
 
-        chunks = self._preprocess_sentence(sentence)
-        # Apply the listen flag to the last chunk, set the rest to False
-        chunks = [(chunks[i], listen if i == len(chunks) - 1 else False)
-                  for i in range(len(chunks))]
+        if session_id is None:
+            session_id = str(uuid4())
 
-        session_id = str(uuid4())
-        num_chunks = len(chunks)
+        sentence_hash = hash_sentence(sentence)
+        if sentence_hash in self.cache:
+            audio_file, phoneme_file = self._get_sentence_from_cache(
+                sentence_hash
+            )
+            if phoneme_file is None:
+                phonemes = None
+            else:
+                phonemes = phoneme_file.load()
 
-        for chunk_idx, (sentence, l) in enumerate(chunks):
-            sentence_hash = hash_sentence(sentence)
-            if sentence_hash in self.cache:
-                audio_file, phoneme_file = self._get_sentence_from_cache(
+        else:
+            # TODO: this should be changed return the audio data from
+            #  the API call and then to call the add_to_cache method
+            #  of the TTS cache.  But this requires changing the public
+            #  API of the get_tts method in each engine.
+            audio_file = self.cache.define_audio_file(sentence_hash)
+            # TODO 21.08: remove mutation of audio_file.path.
+            returned_file, phonemes = self.get_tts(
+                sentence, str(audio_file.path))
+            # Convert to Path as needed
+            returned_file = Path(returned_file)
+            if returned_file != audio_file.path:
+                warn(
+                    DeprecationWarning(
+                        f"{self.tts_name} is saving files "
+                        "to a different path than requested. If you are "
+                        "the maintainer of this plugin, please adhere to "
+                        "the file path argument provided. Modified paths "
+                        "will be ignored in a future release."))
+                audio_file.path = returned_file
+            if phonemes:
+                phoneme_file = self.cache.define_phoneme_file(
                     sentence_hash
                 )
-                if phoneme_file is None:
-                    phonemes = None
-                else:
-                    phonemes = phoneme_file.load()
-
+                phoneme_file.save(phonemes)
             else:
-                # TODO: this should be changed return the audio data from
-                #  the API call and then to call the add_to_cache method
-                #  of the TTS cache.  But this requires changing the public
-                #  API of the get_tts method in each engine.
-                audio_file = self.cache.define_audio_file(sentence_hash)
-                # TODO 21.08: remove mutation of audio_file.path.
-                returned_file, phonemes = self.get_tts(
-                    sentence, str(audio_file.path))
-                # Convert to Path as needed
-                returned_file = Path(returned_file)
-                if returned_file != audio_file.path:
-                    warn(
-                        DeprecationWarning(
-                            f"{self.tts_name} is saving files "
-                            "to a different path than requested. If you are "
-                            "the maintainer of this plugin, please adhere to "
-                            "the file path argument provided. Modified paths "
-                            "will be ignored in a future release."))
-                    audio_file.path = returned_file
-                if phonemes:
-                    phoneme_file = self.cache.define_phoneme_file(
-                        sentence_hash
-                    )
-                    phoneme_file.save(phonemes)
-                else:
-                    phoneme_file = None
-                self.cache.cached_sentences[sentence_hash] = (
-                    audio_file, phoneme_file
-                )
-            viseme = self.viseme(phonemes) if phonemes else None
-            # self.queue.put(
-            #     (self.audio_ext, str(audio_file.path), viseme, ident, l)
-            # )
-            #
-            # Ask audio user interface (AUI) to play
-            audio_uri = "file://" + str(audio_file.path)
-            self.bus.emit(Message("mycroft.tts.speak-chunk",
-                                  data={
-                                      "uri": audio_uri,
-                                      "session_id": session_id,
-                                      "chunk_index": chunk_idx,
-                                      "num_chunks": num_chunks,
-                                      "listen": listen,
-                                  }))
+                phoneme_file = None
+            self.cache.cached_sentences[sentence_hash] = (
+                audio_file, phoneme_file
+            )
+        viseme = self.viseme(phonemes) if phonemes else None
+        # self.queue.put(
+        #     (self.audio_ext, str(audio_file.path), viseme, ident, l)
+        # )
+        #
+        # Ask audio user interface (AUI) to play
+        audio_uri = "file://" + str(audio_file.path)
+        self.bus.emit(Message("mycroft.tts.speak-chunk",
+                                data={
+                                    "uri": audio_uri,
+                                    "session_id": session_id,
+                                    "chunk_index": chunk_idx,
+                                    "num_chunks": num_chunks,
+                                    "listen": listen,
+                                }))
 
     def _get_sentence_from_cache(self, sentence_hash):
         cached_sentence = self.cache.cached_sentences[sentence_hash]
