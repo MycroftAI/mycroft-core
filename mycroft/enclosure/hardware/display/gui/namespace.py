@@ -389,6 +389,10 @@ class NamespaceManager:
             self.active_namespaces.insert(0, namespace)
         for key, value in namespace.data.items():
             namespace.load_data(key, value)
+        message_data = dict(skill_id=namespace.name)
+        self.core_bus.emit(
+            Message("gui.namespace.displayed", data=message_data)
+        )
 
     def _ensure_namespace_exists(self, namespace_name: str) -> Namespace:
         """Retrieves the requested namespace, creating one if it doesn't exist.
