@@ -389,10 +389,8 @@ class NamespaceManager:
             self.active_namespaces.insert(0, namespace)
         for key, value in namespace.data.items():
             namespace.load_data(key, value)
-        message_data = dict(skill_id=namespace.name)
-        self.core_bus.emit(
-            Message("gui.namespace.displayed", data=message_data)
-        )
+
+        self._emit_namespace_displayed_event()
 
     def _ensure_namespace_exists(self, namespace_name: str) -> Namespace:
         """Retrieves the requested namespace, creating one if it doesn't exist.
@@ -476,12 +474,12 @@ class NamespaceManager:
             namespace.remove(namespace_position)
             self.active_namespaces.remove(namespace)
 
-        if self.active_namespaces:
-            displaying_namespace = self.active_namespaces[0]
-            message_data = dict(skill_id=displaying_namespace.name)
-            self.core_bus.emit(
-                Message("gui.namespace.displayed", data=message_data)
-            )
+    def _emit_namespace_displayed_event(self):
+        displaying_namespace = self.active_namespaces[0]
+        message_data = dict(skill_id=displaying_namespace.name)
+        self.core_bus.emit(
+            Message("gui.namespace.displayed", data=message_data)
+        )
 
     def handle_status_request(self, message: Message):
         """Handles a GUI status request by replying with the connection status.
