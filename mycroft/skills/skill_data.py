@@ -286,6 +286,24 @@ class RegexFile(ResourceFile):
         return regex_patterns
 
 
+class WordFile(ResourceFile):
+    """Defines a word file, which defines a word in the configured language."""
+
+    def load(self) -> Optional[str]:
+        """Load and lines from a file and populate the variables.
+
+        Returns:
+            Contents of the file with variables resolved.
+        """
+        word = None
+        if self.file_path is not None:
+            lines = self._read()
+            if lines:
+                word = lines[0]
+
+        return word
+
+
 class SkillResources:
     def __init__(self, skill_directory, language, dialog_renderer):
         self.skill_directory = skill_directory
@@ -410,7 +428,20 @@ class SkillResources:
 
         return vocabulary_file.load()
 
-    def render_dialog(self, name, data=None):
+    def load_word_file(self, name) -> Optional[str]:
+        """Loads a file containing a word.
+
+        Args:
+            name: name of the regular expression file, no extension needed
+
+        Returns:
+            List representation of the regular expression file.
+        """
+        word_file = WordFile(self.types.vocabulary, name)
+
+        return word_file.load()
+
+    def render_dialog(self, name, data=None) -> str:
         """Selects a record from a dialog file at random for TTS purposes.
 
         Args:
@@ -498,6 +529,9 @@ class RegexExtractor:
             extract = pattern_match.group(self.group_name).strip()
         except IndexError:
             pass
+        else:
+            if not extract:
+                extract = None
 
         return extract
 
