@@ -1,0 +1,42 @@
+name: Contributor License Agreement
+
+on:
+  pull_request:
+    branches:
+      - dev
+      - master
+
+jobs:
+  cla-check:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: CLA
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.7
+    - name: Cache pip packages
+      uses: actions/cache@v2
+      env:
+        cache-name: cache-pypi-modules
+      with:
+        # pip cache files are stored in `~/.cache/pip` on Linux
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('requirements/requirements.txt', 'requirements/tests.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-build-${{ env.cache-name }}-
+          ${{ runner.os }}-build-
+          ${{ runner.os }}-
+    - name: Install CLA check script
+      run: |
+          git clone https://github.com/forslund/github-repo-cla
+          cd github-repo-cla
+          git checkout cd85a2f
+          pip install -r requirements.txt
+    - name: Check CLA
+      env:
+        GITHUB_ACCESS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+          cd github-repo-cla
+          python3 cla_script.py -b dev MycroftAI/mycroft-core
