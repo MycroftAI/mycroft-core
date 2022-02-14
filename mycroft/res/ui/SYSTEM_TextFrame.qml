@@ -13,7 +13,7 @@ Mycroft.CardDelegate {
     property bool hasTitle: sessionData.title.length > 0 ? true : false
     
     contentItem: Rectangle {
-        color: "blue"
+        color: "transparent"
 
         ColumnLayout {
             anchors.fill: parent
