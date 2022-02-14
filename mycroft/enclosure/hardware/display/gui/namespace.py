@@ -473,6 +473,7 @@ class NamespaceManager:
             namespace_position = self.active_namespaces.index(namespace)
             namespace.remove(namespace_position)
             self.active_namespaces.remove(namespace)
+        self._emit_namespace_displayed_event()
 
     def _emit_namespace_displayed_event(self):
         displaying_namespace = self.active_namespaces[0]
