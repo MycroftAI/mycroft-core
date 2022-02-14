@@ -38,6 +38,10 @@ HookMusicFunc = ctypes.CFUNCTYPE(
 )
 
 
+class SDLException(Exception):
+    """Exception generated when checking SDL calls"""
+
+
 class AudioHAL:
     """Audio hardware abstraction layer.
 
@@ -136,8 +140,6 @@ class AudioHAL:
         """Start audio HAL"""
         self.bus = bus
 
-        LOG.debug("Initializing SDL mixer")
-
         # TODO: Parameterize
         ret = mixer.Mix_OpenAudio(
             self.audio_sample_rate,
@@ -145,11 +147,31 @@ class AudioHAL:
             self.audio_channels,
             self.audio_chunk_size,
         )
-        assert ret >= 0, mixer.Mix_GetError().decode("utf8")
+        self._check_sdl(ret)
 
         mixer.Mix_ChannelFinished(self._fg_channel_finished)
 
         self._reset_caches()
+
+    def _init_mixer(self):
+        """Initializes SDL mixer"""
+        LOG.debug("Initializing SDL mixer")
+
+        ret = mixer.Mix_Init(
+            mixer.MIX_INIT_MP3
+            | mixer.MIX_INIT_FLAC
+            | mixer.MIX_INIT_OGG
+            | mixer.MIX_INIT_OPUS
+        )
+        self._check_sdl(ret)
+
+        ret = mixer.Mix_OpenAudio(
+            self.audio_sample_rate,
+            sdl2.AUDIO_S16SYS,
+            self.audio_channels,
+            self.audio_chunk_size,
+        )
+        self._check_sdl(ret)
 
     def shutdown(self):
         """Shut down audio HAL"""
@@ -157,7 +179,9 @@ class AudioHAL:
 
         self.stop_background()
 
+        LOG.debug("Stopping SDL mixer")
         mixer.Mix_CloseAudio()
+        mixer.Mix_Quit()
 
     def _reset_caches(self):
         """Clear all media caches"""
@@ -195,6 +219,15 @@ class AudioHAL:
             )
         )
 
+    def _check_sdl(self, ret: int):
+        """Check SDL call return value and raise exception if an error occurred."""
+        if ret < 0:
+            raise SDLException(self._get_mixer_error())
+
+    def _get_mixer_error(self) -> str:
+        """Get the last mixer error string"""
+        return mixer.Mix_GetError().decode("utf8")
+
     # -------------------------------------------------------------------------
 
     def play_foreground(
@@ -210,13 +243,19 @@ class AudioHAL:
         chunk: typing.Optional[mixer.Mix_Chunk] = None
 
         if cache:
+            # Try to retrieve chunk from cache first
             chunk = self._fg_cache.get(file_path_str)
 
         if chunk is None:
+            # Need to load new chunk
+            LOG.debug("Loading audio file: %s", file_path)
             chunk = mixer.Mix_LoadWAV(file_path_str.encode())
-            assert chunk, mixer.Mix_GetError().decode("utf8")
+
+            if not chunk:
+                raise SDLException(self._get_mixer_error())
 
             if cache:
+                # Store in cache
                 self._fg_cache[file_path_str] = chunk
 
         duration_sec = chunk.contents.alen / (
@@ -235,7 +274,8 @@ class AudioHAL:
             # Max volume
             mixer.Mix_Volume(channel, self._clamp_volume(1.0))
 
-        mixer.Mix_PlayChannel(channel, chunk, 0)  # 0 = no looping
+        ret = mixer.Mix_PlayChannel(channel, chunk, 0)  # 0 = no looping
+        self._check_sdl(ret)
 
         return duration_sec
 

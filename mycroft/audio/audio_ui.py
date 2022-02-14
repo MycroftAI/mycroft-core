@@ -122,11 +122,6 @@ class AudioUserInterface:
             audio_sample_rate=EFFECT_SAMPLE_RATE, audio_channels=EFFECT_CHANNELS
         )
 
-        self._cache_dir: typing.Optional[tempfile.TemporaryDirectory] = None
-
-        # uri -> Path
-        self._effect_paths: typing.Dict[str, Path] = {}
-
         self._start_listening_uri = "file://" + resolve_resource_file(
             self.config["sounds"]["start_listening"]
         )
@@ -168,16 +163,6 @@ class AudioUserInterface:
         self.bus = bus
         self._ahal.initialize(self.bus)
 
-        # Cache for sound effects.
-        # We convert them to WAV files with the appropriate sample rate.
-        self._cleanup_effect_cache()
-        self._cache_dir = tempfile.TemporaryDirectory(prefix="mycroft-audio-cache")
-        self._effect_paths = {}
-
-        # Pre-cache sound effects
-        self._get_or_cache_uri(self._start_listening_uri)
-        self._get_or_cache_uri(self._acknowledge_uri)
-
         # TTS queue/thread
         self._speech_queue = queue.Queue()
         self._speech_thread = threading.Thread(target=self._speech_run, daemon=True)
@@ -210,16 +195,8 @@ class AudioUserInterface:
                 self._speech_thread = None
 
             self._ahal.shutdown()
-
-            self._cleanup_effect_cache()
         except Exception:
             LOG.exception("error shutting down")
-
-    def _cleanup_effect_cache(self):
-        """Delete sound effect cache"""
-        if self._cache_dir is not None:
-            self._cache_dir.cleanup()
-            self._cache_dir = None
 
     def _detach_events(self):
         """Removes bus event handlers"""
@@ -267,38 +244,11 @@ class AudioUserInterface:
         self._duck_volume()
         self._play_effect(self._start_listening_uri)
 
-    def _get_or_cache_uri(self, uri: str) -> Path:
-        """Gets file path for uri, transcoding/caching as WAV if necessary"""
-        file_path = self._effect_paths.get(uri)
-        if file_path is None:
-            # Transcode and cache WAV to temporary file
-            assert self._cache_dir is not None
-            with tempfile.NamedTemporaryFile(
-                mode="wb", dir=self._cache_dir.name, suffix=".wav", delete=False
-            ) as cache_file:
-                file_path = Path(cache_file.name)
-                LOG.info("Caching %s to %s", uri, file_path)
-
-                # Use VLC to transcode
-                subprocess.check_call(
-                    [
-                        "vlc",
-                        "-I",
-                        "dummy",
-                        "--sout",
-                        f"#transcode{{acodec=s16l,samplerate={EFFECT_SAMPLE_RATE},channels={EFFECT_CHANNELS}}}:std{{access=file,mux=wav,dst={file_path}}}",
-                        str(uri),
-                        "vlc://quit",
-                    ]
-                )
-                self._effect_paths[uri] = file_path
-
-        return file_path
-
     def _play_effect(self, uri: str, volume: typing.Optional[float] = None):
         """Play sound effect from uri"""
         if uri:
-            file_path = self._get_or_cache_uri(uri)
+            assert uri.startswith("file://"), "Only file URIs are supported for effects"
+            file_path = uri[len("file://") :]
             self._ahal.play_foreground(
                 ForegroundChannel.EFFECT, file_path, cache=True, volume=volume
             )
@@ -308,7 +258,7 @@ class AudioUserInterface:
         """Handler for skills' activity_started"""
         skill_id = message.data.get("skill_id")
         if skill_id != self._last_skill_id:
-            LOG.info("Clearing TTS cache for skill: %s", skill_id)
+            LOG.info("Clearing TTS queue for skill: %s", skill_id)
 
             self._drain_speech_queue()
 
