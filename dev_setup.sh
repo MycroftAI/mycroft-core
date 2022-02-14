@@ -457,10 +457,18 @@ VIRTUALENV_ROOT=${VIRTUALENV_ROOT:-"${TOP}/.venv"}
 
 function install_venv() {
     $opt_python -m venv "${VIRTUALENV_ROOT}/" --without-pip
+
+    # Check if old script for python 3.6 is needed
+    if "${VIRTUALENV_ROOT}/bin/${opt_python}" --version > /dev/null | grep " 3.6"; then
+        GET_PIP_URL="https://bootstrap.pypa.io/pip/3.6/get-pip.py"
+    else
+        GET_PIP_URL="https://bootstrap.pypa.io/pip/3.6/get-pip.py"
+    fi
+
     # Force version of pip for reproducability, but there is nothing special
     # about this version.  Update whenever a new version is released and
     # verified functional.
-    curl https://bootstrap.pypa.io/get-pip.py | "${VIRTUALENV_ROOT}/bin/${opt_python}" - 'pip==20.0.2'
+    curl "${GET_PIP_URL}" | "${VIRTUALENV_ROOT}/bin/${opt_python}" - 'pip==20.0.2'
     # Function status depending on if pip exists
     [[ -x ${VIRTUALENV_ROOT}/bin/pip ]]
 }
