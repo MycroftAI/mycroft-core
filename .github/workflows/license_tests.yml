@@ -1,0 +1,35 @@
+name: Run License Tests
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  license_tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          ref: ${{ github.head_ref }}
+      - name: Setup Python
+        uses: actions/setup-python@v1
+        with:
+          python-version: 3.8
+      - name: Install Build Tools
+        run: |
+          python -m pip install build wheel
+      - name: Install System Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt install python3-dev swig libssl-dev
+      - name: Install core repo
+        run: |
+          pip install .
+      - name: Install licheck
+        run: |
+          pip install git+https://github.com/NeonJarbas/lichecker
+      - name: Install test dependencies
+        run: |
+          pip install pytest pytest-timeout pytest-cov
+      - name: Test Licenses
+        run: |
+          pytest test/license_tests.py
