@@ -5,6 +5,7 @@ dev.env
 *.pyc
 *.swp
 *~
+.wh.*
 mimic
 /skills
 pocketsphinx-python
