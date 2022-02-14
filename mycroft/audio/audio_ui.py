@@ -187,7 +187,7 @@ class AudioUserInterface:
             self._detach_events()
 
             # Stop text to speech
-            self._drain_speech_queue()
+            self._stop_tts()
 
             if self._speech_thread is not None:
                 self._speech_queue.put(None)
@@ -208,10 +208,8 @@ class AudioUserInterface:
     def handle_tts_stop(self, _message):
         """Called in response to a 'stop' command"""
         self._ignore_session_id = self._tts_session_id
-        self._drain_speech_queue()
 
-        # Stop foreground channels
-        self._ahal.stop_foreground(ForegroundChannel.SPEECH)
+        self._stop_tts()
 
         if self._tts_session_id is not None:
             self._finish_tts_session(session_id=self._tts_session_id)
@@ -219,15 +217,21 @@ class AudioUserInterface:
         self._last_skill_id = None
         self._tts_session_id = None
 
-    def _duck_volume(self):
-        """Lower TTS and background stream volumes during voice commands"""
+    def _stop_tts(self):
+        self._drain_speech_queue()
         self._ahal.stop_foreground(ForegroundChannel.SPEECH)
+        self._speech_finished.set()
+
+    def _duck_volume(self):
+        """Pause TTS and lower background stream volumes during voice commands"""
+        self._ahal.pause_foreground(ForegroundChannel.SPEECH)
         self._ahal.set_background_volume(0.3)
         LOG.info("Ducked volume")
 
     def _unduck_volume(self):
         """Restore volumes after voice commands"""
         self._ahal.set_background_volume(1.0)
+        self._ahal.resume_foreground(ForegroundChannel.SPEECH)
         LOG.info("Unducked volume")
 
     # -------------------------------------------------------------------------
@@ -260,10 +264,7 @@ class AudioUserInterface:
         if skill_id != self._last_skill_id:
             LOG.info("Clearing TTS queue for skill: %s", skill_id)
 
-            self._drain_speech_queue()
-
-            # Stop TTS speaking
-            self._ahal.stop_foreground(ForegroundChannel.SPEECH)
+            self._stop_tts()
 
             # Transition to new skill
             self._last_skill_id = skill_id
@@ -356,12 +357,9 @@ class AudioUserInterface:
                     request.session_id,
                 )
 
-                # Wait at most a half a second after audio should have finished.
-                #
-                # This is done in case VLC fails to inform us that the media
-                # item has finished playing.
-                timeout = 0.5 + duration_sec
-                self._speech_finished.wait(timeout=timeout)
+                # No timeout because TTS may be paused.
+                # This event is set whenever TTS is cleared.
+                self._speech_finished.wait()
 
                 if request.is_last_chunk:
                     self._finish_tts_session(

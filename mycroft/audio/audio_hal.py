@@ -279,6 +279,14 @@ class AudioHAL:
 
         return duration_sec
 
+    def pause_foreground(self, channel: int = -1):
+        """Pause media on a foreground channel (-1 for all)"""
+        mixer.Mix_Pause(channel)
+
+    def resume_foreground(self, channel: int = -1):
+        """Resume media on a foreground channel (-1 for all)"""
+        mixer.Mix_Resume(channel)
+
     def stop_foreground(self, channel: int = -1):
         """Stop media on a foreground channel (-1 for all)"""
         mixer.Mix_HaltChannel(channel)
