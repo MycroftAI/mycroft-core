@@ -1,5 +1,9 @@
 name: Run License Tests
 on:
+  pull_request:
+    branches:
+      - dev
+      - master
   push:
   workflow_dispatch:
 
