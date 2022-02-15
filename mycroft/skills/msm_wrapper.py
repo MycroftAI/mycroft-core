@@ -22,9 +22,7 @@ to be a drop in replacement for mycroft-core
 """
 
 from collections import namedtuple
-from functools import lru_cache
 from os import path, makedirs
-import xdg.BaseDirectory
 
 from combo_lock import ComboLock
 from mycroft.util.log import LOG
@@ -35,7 +33,7 @@ from mock_msm import \
     MycroftSkillsManager as MockMSM, \
     SkillRepo as MockSkillRepo
 
-from ovos_utils.configuration import get_xdg_base
+from ovos_utils.configuration import get_xdg_data_save_path
 
 import warnings
 
@@ -86,7 +84,7 @@ def build_msm_config(device_config: dict) -> MsmConfig:
     msm_config = device_config['skills'].get('msm', {})
     msm_repo_config = msm_config.get('repo', {})
     enclosure_config = device_config.get('enclosure', {})
-    data_dir = path.expanduser(device_config.get('data_dir', xdg.BaseDirectory.save_data_path(get_xdg_base())))
+    data_dir = path.expanduser(device_config.get('data_dir', get_xdg_data_save_path()))
     skills_dir = get_default_skills_directory(device_config)
     old_skills_dir = path.join(data_dir, msm_config.get('directory', "skills"))
 

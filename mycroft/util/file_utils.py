@@ -19,9 +19,9 @@ accessing and curating mycroft's cache.
 """
 
 import os
-import xdg.BaseDirectory
+
 from ovos_utils.file_utils import get_temp_path
-from ovos_utils.configuration import is_using_xdg, get_xdg_base
+from ovos_utils.configuration import is_using_xdg, get_xdg_base, get_xdg_data_dirs, get_xdg_data_save_path
 import mycroft.configuration
 from mycroft.util.log import LOG
 # do not delete these imports, here for backwards compat!
@@ -63,7 +63,7 @@ def resolve_resource_file(res_name):
         return res_name
 
     # Now look for XDG_DATA_DIRS
-    for path in xdg.BaseDirectory.load_data_paths(get_xdg_base()):
+    for path in get_xdg_data_dirs():
         filename = os.path.join(path, res_name)
         if os.path.isfile(filename):
             return filename
@@ -76,7 +76,7 @@ def resolve_resource_file(res_name):
         return filename
 
     # Next look for /opt/mycroft/res/res_name
-    data_dir = config.get('data_dir', xdg.BaseDirectory.save_data_path(get_xdg_base()))
+    data_dir = config.get('data_dir', get_xdg_data_save_path())
     res_dir = os.path.join(data_dir, 'res')
     filename = os.path.expanduser(os.path.join(res_dir, res_name))
     if os.path.isfile(filename):
@@ -157,8 +157,7 @@ def get_cache_directory(domain=None):
             # If not defined, use /tmp/mycroft/cache
             directory = get_temp_path(get_xdg_base(), 'cache')
         else:
-            directory = os.path.join(xdg.BaseDirectory.xdg_data_home,
-                                     get_xdg_base(), "cache")
+            directory = os.path.join(get_xdg_data_save_path(), "cache")
     return ensure_directory_exists(directory, domain)
 
 

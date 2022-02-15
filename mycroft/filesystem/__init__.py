@@ -15,8 +15,7 @@
 import os
 import shutil
 from os.path import join, expanduser, isdir
-import xdg.BaseDirectory
-from ovos_utils.configuration import is_using_xdg, get_xdg_base
+from ovos_utils.configuration import is_using_xdg, get_xdg_base, get_xdg_config_save_path
 
 
 class FileSystemAccess:
@@ -38,8 +37,7 @@ class FileSystemAccess:
         path = expanduser(f'~/.{get_xdg_base()}/{path}')
 
         if is_using_xdg():
-            xdg_path = expanduser(
-                f'{xdg.BaseDirectory.xdg_config_home}/{get_xdg_base()}/{path}')
+            xdg_path = expanduser(f'{get_xdg_config_save_path()}/{path}')
             # Migrate from the old location if it still exists
             if isdir(path) and not isdir(xdg_path):
                 shutil.move(path, xdg_path)

@@ -15,25 +15,20 @@ import os
 from os.path import join, dirname, expanduser, exists
 from time import sleep
 
-import xdg.BaseDirectory
+from ovos_utils.configuration import get_xdg_config_save_path, get_webcache_location, get_xdg_base, get_config_filename, \
+    find_default_config
 
-from ovos_utils.configuration import get_ovos_config, get_xdg_config_locations
-
-# check for path overrides
-_ovos_cfg = get_ovos_config()
-
-DEFAULT_CONFIG = _ovos_cfg["default_config_path"] or \
+DEFAULT_CONFIG = find_default_config() or \
                  join(dirname(__file__), "mycroft.conf")
 SYSTEM_CONFIG = os.environ.get('MYCROFT_SYSTEM_CONFIG',
-                               f'/etc/{_ovos_cfg["base_folder"]}/{_ovos_cfg["config_filename"]}')
+                               f'/etc/{get_xdg_base()}/{get_config_filename()}')
 # TODO: remove in 22.02
 # Make sure we support the old location still
 # Deprecated and will be removed eventually
-OLD_USER_CONFIG = join(expanduser('~'), '.' + _ovos_cfg["base_folder"], _ovos_cfg["config_filename"])
-USER_CONFIG = join(xdg.BaseDirectory.xdg_config_home, _ovos_cfg["base_folder"], _ovos_cfg["config_filename"])
+OLD_USER_CONFIG = join(expanduser('~'), '.' + get_xdg_base(), get_config_filename())
+USER_CONFIG = join(get_xdg_config_save_path(), get_config_filename())
 REMOTE_CONFIG = "mycroft.ai"
-WEB_CONFIG_CACHE = os.environ.get('MYCROFT_WEB_CACHE') or \
-                   join(xdg.BaseDirectory.xdg_config_home, _ovos_cfg["base_folder"], 'web_cache.json')
+WEB_CONFIG_CACHE = os.environ.get('MYCROFT_WEB_CACHE') or get_webcache_location()
 
 
 def __ensure_folder_exists(path):

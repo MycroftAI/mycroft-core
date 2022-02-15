@@ -25,7 +25,6 @@ from os.path import join, abspath, dirname, basename, exists, isdir
 import shutil
 from threading import Event
 
-import xdg.BaseDirectory
 from adapt.intent import Intent, IntentBuilder
 from json_database import JsonStorage
 
@@ -60,7 +59,7 @@ from mycroft.util import (
 from mycroft.util.format import pronounce_number, join_list
 from mycroft.util.log import LOG
 from mycroft.util.parse import match_one, extract_number
-from ovos_utils.configuration import is_using_xdg, get_xdg_base
+from ovos_utils.configuration import is_using_xdg, get_xdg_base, get_xdg_data_save_path
 from ovos_utils.enclosure.api import EnclosureAPI
 from ovos_utils.file_utils import get_temp_path
 import shutil
@@ -270,7 +269,7 @@ class MycroftSkill:
             return join(self.settings_write_path, 'settings.json')
         if not is_xdg:
             return self._old_settings_path
-        return join(xdg.BaseDirectory.save_config_path(get_xdg_base(), 'skills', self.skill_id), 'settings.json')
+        return join(get_xdg_data_save_path(), 'skills', self.skill_id, 'settings.json')
 
     @property
     def settings(self):

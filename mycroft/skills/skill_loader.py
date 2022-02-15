@@ -21,8 +21,7 @@ from inspect import isclass, signature
 from os import path, makedirs
 from time import time
 
-import xdg.BaseDirectory
-from ovos_utils.configuration import get_xdg_base, is_using_xdg
+from ovos_utils.configuration import get_xdg_base, is_using_xdg, get_xdg_data_dirs, get_xdg_data_save_path
 from ovos_plugin_manager.skills import find_skill_plugins
 
 from mycroft.configuration import Configuration
@@ -92,8 +91,7 @@ def get_skill_directories(conf=None):
     # NOTE: skills are actually code, but treated as user data!
     # they should be considered applets rather than full applications
     skill_locations = list(reversed(
-        [os.path.join(p, folder)
-         for p in xdg.BaseDirectory.load_data_paths(get_xdg_base())]
+        [os.path.join(p, folder) for p in get_xdg_data_dirs()]
     ))
 
     # load the default skills folder
@@ -148,12 +146,12 @@ def get_default_skills_directory(conf=None):
         data_dir = conf.get("data_dir") or "/opt/" + get_xdg_base()
         skills_folder = path.join(data_dir, folder)
     else:
-        skills_folder = xdg.BaseDirectory.save_data_path(get_xdg_base() + '/' + folder)
+        skills_folder = os.path.join(get_xdg_data_save_path(), folder)
     # create folder if needed
     try:
         makedirs(skills_folder, exist_ok=True)
     except PermissionError:  # old style /opt/mycroft/skills not available
-        skills_folder = xdg.BaseDirectory.save_data_path(get_xdg_base() + '/' + folder)
+        skills_folder = os.path.join(get_xdg_data_save_path(), folder)
         makedirs(skills_folder, exist_ok=True)
 
     return path.expanduser(skills_folder)

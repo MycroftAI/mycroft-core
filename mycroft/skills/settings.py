@@ -63,11 +63,10 @@ from pathlib import Path
 from threading import Timer
 
 import yaml
-from xdg.BaseDirectory import xdg_cache_home
 
 from mycroft.api import DeviceApi, is_paired, is_backend_disabled
 from mycroft.configuration import Configuration
-from ovos_utils.configuration import get_xdg_base
+from ovos_utils.configuration import get_xdg_cache_save_path
 from mycroft.messagebus.message import Message
 from mycroft.util import camel_case_split
 from mycroft.util.file_utils import ensure_directory_exists
@@ -259,7 +258,7 @@ class SettingsMetaUploader:
 
 
 # Path to remote cache
-REMOTE_CACHE = Path(xdg_cache_home, get_xdg_base(), 'remote_skill_settings.json')
+REMOTE_CACHE = Path(get_xdg_cache_save_path(), 'remote_skill_settings.json')
 
 
 def load_remote_settings_cache():

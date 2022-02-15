@@ -15,7 +15,6 @@
 import sys
 import io
 from math import ceil
-import xdg.BaseDirectory
 
 from mycroft.client.text.gui_server import start_qml_gui
 
@@ -33,7 +32,7 @@ from mycroft.messagebus.client import MessageBusClient
 from mycroft.messagebus.message import Message
 from mycroft.util.log import LOG
 from mycroft.configuration import Configuration
-from ovos_utils.configuration import is_using_xdg, get_xdg_base
+from ovos_utils.configuration import is_using_xdg, get_xdg_base, get_xdg_config_locations, get_xdg_config_save_path
 
 import locale
 
@@ -187,7 +186,7 @@ def load_settings():
 
     # Check XDG_CONFIG_DIR
     if config_file is None:
-        for conf_dir in xdg.BaseDirectory.load_config_paths(get_xdg_base()):
+        for conf_dir in get_xdg_config_locations():
             xdg_file = os.path.join(conf_dir, filename)
             if os.path.isfile(xdg_file):
                 config_file = xdg_file
@@ -229,8 +228,7 @@ def save_settings():
     if not is_using_xdg():
         config_file = path
     else:
-        config_file = os.path.join(xdg.BaseDirectory.xdg_config_home,
-                                   get_xdg_base(), filename)
+        config_file = os.path.join(get_xdg_config_save_path(), filename)
 
     with io.open(config_file, 'w') as f:
         f.write(str(json.dumps(config, ensure_ascii=False)))
