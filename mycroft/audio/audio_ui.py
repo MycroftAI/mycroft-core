@@ -130,7 +130,6 @@ class AudioUserInterface:
             self.config["sounds"]["acknowledge"]
         )
 
-        self._last_skill_id: typing.Optional[str] = None
         self._ignore_session_id: typing.Optional[str] = None
 
         self._bg_position_timer = RepeatingTimer(1.0, self.send_stream_position)
@@ -139,6 +138,8 @@ class AudioUserInterface:
         self._speech_thread: typing.Optional[threading.Thread] = None
         self._tts_session_id: typing.Optional[str] = None
         self._speech_finished = threading.Event()
+
+        self._activity_id: typing.Optional[str] = None
 
         self._bus_events = {
             "recognizer_loop:record_begin": self.handle_start_listening,
@@ -214,7 +215,6 @@ class AudioUserInterface:
         if self._tts_session_id is not None:
             self._finish_tts_session(session_id=self._tts_session_id)
 
-        self._last_skill_id = None
         self._tts_session_id = None
 
     def _stop_tts(self):
@@ -261,17 +261,23 @@ class AudioUserInterface:
     def handle_skill_started(self, message):
         """Handler for skills' activity_started"""
         skill_id = message.data.get("skill_id")
-        if skill_id != self._last_skill_id:
-            LOG.info("Clearing TTS queue for skill: %s", skill_id)
+        self._activity_id = message.data.get("activity_id")
 
-            self._stop_tts()
+        LOG.info(
+            "Clearing TTS queue for activity '%s', skill=%s",
+            self._activity_id,
+            skill_id,
+        )
 
-            # Transition to new skill
-            self._last_skill_id = skill_id
+        self._stop_tts()
 
     def handle_skill_ended(self, message):
         """Handler for skills' activity_ended"""
-        self._unduck_volume()
+        activity_id = message.data.get("activity_id")
+
+        if (activity_id == self._activity_id) or (not activity_id):
+            self._activity_id = None
+            self._unduck_volume()
 
     def _drain_speech_queue(self):
         """Ensures the text to speech queue is emptied"""

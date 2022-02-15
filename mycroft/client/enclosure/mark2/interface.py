@@ -125,7 +125,9 @@ class LedThread(threading.Thread):
                         self.animation_name = name
                         self.animation_running = True
                         current_animation.start()
-                        while self.animation_running and current_animation.step(context=self._context):
+                        while self.animation_running and current_animation.step(
+                            context=self._context
+                        ):
                             time.sleep(0)
                         current_animation.stop()
                     except Exception:
@@ -211,7 +213,7 @@ class EnclosureMark2(Enclosure):
         )
         self.led_thread.start()
 
-        self._in_skill_activity = False
+        self._skill_activity_id: typing.Optional[str] = None
 
     def run(self):
         """Make it so."""
@@ -273,7 +275,7 @@ class EnclosureMark2(Enclosure):
 
     def handle_start_recording(self, message):
         LOG.debug("Gathering speech stuff")
-        self._in_skill_activity = False
+        self._skill_activity_id = None
         self.led_thread.start_animation("pulse")
 
     def handle_stop_recording(self, message):
@@ -282,20 +284,27 @@ class EnclosureMark2(Enclosure):
 
     def handle_end_audio(self, message):
         LOG.debug("Finished playing audio")
-        if not self._in_skill_activity:
+        if not self._skill_activity_id:
             # Stop the chase animation gently
-            self.led_thread.context["chase.background_color"] = self.hardware.palette.BLACK
+            self.led_thread.context[
+                "chase.background_color"
+            ] = self.hardware.palette.BLACK
             self.led_thread.context["chase.stop"] = True
 
     def handle_skill_started(self, message):
-        self._in_skill_activity = True
+        self._skill_activity_id = message.data.get("activity_id")
 
     def handle_skill_ended(self, message):
-        self._in_skill_activity = False
+        activity_id = message.data.get("activity_id")
 
-        # Stop the chase animation gently
-        self.led_thread.context["chase.background_color"] = self.hardware.palette.BLACK
-        self.led_thread.context["chase.stop"] = True
+        if (activity_id == self._skill_activity_id) or (not activity_id):
+            self._skill_activity_id = None
+
+            # Stop the chase animation gently
+            self.led_thread.context[
+                "chase.background_color"
+            ] = self.hardware.palette.BLACK
+            self.led_thread.context["chase.stop"] = True
 
     def on_volume_duck(self, message):
         # TODO duck it anyway using set vol
@@ -485,4 +494,3 @@ class EnclosureMark2(Enclosure):
         self.hardware.leds._set_led(10, (0, 0, 0))  # blank out reserved led
         self.hardware.leds._set_led(11, (0, 0, 0))  # BUG set to real value!
         self.hardware.terminate()
-
