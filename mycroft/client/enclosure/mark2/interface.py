@@ -13,18 +13,17 @@
 # limitations under the License.
 #
 """Define the enclosure interface for Mark II devices."""
+import subprocess
 import threading
 import time
 import typing
 from queue import Queue
 
 from mycroft.client.enclosure.base import Enclosure
-from mycroft.messagebus.message import Message
-from mycroft.util import create_daemon, connected
-from mycroft.util.log import LOG
 from mycroft.enclosure.hardware.display import NamespaceManager
 from mycroft.enclosure.hardware_enclosure import HardwareEnclosure
 from mycroft.messagebus.message import Message
+from mycroft.skills.event_scheduler import EventSchedulerInterface
 from mycroft.util.hardware_capabilities import EnclosureCapabilities
 from mycroft.util.log import LOG
 
@@ -215,6 +214,10 @@ class EnclosureMark2(Enclosure):
 
         self._skill_activity_id: typing.Optional[str] = None
 
+        self.event_scheduler = EventSchedulerInterface("mark_2_enclosure")
+        self.event_scheduler.set_bus(self.bus)
+        self._idle_dim_timeout: int = self.config.get("idle_dim_timeout", 300)
+
     def run(self):
         """Make it so."""
         super().run()
@@ -276,6 +279,10 @@ class EnclosureMark2(Enclosure):
     def handle_start_recording(self, message):
         LOG.debug("Gathering speech stuff")
         self._skill_activity_id = None
+
+        self.event_scheduler.cancel_scheduled_event("DimScreen")
+        self._undim_screen()
+
         self.led_thread.start_animation("pulse")
 
     def handle_stop_recording(self, message):
@@ -292,6 +299,7 @@ class EnclosureMark2(Enclosure):
             self.led_thread.context["chase.stop"] = True
 
     def handle_skill_started(self, message):
+        self._undim_screen()
         self._skill_activity_id = message.data.get("activity_id")
 
     def handle_skill_ended(self, message):
@@ -305,6 +313,8 @@ class EnclosureMark2(Enclosure):
                 "chase.background_color"
             ] = self.hardware.palette.BLACK
             self.led_thread.context["chase.stop"] = True
+
+            self._schedule_screen_dim()
 
     def on_volume_duck(self, message):
         # TODO duck it anyway using set vol
@@ -489,8 +499,44 @@ class EnclosureMark2(Enclosure):
         self.bus.emit(Message("mycroft.mic.unmute"))
         LOG.info("Device is ready for user interactions")
         self.bus.emit(Message("mycroft.ready"))
+        self._schedule_screen_dim()
 
     def terminate(self):
         self.hardware.leds._set_led(10, (0, 0, 0))  # blank out reserved led
         self.hardware.leds._set_led(11, (0, 0, 0))  # BUG set to real value!
         self.hardware.terminate()
+
+    def _dim_screen(self, _message=None, value=0):
+        """Dim the backlight on the screen (Mark II only)"""
+        subprocess.check_call(
+            [
+                "sudo",
+                "bash",
+                "-c",
+                f"echo {value} > /sys/class/backlight/rpi_backlight/brightness",
+            ]
+        )
+
+    def _undim_screen(self, value=255):
+        """Undim the backlight on the screen (Mark II only)"""
+        subprocess.check_call(
+            [
+                "sudo",
+                "bash",
+                "-c",
+                f"echo {value} > /sys/class/backlight/rpi_backlight/brightness",
+            ]
+        )
+
+    def _schedule_screen_dim(self):
+        """Dims the screen after a period of inactivity."""
+        if self._idle_dim_timeout <= 0:
+            # No dimming
+            return
+
+        self.event_scheduler.schedule_repeating_event(
+            self._dim_screen,
+            when=None,
+            interval=self._idle_dim_timeout,
+            name="DimScreen",
+        )
