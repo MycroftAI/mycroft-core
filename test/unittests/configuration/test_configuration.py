@@ -64,17 +64,5 @@ class TestConfiguration(TestCase):
         lc = mycroft.configuration.LocalConf('test')
         self.assertEqual(lc, {})
 
-    @patch('mycroft.configuration.config.RemoteConf')
-    @patch('mycroft.configuration.config.LocalConf')
-    def test_update(self, mock_remote, mock_local):
-        mock_remote.return_value = {}
-        mock_local.return_value = {'a': 1}
-        c = mycroft.configuration.Configuration.get()
-        self.assertEqual(c, {'a': 1})
-
-        mock_local.return_value = {'a': 2}
-        mycroft.configuration.Configuration.updated('message')
-        self.assertEqual(c, {'a': 2})
-
     def tearDown(self):
         mycroft.configuration.Configuration.load_config_stack([{}], True)

@@ -31,18 +31,6 @@ class PocketSphinxTest(unittest.TestCase):
         self.assertEqual(config['phonemes'], p.phonemes)
         self.assertEqual(config['threshold'], p.threshold)
 
-    def testInvalid(self):
-        config = {
-            'hey Zeds': {
-                'module': 'pocketsphinx',
-                'phonemes': 'ZZZZZZZZZ',
-                'threshold': 1e-90
-            }
-        }
-        p = HotWordFactory.create_hotword('hey Zeds', config)
-        self.assertEqual(p.phonemes, 'HH EY . M AY K R AO F T')
-        self.assertEqual(p.key_phrase, 'hey mycroft')
-
     def testVictoria(self):
         config = {
             'hey victoria': {
