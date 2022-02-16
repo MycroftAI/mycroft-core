@@ -77,7 +77,6 @@ class ResourceType:
 
         Args:
             skill_directory: the root directory of a skill
-
         Returns:
             the skill's directory for the resource type or None if not found
         """
@@ -256,7 +255,6 @@ class NamedValueFile(ResourceFile):
 
         Args:
             line: a record in a .value file
-
         Returns:
             The name/value pair that will be loaded into a dictionary.
         """
@@ -293,13 +291,13 @@ class WordFile(ResourceFile):
         """Load and lines from a file and populate the variables.
 
         Returns:
-            Contents of the file with variables resolved.
+            The word contained in the file
         """
         word = None
         if self.file_path is not None:
-            lines = self._read()
-            if lines:
-                word = lines[0]
+            for line in self._read():
+                word = line
+                break
 
         return word
 
@@ -343,7 +341,6 @@ class SkillResources:
         Args:
             name: name of the dialog file (no extension needed)
             data: keyword arguments used to populate variables
-
         Returns:
             A list of phrases with variables resolved
         """
@@ -361,7 +358,6 @@ class SkillResources:
         Args:
             name: name of the list file (no extension needed)
             data: keyword arguments used to populate variables
-
         Returns:
             List of words or phrases read from the list file.
         """
@@ -379,7 +375,6 @@ class SkillResources:
         Args:
             name: name of the .value file, no extension needed
             delimiter: delimiter character used
-
         Returns:
             File contents represented as a dictionary
         """
@@ -403,7 +398,6 @@ class SkillResources:
 
         Args:
             name: name of the regular expression file, no extension needed
-
         Returns:
             List representation of the regular expression file.
         """
@@ -420,7 +414,6 @@ class SkillResources:
 
         Args:
             name: name of the regular expression file, no extension needed
-
         Returns:
             List representation of the regular expression file.
         """
@@ -433,11 +426,10 @@ class SkillResources:
 
         Args:
             name: name of the regular expression file, no extension needed
-
         Returns:
             List representation of the regular expression file.
         """
-        word_file = WordFile(self.types.vocabulary, name)
+        word_file = WordFile(self.types.word, name)
 
         return word_file.load()
 
@@ -447,7 +439,6 @@ class SkillResources:
         Args:
             name: name of the list file (no extension needed)
             data: keyword arguments used to populate variables
-
         Returns:
             Random record from the file with variables resolved.
         """
@@ -470,6 +461,45 @@ class SkillResources:
                     skill_vocabulary[vocab_type] = vocabulary
 
         return skill_vocabulary
+
+    def load_skill_regex(self, alphanumeric_skill_id: str) -> List[str]:
+        skill_regexes = []
+        base_directory = self.types.regex.base_directory
+        for directory, _, files in walk(base_directory):
+            regex_files = [
+                file_name for file_name in files if file_name.endswith(".rx")
+            ]
+            for file_name in regex_files:
+                skill_regexes.extend(self.load_regex_file(file_name))
+
+        skill_regexes = self._make_unique_regex_group(
+            skill_regexes, alphanumeric_skill_id
+        )
+
+        return skill_regexes
+
+    @staticmethod
+    def _make_unique_regex_group(
+            regexes: List[str], alphanumeric_skill_id: str
+    ) -> List[str]:
+        """Adds skill ID to group ID in a regular expression for uniqueness.
+
+        Args:
+            regexes: regex string
+            alphanumeric_skill_id: skill identifier
+        Returns:
+            regular expressions with uniquely named group IDs
+        Raises:
+            re.error if the regex does not compile
+        """
+        modified_regexes = []
+        for regex in regexes:
+            base = "(?P<" + alphanumeric_skill_id
+            modified_regex = base.join(regex.split("(?P<"))
+            re.compile(modified_regex)
+            modified_regexes.append(modified_regex)
+
+        return modified_regexes
 
 
 class RegexExtractor:
@@ -547,47 +577,6 @@ class RegexExtractor:
             LOG.info(f"{self.group_name} extracted from utterance: " + extract)
 
 
-def load_regex_from_file(path, skill_id):
-    """Load regex from file
-    The regex is sent to the intent handler using the message bus
-
-    Args:
-        path:       path to vocabulary file (*.voc)
-        skill_id:   skill_id to the regex is tied to
-    """
-    regexes = []
-    if path.endswith(".rx"):
-        with open(path, "r", encoding="utf8") as reg_file:
-            for line in reg_file.readlines():
-                if line.startswith("#"):
-                    continue
-                LOG.debug("regex pre-munge: " + line.strip())
-                regex = munge_regex(line.strip(), skill_id)
-                LOG.debug("regex post-munge: " + regex)
-                # Raise error if regex can't be compiled
-                re.compile(regex)
-                regexes.append(regex)
-
-    return regexes
-
-
-def load_regex(basedir, skill_id):
-    """Load regex from all files in the specified directory.
-
-    Args:
-        basedir (str): path of directory to load from
-        bus (messagebus emitter): messagebus instance used to send the vocab to
-                                  the intent service
-        skill_id (str): skill identifier
-    """
-    regexes = []
-    for path, _, files in walk(basedir):
-        for f in files:
-            if f.endswith(".rx"):
-                regexes += load_regex_from_file(join(path, f), skill_id)
-    return regexes
-
-
 def to_alnum(skill_id):
     """Convert a skill id to only alphanumeric characters
 
@@ -599,19 +588,6 @@ def to_alnum(skill_id):
         (str) String of letters
     """
     return "".join(c if c.isalnum() else "_" for c in str(skill_id))
-
-
-def munge_regex(regex, skill_id):
-    """Insert skill id as letters into match groups.
-
-    Args:
-        regex (str): regex string
-        skill_id (str): skill identifier
-    Returns:
-        (str) munged regex
-    """
-    base = "(?P<" + to_alnum(skill_id)
-    return base.join(regex.split("(?P<"))
 
 
 def munge_intent_parser(intent_parser, name, skill_id):

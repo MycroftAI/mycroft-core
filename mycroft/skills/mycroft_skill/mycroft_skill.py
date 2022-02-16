@@ -52,16 +52,8 @@ from .event_container import EventContainer, create_wrapper, get_handler_name
 from ..event_scheduler import EventSchedulerInterface
 from ..intent_service_interface import IntentServiceInterface
 from ..settings import get_local_settings, save_settings
-from ..skill_data import (
-    load_regex,
-    munge_regex,
-    munge_intent_parser,
-    ResourceFile,
-    SkillResources
-)
+from ..skill_data import munge_intent_parser, ResourceFile, SkillResources
 from .skill_control import SkillControl
-
-
 
 
 def simple_trace(stack_trace):
@@ -1111,7 +1103,6 @@ class MycroftSkill:
         Args:
             regex_str: Regex string
         """
-        self.log.debug('registering regex string: ' + regex_str)
         regex = munge_regex(regex_str, self.skill_id)
         re.compile(regex)  # validate regex
         self.intent_service.register_adapt_regex(regex)
@@ -1186,31 +1177,26 @@ class MycroftSkill:
         uri = f"file://{audio_file}"
         self.play_sound_uri(uri)
 
-    def init_dialog(self, root_directory):
+    def load_data_files(self):
+        """Called by the skill loader to load intents, dialogs, etc."""
+        self.init_dialog()
+        self.load_vocab_files()
+        self.load_regex_files()
+
+    def init_dialog(self):
         # If "<skill>/dialog/<lang>" exists, load from there.  Otherwise
         # load dialog from "<skill>/locale/<lang>"
-        dialog_dir = join(root_directory, 'dialog', self.lang)
+        dialog_dir = join(self.root_dir, 'dialog', self.lang)
         if exists(dialog_dir):
             self.dialog_renderer = load_dialogs(dialog_dir)
-        elif exists(join(root_directory, 'locale', self.lang)):
-            locale_path = join(root_directory, 'locale', self.lang)
+        elif exists(join(self.root_dir, 'locale', self.lang)):
+            locale_path = join(self.root_dir, 'locale', self.lang)
             self.dialog_renderer = load_dialogs(locale_path)
         else:
             LOG.debug('No dialog loaded')
         self.resources.dialog_renderer = self.dialog_renderer
 
-    def load_data_files(self, root_directory=None):
-        """Called by the skill loader to load intents, dialogs, etc.
-
-        Args:
-            root_directory (str): root folder to use when loading files.
-        """
-        root_directory = root_directory or self.root_dir
-        self.init_dialog(root_directory)
-        self.load_vocab_files(root_directory)
-        self.load_regex_files(root_directory)
-
-    def load_vocab_files(self, _):
+    def load_vocab_files(self):
         """ Load vocab files found under skill's root directory."""
         if self.resources.types.vocabulary.base_directory is None:
             self.log.info("Skill has no vocabulary")
@@ -1227,22 +1213,14 @@ class MycroftSkill:
                                                                entity,
                                                                aliases)
 
-    def load_regex_files(self, root_directory):
-        """ Load regex files found under the skill directory.
-
-        Args:
-            root_directory (str): root folder to use when loading files
-        """
-        regexes = []
-        regex_dir = join(root_directory, 'regex', self.lang)
-        locale_dir = join(root_directory, 'locale', self.lang)
-        if exists(regex_dir):
-            regexes = load_regex(regex_dir, self.skill_id)
-        elif exists(locale_dir):
-            regexes = load_regex(locale_dir, self.skill_id)
-
-        for regex in regexes:
-            self.intent_service.register_adapt_regex(regex)
+    def load_regex_files(self):
+        """ Load regex files found under the skill directory."""
+        if self.resources.types.regex.base_directory is not None:
+            regexes = self.resources.load_skill_regex(
+                self.alphanumeric_skill_id
+            )
+            for regex in regexes:
+                self.intent_service.register_adapt_regex(regex)
 
     def __handle_stop(self, _):
         """Handler for the "mycroft.stop" signal. Runs the user defined
