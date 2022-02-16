@@ -252,6 +252,13 @@ class MycroftSkill:
 
         # NOTE: lock is disabled due to usage of deepcopy and to allow json serialization
         self._settings = JsonStorage(self._settings_path, disable_lock=True)
+        if self._initial_settings:
+            # TODO make a debug log in next version
+            LOG.warning("Copying default settings values defined in __init__ \n"
+                        "Please move code from __init__() to initialize() if you did not expect to see this message")
+            for k, v in self._initial_settings.items():
+                if k not in self._settings:
+                    self._settings[k] = v
         self._initial_settings = copy(self.settings)
 
     @property
@@ -276,14 +283,18 @@ class MycroftSkill:
         if self._settings is not None:
             return self._settings
         else:
-            LOG.error('Skill not fully initialized. Move code ' +
-                      'from  __init__() to initialize() to correct this.')
-            LOG.error(simple_trace(traceback.format_stack()))
-            raise Exception('Accessed self.settings in __init__')
+            LOG.error('Skill not fully initialized. '
+                      'Only default values can be set, no settings can be read or changed.'
+                      'Move code from  __init__() to initialize() to correct this.')
+            return self._initial_settings
 
     @settings.setter
     def settings(self, val):
         assert isinstance(val, dict)
+        # init method
+        if self._settings is None:
+            self._initial_settings = val
+            return
         # ensure self._settings remains a JsonDatabase
         self._settings.clear()  # clear data
         self._settings.merge(val)  # merge new data
