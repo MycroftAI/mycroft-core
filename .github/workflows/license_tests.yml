@@ -24,10 +24,10 @@ jobs:
       - name: Install System Dependencies
         run: |
           sudo apt-get update
-          sudo apt install python3-dev swig libssl-dev
+          sudo apt install python3-dev swig libssl-dev libfann-dev portaudio19-dev libpulse-dev
       - name: Install core repo
         run: |
-          pip install .
+          pip install .[audio-backend,mark1,stt,tts,skills,gui,bus,PHAL,all]
       - name: Install licheck
         run: |
           pip install git+https://github.com/NeonJarbas/lichecker

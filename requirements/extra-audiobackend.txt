@@ -1,2 +1,1 @@
-python-vlc~=1.1.2
-# TODO add ovos ocp + ovos vlc
+ovos_plugin_common_play~=0.0.1a11

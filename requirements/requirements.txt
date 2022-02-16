@@ -12,10 +12,10 @@ ovos-utils~=0.0.14a6
 ovos-plugin-manager~=0.0.4a1
 ovos-tts-plugin-mimic~=0.2.3
 ovos-tts-plugin-mimic2~=0.1.2
-ovos-tts-plugin-google-tx~=0.0.2
-ovos-ww-plugin-pocketsphinx~=0.1.1
-ovos-ww-plugin-precise-lite~=0.1.0
-ovos-ww-plugin-precise~=0.1.0
+ovos-tts-plugin-google-tx~=0.0.3
+ovos-ww-plugin-pocketsphinx~=0.1.2
+ovos-ww-plugin-precise-lite~=0.1.1
+ovos-ww-plugin-precise~=0.1.1
 ovos_workshop>=0.0.5a7
 ovos_PHAL>=0.0.1
 
