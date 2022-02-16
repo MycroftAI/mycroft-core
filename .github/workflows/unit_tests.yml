@@ -33,4 +33,11 @@ jobs:
           pip install pytest pytest-timeout pytest-cov
       - name: Run unittests
         run: |
-          pytest test/unittests
+          pytest --cov=mycroft --cov-report xml test/unittests
+          # NOTE: additional pytest invocations should also add the --cov-append flag
+          #       or they will overwrite previous invocations' coverage reports
+          #       (for an example, see OVOS Skill Manager's workflow)
+      - name: Upload coverage
+        env:
+          CODECOV_TOKEN: ${{secrets.CODECOV_TOKEN}}
+        uses: codecov/codecov-action@v2
