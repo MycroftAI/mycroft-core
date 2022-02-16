@@ -80,8 +80,9 @@ from ovos_utils.skills.settings import get_local_settings, save_settings
 
 def get_display_name(skill_name: str):
     """Splits camelcase and removes leading/trailing "skill"."""
+    skill_name = skill_name.replace("_", " ").replace("-", " ")
     skill_name = re.sub(r'(^[Ss]kill|[Ss]kill$)', '', skill_name)
-    return camel_case_split(skill_name)
+    return camel_case_split(skill_name).title().strip()
 
 
 class SettingsMetaUploader:
@@ -95,9 +96,11 @@ class SettingsMetaUploader:
     _msm_skill_display_name = None
     _settings_meta_path = None
 
-    def __init__(self, skill_directory: str, skill_name: str):
+    def __init__(self, skill_directory: str, skill_name="", skill_id=""):
         self.skill_directory = Path(skill_directory)
-        self.skill_name = skill_name  # TODO rename to skill_id
+        if skill_name:
+            LOG.warning("skill_name is deprecated! use skill_id instead")
+        self.skill_id = skill_id or skill_name or basename(self.skill_directory)
         self.json_path = self.skill_directory.joinpath('settingsmeta.json')
         self.yaml_path = self.skill_directory.joinpath('settingsmeta.yaml')
         self.config = Configuration.get()
@@ -114,6 +117,22 @@ class SettingsMetaUploader:
                      "not be uploaded")
 
         self._stopped = None
+
+    @property
+    def skill_name(self):
+        """DEPRECATED: do not use, method only for api backwards compatibility
+        Logs a warning and returns self.skill_id
+        """
+        LOG.warning("self.skill_name is deprecated! use self.skill_id instead")
+        return self.skill_id
+
+    @skill_name.setter
+    def skill_name(self, val):
+        """DEPRECATED: do not use, method only for api backwards compatibility
+        Logs a warning and sets self.skill_id
+        """
+        LOG.warning("self.skill_name is deprecated! use self.skill_id instead")
+        self.skill_id = val
 
     @property
     def msm(self):
@@ -140,10 +159,9 @@ class SettingsMetaUploader:
     def skill_gid(self):
         """Skill identifier recognized by selene backend"""
         api = self.api or DeviceApi()
-        skill_id = basename(self.skill_directory)
         if api.identity.uuid:
-            return f'@{api.identity.uuid}|{skill_id}'
-        return f'@|{skill_id}'
+            return f'@{api.identity.uuid}|{self.skill_id}'
+        return f'@|{self.skill_id}'
 
     @property
     def msm_skill_display_name(self):
@@ -157,8 +175,7 @@ class SettingsMetaUploader:
     @property
     def skill_display_name(self):
         """Display name for use in settings meta."""
-        skill_id = basename(self.skill_directory).split(".")[0]
-        return get_display_name(skill_id)
+        return get_display_name(self.skill_id.split(".")[0])
 
     @property
     def settings_meta_path(self):
@@ -235,7 +252,7 @@ class SettingsMetaUploader:
             display_name=(
                 self.skill_display_name or
                 self.settings_meta.get('name') or
-                get_display_name(self.skill_name)
+                get_display_name(self.skill_id.split(".")[0])
             )
         )
         for deprecated in ('color', 'identifier', 'name'):

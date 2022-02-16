@@ -1472,7 +1472,7 @@ class MycroftSkill:
             entity_type:    Intent handler entity to tie the word to
         """
         keyword_type = to_alnum(self.skill_id) + entity_type
-        self.intent_service.register_adapt_keyword(keyword_type, entity, lang)
+        self.intent_service.register_adapt_keyword(keyword_type, entity, lang=lang or self.lang)
 
     def register_regex(self, regex_str, lang=None):
         """Register a new regex.
