@@ -103,11 +103,9 @@ def _shutdown_skill(instance):
 
         shutdown_time = monotonic() - ref_time
         if shutdown_time > 1:
-            LOG.warning('{} shutdown took {} seconds'.format(instance.skill_id,
-                                                             shutdown_time))
+            LOG.warning(f'{instance.skill_id} shutdown took {shutdown_time} seconds')
     except Exception:
-        LOG.exception('Failed to shut down skill: '
-                      '{}'.format(instance.skill_id))
+        LOG.exception(f'Failed to shut down skill: {instance.skill_id}')
 
 
 class SkillManager(Thread):
@@ -210,8 +208,8 @@ class SkillManager(Thread):
                 # not implemented
                 services[ser] = True
                 continue
-            response = self.bus.wait_for_response(Message(
-                'mycroft.{}.is_ready'.format(ser)))
+            response = self.bus.wait_for_response(
+                Message(f'mycroft.{ser}.is_ready'))
             if response and response.data['status']:
                 services[ser] = True
         return all([services[ser] for ser in services])
@@ -334,16 +332,14 @@ class SkillManager(Thread):
 
     def _reload_modified_skills(self):
         """Handle reload of recently changed skill(s)"""
-        for skill_dir in self._get_skill_directories():
+        for skill_dir, skill_loader in self.skill_loaders.items():
             try:
-                skill_loader = self.skill_loaders.get(skill_dir)
                 if skill_loader is not None and skill_loader.reload_needed():
                     # If reload succeed add settingsmeta to upload queue
                     if skill_loader.reload():
                         self.upload_queue.put(skill_loader)
             except Exception:
-                LOG.exception('Unhandled exception occured while '
-                              'reloading {}'.format(skill_dir))
+                LOG.exception(f'Unhandled exception occured while reloading {skill_dir}')
 
     def _load_new_skills(self):
         """Handle load of skills installed since startup."""
@@ -387,7 +383,7 @@ class SkillManager(Thread):
         try:
             load_status = skill_loader.load()
         except Exception:
-            LOG.exception('Load of skill {} failed!'.format(skill_directory))
+            LOG.exception(f'Load of skill {skill_directory} failed!')
             load_status = False
         finally:
             self.skill_loaders[skill_directory] = skill_loader
@@ -503,7 +499,6 @@ class SkillManager(Thread):
             for skill in skills.values():
                 if skill.skill_id != skill_to_keep:
                     skill.deactivate()
-                    return
             LOG.info('Couldn\'t find skill ' + message.data['skill'])
         except Exception:
             LOG.exception('An error occurred during skill deactivation!')
@@ -517,7 +512,6 @@ class SkillManager(Thread):
                 if (message.data['skill'] in ('all', skill_loader.skill_id)
                         and not skill_loader.active):
                     skill_loader.activate()
-                    return
         except Exception:
             LOG.exception('Couldn\'t activate skill')
 

@@ -22,7 +22,7 @@ try:
     from mycroft.skills.context import adds_context, removes_context
     from mycroft.skills import (MycroftSkill, FallbackSkill,
                                 intent_handler, intent_file_handler)
-    from mycroft.skills.intent_service import AdaptIntent
+    from mycroft.skills.intent_services.adapt_service import AdaptIntent
 except ImportError:
     # skills requirements not installed
     # i would remove this completely, but some skills in the wild import
