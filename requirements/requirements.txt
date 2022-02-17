@@ -8,8 +8,8 @@ python-dateutil~=2.6.0
 combo-lock~=0.2
 PyYAML~=5.4
 
-ovos-utils~=0.0.14a6
-ovos-plugin-manager~=0.0.4a1
+ovos-utils~=0.0.15
+ovos-plugin-manager~=0.0.4
 ovos-tts-plugin-mimic~=0.2.3
 ovos-tts-plugin-mimic2~=0.1.2
 ovos-tts-plugin-google-tx~=0.0.3

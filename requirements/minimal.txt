@@ -3,5 +3,5 @@ pyee~=8.1
 mycroft-messagebus-client~=0.9.1,!=0.9.2,!=0.9.3
 psutil~=5.6.6
 combo-lock~=0.2
-ovos-utils~=0.0.14a6
-ovos-plugin-manager~=0.0.4a1
+ovos-utils~=0.0.15
+ovos-plugin-manager~=0.0.4
