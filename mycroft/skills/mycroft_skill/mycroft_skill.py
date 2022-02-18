@@ -829,6 +829,10 @@ class MycroftSkill:
         """Deprecated method for translating a list."""
         return self.resources.load_list_file(list_name, data)
 
+    def translate_template(self, template_name, data=None):
+        """Deprecated method for translating a template file"""
+        return self.resources.load_template_file(template_name, data)
+
     def add_event(self, name, handler, handler_info=None, once=False):
         """Create event handler for executing intent or other event.
 
