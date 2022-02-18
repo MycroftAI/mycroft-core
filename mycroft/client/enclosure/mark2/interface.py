@@ -278,7 +278,6 @@ class EnclosureMark2(Enclosure):
 
     def handle_start_recording(self, message):
         LOG.debug("Gathering speech stuff")
-        self._skill_activity_id = None
 
         self.event_scheduler.cancel_scheduled_event("DimScreen")
         self._undim_screen()
@@ -305,7 +304,11 @@ class EnclosureMark2(Enclosure):
     def handle_skill_ended(self, message):
         activity_id = message.data.get("activity_id")
 
-        if (activity_id == self._skill_activity_id) or (not activity_id):
+        if (
+            (activity_id == self._skill_activity_id)
+            or (not activity_id)
+            or (not self._skill_activity_id)
+        ):
             self._skill_activity_id = None
 
             # Stop the chase animation gently
