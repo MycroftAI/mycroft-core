@@ -17,7 +17,6 @@ import re
 from collections import namedtuple
 
 from os import walk
-from os.path import join
 from pathlib import Path
 from typing import List, Optional, Tuple
 
@@ -34,6 +33,7 @@ SkillResourceTypes = namedtuple(
         "list",
         "named_value",
         "regex",
+        "template",
         "vocabulary",
         "word"
     ]
@@ -275,6 +275,10 @@ class ListFile(DialogFile):
     pass
 
 
+class TemplateFile(DialogFile):
+    pass
+
+
 class RegexFile(ResourceFile):
     def load(self):
         regex_patterns = []
@@ -324,6 +328,7 @@ class SkillResources:
             list=ResourceType("list", ".list", self.language),
             named_value=ResourceType("named_value", ".value", self.language),
             regex=ResourceType("regex", ".rx", self.language),
+            template=ResourceType("template", ".template", self.language),
             vocabulary=ResourceType("vocab", ".voc", self.language),
             word=ResourceType("word", ".word", self.language)
         )
@@ -404,6 +409,23 @@ class SkillResources:
         regex_file = RegexFile(self.types.regex, name)
 
         return regex_file.load()
+
+    def load_template_file(self, name, data=None) -> List[str]:
+        """Loads the contents of a dialog file into memory.
+
+        Named variables in the dialog are populated with values found in the
+        data dictionary.
+
+        Args:
+            name: name of the dialog file (no extension needed)
+            data: keyword arguments used to populate variables
+        Returns:
+            A list of phrases with variables resolved
+        """
+        template_file = TemplateFile(self.types.template, name)
+        template_file.data = data
+
+        return template_file.load()
 
     def load_vocabulary_file(self, name) -> List[List[str]]:
         """Loads a file containing variations of words meaning the same thing.
