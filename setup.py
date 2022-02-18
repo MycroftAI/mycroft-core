@@ -22,7 +22,7 @@ def get_version():
     """ Find the version of ovos-core"""
     version = None
     version_file = os.path.join(BASEDIR, 'mycroft', 'version', '__init__.py')
-    major, minor, build = (None, None, None)
+    major, minor, build, alpha = (None, None, None, None)
     with open(version_file) as f:
         for line in f:
             if 'OVOS_VERSION_MAJOR' in line:
@@ -31,11 +31,15 @@ def get_version():
                 minor = line.split('=')[1].strip()
             elif 'OVOS_VERSION_BUILD' in line:
                 build = line.split('=')[1].strip()
+            elif 'OVOS_VERSION_ALPHA' in line:
+                alpha = line.split('=')[1].strip()
 
-            if ((major and minor and build) or
+            if ((major and minor and build and alpha) or
                     '# END_VERSION_BLOCK' in line):
                 break
-    version = '.'.join([major, minor, build])
+    version = f"{major}.{minor}.{build}"
+    if alpha:
+        version += f"a{alpha}"
     return version
 
 
