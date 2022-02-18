@@ -22,6 +22,7 @@ mycroft.skills.
 # would break most of the skills out there.
 import mycroft.skills.mycroft_skill as mycroft_skill
 import mycroft.skills.fallback_skill as fallback_skill
+import mycroft.skills.idle_display_skill as idle_display_skill
 from mycroft.skills.mycroft_skill import *  # noqa
 
 
@@ -31,5 +32,9 @@ class MycroftSkill(mycroft_skill.MycroftSkill):
 
 
 class FallbackSkill(fallback_skill.FallbackSkill):
+    # Compatibility, needs to be kept for a while to not break every skill
+    pass
+
+class IdleDisplaySkill(idle_display_skill.IdleDisplaySkill):
     # Compatibility, needs to be kept for a while to not break every skill
     pass
