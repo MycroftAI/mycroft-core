@@ -212,8 +212,6 @@ class EnclosureMark2(Enclosure):
         )
         self.led_thread.start()
 
-        self._skill_activity_id: typing.Optional[str] = None
-
         self.event_scheduler = EventSchedulerInterface("mark_2_enclosure")
         self.event_scheduler.set_bus(self.bus)
         self._idle_dim_timeout: int = self.config.get("idle_dim_timeout", 300)
@@ -290,34 +288,19 @@ class EnclosureMark2(Enclosure):
 
     def handle_end_audio(self, message):
         LOG.debug("Finished playing audio")
-        if not self._skill_activity_id:
-            # Stop the chase animation gently
-            self.led_thread.context[
-                "chase.background_color"
-            ] = self.hardware.palette.BLACK
-            self.led_thread.context["chase.stop"] = True
+        # Stop the chase animation gently
+        self.led_thread.context["chase.background_color"] = self.hardware.palette.BLACK
+        self.led_thread.context["chase.stop"] = True
 
     def handle_skill_started(self, message):
         self._undim_screen()
-        self._skill_activity_id = message.data.get("activity_id")
 
     def handle_skill_ended(self, message):
-        activity_id = message.data.get("activity_id")
+        # Stop the chase animation gently
+        self.led_thread.context["chase.background_color"] = self.hardware.palette.BLACK
+        self.led_thread.context["chase.stop"] = True
 
-        if (
-            (activity_id == self._skill_activity_id)
-            or (not activity_id)
-            or (not self._skill_activity_id)
-        ):
-            self._skill_activity_id = None
-
-            # Stop the chase animation gently
-            self.led_thread.context[
-                "chase.background_color"
-            ] = self.hardware.palette.BLACK
-            self.led_thread.context["chase.stop"] = True
-
-            self._schedule_screen_dim()
+        self._schedule_screen_dim()
 
     def on_volume_duck(self, message):
         # TODO duck it anyway using set vol
