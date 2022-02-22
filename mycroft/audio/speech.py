@@ -14,6 +14,7 @@
 #
 import re
 import time
+from collections import defaultdict
 from threading import Lock
 from uuid import uuid4
 
@@ -32,6 +33,7 @@ tts = None
 tts_hash = None
 lock = Lock()
 mimic_fallback_obj = None
+tts_session_cache = defaultdict(list)
 
 _last_stop_signal = 0
 
@@ -65,7 +67,17 @@ def handle_speak(event):
         stopwatch = Stopwatch()
         stopwatch.start()
         utterance = event.data["utterance"]
+        cache_only = event.data.get("cache_only", False)
         listen = event.data.get("expect_response", False)
+
+        cache_key = event.data.get("cache_key")
+        if cache_key:
+            cache_keep = event.data.get("cache_keep", False)
+            was_in_cache = _speak_from_cache(cache_key, keep=cache_keep, listen=listen)
+            if was_in_cache:
+                # Successfully spoken from cache
+                return
+
         tts_session_id = str(uuid4())
 
         create_signal("isSpeaking")
@@ -115,11 +127,15 @@ def handle_speak(event):
                         session_id=tts_session_id,
                         chunk_idx=chunk_idx,
                         num_chunks=num_chunks,
+                        speak=(not cache_only),
                     )
                 except KeyboardInterrupt:
                     raise
                 except Exception:
                     LOG.error("Error in mute_and_speak", exc_info=True)
+
+            if cache_only:
+                bus.emit(event.reply("speak.reply", {"key": tts_session_id}))
         else:
             mute_and_speak(utterance, ident, listen)
 
@@ -133,7 +149,13 @@ def handle_speak(event):
 
 
 def mute_and_speak(
-    utterance, ident, listen=False, session_id=None, chunk_idx=0, num_chunks=1
+    utterance,
+    ident,
+    listen=False,
+    session_id=None,
+    chunk_idx=0,
+    num_chunks=1,
+    speak=True,
 ):
     """Mute mic and start speaking the utterance using selected tts backend.
 
@@ -155,14 +177,19 @@ def mute_and_speak(
 
     LOG.debug("Listen=%s, Speak:%s" % (listen, utterance))
     try:
-        tts.execute(
+        cached_path = tts.execute(
             utterance,
             ident,
             listen,
             session_id=session_id,
             chunk_idx=chunk_idx,
             num_chunks=num_chunks,
+            speak=speak,
         )
+
+        if not speak:
+            tts_session_cache[session_id].append(cached_path)
+            LOG.info("Cached utterance for session %s", session_id)
     except RemoteTTSException as e:
         LOG.error(e)
         mimic_fallback_tts(utterance, ident, listen)
@@ -216,6 +243,37 @@ def handle_pause(event):
 
 def handle_resume(event):
     tts.playback.resume()
+
+
+def _speak_from_cache(key: str, keep: bool = False, listen: bool = False) -> bool:
+    if keep:
+        cache_paths = tts_session_cache.get(key)
+    else:
+        cache_paths = tts_session_cache.pop(key, None)
+
+    if not cache_paths:
+        LOG.warning("No TTS session cache for %s", key)
+        return False
+
+    create_signal("isSpeaking")
+
+    num_chunks = len(cache_paths)
+    for chunk_idx, cache_path in enumerate(cache_paths):
+        audio_uri = "file://" + str(cache_path)
+        bus.emit(
+            Message(
+                "mycroft.tts.speak-chunk",
+                data={
+                    "uri": audio_uri,
+                    "session_id": key,
+                    "chunk_index": chunk_idx,
+                    "num_chunks": num_chunks,
+                    "listen": listen if chunk_idx == (num_chunks - 1) else False,
+                },
+            )
+        )
+
+    return True
 
 
 def init(messagebus):

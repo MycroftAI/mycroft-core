@@ -16,6 +16,7 @@ from copy import deepcopy
 import os
 import random
 import re
+import typing
 from abc import ABCMeta, abstractmethod
 from pathlib import Path
 from threading import Thread
@@ -339,7 +340,8 @@ class TTS(metaclass=ABCMeta):
         return [sentence]
 
     def execute(self, sentence, ident=None, listen=False,
-                session_id=None, chunk_idx=0, num_chunks=1):
+                session_id=None, chunk_idx=0, num_chunks=1,
+                speak=True) -> Path:
         """Convert sentence to speech, preprocessing out unsupported ssml
 
         The method caches results if possible using the hash of the
@@ -354,12 +356,23 @@ class TTS(metaclass=ABCMeta):
                         finished. None if a new id should be created here.
             chunk_idx: (int) Index of current session chunk.
             num_chunks: (int) Total number of TTS chunks in this session.
+            speak: (bool) True if sentence should be spoken (False to just cache)
+
+        Returns:
+            cache_path (Path): path to cached audio file
         """
         sentence = self.validate_ssml(sentence)
 
         try:
-            self._execute(sentence, ident, listen, session_id=session_id,
-                          chunk_idx=chunk_idx, num_chunks=num_chunks)
+            return self._execute(
+                sentence,
+                ident,
+                listen,
+                session_id=session_id,
+                chunk_idx=chunk_idx,
+                num_chunks=num_chunks,
+                speak=speak,
+            )
         except Exception:
             # If an error occurs end the audio sequence through an empty entry
             self.queue.put(EMPTY_PLAYBACK_QUEUE_TUPLE)
@@ -367,7 +380,8 @@ class TTS(metaclass=ABCMeta):
             raise
 
     def _execute(self, sentence, ident, listen,
-                 session_id=None, chunk_idx=0, num_chunks=1):
+                 session_id=None, chunk_idx=0, num_chunks=1,
+                 speak=True) -> Path:
         # if self.phonetic_spelling:
         #     for word in re.findall(r"[\w']+", sentence):
         #         if word.lower() in self.spellings:
@@ -382,6 +396,7 @@ class TTS(metaclass=ABCMeta):
             audio_file, phoneme_file = self._get_sentence_from_cache(
                 sentence_hash
             )
+
             if phoneme_file is None:
                 phonemes = None
             else:
@@ -398,6 +413,7 @@ class TTS(metaclass=ABCMeta):
                 sentence, str(audio_file.path))
             # Convert to Path as needed
             returned_file = Path(returned_file)
+
             if returned_file != audio_file.path:
                 warn(
                     DeprecationWarning(
@@ -417,21 +433,25 @@ class TTS(metaclass=ABCMeta):
             self.cache.cached_sentences[sentence_hash] = (
                 audio_file, phoneme_file
             )
-        viseme = self.viseme(phonemes) if phonemes else None
-        # self.queue.put(
-        #     (self.audio_ext, str(audio_file.path), viseme, ident, l)
-        # )
-        #
-        # Ask audio user interface (AUI) to play
-        audio_uri = "file://" + str(audio_file.path)
-        self.bus.emit(Message("mycroft.tts.speak-chunk",
-                                data={
-                                    "uri": audio_uri,
-                                    "session_id": session_id,
-                                    "chunk_index": chunk_idx,
-                                    "num_chunks": num_chunks,
-                                    "listen": listen,
-                                }))
+
+        if speak:
+            viseme = self.viseme(phonemes) if phonemes else None
+            # self.queue.put(
+            #     (self.audio_ext, str(audio_file.path), viseme, ident, l)
+            # )
+            #
+            # Ask audio user interface (AUI) to play
+            audio_uri = "file://" + str(audio_file.path)
+            self.bus.emit(Message("mycroft.tts.speak-chunk",
+                                    data={
+                                        "uri": audio_uri,
+                                        "session_id": session_id,
+                                        "chunk_index": chunk_idx,
+                                        "num_chunks": num_chunks,
+                                        "listen": listen,
+                                    }))
+
+        return audio_file.path
 
     def _get_sentence_from_cache(self, sentence_hash):
         cached_sentence = self.cache.cached_sentences[sentence_hash]

@@ -40,10 +40,7 @@ from mycroft.dialog import load_dialogs
 from mycroft.filesystem import FileSystemAccess
 from mycroft.messagebus.message import Message, dig_for_message
 from mycroft.metrics import report_metric
-from mycroft.util import (
-    resolve_resource_file,
-    camel_case_split
-)
+from mycroft.util import resolve_resource_file, camel_case_split
 from mycroft.util.log import LOG
 from mycroft.util.format import pronounce_number, join_list
 from mycroft.util.parse import match_one, extract_number
@@ -65,7 +62,7 @@ def simple_trace(stack_trace):
     Returns: (str) Simplified stack trace.
     """
     stack_trace = stack_trace[:-1]
-    tb = 'Traceback:\n'
+    tb = "Traceback:\n"
     for line in stack_trace:
         if line.strip():
             tb += line
@@ -109,11 +106,12 @@ class MycroftSkill:
         bus (MycroftWebsocketClient): Optional bus connection
         use_settings (bool): Set to false to not use skill settings at all
     """
+
     _resources = None
 
     def __init__(self, name=None, bus=None, use_settings=True):
         self.name = name or self.__class__.__name__
-        self.skill_id = ''  # will be set from the path, so guaranteed unique
+        self.skill_id = ""  # will be set from the path, so guaranteed unique
         self.settings_meta = None  # set when skill is loaded in SkillLoader
         self.skill_service_initializing = False
 
@@ -145,7 +143,7 @@ class MycroftSkill:
 
         #: Filesystem access to skill specific folder.
         #: See mycroft.filesystem for details.
-        self.file_system = FileSystemAccess(join('skills', self.name))
+        self.file_system = FileSystemAccess(join("skills", self.name))
 
         self.log = LOG.create_logger(self.name)  #: Skill logger instance
         self.reload_skill = True  #: allow reloading (default True)
@@ -169,13 +167,19 @@ class MycroftSkill:
         """change skill state to new value.
            does nothing except log a warning
            if the new state is invalid"""
-        self.log.debug("change_state() skill:%s - changing state from %s to %s" % (self.skill_id, self.skill_control.state, new_state))
+        self.log.debug(
+            "change_state() skill:%s - changing state from %s to %s"
+            % (self.skill_id, self.skill_control.state, new_state)
+        )
 
         if self.skill_control.states is None:
             return
 
         if new_state not in self.skill_control.states:
-            self.log.warning("invalid state change, from %s to %s" % (self.skill_control.state, new_state))
+            self.log.warning(
+                "invalid state change, from %s to %s"
+                % (self.skill_control.state, new_state)
+            )
             return
 
         if new_state != self.skill_control.state:
@@ -190,13 +194,21 @@ class MycroftSkill:
 
             if new_state == "inactive":
                 self.log.debug("send msg: deactivate %s" % (self.skill_id,))
-                self.bus.emit(Message('deactivate_skill_request',
-                    {'skill_id': self.skill_id}))
+                self.bus.emit(
+                    Message("deactivate_skill_request", {"skill_id": self.skill_id})
+                )
 
             if new_state == "active":
                 self.log.debug("send msg: activate %s" % (self.skill_id,))
-                self.bus.emit(Message('active_skill_request',
-                    {'skill_id': self.skill_id, 'skill_cat': self.skill_control.category}))
+                self.bus.emit(
+                    Message(
+                        "active_skill_request",
+                        {
+                            "skill_id": self.skill_id,
+                            "skill_cat": self.skill_control.category,
+                        },
+                    )
+                )
 
     def _init_settings(self):
         """Setup skill settings."""
@@ -206,23 +218,25 @@ class MycroftSkill:
         self.settings_write_path = Path(self.root_dir)
 
         # Otherwise save to XDG_CONFIG_DIR
-        if not self.settings_write_path.joinpath('settings.json').exists():
-            self.settings_write_path = Path(BaseDirectory.save_config_path(
-                'mycroft', 'skills', basename(self.root_dir)))
+        if not self.settings_write_path.joinpath("settings.json").exists():
+            self.settings_write_path = Path(
+                BaseDirectory.save_config_path(
+                    "mycroft", "skills", basename(self.root_dir)
+                )
+            )
 
         # To not break existing setups,
         # read from skill directory if the settings file exists there
         settings_read_path = Path(self.root_dir)
 
         # Then, check XDG_CONFIG_DIR
-        if not settings_read_path.joinpath('settings.json').exists():
-            for dir in BaseDirectory.load_config_paths('mycroft',
-                                                       'skills',
-                                                       basename(
-                                                           self.root_dir)):
+        if not settings_read_path.joinpath("settings.json").exists():
+            for dir in BaseDirectory.load_config_paths(
+                "mycroft", "skills", basename(self.root_dir)
+            ):
                 path = Path(dir)
                 # If there is a settings file here, use it
-                if path.joinpath('settings.json').exists():
+                if path.joinpath("settings.json").exists():
                     settings_read_path = path
                     break
 
@@ -234,60 +248,63 @@ class MycroftSkill:
         if self._enclosure:
             return self._enclosure
         else:
-            LOG.error('Skill not fully initialized. Move code ' +
-                      'from  __init__() to initialize() to correct this.')
+            LOG.error(
+                "Skill not fully initialized. Move code "
+                + "from  __init__() to initialize() to correct this."
+            )
             LOG.error(simple_trace(traceback.format_stack()))
-            raise Exception('Accessed MycroftSkill.enclosure in __init__')
+            raise Exception("Accessed MycroftSkill.enclosure in __init__")
 
     @property
     def bus(self):
         if self._bus:
             return self._bus
         else:
-            LOG.error('Skill not fully initialized. Move code ' +
-                      'from __init__() to initialize() to correct this.')
+            LOG.error(
+                "Skill not fully initialized. Move code "
+                + "from __init__() to initialize() to correct this."
+            )
             LOG.error(simple_trace(traceback.format_stack()))
-            raise Exception('Accessed MycroftSkill.bus in __init__')
+            raise Exception("Accessed MycroftSkill.bus in __init__")
 
     @property
     def location(self):
         """Get the JSON data struction holding location information."""
         # TODO: Allow Enclosure to override this for devices that
         # contain a GPS.
-        return self.config_core.get('location')
+        return self.config_core.get("location")
 
     @property
     def location_pretty(self):
         """Get a more 'human' version of the location as a string."""
         loc = self.location
-        if type(loc) is dict and loc['city']:
-            return loc['city']['name']
+        if type(loc) is dict and loc["city"]:
+            return loc["city"]["name"]
         return None
 
     @property
     def location_timezone(self):
         """Get the timezone code, such as 'America/Los_Angeles'"""
         loc = self.location
-        if type(loc) is dict and loc['timezone']:
-            return loc['timezone']['code']
+        if type(loc) is dict and loc["timezone"]:
+            return loc["timezone"]["code"]
         return None
 
     @property
     def lang(self):
         """Get the configured language."""
-        return self.config_core.get('lang')
+        return self.config_core.get("lang")
 
     @property
     def alphanumeric_skill_id(self):
-        return "".join(
-            char if char.isalnum() else "_" for char in str(self.skill_id)
-        )
+        return "".join(char if char.isalnum() else "_" for char in str(self.skill_id))
 
     @property
     def resources(self):
         if self._resources is None:
-            self._resources = SkillResources(self.root_dir, self.lang,
-                                             self.dialog_renderer)
+            self._resources = SkillResources(
+                self.root_dir, self.lang, self.dialog_renderer
+            )
 
         return self._resources
 
@@ -321,77 +338,64 @@ class MycroftSkill:
 
         def wrap_method(func):
             """Boiler plate for returning the response to the sender."""
+
             def wrapper(message):
-                result = func(*message.data['args'], **message.data['kwargs'])
-                self.bus.emit(message.response(data={'result': result}))
+                result = func(*message.data["args"], **message.data["kwargs"])
+                self.bus.emit(message.response(data={"result": result}))
 
             return wrapper
 
-        methods = [attr_name for attr_name in get_non_properties(self)
-                   if hasattr(getattr(self, attr_name), '__name__')]
+        methods = [
+            attr_name
+            for attr_name in get_non_properties(self)
+            if hasattr(getattr(self, attr_name), "__name__")
+        ]
 
         for attr_name in methods:
             method = getattr(self, attr_name)
 
-            if hasattr(method, 'api_method'):
-                doc = method.__doc__ or ''
+            if hasattr(method, "api_method"):
+                doc = method.__doc__ or ""
                 name = method.__name__
                 self.public_api[name] = {
-                    'help': doc,
-                    'type': '{}.{}'.format(self.skill_id, name),
-                    'func': method
+                    "help": doc,
+                    "type": "{}.{}".format(self.skill_id, name),
+                    "func": method,
                 }
         for key in self.public_api:
-            if ('type' in self.public_api[key] and
-                    'func' in self.public_api[key]):
-                LOG.debug('Adding api method: '
-                          '{}'.format(self.public_api[key]['type']))
+            if "type" in self.public_api[key] and "func" in self.public_api[key]:
+                LOG.debug(
+                    "Adding api method: " "{}".format(self.public_api[key]["type"])
+                )
 
                 # remove the function member since it shouldn't be
                 # reused and can't be sent over the messagebus
-                func = self.public_api[key].pop('func')
-                self.add_event(self.public_api[key]['type'],
-                               wrap_method(func))
+                func = self.public_api[key].pop("func")
+                self.add_event(self.public_api[key]["type"], wrap_method(func))
 
         if self.public_api:
-            self.add_event('{}.public_api'.format(self.skill_id),
-                           self._send_public_api)
+            self.add_event("{}.public_api".format(self.skill_id), self._send_public_api)
 
     def _register_system_event_handlers(self):
         """Add all events allowing the standard interaction with the Mycroft
         system.
         """
+
         def stop_is_implemented():
             return self.__class__.stop is not MycroftSkill.stop
 
         # Only register stop if it's been implemented
         if stop_is_implemented():
-            self.add_event('mycroft.stop', self.__handle_stop)
+            self.add_event("mycroft.stop", self.__handle_stop)
 
+        self.add_event("mycroft.skills.initialized", self.handle_skills_initialized)
+        self.add_event("mycroft.skill.enable_intent", self.handle_enable_intent)
+        self.add_event("mycroft.skill.disable_intent", self.handle_disable_intent)
+        self.add_event("mycroft.skill.set_cross_context", self.handle_set_cross_context)
         self.add_event(
-            'mycroft.skills.initialized',
-            self.handle_skills_initialized
+            "mycroft.skill.remove_cross_context", self.handle_remove_cross_context
         )
-        self.add_event(
-            'mycroft.skill.enable_intent',
-            self.handle_enable_intent
-        )
-        self.add_event(
-            'mycroft.skill.disable_intent',
-            self.handle_disable_intent
-        )
-        self.add_event(
-            'mycroft.skill.set_cross_context',
-            self.handle_set_cross_context
-        )
-        self.add_event(
-            'mycroft.skill.remove_cross_context',
-            self.handle_remove_cross_context
-        )
-        self.events.add(
-            'mycroft.skills.settings.changed',
-            self.handle_settings_change
-        )
+        self.events.add("mycroft.skills.settings.changed", self.handle_settings_change)
 
     def handle_skills_initialized(self, _):
         self.skill_service_initializing = False
@@ -406,12 +410,13 @@ class MycroftSkill:
         if its remote settings were among those changed
         """
         if self.settings_meta is None or self.settings_meta.skill_gid is None:
-            LOG.error('The skill_gid was not set when '
-                      '{} was loaded!'.format(self.name))
+            LOG.error(
+                "The skill_gid was not set when " "{} was loaded!".format(self.name)
+            )
         else:
             remote_settings = message.data.get(self.settings_meta.skill_gid)
             if remote_settings is not None:
-                LOG.info('Updating settings for skill ' + self.name)
+                LOG.info("Updating settings for skill " + self.name)
                 self.settings.update(**remote_settings)
                 save_settings(self.settings_write_path, self.settings)
                 if self.settings_change_callback is not None:
@@ -419,7 +424,7 @@ class MycroftSkill:
 
     def detach(self):
         for (name, _) in self.intent_service:
-            name = '{}:{}'.format(self.skill_id, name)
+            name = "{}:{}".format(self.skill_id, name)
             self.intent_service.detach_intent(name)
 
     def initialize(self):
@@ -495,8 +500,9 @@ class MycroftSkill:
         self.converse = default_converse
         return converse.response
 
-    def get_response(self, dialog='', data=None, validator=None,
-                     on_fail=None, num_retries=-1):
+    def get_response(
+        self, dialog="", data=None, validator=None, on_fail=None, num_retries=-1
+    ):
         """Get response from user.
 
         If a dialog is supplied it is spoken, followed immediately by listening
@@ -534,14 +540,14 @@ class MycroftSkill:
 
         def on_fail_default(utterance):
             fail_data = data.copy()
-            fail_data['utterance'] = utterance
+            fail_data["utterance"] = utterance
             if on_fail:
                 return self.dialog_renderer.render(on_fail, fail_data)
             else:
                 return self.dialog_renderer.render(dialog, data)
 
         def is_cancel(utterance):
-            return self.voc_match(utterance, 'cancel')
+            return self.voc_match(utterance, "cancel")
 
         def validator_default(utterance):
             # accept anything except 'cancel'
@@ -555,10 +561,9 @@ class MycroftSkill:
         if dialog_exists:
             self.speak_dialog(dialog, data, expect_response=True, wait=True)
         else:
-            self.bus.emit(Message('mycroft.mic.listen'))
+            self.bus.emit(Message("mycroft.mic.listen"))
 
-        return self._wait_response(is_cancel, validator, on_fail_fn,
-                                   num_retries)
+        return self._wait_response(is_cancel, validator, on_fail_fn, num_retries)
 
     def _wait_response(self, is_cancel, validator, on_fail, num_retries):
         """Loop until a valid response is received from the user or the retry
@@ -595,7 +600,7 @@ class MycroftSkill:
             if line:
                 self.speak(line, expect_response=True)
             else:
-                self.bus.emit(Message('mycroft.mic.listen'))
+                self.bus.emit(Message("mycroft.mic.listen"))
 
     def ask_yesno(self, prompt, data=None):
         """Read prompt and wait for a yes/no answer
@@ -612,15 +617,16 @@ class MycroftSkill:
         """
         resp = self.get_response(dialog=prompt, data=data)
 
-        if self.voc_match(resp, 'yes'):
-            return 'yes'
-        elif self.voc_match(resp, 'no'):
-            return 'no'
+        if self.voc_match(resp, "yes"):
+            return "yes"
+        elif self.voc_match(resp, "no"):
+            return "no"
         else:
             return resp
 
-    def ask_selection(self, options, dialog='',
-                      data=None, min_conf=0.65, numeric=False):
+    def ask_selection(
+        self, options, dialog="", data=None, min_conf=0.65, numeric=False
+    ):
         """Read options, ask dialog question and wait for an answer.
 
         This automatically deals with fuzzy matching and selection by number
@@ -651,8 +657,8 @@ class MycroftSkill:
         if numeric:
             for idx, opt in enumerate(options):
                 opt_str = "{number}, {option_text}".format(
-                    number=pronounce_number(
-                        idx + 1, self.lang), option_text=opt)
+                    number=pronounce_number(idx + 1, self.lang), option_text=opt
+                )
 
                 self.speak(opt_str, wait=True)
         else:
@@ -664,7 +670,7 @@ class MycroftSkill:
         if resp:
             match, score = match_one(resp, options)
             if score < min_conf:
-                if self.voc_match(resp, 'last'):
+                if self.voc_match(resp, "last"):
                     resp = options[-1]
                 else:
                     num = extract_number(resp, ordinals=True, lang=self.lang)
@@ -706,12 +712,15 @@ class MycroftSkill:
         if utt:
             if exact:
                 # Check for exact match
-                match = any(i.strip() == utt
-                            for i in self.voc_match_cache[cache_key])
+                match = any(i.strip() == utt for i in self.voc_match_cache[cache_key])
             else:
                 # Check for matches against complete words
-                match = any([re.match(r'.*\b' + i + r'\b.*', utt)
-                            for i in self.voc_match_cache[cache_key]])
+                match = any(
+                    [
+                        re.match(r".*\b" + i + r"\b.*", utt)
+                        for i in self.voc_match_cache[cache_key]
+                    ]
+                )
 
         return match
 
@@ -722,7 +731,7 @@ class MycroftSkill:
             name (str): Name of metric. Must use only letters and hyphens
             data (dict): JSON dictionary to report. Must be valid JSON
         """
-        report_metric('{}:{}'.format(basename(self.root_dir), name), data)
+        report_metric("{}:{}".format(basename(self.root_dir), name), data)
 
     def send_email(self, title, body):
         """Send an email to the registered user's email.
@@ -740,9 +749,8 @@ class MycroftSkill:
         This enables converse method to be called even without skill being
         used in last 5 minutes.
         """
-        if self.skill_control.category == 'undefined':
-            self.bus.emit(Message('active_skill_request',
-                                  {'skill_id': self.skill_id}))
+        if self.skill_control.category == "undefined":
+            self.bus.emit(Message("active_skill_request", {"skill_id": self.skill_id}))
 
     def _register_decorated(self):
         """Register all intent handlers that are decorated with an intent.
@@ -754,12 +762,12 @@ class MycroftSkill:
         """
         for attr_name in get_non_properties(self):
             method = getattr(self, attr_name)
-            if hasattr(method, 'intents'):
-                for intent in getattr(method, 'intents'):
+            if hasattr(method, "intents"):
+                for intent in getattr(method, "intents"):
                     self.register_intent(intent, method)
 
-            if hasattr(method, 'intent_files'):
-                for intent_file in getattr(method, 'intent_files'):
+            if hasattr(method, "intent_files"):
+                for intent_file in getattr(method, "intent_files"):
                     self.register_intent_file(intent_file, method)
 
     def translate(self, text, data=None):
@@ -789,13 +797,14 @@ class MycroftSkill:
             string: The full path to the resource file or None if not found
         """
         result = self._find_resource(res_name, self.lang, res_dirname)
-        if not result and self.lang != 'en-us':
+        if not result and self.lang != "en-us":
             # when resource not found try fallback to en-us
             LOG.warning(
-                "Resource '{}' for lang '{}' not found: trying 'en-us'"
-                .format(res_name, self.lang)
+                "Resource '{}' for lang '{}' not found: trying 'en-us'".format(
+                    res_name, self.lang
+                )
             )
-            result = self._find_resource(res_name, 'en-us', res_dirname)
+            result = self._find_resource(res_name, "en-us", res_dirname)
         return result
 
     def _find_resource(self, res_name, lang, res_dirname=None):
@@ -813,7 +822,7 @@ class MycroftSkill:
                 return path
 
         # New scheme:  search for res_name under the 'locale' folder
-        root_path = join(self.root_dir, 'locale', lang)
+        root_path = join(self.root_dir, "locale", lang)
         for path, _, files in walk(root_path):
             if res_name in files:
                 return join(path, res_name)
@@ -821,7 +830,7 @@ class MycroftSkill:
         # Not found
         return None
 
-    def translate_namedvalues(self, name, delim=','):
+    def translate_namedvalues(self, name, delim=","):
         """Deprecated method for translating a name/value file."""
         return self.resources.load_named_value_file(name, delim)
 
@@ -844,24 +853,24 @@ class MycroftSkill:
             once (bool, optional): Event handler will be removed after it has
                                    been run once.
         """
-        skill_data = {'name': get_handler_name(handler)}
+        skill_data = {"name": get_handler_name(handler)}
 
         def on_error(e):
             """Speak and log the error."""
             # Convert "MyFancySkill" to "My Fancy Skill" for speaking
             handler_name = camel_case_split(self.name)
-            msg_data = {'skill': handler_name}
-            msg = dialog.get('skill.error', self.lang, msg_data)
+            msg_data = {"skill": handler_name}
+            msg = dialog.get("skill.error", self.lang, msg_data)
             self.speak(msg)
             LOG.exception(msg)
             # append exception information in message
-            skill_data['exception'] = repr(e)
+            skill_data["exception"] = repr(e)
 
         def on_start(message):
             """Indicate that the skill handler is starting."""
             if handler_info:
                 # Indicate that the skill handler is starting if requested
-                msg_type = handler_info + '.start'
+                msg_type = handler_info + ".start"
                 self.bus.emit(message.forward(msg_type, skill_data))
 
         def on_end(message):
@@ -871,11 +880,10 @@ class MycroftSkill:
                 save_settings(self.settings_write_path, self.settings)
                 self._initial_settings = deepcopy(self.settings)
             if handler_info:
-                msg_type = handler_info + '.complete'
+                msg_type = handler_info + ".complete"
                 self.bus.emit(message.forward(msg_type, skill_data))
 
-        wrapper = create_wrapper(handler, self.skill_id, on_start, on_end,
-                                 on_error)
+        wrapper = create_wrapper(handler, self.skill_id, on_start, on_end, on_error)
         return self.events.add(name, wrapper, once)
 
     def remove_event(self, name):
@@ -900,8 +908,7 @@ class MycroftSkill:
         munge_intent_parser(intent_parser, name, self.skill_id)
         self.intent_service.register_adapt_intent(name, intent_parser)
         if handler:
-            self.add_event(intent_parser.name, handler,
-                           'mycroft.skill.handler')
+            self.add_event(intent_parser.name, handler, "mycroft.skill.handler")
 
     def register_intent(self, intent_parser, handler):
         """Register an Intent with the intent service.
@@ -913,8 +920,7 @@ class MycroftSkill:
         """
         if isinstance(intent_parser, IntentBuilder):
             intent_parser = intent_parser.build()
-        if (isinstance(intent_parser, str) and
-                intent_parser.endswith('.intent')):
+        if isinstance(intent_parser, str) and intent_parser.endswith(".intent"):
             return self.register_intent_file(intent_parser, handler)
         elif not isinstance(intent_parser, Intent):
             raise ValueError('"' + str(intent_parser) + '" is not an Intent')
@@ -946,15 +952,15 @@ class MycroftSkill:
                          '.intent'
             handler:     function to register with intent
         """
-        name = '{}:{}'.format(self.skill_id, intent_file)
+        name = "{}:{}".format(self.skill_id, intent_file)
         resource_file = ResourceFile(self.resources.types.intent, intent_file)
         if resource_file.file_path is None:
             raise FileNotFoundError('Unable to find "{}"'.format(intent_file))
         self.intent_service.register_padatious_intent(
-             name, str(resource_file.file_path)
+            name, str(resource_file.file_path)
         )
         if handler:
-            self.add_event(name, handler, 'mycroft.skill.handler')
+            self.add_event(name, handler, "mycroft.skill.handler")
 
     def register_entity_file(self, entity_file):
         """Register an Entity file with the intent service.
@@ -975,15 +981,13 @@ class MycroftSkill:
         if entity.file_path is None:
             raise FileNotFoundError('Unable to find "{}"'.format(entity_file))
 
-        name = '{}:{}'.format(self.skill_id, entity_file)
-        self.intent_service.register_padatious_entity(
-            name, str(entity.file_path)
-        )
+        name = "{}:{}".format(self.skill_id, entity_file)
+        self.intent_service.register_padatious_entity(name, str(entity.file_path))
 
     def handle_enable_intent(self, message):
         """Listener to enable a registered intent if it belongs to this skill.
         """
-        intent_name = message.data['intent_name']
+        intent_name = message.data["intent_name"]
         for (name, _) in self.intent_service:
             if name == intent_name:
                 return self.enable_intent(intent_name)
@@ -991,7 +995,7 @@ class MycroftSkill:
     def handle_disable_intent(self, message):
         """Listener to disable a registered intent if it belongs to this skill.
         """
-        intent_name = message.data['intent_name']
+        intent_name = message.data["intent_name"]
         for (name, _) in self.intent_service:
             if name == intent_name:
                 return self.disable_intent(intent_name)
@@ -1006,13 +1010,15 @@ class MycroftSkill:
                 bool: True if disabled, False if it wasn't registered
         """
         if intent_name in self.intent_service:
-            LOG.debug('Disabling intent ' + intent_name)
-            name = '{}:{}'.format(self.skill_id, intent_name)
+            LOG.debug("Disabling intent " + intent_name)
+            name = "{}:{}".format(self.skill_id, intent_name)
             self.intent_service.detach_intent(name)
             return True
         else:
-            LOG.error('Could not disable '
-                      '{}, it hasn\'t been registered.'.format(intent_name))
+            LOG.error(
+                "Could not disable "
+                "{}, it hasn't been registered.".format(intent_name)
+            )
             return False
 
     def enable_intent(self, intent_name):
@@ -1031,14 +1037,15 @@ class MycroftSkill:
             else:
                 intent.name = intent_name
                 self.register_intent(intent, None)
-            LOG.debug('Enabling intent {}'.format(intent_name))
+            LOG.debug("Enabling intent {}".format(intent_name))
             return True
         else:
-            LOG.error('Could not enable '
-                      '{}, it hasn\'t been registered.'.format(intent_name))
+            LOG.error(
+                "Could not enable " "{}, it hasn't been registered.".format(intent_name)
+            )
             return False
 
-    def set_context(self, context, word='', origin=''):
+    def set_context(self, context, word="", origin=""):
         """Add context to intent service
 
         Args:
@@ -1047,48 +1054,52 @@ class MycroftSkill:
             origin:     origin of context
         """
         if not isinstance(context, str):
-            raise ValueError('Context should be a string')
+            raise ValueError("Context should be a string")
         if not isinstance(word, str):
-            raise ValueError('Word should be a string')
+            raise ValueError("Word should be a string")
 
         context = self.alphanumeric_skill_id + context
         self.intent_service.set_adapt_context(context, word, origin)
 
     def handle_set_cross_context(self, message):
         """Add global context to intent service."""
-        context = message.data.get('context')
-        word = message.data.get('word')
-        origin = message.data.get('origin')
+        context = message.data.get("context")
+        word = message.data.get("word")
+        origin = message.data.get("origin")
 
         self.set_context(context, word, origin)
 
     def handle_remove_cross_context(self, message):
         """Remove global context from intent service."""
-        context = message.data.get('context')
+        context = message.data.get("context")
         self.remove_context(context)
 
-    def set_cross_skill_context(self, context, word=''):
+    def set_cross_skill_context(self, context, word=""):
         """Tell all skills to add a context to intent service
 
         Args:
             context:    Keyword
             word:       word connected to keyword
         """
-        self.bus.emit(Message('mycroft.skill.set_cross_context',
-                              {'context': context, 'word': word,
-                               'origin': self.skill_id}))
+        self.bus.emit(
+            Message(
+                "mycroft.skill.set_cross_context",
+                {"context": context, "word": word, "origin": self.skill_id},
+            )
+        )
 
     def remove_cross_skill_context(self, context):
         """Tell all skills to remove a keyword from the context manager."""
         if not isinstance(context, str):
-            raise ValueError('context should be a string')
-        self.bus.emit(Message('mycroft.skill.remove_cross_context',
-                              {'context': context}))
+            raise ValueError("context should be a string")
+        self.bus.emit(
+            Message("mycroft.skill.remove_cross_context", {"context": context})
+        )
 
     def remove_context(self, context):
         """Remove a keyword from the context manager."""
         if not isinstance(context, str):
-            raise ValueError('context should be a string')
+            raise ValueError("context should be a string")
         context = self.alphanumeric_skill_id + context
         self.intent_service.remove_adapt_context(context)
 
@@ -1111,7 +1122,8 @@ class MycroftSkill:
         re.compile(regex)  # validate regex
         self.intent_service.register_adapt_regex(regex)
 
-    def speak(self, utterance, expect_response=False, wait=False, meta=None):
+    def speak(self, utterance, expect_response=False, wait=False, meta=None,
+              cache_key=None, cache_keep=False):
         """Speak a sentence.
 
         Args:
@@ -1122,24 +1134,30 @@ class MycroftSkill:
             wait (bool):            set to True to block while the text
                                     is being spoken.
             meta:                   Information of what built the sentence.
+            cache_key (str):        key from cache_speech or cache_dialog
+            cache_keep (bool):      True if cache_key can be reused
         """
         # registers the skill as being active
         meta = meta or {}
-        meta['skill'] = self.name
+        meta["skill"] = self.name
         self.enclosure.register(self.name)
-        data = {'utterance': utterance,
-                'expect_response': expect_response,
-                'meta': meta,
-                'skill_id': self.skill_id}
+        data = {
+            "utterance": utterance,
+            "expect_response": expect_response,
+            "meta": meta,
+            "skill_id": self.skill_id,
+            "cache_key": cache_key,
+            "cache_keep": cache_keep,
+        }
         message = dig_for_message()
-        m = message.forward("speak", data) if message \
-            else Message("speak", data)
+        m = message.forward("speak", data) if message else Message("speak", data)
         self.bus.emit(m)
 
         if wait:
             wait_while_speaking()
 
-    def speak_dialog(self, key, data=None, expect_response=False, wait=False):
+    def speak_dialog(self, key, data=None, expect_response=False, wait=False,
+                     cache_key=None, cache_keep=False):
         """ Speak a random sentence from a dialog file.
 
         Args:
@@ -1151,18 +1169,77 @@ class MycroftSkill:
                                     speaking the utterance.
             wait (bool):            set to True to block while the text
                                     is being spoken.
+            cache_key (str):        key from cache_speech or cache_dialog
+            cache_keep (bool):      True if cache_key can be reused
         """
         if self.dialog_renderer:
             data = data or {}
             self.speak(
                 self.dialog_renderer.render(key, data),
-                expect_response, wait, meta={'dialog': key, 'data': data}
+                expect_response,
+                wait,
+                meta={"dialog": key, "data": data},
+                cache_key=cache_key,
+                cache_keep=cache_keep,
             )
         else:
             self.log.warning(
-                'dialog_render is None, does the locale/dialog folder exist?'
+                "dialog_render is None, does the locale/dialog folder exist?"
             )
-            self.speak(key, expect_response, wait, {})
+            self.speak(key, expect_response, wait, meta={},
+                       cache_key=cache_key, cache_keep=cache_keep)
+
+    def cache_speech(self, utterance, meta=None, timeout=60) -> str:
+        """Synthesize a sentence and store it in cache.
+
+        Args:
+            utterance (str):        sentence mycroft should speak
+            meta:                   Information of what built the sentence.
+
+        Returns:
+            key (str):              cache key to be used later with speak_from_cache
+        """
+        meta = meta or {}
+        meta["skill"] = self.name
+        data = {
+            "utterance": utterance,
+            "cache_only": True,
+            "meta": meta,
+            "skill_id": self.skill_id,
+        }
+        message = dig_for_message()
+        m = message.forward("speak", data) if message else Message("speak", data)
+
+        reply = self.bus.wait_for_response(m, "speak.reply", timeout=timeout)
+
+        return reply.data["key"]
+
+    def cache_dialog(self, key, data=None, timeout=60) -> str:
+        """Synthesize a random sentence from a dialog file and store it in cache.
+
+        Args:
+            key (str): dialog file key (e.g. "hello" to speak from the file
+                                        "locale/en-us/hello.dialog")
+            data (dict): information used to populate sentence
+
+        Returns:
+            key (str):              cache key to be used later with speak_from_cache
+        """
+
+        if self.dialog_renderer:
+            data = data or {}
+            cache_key = self.cache_speech(
+                self.dialog_renderer.render(key, data),
+                meta={"dialog": key, "data": data},
+                timeout=timeout,
+            )
+        else:
+            self.log.warning(
+                "dialog_render is None, does the locale/dialog folder exist?"
+            )
+            cache_key = self.cache_speech(key, timeout=timeout)
+
+        return cache_key
 
     def acknowledge(self):
         """Acknowledge a successful request.
@@ -1172,7 +1249,8 @@ class MycroftSkill:
         to the user that their request was handled successfully.
         """
         audio_file = resolve_resource_file(
-            self.config_core.get('sounds').get('acknowledge'))
+            self.config_core.get("sounds").get("acknowledge")
+        )
 
         if not audio_file:
             LOG.warning("Could not find 'acknowledge' audio file!")
@@ -1190,14 +1268,14 @@ class MycroftSkill:
     def init_dialog(self):
         # If "<skill>/dialog/<lang>" exists, load from there.  Otherwise
         # load dialog from "<skill>/locale/<lang>"
-        dialog_dir = join(self.root_dir, 'dialog', self.lang)
+        dialog_dir = join(self.root_dir, "dialog", self.lang)
         if exists(dialog_dir):
             self.dialog_renderer = load_dialogs(dialog_dir)
-        elif exists(join(self.root_dir, 'locale', self.lang)):
-            locale_path = join(self.root_dir, 'locale', self.lang)
+        elif exists(join(self.root_dir, "locale", self.lang)):
+            locale_path = join(self.root_dir, "locale", self.lang)
             self.dialog_renderer = load_dialogs(locale_path)
         else:
-            LOG.debug('No dialog loaded')
+            LOG.debug("No dialog loaded")
         self.resources.dialog_renderer = self.dialog_renderer
 
     def load_vocab_files(self):
@@ -1213,16 +1291,14 @@ class MycroftSkill:
                 for line in skill_vocabulary[vocab_type]:
                     entity = line[0]
                     aliases = line[1:]
-                    self.intent_service.register_adapt_keyword(vocab_type,
-                                                               entity,
-                                                               aliases)
+                    self.intent_service.register_adapt_keyword(
+                        vocab_type, entity, aliases
+                    )
 
     def load_regex_files(self):
         """ Load regex files found under the skill directory."""
         if self.resources.types.regex.base_directory is not None:
-            regexes = self.resources.load_skill_regex(
-                self.alphanumeric_skill_id
-            )
+            regexes = self.resources.load_skill_regex(self.alphanumeric_skill_id)
             for regex in regexes:
                 self.intent_service.register_adapt_regex(regex)
 
@@ -1231,27 +1307,31 @@ class MycroftSkill:
         `stop()` method.
         """
         msg = _
-        if msg.data.get('skill', '') == self.skill_id or msg.data.get('skill','') == '*':
-            LOG.debug("handle stop skill_id:%s" % (self.skill_id, ))
+        if (
+            msg.data.get("skill", "") == self.skill_id
+            or msg.data.get("skill", "") == "*"
+        ):
+            LOG.debug("handle stop skill_id:%s" % (self.skill_id,))
         else:
             LOG.debug("stop ignored. %s, %s" % (self.skill_id, msg.data))
             return
 
         def __stop_timeout():
             # The self.stop() call took more than 100ms, assume it handled Stop
-            self.bus.emit(Message('mycroft.stop.handled',
-                                  {'skill_id': str(self.skill_id) + ':'}))
+            self.bus.emit(
+                Message("mycroft.stop.handled", {"skill_id": str(self.skill_id) + ":"})
+            )
 
         timer = Timer(0.1, __stop_timeout)  # set timer for 100ms
         try:
             if self.stop():
-                self.bus.emit(Message("mycroft.stop.handled",
-                                      {"by": "skill:" + self.skill_id}))
+                self.bus.emit(
+                    Message("mycroft.stop.handled", {"by": "skill:" + self.skill_id})
+                )
             timer.cancel()
         except Exception:
             timer.cancel()
-            LOG.error('Failed to stop skill: {}'.format(self.name),
-                      exc_info=True)
+            LOG.error("Failed to stop skill: {}".format(self.name), exc_info=True)
 
     def stop(self):
         """Optional method implemented by subclass."""
@@ -1274,14 +1354,15 @@ class MycroftSkill:
         try:
             self.shutdown()
         except Exception as e:
-            LOG.error('Skill specific shutdown function encountered '
-                      'an error: {}'.format(repr(e)))
+            LOG.error(
+                "Skill specific shutdown function encountered "
+                "an error: {}".format(repr(e))
+            )
 
         self.settings_change_callback = None
 
         # Store settings
-        if self.settings != self._initial_settings and Path(
-                self.root_dir).exists():
+        if self.settings != self._initial_settings and Path(self.root_dir).exists():
             save_settings(self.settings_write_path, self.settings)
 
         if self.settings_meta:
@@ -1294,16 +1375,13 @@ class MycroftSkill:
         self.event_scheduler.shutdown()
         self.events.clear()
 
-        self.bus.emit(
-            Message('detach_skill', {'skill_id': str(self.skill_id) + ':'}))
+        self.bus.emit(Message("detach_skill", {"skill_id": str(self.skill_id) + ":"}))
         try:
             self.stop()
         except Exception:
-            LOG.error('Failed to stop skill: {}'.format(self.name),
-                      exc_info=True)
+            LOG.error("Failed to stop skill: {}".format(self.name), exc_info=True)
 
-    def schedule_event(self, handler, when, data=None, name=None,
-                       context=None):
+    def schedule_event(self, handler, when, data=None, name=None, context=None):
         """Schedule a single-shot event.
 
         Args:
@@ -1322,11 +1400,13 @@ class MycroftSkill:
         """
         message = dig_for_message()
         context = context or message.context if message else {}
-        return self.event_scheduler.schedule_event(handler, when, data, name,
-                                                   context=context)
+        return self.event_scheduler.schedule_event(
+            handler, when, data, name, context=context
+        )
 
-    def schedule_repeating_event(self, handler, when, frequency,
-                                 data=None, name=None, context=None):
+    def schedule_repeating_event(
+        self, handler, when, frequency, data=None, name=None, context=None
+    ):
         """Schedule a repeating event.
 
         Args:
@@ -1345,12 +1425,7 @@ class MycroftSkill:
         message = dig_for_message()
         context = context or message.context if message else {}
         return self.event_scheduler.schedule_repeating_event(
-            handler,
-            when,
-            frequency,
-            data,
-            name,
-            context=context
+            handler, when, frequency, data, name, context=context
         )
 
     def update_scheduled_event(self, name, data=None):
@@ -1389,15 +1464,24 @@ class MycroftSkill:
         """Cancel any repeating events started by the skill."""
         return self.event_scheduler.cancel_all_repeating_events()
 
-
     def activity_started(self):
         """Indicate that a skill activity has started.
 
         This will flush the TTS cache and keep LED animations going.
         """
         self._activity_id = str(uuid4())
-        self.bus.emit(Message("skill.started", data={ "skill_id": self.skill_id, "activity_id": self._activity_id }))
-        LOG.info("%s started (skill=%s, activity=%s)", self.name, self.skill_id, self._activity_id)
+        self.bus.emit(
+            Message(
+                "skill.started",
+                data={"skill_id": self.skill_id, "activity_id": self._activity_id},
+            )
+        )
+        LOG.info(
+            "%s started (skill=%s, activity=%s)",
+            self.name,
+            self.skill_id,
+            self._activity_id,
+        )
 
         self.acknowledge()
 
@@ -1406,8 +1490,18 @@ class MycroftSkill:
 
         This will stop LED animations.
         """
-        self.bus.emit(Message("skill.ended", data={ "skill_id": self.skill_id, "activity_id": self._activity_id }))
-        LOG.info("%s ended (skill=%s, activity=%s)", self.name, self.skill_id, self._activity_id)
+        self.bus.emit(
+            Message(
+                "skill.ended",
+                data={"skill_id": self.skill_id, "activity_id": self._activity_id},
+            )
+        )
+        LOG.info(
+            "%s ended (skill=%s, activity=%s)",
+            self.name,
+            self.skill_id,
+            self._activity_id,
+        )
 
     @contextmanager
     def activity(self):
@@ -1422,7 +1516,4 @@ class MycroftSkill:
             self.activity_ended()
 
     def play_sound_uri(self, uri: str):
-        self.bus.emit(Message(
-            "mycroft.audio.play-sound",
-            data={"uri": uri}
-        ))
+        self.bus.emit(Message("mycroft.audio.play-sound", data={"uri": uri}))
