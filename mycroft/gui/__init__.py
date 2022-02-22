@@ -82,7 +82,7 @@ class SkillGUI:
 
     def build_message_type(self, event):
         """Builds a message matching the output from the enclosure."""
-        return '{}.{}'.format(self.skill.skill_id, event)
+        return f'{self.skill.skill_id}.{event}'
 
     def setup_default_handlers(self):
         """Sets the handlers for the default messages."""
@@ -197,7 +197,7 @@ class SkillGUI:
                 else:
                     page_urls.append("file://" + page)
             else:
-                raise FileNotFoundError("Unable to find page: {}".format(name))
+                raise FileNotFoundError(f"Unable to find page: {name}")
 
         return page_urls
 

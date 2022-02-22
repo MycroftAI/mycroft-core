@@ -13,7 +13,7 @@ def on_stopping():
 
 
 def on_error(e='Unknown'):
-    LOG.error('GUI websocket failed: {}'.format(repr(e)))
+    LOG.error(f'GUI websocket failed: {repr(e)}')
 
 
 def main(ready_hook=on_ready, error_hook=on_error, stopping_hook=on_stopping):
