@@ -89,6 +89,9 @@ class FileMockMicrophone(AudioSource):
     def close(self):
         self.stream.close()
 
+    def duration_to_bytes(self, ww_duration):
+        return int(ww_duration * self.SAMPLE_RATE * self.SAMPLE_WIDTH)
+
 
 class AudioTester:
     def __init__(self, samp_rate):
