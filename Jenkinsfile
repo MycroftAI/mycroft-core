@@ -14,7 +14,7 @@ pipeline {
             }
             environment {
                 //spawns GITHUB_USR and GITHUB_PSW environment variables
-                GITHUB=credentials('38b2e4a6-167a-40b2-be6f-d69be42c8190')
+                GITHUB=credentials('DevOps-CLA-Checker-Github-Key')
             }
             steps {
                 // Using an install of Github repo CLA tagger
