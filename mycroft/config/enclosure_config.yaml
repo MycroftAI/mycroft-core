@@ -1,0 +1,20 @@
+# COMM params to the Arduino/faceplate
+port: /dev/ttyAMA0
+rate: 9600
+timeout: 5.0
+
+# ??
+update: true
+
+# Run a self test at bootup?
+test: false
+
+# Mark 2 enclosure settings
+# Configuration for DBus
+dbus:
+  # Address of DBus to connect to.
+  # Empty string means to use the system bus.
+  bus_address: ""
+
+# Seconds of idle time before screen is dimmed
+idle_dim_timeout: 300

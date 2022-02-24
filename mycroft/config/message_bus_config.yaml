@@ -1,0 +1,6 @@
+# The mycroft-core messagebus websocket
+websocket:
+  host: 0.0.0.0
+  port: 8181
+  route: /core
+  ssl: false

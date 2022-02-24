@@ -1,0 +1,64 @@
+# File locations of sounds to play for system events
+"sounds": {
+  "start_listening": "snd/start_listening.wav",
+  "end_listening": "snd/end_listening.wav",
+  "acknowledge": "snd/acknowledge.wav"
+},
+
+# Mechanism used to play WAV audio files
+# Override: SYSTEM
+"play_wav_cmdline": "paplay %1 --stream-name=mycroft-voice",
+//"play_wav_cmdline": "aplay %1",
+
+# Mechanism used to play MP3 audio files
+# Override: SYSTEM
+"play_mp3_cmdline": "mpg123 %1",
+
+# Mechanism used to play OGG audio files
+# Override: SYSTEM
+"play_ogg_cmdline": "ogg123 -q %1",
+
+"backends": {
+  "local": {
+    "type": "simple",
+    "active": true
+  },
+  "vlc": {
+    "type": "vlc",
+    "active": true,
+    "duck": true
+  }
+},
+"default-backend": "local"
+},
+
+"debug": false
+# Text to Speech parameters
+# Override: REMOTE
+"tts": {
+  # Engine.  Options: "mimic", "mimic2", "google", "marytts", "fatts", "espeak",
+  # "spdsay", "responsive_voice", "yandex", "polly", "mozilla"
+  "pulse_duck": false,
+  "module": "mimic",
+  "polly": {
+    "voice": "Matthew",
+    "region": "us-east-1",
+    "access_key_id": "",
+    "secret_access_key": ""
+  },
+  "mimic": {
+    "voice": "ap"
+  },
+  "mimic2": {
+    "lang": "en-us",
+    "url": "https://mimic-api.mycroft.ai/synthesize?text=",
+    "preloaded_cache": "/opt/mycroft/preloaded_cache/Mimic2"
+  },
+  "espeak": {
+    "lang": "english-us",
+    "voice": "m1"
+  },
+  "mozilla": {
+    "url": "http://0.0.0.0:5002"
+  }
+},

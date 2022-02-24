@@ -1,0 +1,92 @@
+# Settings used by the wake-up-word listener
+# Override: REMOTE
+sample_rate: 16000
+# Set 'save_path' to configure the location of files stored if
+# 'record_wake_words' and/or 'save_utterances' are set to 'true'.
+# WARNING: Make sure that user 'mycroft' has write-access on the
+# directory!
+# "save_path": "/tmp",
+# Set 'record_wake_words' to save a copy of wake word triggers
+# as .wav files under: /'save_path'/mycroft_wake_words
+record_wake_words: false
+# Set 'save_utterances' to save each sentence sent to STT -- by default
+# they are only kept briefly in-memory.  This can be useful for for
+# debugging or other custom purposes.  Recordings are saved
+# under: /'save_path'/mycroft_utterances/<TIMESTAMP>.wav
+save_utterances: false
+wake_word_upload:
+  disable: false
+  url: https://training.mycroft.ai/precise/upload
+
+# Override as SYSTEM or USER to select a specific microphone input instead of
+# the PortAudio default input.
+#   "device_name": "somename",  # can be regex pattern or substring
+#       or
+#   "device_index": 12,
+
+# Stop listing to the microphone during playback to prevent accidental triggering
+# This is enabled by default, but instances with good microphone noise cancellation
+# can disable this to listen all the time, allowing 'barge in' functionality.
+mute_during_output : true
+
+# How much (if at all) to 'duck' the speaker output during listening.  A
+# setting of 0.0 will not duck at all.  A 1.0 will completely mute output
+# while in a listening state.  Values in between will lower the volume
+# partially (this is optional behavior, depending on the enclosure).
+duck_while_listening : 0.3
+
+# In milliseconds
+phoneme_duration: 120
+multiplier: 1.0
+energy_ratio: 1.5
+wake_word: hey mycroft
+stand_up_word: wake up
+
+# Settings used by microphone to set recording timeout
+recording_timeout: 10.0
+recording_timeout_with_silence: 3.0
+# Settings used for any precise wake words
+precise:
+  use_precise: true
+  dist_url: https://github.com/MycroftAI/precise-data/raw/dist/{arch}/latest
+  model_url: https://raw.githubusercontent.com/MycroftAI/precise-data/models/{wake_word}.tar.gz
+},
+# Hotword configurations
+hotwords:
+  hey mycroft:
+    module: "precise"
+    phonemes: "HH EY . M AY K R AO F T"
+    threshold: 1e-90
+    lang: en-us
+    # Specify custom model via:
+    # "local_model_file": "~/.local/share/mycroft/precise/models/something.pb"
+    # Precise options:
+    sensitivity: 0.5  # Higher = more sensitive
+    trigger_level: 3   # Higher = more delay & less sensitive
+
+  wake up:
+      module: pocketsphinx
+      phonemes: W EY K . AH P
+      threshold: 1e-20
+      lang: en-us
+      }
+},
+# Speech to Text parameters
+# Override: REMOTE
+"stt": {
+  # Engine.  Options: "mycroft", "google", "wit", "ibm", "kaldi", "bing",
+  #                   "houndify", "deepspeech_server", "govivace", "yandex"
+  "module": "mycroft"
+  # "deepspeech_server": {
+  #   "uri": "http://localhost:8080/stt"
+  # },
+  # "kaldi": {
+  #   "uri": "http://localhost:8080/client/dynamic/recognize"
+  # },
+  //"govivace": {
+  #   "uri": "https://services.govivace.com:49149/telephony",
+  #   "credential": {
+  #      "token": "xxxxx"
+  #      }
+  //}
+},

@@ -1,0 +1,124 @@
+# Mycroft Default Configuration File (Version 2)
+#
+# The first version of the configuration file was defined using JSON.  However,
+# the default JSON standard does not allow comments, so code was written to
+# "extend" the JSON standard to allow commenting.  This version of the
+# configuration file uses YAML.  The rationale for converting from JSON to YAML
+# is:
+#   - YAML allows comments
+#   - YAML is easier to read and maintain
+#   - YAML is a popular language for configuration files
+#   - JSON is better suited to data serialization
+#
+# Mycroft's configuration can be defined at four different levels.  Each level
+# is more localized than its predecessor.  Configurations defined at any level
+# can be extended and/or overridden by any of more localized levels.  The
+# allowed configuration levels are:
+#   DEFAULT:
+#     - defined in this file
+#   SYSTEM:
+#     - set by the hardware abstraction layer
+#     - stored in a file located at '/etc/mycroft/mycroft_config.yaml'
+#     - file location can be overridden using the MYCROFT_SYSTEM_CONFIG
+#       environment variable
+#     - extends/overrides the DEFAULT level
+#   REMOTE:
+#     - set by the user
+#     - maintained via https://account.mycroft.ai (or similar)
+#     - retrieved by a device API and stored locally at
+#       '~/.mycroft/mycroft_remote_config.yml'
+#     - file location can be overridden using the MYCROFT_WEB_CACHE
+#       environment variable
+#     - extends/overrides the DEFAULT and SYSTEM levels
+#   USER:
+#     - set by the user
+#     - stored in file '~/.mycroft/mycroft_config.yaml'
+#     - typically only defined by advanced users that require more control
+#       over the settings than is allowed at the remote level
+#     - extends/overrides the DEFAULT, SYSTEM and REMOTE levels
+#
+# A setting with "Override: <level>" in its comments indicate the settings level(s)
+# that can/should override the value.
+#
+
+# A BCP-47 identifier (https://tools.ietf.org/html/bcp47), lower-cased.
+# Define the language used to interact with the voice assistant.  Language
+# availability depends on the Speech to Text and Text to Speech engines used.
+# It also depends on the amount of work done by the community to translate
+# things like dialog and vocabulary defined in skills.
+#
+# Mycroft's default language tag is "en-us" (Language: English, Locale: United States).
+# TODO: version 2 - change from "lang" to "language"
+language: en-us
+
+# Measurement units, either 'metric' or 'english'
+# Override: REMOTE
+system_unit: metric
+
+# Time format, either 'half' (e.g. "11:37 pm") or 'full' (e.g. "23:37")
+# Override: REMOTE
+time_format: half
+
+# Date format, either 'MDY' (e.g. "11-29-1978") or 'DMY' (e.g. "29-11-1978")
+# Override: REMOTE
+date_format: MDY
+
+# Whether to opt in to data collection
+# Override: REMOTE
+opt_in: false
+
+# Play a beep when system begins to listen?
+confirm_listening: true
+
+# Location where the system resides.
+# The default value is set to the birthplace of Mycroft (Lawrence, KS, USA).
+# The values are typically overridden at the REMOTE level when pairing a device.
+# This could also be set by the hardware. For example mycroft-core running in a
+# car could use the GPS.
+# Override: REMOTE
+location:
+  city:
+    code: Lawrence
+    name: Lawrence
+    state:
+      code: KS
+      name: Kansas
+      country: 
+        code: US
+        name: United States
+  coordinate:
+    latitude: 38.971669,
+    longitude: -95.23525
+  },
+  timezone:
+    code: America/Chicago
+    name: Central Standard Time
+    dstOffset: 3600000
+    offset: -21600000
+  }
+},
+
+# Also change in scripts/prepare-msm.sh
+data_dir: /opt/mycroft
+
+# Settings for communicating with the device API
+server:
+  url: https://api.mycroft.ai
+  version: v1
+  update: true
+  metrics: false
+  sync_skill_settings: true
+
+# Level of logs to store, one of  "CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"
+# Override: SYSTEM, USER
+log_level: INFO
+
+# Format of logs to store.
+# Override: SYSTEM, USER
+log_format: "{asctime} | {levelname:8} | {process:5} | {name} | {message}"
+
+# Platform name
+# Options: "unknown", "picroft", "mycroft_mark_1", "mycroft_mark_2"
+# Override: SYSTEM (set by specific enclosures)
+platform: "unknown"
+

@@ -1,0 +1,31 @@
+{
+
+  // The GUI messagebus websocket.  Once port is created per connected GUI
+  "gui_websocket": {
+        "host": "0.0.0.0",
+        "base_port": 18181,
+        "route": "/gui",
+        "ssl": false
+  },
+
+  // URIs to use for testing network connection.
+  "network_tests": {
+    "dns_primary": "8.8.8.8",
+    "dns_secondary": "8.8.4.4",
+    "web_url": "https://www.google.com",
+    "ncsi_endpoint": "http://www.msftncsi.com/ncsi.txt",
+    "ncsi_expected_text": "Microsoft NCSI"
+  },
+
+  // Messagebus types that will NOT be output to logs
+  "ignore_logs": ["enclosure.mouth.viseme", "enclosure.mouth.display"],
+
+  // Settings related to remote sessions
+  // Overrride: none
+  "session": {
+    // Time To Live, in seconds
+    "ttl": 180
+  },
+
+  "debug": false
+}
