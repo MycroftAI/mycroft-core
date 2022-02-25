@@ -216,6 +216,8 @@ class EnclosureMark2(Enclosure):
         self.event_scheduler.set_bus(self.bus)
         self._idle_dim_timeout: int = self.config.get("idle_dim_timeout", 300)
 
+        self._activity_id: typing.Optional[str] = None
+
     def run(self):
         """Make it so."""
         super().run()
@@ -276,6 +278,7 @@ class EnclosureMark2(Enclosure):
 
     def handle_start_recording(self, message):
         LOG.debug("Gathering speech stuff")
+        self._activity_id = None
 
         self.event_scheduler.cancel_scheduled_event("DimScreen")
         self._undim_screen()
@@ -288,15 +291,19 @@ class EnclosureMark2(Enclosure):
 
     def handle_end_audio(self, message):
         LOG.debug("Finished playing audio")
-        # Stop the chase animation gently
-        self.led_thread.context["chase.background_color"] = self.hardware.palette.BLACK
-        self.led_thread.context["chase.stop"] = True
+
+        if not self._activity_id:
+            # Stop the chase animation gently
+            self.led_thread.context["chase.background_color"] = self.hardware.palette.BLACK
+            self.led_thread.context["chase.stop"] = True
 
     def handle_skill_started(self, message):
+        self._activity_id = message.data.get("activity_id")
         self._undim_screen()
 
     def handle_skill_ended(self, message):
         # Stop the chase animation gently
+        self._activity_id = None
         self.led_thread.context["chase.background_color"] = self.hardware.palette.BLACK
         self.led_thread.context["chase.stop"] = True
 
