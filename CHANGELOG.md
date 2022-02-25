@@ -2,9 +2,26 @@
 
 ## [Unreleased](https://github.com/OpenVoiceOS/ovos-core/tree/HEAD)
 
-[Full Changelog](https://github.com/OpenVoiceOS/ovos-core/compare/V0.0.2a8...HEAD)
+[Full Changelog](https://github.com/OpenVoiceOS/ovos-core/compare/V0.0.2a9...HEAD)
+
+**Implemented enhancements:**
+
+- port - mk2 gui refactor [\#42](https://github.com/OpenVoiceOS/ovos-core/issues/42)
+
+**Fixed bugs:**
+
+- Mismatched converse event names [\#68](https://github.com/OpenVoiceOS/ovos-core/issues/68)
+- Fix/unify converse namespace [\#71](https://github.com/OpenVoiceOS/ovos-core/pull/71) ([JarbasAl](https://github.com/JarbasAl))
 
 **Merged pull requests:**
+
+- Fix/changelog text [\#70](https://github.com/OpenVoiceOS/ovos-core/pull/70) ([JarbasAl](https://github.com/JarbasAl))
+
+## [V0.0.2a9](https://github.com/OpenVoiceOS/ovos-core/tree/V0.0.2a9) (2022-02-25)
+
+[Full Changelog](https://github.com/OpenVoiceOS/ovos-core/compare/V0.0.2a8...V0.0.2a9)
+
+**Implemented enhancements:**
 
 - Refactor/skill process status [\#67](https://github.com/OpenVoiceOS/ovos-core/pull/67) ([NeonJarbas](https://github.com/NeonJarbas))
 
@@ -40,15 +57,27 @@
 
 [Full Changelog](https://github.com/OpenVoiceOS/ovos-core/compare/0.0.2a3...0.0.2a4)
 
+**Breaking changes:**
+
+- refactor/goodbye\_msm [\#25](https://github.com/OpenVoiceOS/ovos-core/pull/25) ([JarbasAl](https://github.com/JarbasAl))
+- refactor/deprecate mycroft.tts [\#16](https://github.com/OpenVoiceOS/ovos-core/pull/16) ([JarbasAl](https://github.com/JarbasAl))
+
 **Implemented enhancements:**
 
 - msm disabled by default [\#24](https://github.com/OpenVoiceOS/ovos-core/issues/24)
 - feat/PHAL [\#46](https://github.com/OpenVoiceOS/ovos-core/pull/46) ([NeonJarbas](https://github.com/NeonJarbas))
+- refactor/settings continued [\#44](https://github.com/OpenVoiceOS/ovos-core/pull/44) ([NeonJarbas](https://github.com/NeonJarbas))
 - feat/ovos\_lf + fix timezone issues [\#37](https://github.com/OpenVoiceOS/ovos-core/pull/37) ([NeonJarbas](https://github.com/NeonJarbas))
 - feat/ovos\_conf from ovos\_utils [\#34](https://github.com/OpenVoiceOS/ovos-core/pull/34) ([NeonJarbas](https://github.com/NeonJarbas))
 - Refactor/converse [\#32](https://github.com/OpenVoiceOS/ovos-core/pull/32) ([NeonJarbas](https://github.com/NeonJarbas))
+- Refactor/deprecate enclosure [\#29](https://github.com/OpenVoiceOS/ovos-core/pull/29) ([JarbasAl](https://github.com/JarbasAl))
+- Refactor/standardize skill id usage [\#28](https://github.com/OpenVoiceOS/ovos-core/pull/28) ([JarbasAl](https://github.com/JarbasAl))
+- Refactor/ simplify skill loading [\#27](https://github.com/OpenVoiceOS/ovos-core/pull/27) ([JarbasAl](https://github.com/JarbasAl))
+- refactor/combo\_lock [\#15](https://github.com/OpenVoiceOS/ovos-core/pull/15) ([JarbasAl](https://github.com/JarbasAl))
+- refactor/settings [\#11](https://github.com/OpenVoiceOS/ovos-core/pull/11) ([JarbasAl](https://github.com/JarbasAl))
 - Feat/skill plugins [\#9](https://github.com/OpenVoiceOS/ovos-core/pull/9) ([JarbasAl](https://github.com/JarbasAl))
 - feat/extra\_skill\_dirs [\#7](https://github.com/OpenVoiceOS/ovos-core/pull/7) ([JarbasAl](https://github.com/JarbasAl))
+- refactor/ovos\_utils [\#5](https://github.com/OpenVoiceOS/ovos-core/pull/5) ([JarbasAl](https://github.com/JarbasAl))
 - feat/multiple\_wakewords [\#2](https://github.com/OpenVoiceOS/ovos-core/pull/2) ([JarbasAl](https://github.com/JarbasAl))
 - feat/ovos\_plugin\_manager [\#1](https://github.com/OpenVoiceOS/ovos-core/pull/1) ([JarbasAl](https://github.com/JarbasAl))
 
@@ -60,23 +89,14 @@
 - fix/default\_xdg [\#31](https://github.com/OpenVoiceOS/ovos-core/pull/31) ([JarbasAl](https://github.com/JarbasAl))
 - fix/priority\_skills [\#23](https://github.com/OpenVoiceOS/ovos-core/pull/23) ([JarbasAl](https://github.com/JarbasAl))
 - fix/RemoteTTS+remove\_requests\_futures\_dep [\#14](https://github.com/OpenVoiceOS/ovos-core/pull/14) ([JarbasAl](https://github.com/JarbasAl))
+- refactor/better\_sleep\_mode [\#10](https://github.com/OpenVoiceOS/ovos-core/pull/10) ([JarbasAl](https://github.com/JarbasAl))
 
 **Merged pull requests:**
 
 - fix/log config [\#48](https://github.com/OpenVoiceOS/ovos-core/pull/48) ([NeonJarbas](https://github.com/NeonJarbas))
-- refactor/settings continued [\#44](https://github.com/OpenVoiceOS/ovos-core/pull/44) ([NeonJarbas](https://github.com/NeonJarbas))
 - autopep8 [\#33](https://github.com/OpenVoiceOS/ovos-core/pull/33) ([JarbasAl](https://github.com/JarbasAl))
-- Refactor/deprecate enclosure [\#29](https://github.com/OpenVoiceOS/ovos-core/pull/29) ([JarbasAl](https://github.com/JarbasAl))
-- Refactor/standardize skill id usage [\#28](https://github.com/OpenVoiceOS/ovos-core/pull/28) ([JarbasAl](https://github.com/JarbasAl))
-- Refactor/ simplify skill loading [\#27](https://github.com/OpenVoiceOS/ovos-core/pull/27) ([JarbasAl](https://github.com/JarbasAl))
-- refactor/goodbye\_msm [\#25](https://github.com/OpenVoiceOS/ovos-core/pull/25) ([JarbasAl](https://github.com/JarbasAl))
 - Refactor/relax requirements [\#21](https://github.com/OpenVoiceOS/ovos-core/pull/21) ([JarbasAl](https://github.com/JarbasAl))
-- refactor/deprecate mycroft.tts [\#16](https://github.com/OpenVoiceOS/ovos-core/pull/16) ([JarbasAl](https://github.com/JarbasAl))
-- refactor/combo\_lock [\#15](https://github.com/OpenVoiceOS/ovos-core/pull/15) ([JarbasAl](https://github.com/JarbasAl))
-- refactor/settings [\#11](https://github.com/OpenVoiceOS/ovos-core/pull/11) ([JarbasAl](https://github.com/JarbasAl))
-- refactor/better\_sleep\_mode [\#10](https://github.com/OpenVoiceOS/ovos-core/pull/10) ([JarbasAl](https://github.com/JarbasAl))
 - refactor/gui\_launcher [\#8](https://github.com/OpenVoiceOS/ovos-core/pull/8) ([JarbasAl](https://github.com/JarbasAl))
-- refactor/ovos\_utils [\#5](https://github.com/OpenVoiceOS/ovos-core/pull/5) ([JarbasAl](https://github.com/JarbasAl))
 - WIP README \(got to "Running Mycroft"\) [\#4](https://github.com/OpenVoiceOS/ovos-core/pull/4) ([ChanceNCounter](https://github.com/ChanceNCounter))
 
 ## [0.0.2a3](https://github.com/OpenVoiceOS/ovos-core/tree/0.0.2a3) (2022-01-24)
