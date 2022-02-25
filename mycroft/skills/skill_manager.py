@@ -18,6 +18,8 @@ from os.path import basename
 from glob import glob
 from threading import Thread, Event, Lock
 from time import sleep, monotonic
+from mycroft.util.process_utils import ProcessStatus, StatusCallbackMap, ProcessState
+
 
 from mycroft.api import is_paired
 from mycroft.enclosure.api import EnclosureAPI
@@ -108,9 +110,30 @@ def _shutdown_skill(instance):
         LOG.exception(f'Failed to shut down skill: {instance.skill_id}')
 
 
+def on_started():
+    LOG.info('Skills Manager is starting up.')
+
+
+def on_alive():
+    LOG.info('Skills Manager is alive.')
+
+
+def on_ready():
+    LOG.info('Skills Manager is ready.')
+
+
+def on_error(e='Unknown'):
+    LOG.info(f'Skills Manager failed to launch ({e})')
+
+
+def on_stopping():
+    LOG.info('Skills Manager is shutting down...')
+
+
 class SkillManager(Thread):
 
-    def __init__(self, bus, watchdog=None):
+    def __init__(self, bus, watchdog=None, alive_hook=on_alive, started_hook=on_started, ready_hook=on_ready,
+         error_hook=on_error, stopping_hook=on_stopping):
         """Constructor
 
         Args:
@@ -121,6 +144,14 @@ class SkillManager(Thread):
         self.bus = bus
         # Set watchdog to argument or function returning None
         self._watchdog = watchdog or (lambda: None)
+        callbacks = StatusCallbackMap(on_started=started_hook,
+                                      on_alive=alive_hook,
+                                      on_ready=ready_hook,
+                                      on_error=error_hook,
+                                      on_stopping=stopping_hook)
+        self.status = ProcessStatus('skills', callback_map=callbacks)
+        self.status.set_started()
+
         self._stop_event = Event()
         self._connected_event = Event()
         self.config = Configuration.get()
@@ -135,13 +166,11 @@ class SkillManager(Thread):
 
         self.empty_skill_dirs = set()  # Save a record of empty skill dirs.
 
-        # Statuses
-        self._alive_status = False  # True after priority skills has loaded
-        self._loaded_status = False  # True after all skills has loaded
-
         self.skill_updater = SkillUpdater()
         self._define_message_bus_events()
         self.daemon = True
+
+        self.status.bind(self.bus)
 
     def _define_message_bus_events(self):
         """Define message bus events with handlers defined in this class."""
@@ -281,11 +310,14 @@ class SkillManager(Thread):
             else:
                 LOG.error(f'Priority skill {skill_id} can\'t be found')
 
-        self._alive_status = True
+        self.status.set_alive()
 
     def run(self):
         """Load skills and update periodically from disk and internet."""
         self._remove_git_locks()
+
+        self.load_priority()
+
         if self.skills_config.get("wait_for_internet", True):
             while not connected() and not self._connected_event.is_set():
                 sleep(1)
@@ -298,6 +330,7 @@ class SkillManager(Thread):
             self.skill_updater.post_manifest()
             self._start_settings_update()
 
+        self.status.set_ready()
         # Scan the file folder that contains Skills.  If a Skill is updated,
         # unload the existing version from memory and reload from the disk.
         while not self._stop_event.is_set():
@@ -328,7 +361,6 @@ class SkillManager(Thread):
         self._load_new_skills()
         LOG.info("Skills all loaded!")
         self.bus.emit(Message('mycroft.skills.initialized'))
-        self._loaded_status = True
 
     def _reload_modified_skills(self):
         """Handle reload of recently changed skill(s)"""
@@ -455,11 +487,11 @@ class SkillManager(Thread):
 
     def is_alive(self, message=None):
         """Respond to is_alive status request."""
-        return self._alive_status
+        return self.status.state >= ProcessState.ALIVE
 
     def is_all_loaded(self, message=None):
         """ Respond to all_loaded status request."""
-        return self._loaded_status
+        return self.status.state == ProcessState.READY
 
     def send_skill_list(self, _):
         """Send list of loaded skills."""
@@ -517,6 +549,7 @@ class SkillManager(Thread):
 
     def stop(self):
         """Tell the manager to shutdown."""
+        self.status.set_stopping()
         self._stop_event.set()
         self.settings_downloader.stop_downloading()
         self.upload_queue.stop()

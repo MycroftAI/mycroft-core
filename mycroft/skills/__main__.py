@@ -31,7 +31,7 @@ from mycroft.skills.api import SkillApi
 from mycroft.skills.core import FallbackSkill
 from mycroft.skills.event_scheduler import EventScheduler
 from mycroft.skills.intent_service import IntentService
-from mycroft.skills.skill_manager import SkillManager
+from mycroft.skills.skill_manager import SkillManager, on_error, on_stopping, on_ready, on_alive, on_started
 from mycroft.util import (
     connected,
     reset_sigint_handler,
@@ -39,7 +39,7 @@ from mycroft.util import (
     wait_for_exit_signal
 )
 from mycroft.util.log import LOG
-from mycroft.util.process_utils import ProcessStatus, StatusCallbackMap
+
 
 RASPBERRY_PI_PLATFORMS = ('mycroft_mark_1', 'picroft', 'mycroft_mark_2pi')
 
@@ -52,7 +52,8 @@ class DevicePrimer:
         config (dict): Mycroft configuration
     """
 
-    def __init__(self, message_bus_client, config):
+    def __init__(self, message_bus_client, config=None):
+        config = config or Configuration.get()
         self.bus = message_bus_client
         self.platform = config['enclosure'].get("platform", "unknown")
 
@@ -182,41 +183,17 @@ class DevicePrimer:
             wait_while_speaking()
 
 
-def on_started():
-    LOG.info('Skills service is starting up.')
-
-
-def on_alive():
-    LOG.info('Skills service is alive.')
-
-
-def on_ready():
-    LOG.info('Skills service is ready.')
-
-
-def on_error(e='Unknown'):
-    LOG.info('Skills service failed to launch ({})'.format(repr(e)))
-
-
-def on_stopping():
-    LOG.info('Skills service is shutting down...')
-
-
 def main(alive_hook=on_alive, started_hook=on_started, ready_hook=on_ready,
          error_hook=on_error, stopping_hook=on_stopping, watchdog=None):
+    """Create a thread that monitors the loaded skills, looking for updates
+
+    Returns:
+        SkillManager instance or None if it couldn't be initialized
+    """
     reset_sigint_handler()
     # Create PID file, prevent multiple instances of this service
     mycroft.lock.Lock('skills')
 
-    callbacks = StatusCallbackMap(on_started=started_hook,
-                                  on_alive=alive_hook,
-                                  on_ready=ready_hook,
-                                  on_error=error_hook,
-                                  on_stopping=stopping_hook)
-    status = ProcessStatus('skills', callback_map=callbacks)
-    status.set_started()
-
-    config = Configuration.get()
     setup_locale()
 
     # Connect this process to the Mycroft message bus
@@ -226,29 +203,19 @@ def main(alive_hook=on_alive, started_hook=on_started, ready_hook=on_ready,
     event_scheduler.setDaemon(True)
     event_scheduler.start()
     SkillApi.connect_bus(bus)
-    skill_manager = _initialize_skill_manager(bus, watchdog)
+    skill_manager = SkillManager(bus, watchdog,
+                                 alive_hook=alive_hook,
+                                 started_hook=started_hook,
+                                 stopping_hook=stopping_hook,
+                                 ready_hook=ready_hook,
+                                 error_hook=error_hook)
 
-    status.bind(bus)
-    status.set_alive()
-
-    if config["skills"].get("wait_for_internet", True):
-        _wait_for_internet_connection()
-
-    if skill_manager is None:
-        skill_manager = _initialize_skill_manager(bus, watchdog)
-
-    device_primer = DevicePrimer(bus, config)
+    device_primer = DevicePrimer(bus)
     device_primer.prepare_device()
     skill_manager.start()
-    while not skill_manager.is_alive():
-        time.sleep(0.1)
-
-    while not skill_manager.is_all_loaded():
-        time.sleep(0.1)
-    status.set_ready()
 
     wait_for_exit_signal()
-    status.set_stopping()
+
     shutdown(skill_manager, event_scheduler)
 
 
@@ -265,22 +232,6 @@ def _register_intent_services(bus):
         FallbackSkill.make_intent_failure_handler(bus)
     )
     return service
-
-
-def _initialize_skill_manager(bus, watchdog):
-    """Create a thread that monitors the loaded skills, looking for updates
-
-    Returns:
-        SkillManager instance or None if it couldn't be initialized
-    """
-    skill_manager = SkillManager(bus, watchdog)
-    skill_manager.load_priority()
-    return skill_manager
-
-
-def _wait_for_internet_connection():
-    while not connected():
-        time.sleep(1)
 
 
 def shutdown(skill_manager, event_scheduler):
