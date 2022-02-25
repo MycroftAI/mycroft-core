@@ -21,7 +21,7 @@ BASEDIR = os.path.abspath(os.path.dirname(__file__))
 def get_version():
     """ Find the version of ovos-core"""
     version = None
-    version_file = os.path.join(BASEDIR, 'mycroft', 'version', '__init__.py')
+    version_file = os.path.join(BASEDIR, 'mycroft', 'version.py')
     major, minor, build, alpha = (None, None, None, None)
     with open(version_file) as f:
         for line in f:

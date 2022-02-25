@@ -1,10 +1,11 @@
 name: Run Build Tests
 on:
+  push:
+    branches:
+      - master
   pull_request:
     branches:
       - dev
-      - master
-  push:
   workflow_dispatch:
 
 jobs:
@@ -12,6 +13,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+        with:
+          ref: ${{ github.head_ref }}
       - name: Setup Python
         uses: actions/setup-python@v1
         with:
@@ -26,6 +29,6 @@ jobs:
       - name: Build Distribution Packages
         run: |
           python setup.py bdist_wheel
-      - name: Install core repo
+      - name: Install package
         run: |
           pip install .[audio-backend,mark1,stt,tts,skills_minimal,skills,gui,bus,PHAL,all]

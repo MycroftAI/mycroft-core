@@ -1,9 +1,14 @@
 name: Run License Tests
 on:
+  push:
+    branches:
+      - master
   pull_request:
     branches:
       - dev
-      - master
+    paths:
+      - 'requirements/**'
+      - 'setup.py'
   workflow_dispatch:
 
 jobs:
@@ -11,6 +16,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+        with:
+          ref: ${{ github.head_ref }}
       - name: Setup Python
         uses: actions/setup-python@v1
         with:

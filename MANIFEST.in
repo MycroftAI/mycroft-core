@@ -1,4 +1,4 @@
-include requirements/requirements.txt
-include mycroft/configuration/*.conf
-recursive-include mycroft/res *
-recursive-include requirements *
+recursive-include mycroft/ *
+recursive-include requirements/ *
+include CHANGELOG.md
+include LICENSE

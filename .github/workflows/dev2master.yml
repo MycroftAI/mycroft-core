@@ -1,0 +1,19 @@
+# This workflow will generate a distribution and upload it to PyPI
+
+name: Push dev -> master
+on:
+  workflow_dispatch:
+
+jobs:
+  build_and_publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0 # otherwise, there would be errors pushing refs to the destination repository.
+          ref: dev
+      - name: Push dev -> master
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: master
