@@ -194,16 +194,16 @@ class ConverseService:
                     want_converse.append(skill_id)
             skill_ids.append(skill_id)
 
-        self.bus.on("mycroft.skill.converse.pong", handle_ack)
+        self.bus.on("skill.converse.pong", handle_ack)
 
         # wait for all skills to acknowledge they want to converse
-        self.bus.emit(Message("mycroft.skill.converse.ping"))
+        self.bus.emit(Message("skill.converse.ping"))
         start = time.time()
         while not all(s in skill_ids for s in active_skills) \
                 and time.time() - start <= 0.5:
             time.sleep(0.02)
 
-        self.bus.remove("mycroft.skill.converse.pong", handle_ack)
+        self.bus.remove("skill.converse.pong", handle_ack)
         return want_converse
 
     def _check_converse_timeout(self):

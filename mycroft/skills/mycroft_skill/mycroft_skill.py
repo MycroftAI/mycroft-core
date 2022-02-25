@@ -519,8 +519,8 @@ class MycroftSkill:
         # Only register stop if it's been implemented
         if self.stop_is_implemented:
             self.add_event('mycroft.stop', self.__handle_stop)
-        self.add_event('mycroft.skill.converse.ping', self._handle_converse_ack)
-        self.add_event('mycroft.skill.converse.request', self._handle_converse_request)
+        self.add_event('skill.converse.ping', self._handle_converse_ack)
+        self.add_event('skill.converse.request', self._handle_converse_request)
         self.add_event(f"{self.skill_id}.activate", self.handle_activate)
         self.add_event(f"{self.skill_id}.deactivate", self.handle_deactivate)
         self.add_event("intent.service.skills.deactivated", self._handle_skill_deactivated)
@@ -628,7 +628,7 @@ class MycroftSkill:
         """Inform skills service if we want to handle converse.
         individual skills may override the property self.converse_is_implemented"""
         self.bus.emit(message.reply(
-            "mycroft.skill.converse.pong",
+            "skill.converse.pong",
             data={"skill_id": self.skill_id,
                   "can_handle": self.converse_is_implemented},
             context={"skill_id": self.skill_id}))
