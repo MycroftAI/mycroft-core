@@ -6,6 +6,17 @@ on:
   pull_request:
     branches:
       - dev
+    paths-ignore:
+      - 'mycroft/version.py'
+      - 'test/**'
+      - 'examples/**'
+      - '.github/**'
+      - '.gitignore'
+      - 'LICENSE'
+      - 'CHANGELOG.md'
+      - 'MANIFEST.in'
+      - 'readme.md'
+      - 'scripts/**'
   workflow_dispatch:
 
 jobs:

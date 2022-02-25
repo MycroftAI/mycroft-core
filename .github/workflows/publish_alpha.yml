@@ -7,10 +7,10 @@ on:
       - dev
     paths-ignore:
       - 'mycroft/version.py'
-      - 'setup.py'
       - 'test/**'
       - 'examples/**'
       - '.github/**'
+      - '.gitignore'
       - 'LICENSE'
       - 'CHANGELOG.md'
       - 'MANIFEST.in'

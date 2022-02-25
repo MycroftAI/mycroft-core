@@ -3,27 +3,51 @@ on:
   pull_request:
     branches:
       - dev
+    paths-ignore:
+      - 'mycroft/version.py'
+      - 'requirements/**'
+      - 'examples/**'
+      - '.github/**'
+      - '.gitignore'
+      - 'LICENSE'
+      - 'CHANGELOG.md'
+      - 'MANIFEST.in'
+      - 'readme.md'
+      - 'scripts/**'
   push:
     branches:
       - master
+    paths-ignore:
+      - 'mycroft/version.py'
+      - 'requirements/**'
+      - 'examples/**'
+      - '.github/**'
+      - '.gitignore'
+      - 'LICENSE'
+      - 'CHANGELOG.md'
+      - 'MANIFEST.in'
+      - 'readme.md'
+      - 'scripts/**'
   workflow_dispatch:
 
 jobs:
   unit_tests:
+    strategy:
+      max-parallel: 2
+      matrix:
+        python-version: [ 3.7, 3.8, 3.9, "3.10" ]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: Setup Python
-        uses: actions/setup-python@v1
+      - name: Set up python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
         with:
-          python-version: 3.8
-      - name: Install Build Tools
-        run: |
-          python -m pip install build wheel
+          python-version: ${{ matrix.python-version }}
       - name: Install System Dependencies
         run: |
           sudo apt-get update
           sudo apt install python3-dev swig libssl-dev libfann-dev portaudio19-dev libpulse-dev
+          python -m pip install build wheel
       - name: Install core repo
         run: |
           pip install .[audio-backend,mark1,stt,tts,skills,gui,bus,PHAL,all]
