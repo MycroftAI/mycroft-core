@@ -100,13 +100,13 @@ def handle_speak(event):
     bus.emit(Message('speak', event, context))
 
 
-def handle_complete_intent_failure(event):
-    """Extreme backup for answering completely unhandled intent requests."""
-    LOG.info("Failed to find intent.")
-    data = {'utterance': dialog.get('not.loaded')}
-    context = {'client_name': 'mycroft_listener',
-               'source': 'audio'}
-    bus.emit(Message('speak', data, context))
+# def handle_complete_intent_failure(event):
+#     """Extreme backup for answering completely unhandled intent requests."""
+#     LOG.info("Failed to find intent.")
+#     data = {'utterance': dialog.get('not.loaded')}
+#     context = {'client_name': 'mycroft_listener',
+#                'source': 'audio'}
+#     bus.emit(Message('speak', data, context))
 
 
 def handle_sleep(event):
@@ -228,7 +228,7 @@ def connect_loop_events(loop):
 def connect_bus_events(bus):
     # Register handlers for events on main Mycroft messagebus
     bus.on('open', handle_open)
-    bus.on('complete_intent_failure', handle_complete_intent_failure)
+    # bus.on('complete_intent_failure', handle_complete_intent_failure)
     bus.on('recognizer_loop:sleep', handle_sleep)
     bus.on('recognizer_loop:wake_up', handle_wake_up)
     bus.on('mycroft.mic.mute', handle_mic_mute)
