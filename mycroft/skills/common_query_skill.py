@@ -187,7 +187,10 @@ class CommonQuerySkill(MycroftSkill, ABC):
         phrase = message.data["phrase"]
         data = message.data.get("callback_data")
         # Invoke derived class to provide playback data
-        self.CQS_action(phrase, data)
+        try:
+            self.CQS_action(phrase, data)
+        finally:
+            self.bus.emit(Message("query:action-complete", data=message.data))
 
     def stop(self):
         # TODO check if active
