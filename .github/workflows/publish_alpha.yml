@@ -60,7 +60,7 @@ jobs:
           release_name: Release ${{ steps.version.outputs.version }}
           body: |
             Changes in this Release
-            {{ steps.changelog.outputs.changelog }}
+            ${{ steps.changelog.outputs.changelog }}
           draft: false
           prerelease: true
       - name: Build Distribution Packages
