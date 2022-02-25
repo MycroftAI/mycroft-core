@@ -223,8 +223,8 @@ class AudioUserInterface:
         self._speech_finished.set()
 
     def _duck_volume(self):
-        """Pause TTS and lower background stream volumes during voice commands"""
-        self._ahal.pause_foreground(ForegroundChannel.SPEECH)
+        """Stop TTS and lower background stream volumes during voice commands"""
+        self._ahal.stop_foreground(ForegroundChannel.SPEECH)
         self._ahal.set_background_volume(0.3)
         LOG.info("Ducked volume")
 
@@ -363,9 +363,10 @@ class AudioUserInterface:
                     request.session_id,
                 )
 
-                # No timeout because TTS may be paused.
+                # Wait at most a half second after TTS should have been finished.
                 # This event is set whenever TTS is cleared.
-                self._speech_finished.wait()
+                timeout = duration_sec + 0.5
+                self._speech_finished.wait(timeout=timeout)
 
                 if request.is_last_chunk:
                     self._finish_tts_session(
