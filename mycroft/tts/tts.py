@@ -193,6 +193,18 @@ class TTS(metaclass=ABCMeta):
         )
         self.cache.clear()
 
+    @property
+    def available_languages(self) -> set:
+        """Return languages supported by this TTS implementation in this state
+
+        This property should be overridden by the derived class to advertise
+        what languages that engine supports.
+
+        Returns:
+            set: supported languages
+        """
+        return set()
+
     def load_spellings(self):
         """Load phonetic spellings of words as dictionary."""
         path = join('text', self.lang.lower(), 'phonetic_spellings.txt')
