@@ -294,7 +294,9 @@ class EnclosureMark2(Enclosure):
 
         if not self._activity_id:
             # Stop the chase animation gently
-            self.led_thread.context["chase.background_color"] = self.hardware.palette.BLACK
+            self.led_thread.context[
+                "chase.background_color"
+            ] = self.hardware.palette.BLACK
             self.led_thread.context["chase.stop"] = True
 
     def handle_skill_started(self, message):
@@ -430,9 +432,15 @@ class EnclosureMark2(Enclosure):
         self._detect_internet()
 
     def _handle_network_detected(self, _message=None):
-        """Detect internet once network is connected"""
+        """Detect internet once network is connected.
+
+        The mycroft.network-ready event indicates that any logic that needs to
+        use the local network can now be executed.
+        """
         if self.force_system_clock_update:
             self._synchronize_system_clock()
+
+        self.bus.emit(Message("mycroft.network-ready"))
         self.bus.emit(Message("hardware.detect-internet"))
 
     def _handle_internet_connected(self, _message=None):
