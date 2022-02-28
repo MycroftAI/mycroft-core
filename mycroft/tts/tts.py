@@ -16,6 +16,7 @@ from copy import deepcopy
 import os
 import random
 import re
+import subprocess
 import typing
 from abc import ABCMeta, abstractmethod
 from pathlib import Path
@@ -423,6 +424,20 @@ class TTS(metaclass=ABCMeta):
                         "the file path argument provided. Modified paths "
                         "will be ignored in a future release."))
                 audio_file.path = returned_file
+
+            if audio_file.path.suffix != ".flac":
+                try:
+                    flac_path = audio_file.path.with_suffix(".flac")
+                    subprocess.run(["flac", "--best", "--delete-input-file",
+                                    "--force", "--totally-silent",
+                                    "-o", str(flac_path),
+                                    str(audio_file.path)], check=True)
+
+                    audio_file.path = flac_path
+                    audio_file.name = flac_path.name
+                except Exception:
+                    LOG.exception("Couldn't convert to FLAC: %s", audio_file.path)
+
             if phonemes:
                 phoneme_file = self.cache.define_phoneme_file(
                     sentence_hash
