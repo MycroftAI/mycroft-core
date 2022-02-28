@@ -1,4 +1,4 @@
-requests>=2.20.0,<2.26.0
+requests~=2.26.0
 gTTS>=2.2.2,<2.3.0
 PyAudio==0.2.11
 pyee==8.1.0
