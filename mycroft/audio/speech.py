@@ -12,9 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import os
 import re
 import time
+import typing
 from collections import defaultdict
+from dataclasses import dataclass, field
+from datetime import datetime
+from pathlib import Path
 from threading import Lock
 from uuid import uuid4
 
@@ -27,13 +32,21 @@ from mycroft.messagebus.message import Message
 from mycroft.tts.remote_tts import RemoteTTSException
 from mycroft.tts.mimic_tts import Mimic
 
+
+@dataclass
+class TTSSession:
+    id: str
+    cache_paths: typing.List[typing.Union[str, Path]] = field(default_factory=list)
+    expire_after: typing.Optional[datetime] = None
+
+
 bus = None  # Mycroft messagebus connection
 config = None
 tts = None
 tts_hash = None
 lock = Lock()
 mimic_fallback_obj = None
-tts_session_cache = defaultdict(list)
+tts_session_cache: typing.Dict[str, TTSSession] = dict()
 
 _last_stop_signal = 0
 
@@ -68,17 +81,28 @@ def handle_speak(event):
         stopwatch.start()
         utterance = event.data["utterance"]
         cache_only = event.data.get("cache_only", False)
+        speak = not cache_only
         listen = event.data.get("expect_response", False)
 
         cache_key = event.data.get("cache_key")
-        if cache_key:
+        if cache_key and speak:
             cache_keep = event.data.get("cache_keep", False)
             was_in_cache = _speak_from_cache(cache_key, keep=cache_keep, listen=listen)
             if was_in_cache:
                 # Successfully spoken from cache
                 return
 
-        tts_session_id = str(uuid4())
+        tts_session_id = cache_key or str(uuid4())
+        if cache_only:
+            # Create new TTS session
+            expire_after: typing.Optional[datetime] = None
+            expire_after_str = event.data.get("cache_expire")
+            if expire_after_str:
+                expire_after = datetime.fromisoformat(expire_after_str)
+
+            tts_session_cache[tts_session_id] = TTSSession(
+                id=tts_session_id, expire_after=expire_after
+            )
 
         create_signal("isSpeaking")
 
@@ -127,7 +151,7 @@ def handle_speak(event):
                         session_id=tts_session_id,
                         chunk_idx=chunk_idx,
                         num_chunks=num_chunks,
-                        speak=(not cache_only),
+                        speak=speak,
                     )
                 except KeyboardInterrupt:
                     raise
@@ -188,8 +212,17 @@ def mute_and_speak(
         )
 
         if not speak:
-            tts_session_cache[session_id].append(cached_path)
-            LOG.info("Cached utterance for session %s", session_id)
+            session = tts_session_cache[session_id]
+            session.cache_paths.append(cached_path)
+
+            if session.expire_after:
+                LOG.info(
+                    "Cached utterance for session %s until %s",
+                    session_id,
+                    session.expire_after,
+                )
+            else:
+                LOG.info("Cached utterance for session %s", session_id)
     except RemoteTTSException as e:
         LOG.error(e)
         mimic_fallback_tts(utterance, ident, listen)
@@ -247,18 +280,31 @@ def handle_resume(event):
 
 def _speak_from_cache(key: str, keep: bool = False, listen: bool = False) -> bool:
     if keep:
-        cache_paths = tts_session_cache.get(key)
+        session = tts_session_cache.get(key)
     else:
-        cache_paths = tts_session_cache.pop(key, None)
+        session = tts_session_cache.pop(key, None)
 
-    if not cache_paths:
+    if session is None:
         LOG.warning("No TTS session cache for %s", key)
         return False
 
+    if (session.expire_after is not None) and (datetime.now() > session.expire_after):
+        LOG.debug("TTS session expired for %s", key)
+
+        # Ensure session is gone
+        tts_session_cache.pop(key, None)
+
+        return False
+
+    # Verify that all paths exist
+    for cache_path in session.cache_paths:
+        if not os.path.exists(cache_path):
+            return False
+
     create_signal("isSpeaking")
 
-    num_chunks = len(cache_paths)
-    for chunk_idx, cache_path in enumerate(cache_paths):
+    num_chunks = len(session.cache_paths)
+    for chunk_idx, cache_path in enumerate(session.cache_paths):
         audio_uri = "file://" + str(cache_path)
         bus.emit(
             Message(

@@ -18,6 +18,8 @@ from copy import deepcopy
 import sys
 import re
 import traceback
+import typing
+from datetime import datetime
 from itertools import chain
 from os import walk
 from os.path import join, abspath, dirname, basename, exists
@@ -1189,12 +1191,17 @@ class MycroftSkill:
             self.speak(key, expect_response, wait, meta={},
                        cache_key=cache_key, cache_keep=cache_keep)
 
-    def cache_speech(self, utterance, meta=None, timeout=60) -> str:
+    def cache_speech(self, utterance, meta=None,
+                     cache_key: typing.Optional[str]=None,
+                     expire: typing.Optional[datetime]=None,
+                     timeout=60) -> typing.Optional[str]:
         """Synthesize a sentence and store it in cache.
 
         Args:
             utterance (str):        sentence mycroft should speak
             meta:                   Information of what built the sentence.
+            cache_key:              Optional key to use for cache (generated if None)
+            expire:                 Optional datetime when the cache will expire
 
         Returns:
             key (str):              cache key to be used later with speak_from_cache
@@ -1207,20 +1214,35 @@ class MycroftSkill:
             "meta": meta,
             "skill_id": self.skill_id,
         }
+
+        if cache_key is not None:
+            data["cache_key"] = cache_key
+
+        if expire is not None:
+            data["cache_expire"] = expire.isoformat()
+
         message = dig_for_message()
         m = message.forward("speak", data) if message else Message("speak", data)
 
         reply = self.bus.wait_for_response(m, "speak.reply", timeout=timeout)
 
-        return reply.data["key"]
+        if reply:
+            return reply.data["key"]
 
-    def cache_dialog(self, key, data=None, timeout=60) -> str:
+        return None
+
+    def cache_dialog(self, key, data=None,
+                     cache_key: typing.Optional[str]=None,
+                     expire: typing.Optional[datetime]=None,
+                     timeout=60) -> typing.Optional[str]:
         """Synthesize a random sentence from a dialog file and store it in cache.
 
         Args:
-            key (str): dialog file key (e.g. "hello" to speak from the file
+            key (str):              dialog file key (e.g. "hello" to speak from the file
                                         "locale/en-us/hello.dialog")
-            data (dict): information used to populate sentence
+            data (dict):            information used to populate sentence
+            cache_key:              Optional key to use for cache (generated if None)
+            expire:                 Optional datetime when the cache will expire
 
         Returns:
             key (str):              cache key to be used later with speak_from_cache
@@ -1231,6 +1253,8 @@ class MycroftSkill:
             cache_key = self.cache_speech(
                 self.dialog_renderer.render(key, data),
                 meta={"dialog": key, "data": data},
+                cache_key=cache_key,
+                expire=expire,
                 timeout=timeout,
             )
         else:
