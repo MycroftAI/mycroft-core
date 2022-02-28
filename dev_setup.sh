@@ -605,7 +605,7 @@ cd "$TOP"
 
 if [[ $build_mimic == 'y' || $build_mimic == 'Y' ]] ; then
     echo 'WARNING: The following can take a long time to run!'
-    "${TOP}/scripts/install-mimic.sh" " $CORES"
+    "${TOP}/scripts/install-mimic.sh" "$CORES"
 else
     echo 'Skipping mimic build.'
 fi

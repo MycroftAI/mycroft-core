@@ -72,8 +72,9 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Shell check mycroft tools
-      uses: ludeeus/action-shellcheck@ceeca77f6538b97991ca2c2a2ebe1ab64e573b5e
+      uses: ludeeus/action-shellcheck@203a3fd018dfe73f8ae7e3aa8da2c149a5f41c33
       env:
         SHELLCHECK_OPTS: -x
       with:
-        scandir: ./bin
+        ignore_names: 'dev_setup.sh start-mycroft.sh stop-mycroft.sh venv-activate.sh run_test_suite.sh'
+#        ignore_paths: doc mycroft test requirements

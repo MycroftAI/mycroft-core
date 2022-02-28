@@ -41,7 +41,6 @@ fi
 
 MYCROFT_HOME=""
 RUN_AS_ROOT=1
-source $( locate virtualenvwrapper.sh )
 
 # log stuff and things
 LOG_FILE=/tmp/my-info.$$.out
@@ -56,7 +55,8 @@ fi
 
 # it's big, it's heavy, it's wood!
 function mlog() {
-    local timestamp="[$( date +"%Y-%m-%d %H:%M:%S" )]"
+    local timestamp
+    timestamp="[$( date +"%Y-%m-%d %H:%M:%S" )]"
     message="$*"
     echo "${timestamp} ${message}" |tee -a ${LOG_FILE}
 }
@@ -87,18 +87,26 @@ fi
 echo "If you can read this, we may need glasses."
 }
 
+
+function list_log_files() {
+    for logfile in "/var/log/mycroft/"*.log; do
+        echo "$logfile"
+    done
+}
+
+
 # Check before we wreck:
 function checkfiles() {
     mlog "Permission checks..."
     cat << EOF > /tmp/my-list.$$
 ${MYCROFT_HOME}
-${MYCROFT_HOME}/scripts/logs
+$(list_log_files)
 /tmp/mycroft/
 /opt/mycroft/skills
 EOF
 
     if [[ ${RUN_AS_ROOT} -eq 1 ]] ; then
-        while read CHECKFN ; do
+        while read -r CHECKFN ; do
             checkperms "${CHECKFN}"
             case $? in
                 "0") mlog " - ${CHECKFN} has viable permissions." ;;
@@ -127,7 +135,7 @@ function checksysinfo() {
 
 # -v
 function checkversion() {
-    mlog "Mycroft version is $( grep -B3 'END_VERSION_BLOCK' ${MYCROFT_HOME}/mycroft/version/__init__.py | cut -d' ' -f3 | tr -s '\012' '\056' )"
+    mlog "Mycroft version is $( grep -B3 'END_VERSION_BLOCK' "${MYCROFT_HOME}/mycroft/version/__init__.py" | cut -d' ' -f3 | tr -s '\012' '\056' )"
 }
 
 # do you want to do repeat?
@@ -143,20 +151,38 @@ function checkmimic() {
 
 # pythoning!
 function checkPIP() {
+    REQUIREMENTS_FILE="${MYCROFT_HOME}/requirements/requirements.txt"
+    VENV_ACTIVATE_SCRIPT="${MYCROFT_HOME}/venv-activate.sh"
     mlog "Python checks"
-    mlog " - Verifying ${MYCROFT_HOME}/requirements/requirements.txt:"
-    if workon mycroft ; then
+    mlog " - Verifying $REQUIREMENTS_FILE:"
+    if [[ -f "$VENV_ACTIVATE_SCRIPT" ]] ; then
+        # shellcheck source=/dev/null
+        source "$VENV_ACTIVATE_SCRIPT"
         pip list > /tmp/mycroft-piplist.$$
 
-        while read reqline ; do
-            IFS='==' read  -r -a PIPREQ <<< "$reqline"
-            PIPREQVER=$( grep -i ^"${PIPREQ[0]} " /tmp/mycroft-piplist.$$ | cut -d'(' -f2 | tr -d '\051' )
-            if [[ "${PIPREQVER}" == "${PIPREQ[2]}" ]] ; then
-                mlog " -- pip ${PIPREQ[0]} version ${PIPREQ[2]}"
+        while read -r reqline ; do
+            if (echo "$reqline" | grep -q '>='); then
+                delim='>='
+            elif echo "$reqline" | grep -q '~='; then
+                delim='~='
+            elif echo "$reqline" | grep -q '=='; then
+                delim='=='
             else
-                mlog " ~~ Warn: can't find ${PIPREQ[0]} ${PIPREQ[2]} in pip. (found ${PIPREQVER})"
+                delim=''
             fi
-        done < "${MYCROFT_HOME}/requirements.txt"
+            if [[ $delim != '' ]]; then
+                IFS=${delim} read -r -a PIPREQ <<< "$reqline"
+                PIPREQVER=$( grep -i ^"${PIPREQ[0]} " /tmp/mycroft-piplist.$$ | cut -d'(' -f2 | tr -d '\051' | sed 's/  */ /g' | sed 's/ $//g')
+
+                PKG_NAME="${PIPREQ[0],,}"
+                PKG_VERSION="${PIPREQ[2]}"
+                if [[ "${PIPREQVER,,}" == "${PKG_NAME} ${PKG_VERSION}" ]] ; then
+                    mlog " -- pip ${PIPREQ[0]} version ${PIPREQ[2]}"
+                else
+                    mlog " ~~ Warn: can't find ${PIPREQ[0]} ${PIPREQ[2]} in pip. (found ${PIPREQVER})"
+                fi
+            fi
+        done < "${REQUIREMENTS_FILE}"
         deactivate
         mlog " - PIP list can be found at /tmp/mycroft-piplist.$$ to verify any issues."
     else
@@ -176,13 +202,11 @@ function checktubes() {
 
 # I prefer biking myself.
 function checkrunning() {
-    while read SCREEN_SESS ; do
-        SESS_NAME=$( echo "${SCREEN_SESS}" | cut -d'(' -f1 | cut -d'.' -f2 )
-        SESS_ID=$( echo "${SCREEN_SESS}" | cut -d'.' -f1 )
-        if [[ $( ps flax| grep "$SESS_ID" | awk ' { print $4 } ' | grep -c "$SESS_ID" ) -eq 1 ]]; then
-            mlog " - ${SESS_NAME} appears to be currently running."
-        fi
-    done < <(screen -list | grep mycroft)
+    for pid in $(pgrep -ax "python." | grep '\-m mycroft' | awk -F ' ' '{print $1}')
+    do
+        cmdline=$(tr '\000' ' ' < "/proc/${pid}/cmdline")
+        mlog " - ${cmdline}(${pid}) appears to be currently running."
+    done
 }
 
 # He's dead, Jim.
@@ -217,7 +241,7 @@ fi
 RUNDIR=$( readlink -f "${0}" | tr -s '\057' '\012' | sed \$d | tr -s '\012' '\057' )
 
 # Where is mycroft installed?
-if [[ -f "${RUNDIR}/mycroft-service.screen" && -f "${RUNDIR}/../mycroft/__init__.py" ]] ; then
+if [[ -f "${RUNDIR}/../mycroft/__init__.py" ]] ; then
     MYCROFT_HOME=$(cd "${RUNDIR}" && cd .. && pwd )
 else
     if [[ -f "/opt/mycroft/mycroft/__init__.py" ]] ; then

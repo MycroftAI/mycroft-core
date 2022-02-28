@@ -29,7 +29,7 @@ DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
 
 # Determine which user is running this script
 setup_user=$USER
-setup_group=$( id -gn $USER )
+setup_group=$( id -gn "$USER" )
 
 function found_exe() {
     hash "$1" 2>/dev/null
@@ -42,8 +42,8 @@ fi
 
 # change ownership of ${mycroft_root_dir} to ${setup_user } recursively
 function change_ownership {
-    echo "Changing ownership of" ${mycroft_root_dir} "to user:" ${setup_user} "with group:" ${setup_group}
-    $SUDO chown -Rf ${setup_user}:${setup_group} ${mycroft_root_dir}
+    echo "Changing ownership of" ${mycroft_root_dir} "to user:" "${setup_user}" "with group:" "${setup_group}"
+    $SUDO chown -Rf "${setup_user}:${setup_group}" ${mycroft_root_dir}
 }
 
 
@@ -54,7 +54,7 @@ if [[ ${CI} != true ]] ; then
         change_ownership
     fi
 
-    if [ ! -w ${SKILLS_DIR} ] ; then
+    if [ ! -w "${skills_dir}" ] ; then
         change_ownership
     fi
 fi
