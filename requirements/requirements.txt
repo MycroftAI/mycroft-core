@@ -8,18 +8,18 @@ python-dateutil~=2.6.0
 combo-lock~=0.2
 PyYAML~=5.4
 
-ovos-utils~=0.0.15
-ovos-plugin-manager~=0.0.4
-ovos-tts-plugin-mimic~=0.2.3
-ovos-tts-plugin-mimic2~=0.1.2
-ovos-tts-plugin-google-tx~=0.0.3
-ovos-ww-plugin-pocketsphinx~=0.1.2
-ovos-ww-plugin-precise-lite~=0.1.1
-ovos-ww-plugin-precise~=0.1.1
-ovos_workshop>=0.0.5a12
+ovos-utils~=0.0.18
+ovos-plugin-manager~=0.0.10
+ovos-tts-plugin-mimic>=0.2.6
+ovos-tts-plugin-mimic2>=0.1.4
+ovos-tts-plugin-google-tx>=0.0.3
+ovos-ww-plugin-pocketsphinx>=0.1.2
+ovos-ww-plugin-precise-lite>=0.1.1
+ovos-ww-plugin-precise>=0.1.1
+ovos_workshop>=0.0.5
 ovos_PHAL>=0.0.1
 
-ovos-lingua-franca~=0.4.3a1
+ovos-lingua-franca~=0.4.3
 mock_msm~=0.9.2
 mycroft-messagebus-client~=0.9.1,!=0.9.2,!=0.9.3
 adapt-parser~=0.5

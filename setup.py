@@ -62,7 +62,7 @@ setup(
     description='mycroft-core packaged as a library',
     install_requires=required('requirements/minimal.txt'),
     extras_require={
-        'audio-backend': required('requirements/extra-audiobackend.txt'),
+        'audio': required('requirements/extra-audiobackend.txt'),
         'mark1': required('requirements/extra-mark1.txt'),
         'PHAL': required('requirements/extra-PHAL.txt'),
         'stt': required('requirements/extra-stt.txt'),
@@ -71,8 +71,7 @@ setup(
         'skills': required('requirements/extra-skills.txt'),
         'gui': required('requirements/extra-gui.txt'),
         'bus': required('requirements/extra-bus.txt'),
-        'all': required('requirements/requirements.txt'),
-        'mycroft': required('requirements/extra-mycroft.txt')
+        'all': required('requirements/requirements.txt')
     },
     packages=find_packages(include=['mycroft*']),
     include_package_data=True,

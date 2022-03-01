@@ -1,0 +1,167 @@
+name: Run Install Tests
+on:
+  push:
+    branches:
+      - master
+      - dev
+  workflow_dispatch:
+
+jobs:
+  install_minimal:
+    strategy:
+      max-parallel: 2
+      matrix:
+        python-version: [ 3.7, 3.8, 3.9, "3.10" ]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup Python
+        uses: actions/setup-python@v1
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install package
+        run: |
+          pip install .
+  install_skills:
+    strategy:
+      max-parallel: 2
+      matrix:
+        python-version: [ 3.7, 3.8, 3.9, "3.10" ]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup Python
+        uses: actions/setup-python@v1
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install package
+        run: |
+          pip install .[skills]
+
+  install_skills_lgpl:
+    strategy:
+      max-parallel: 2
+      matrix:
+        python-version: [ 3.7, 3.8, 3.9, "3.10" ]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup Python
+        uses: actions/setup-python@v1
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install System Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt install swig libfann-dev
+      - name: Install package
+        run: |
+          pip install .[skills_lgpl]
+  install_audio:
+    strategy:
+      max-parallel: 2
+      matrix:
+        python-version: [ 3.7, 3.8, 3.9, "3.10" ]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup Python
+        uses: actions/setup-python@v1
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install System Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt install portaudio19-dev libpulse-dev
+      - name: Install package
+        run: |
+          pip install .[audio,tts]
+  install_speech:
+    strategy:
+      max-parallel: 2
+      matrix:
+        python-version: [ 3.7, 3.8, 3.9, "3.10" ]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup Python
+        uses: actions/setup-python@v1
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install System Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt install portaudio19-dev libpulse-dev
+      - name: Install package
+        run: |
+          pip install .[stt]
+  install_gui:
+    strategy:
+      max-parallel: 2
+      matrix:
+        python-version: [ 3.7, 3.8, 3.9, "3.10" ]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup Python
+        uses: actions/setup-python@v1
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install package
+        run: |
+          pip install .[gui]
+  install_bus:
+    strategy:
+      max-parallel: 2
+      matrix:
+        python-version: [ 3.7, 3.8, 3.9, "3.10" ]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup Python
+        uses: actions/setup-python@v1
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install package
+        run: |
+          pip install .[bus]
+  install_phal:
+    strategy:
+      max-parallel: 2
+      matrix:
+        python-version: [ 3.7, 3.8, 3.9, "3.10" ]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup Python
+        uses: actions/setup-python@v1
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install package
+        run: |
+          pip install .[PHAL]
+  install_all:
+    strategy:
+      max-parallel: 2
+      matrix:
+        python-version: [ 3.7, 3.8, 3.9, "3.10" ]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup Python
+        uses: actions/setup-python@v1
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install Build Tools
+        run: |
+          python -m pip install build wheel
+      - name: Install System Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt install python3-dev swig libssl-dev libfann-dev portaudio19-dev libpulse-dev
+      - name: Build Distribution Packages
+        run: |
+          python setup.py bdist_wheel
+      - name: Install package
+        run: |
+          pip install .[all]
