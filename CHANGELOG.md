@@ -2,7 +2,19 @@
 
 ## [Unreleased](https://github.com/OpenVoiceOS/ovos-core/tree/HEAD)
 
-[Full Changelog](https://github.com/OpenVoiceOS/ovos-core/compare/V0.0.2a9...HEAD)
+[Full Changelog](https://github.com/OpenVoiceOS/ovos-core/compare/V0.0.2a10...HEAD)
+
+**Implemented enhancements:**
+
+- Add GUI Extensions Support [\#73](https://github.com/OpenVoiceOS/ovos-core/pull/73) ([AIIX](https://github.com/AIIX))
+
+**Merged pull requests:**
+
+- Fix/update workflows [\#72](https://github.com/OpenVoiceOS/ovos-core/pull/72) ([JarbasAl](https://github.com/JarbasAl))
+
+## [V0.0.2a10](https://github.com/OpenVoiceOS/ovos-core/tree/V0.0.2a10) (2022-02-25)
+
+[Full Changelog](https://github.com/OpenVoiceOS/ovos-core/compare/V0.0.2a9...V0.0.2a10)
 
 **Implemented enhancements:**
 
@@ -59,6 +71,7 @@
 
 **Breaking changes:**
 
+- Refactor/deprecate enclosure [\#29](https://github.com/OpenVoiceOS/ovos-core/pull/29) ([JarbasAl](https://github.com/JarbasAl))
 - refactor/goodbye\_msm [\#25](https://github.com/OpenVoiceOS/ovos-core/pull/25) ([JarbasAl](https://github.com/JarbasAl))
 - refactor/deprecate mycroft.tts [\#16](https://github.com/OpenVoiceOS/ovos-core/pull/16) ([JarbasAl](https://github.com/JarbasAl))
 
@@ -70,12 +83,12 @@
 - feat/ovos\_lf + fix timezone issues [\#37](https://github.com/OpenVoiceOS/ovos-core/pull/37) ([NeonJarbas](https://github.com/NeonJarbas))
 - feat/ovos\_conf from ovos\_utils [\#34](https://github.com/OpenVoiceOS/ovos-core/pull/34) ([NeonJarbas](https://github.com/NeonJarbas))
 - Refactor/converse [\#32](https://github.com/OpenVoiceOS/ovos-core/pull/32) ([NeonJarbas](https://github.com/NeonJarbas))
-- Refactor/deprecate enclosure [\#29](https://github.com/OpenVoiceOS/ovos-core/pull/29) ([JarbasAl](https://github.com/JarbasAl))
 - Refactor/standardize skill id usage [\#28](https://github.com/OpenVoiceOS/ovos-core/pull/28) ([JarbasAl](https://github.com/JarbasAl))
 - Refactor/ simplify skill loading [\#27](https://github.com/OpenVoiceOS/ovos-core/pull/27) ([JarbasAl](https://github.com/JarbasAl))
 - refactor/combo\_lock [\#15](https://github.com/OpenVoiceOS/ovos-core/pull/15) ([JarbasAl](https://github.com/JarbasAl))
 - refactor/settings [\#11](https://github.com/OpenVoiceOS/ovos-core/pull/11) ([JarbasAl](https://github.com/JarbasAl))
 - Feat/skill plugins [\#9](https://github.com/OpenVoiceOS/ovos-core/pull/9) ([JarbasAl](https://github.com/JarbasAl))
+- refactor/gui\_launcher [\#8](https://github.com/OpenVoiceOS/ovos-core/pull/8) ([JarbasAl](https://github.com/JarbasAl))
 - feat/extra\_skill\_dirs [\#7](https://github.com/OpenVoiceOS/ovos-core/pull/7) ([JarbasAl](https://github.com/JarbasAl))
 - refactor/ovos\_utils [\#5](https://github.com/OpenVoiceOS/ovos-core/pull/5) ([JarbasAl](https://github.com/JarbasAl))
 - feat/multiple\_wakewords [\#2](https://github.com/OpenVoiceOS/ovos-core/pull/2) ([JarbasAl](https://github.com/JarbasAl))
@@ -83,6 +96,7 @@
 
 **Fixed bugs:**
 
+- fix/log config [\#48](https://github.com/OpenVoiceOS/ovos-core/pull/48) ([NeonJarbas](https://github.com/NeonJarbas))
 - fix/speech [\#47](https://github.com/OpenVoiceOS/ovos-core/pull/47) ([NeonJarbas](https://github.com/NeonJarbas))
 - speech client systemd hooks [\#39](https://github.com/OpenVoiceOS/ovos-core/pull/39) ([NeonJarbas](https://github.com/NeonJarbas))
 - Fix: show text delegate as per autofit label refactor [\#36](https://github.com/OpenVoiceOS/ovos-core/pull/36) ([AIIX](https://github.com/AIIX))
@@ -93,10 +107,8 @@
 
 **Merged pull requests:**
 
-- fix/log config [\#48](https://github.com/OpenVoiceOS/ovos-core/pull/48) ([NeonJarbas](https://github.com/NeonJarbas))
 - autopep8 [\#33](https://github.com/OpenVoiceOS/ovos-core/pull/33) ([JarbasAl](https://github.com/JarbasAl))
 - Refactor/relax requirements [\#21](https://github.com/OpenVoiceOS/ovos-core/pull/21) ([JarbasAl](https://github.com/JarbasAl))
-- refactor/gui\_launcher [\#8](https://github.com/OpenVoiceOS/ovos-core/pull/8) ([JarbasAl](https://github.com/JarbasAl))
 - WIP README \(got to "Running Mycroft"\) [\#4](https://github.com/OpenVoiceOS/ovos-core/pull/4) ([ChanceNCounter](https://github.com/ChanceNCounter))
 
 ## [0.0.2a3](https://github.com/OpenVoiceOS/ovos-core/tree/0.0.2a3) (2022-01-24)
