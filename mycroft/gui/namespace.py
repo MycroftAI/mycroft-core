@@ -40,6 +40,7 @@ code.  Changes to namespaces, and their contents, are communicated to the GUI
 over the GUI message bus.
 """
 from threading import Lock, Timer
+from time import time, sleep
 from typing import List, Union
 
 from mycroft.configuration import Configuration
@@ -57,6 +58,7 @@ import sys
 namespace_lock = Lock()
 
 RESERVED_KEYS = ['__from', '__idle']
+
 
 class Namespace:
     """A grouping mechanism for related GUI pages and data.
@@ -76,6 +78,7 @@ class Namespace:
             displayed at the same time
         data: a key/value pair representing the data used to populate the GUI
     """
+
     def __init__(self, name: str):
         self.name = name
         self.persistent = False
@@ -227,9 +230,10 @@ class Namespace:
         LOG.info(f"Current pages: {self.pages}")
         # print the attributes of the new pages
         for page in new_pages:
-            LOG.info(f"Page: {page.url}, {page.name}, {page.persistent}, {page.duration}")
+            LOG.info(
+                f"Page: {page.url}, {page.name}, {page.persistent}, {page.duration}")
 
-        #Find position of new page in self.pages
+        # Find position of new page in self.pages
         position = self.pages.index(new_pages[0])
 
         message = dict(
@@ -259,11 +263,11 @@ class Namespace:
 
         # set the page active attribute to True and update the self.pages list, mark all other pages as inactive
 
-        page.active = True;
+        page.active = True
 
         for p in self.pages:
             if p != page:
-                p.active = False;
+                p.active = False
                 # update the self.pages list with the page active status changes
                 self.pages[self.pages.index(p)] = p
 
@@ -301,13 +305,15 @@ class Namespace:
         Args:
             page_number: the page number of the page that will gain focus
         """
-        LOG.info(f"Page {page_number} gained focus in GUI namespace {self.name}")
+        LOG.info(
+            f"Page {page_number} gained focus in GUI namespace {self.name}")
         self._activate_page(self.pages[page_number])
 
     def page_update_interaction(self, page_number):
         """Update the interaction of the page_number"""
 
-        LOG.info(f"Page {page_number} update interaction in GUI namespace {self.name}")
+        LOG.info(
+            f"Page {page_number} update interaction in GUI namespace {self.name}")
         page = self.pages.index(page_number)
         if not page.persistent and page.duration > 0:
             page.duration = page.duration / 2
@@ -335,6 +341,7 @@ class Namespace:
 
     def index_in_pages_list(self, index):
         return(index < len(self.pages))
+
 
 def _validate_page_message(message: Message):
     """Validates the contents of the message data for page add/remove messages.
@@ -365,10 +372,20 @@ def _get_idle_display_config():
     """Retrieves the current value of the idle display skill configuration."""
     LOG.info("Getting Idle Skill From Config")
     config = Configuration.get()
-    enclosure_config = config.get("enclosure")
+    enclosure_config = config.get("gui")
     idle_display_skill = enclosure_config.get("idle_display_skill")
 
     return idle_display_skill
+
+
+def _get_active_gui_extension():
+    """Retrieves the current value of the gui extension configuration. """
+    LOG.info("Getting GUI Extension From Config")
+    config = Configuration.get()
+    enclosure_config = config.get("gui")
+    gui_extension = enclosure_config.get("extension")
+
+    return gui_extension.lower()
 
 
 class NamespaceManager:
@@ -383,6 +400,7 @@ class NamespaceManager:
             a persistence expressed in seconds
         idle_display_skill: skill ID of the skill that controls the idle screen
     """
+
     def __init__(self, core_bus: MessageBusClient):
         self.core_bus = core_bus
         self.gui_bus = create_gui_service(self)
@@ -390,6 +408,7 @@ class NamespaceManager:
         self.active_namespaces = list()
         self.remove_namespace_timers = dict()
         self.idle_display_skill = _get_idle_display_config()
+        self.active_extension = _get_active_gui_extension()
         self._define_message_handlers()
 
     def _define_message_handlers(self):
@@ -402,7 +421,8 @@ class NamespaceManager:
         self.core_bus.on("gui.value.set", self.handle_set_value)
         self.core_bus.on("mycroft.gui.connected", self.handle_client_connected)
         self.core_bus.on("gui.page_interaction", self.handle_page_interaction)
-        self.core_bus.on("gui.page_gained_focus", self.handle_page_gained_focus)
+        self.core_bus.on("gui.page_gained_focus",
+                         self.handle_page_gained_focus)
 
     def handle_clear_namespace(self, message: Message):
         """Handles a request to remove a namespace.
@@ -568,7 +588,7 @@ class NamespaceManager:
         15 seconds.  This would ensure that the namespace isn't removed while
         the skill is showing the pages.
 
-        Args:
+        Args:active_extension
             persistence: length of time the namespace should be displayed
         """
         LOG.debug(f"Setting namespace persistence to {persistence}")
@@ -585,8 +605,10 @@ class NamespaceManager:
                     # check if there is a scheduled remove_namespace_timer and cancel it
                     if namespace.persistent:
                         if namespace.name in self.remove_namespace_timers:
-                            self.remove_namespace_timers[namespace.name].cancel()
-                            self._del_namespace_in_remove_timers(namespace.name)
+                            self.remove_namespace_timers[namespace.name].cancel(
+                            )
+                            self._del_namespace_in_remove_timers(
+                                namespace.name)
 
                 if not namespace.persistent:
                     LOG.info("It is being scheduled here")
@@ -607,7 +629,8 @@ class NamespaceManager:
             self._remove_namespace_via_timer,
             args=(namespace.name,)
         )
-        LOG.debug(f"Scheduled removal of namespace {namespace.name} in duration {namespace.duration}")
+        LOG.debug(
+            f"Scheduled removal of namespace {namespace.name} in duration {namespace.duration}")
         remove_namespace_timer.start()
         self.remove_namespace_timers[namespace.name] = remove_namespace_timer
 
@@ -623,6 +646,7 @@ class NamespaceManager:
             namespace_name: namespace to remove
         """
         LOG.debug("Removing namespace {namespace_name}")
+
         # Remove all timers associated with the namespace
         if namespace_name in self.remove_namespace_timers:
             self.remove_namespace_timers[namespace_name].cancel()
@@ -630,9 +654,15 @@ class NamespaceManager:
 
         namespace = self.loaded_namespaces.get(namespace_name)
         if namespace is not None and namespace in self.active_namespaces:
+            self.core_bus.emit(Message("gui.namespace.removed", data={
+                               "skill_id": namespace.name}))
+            if self.active_extension == "Bigscreen":
+                # wait for window management in bigscreen extension to finish
+                sleep(1)
             namespace_position = self.active_namespaces.index(namespace)
             namespace.remove(namespace_position)
             self.active_namespaces.remove(namespace)
+
         self._emit_namespace_displayed_event()
 
     def _emit_namespace_displayed_event(self):
@@ -682,7 +712,8 @@ class NamespaceManager:
         namespace = self._ensure_namespace_exists(namespace_name)
         for key, value in data.items():
             if key not in RESERVED_KEYS and namespace.data.get(key) != value:
-                LOG.debug(f"Setting {key} to {value} in namespace {namespace.name}")
+                LOG.debug(
+                    f"Setting {key} to {value} in namespace {namespace.name}")
                 namespace.data[key] = value
                 if namespace in self.active_namespaces:
                     namespace.load_data(key, value)
