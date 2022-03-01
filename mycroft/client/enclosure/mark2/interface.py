@@ -25,6 +25,7 @@ from mycroft.enclosure.hardware_enclosure import HardwareEnclosure
 from mycroft.messagebus.message import Message
 from mycroft.skills.event_scheduler import EventSchedulerInterface
 from mycroft.util.hardware_capabilities import EnclosureCapabilities
+from mycroft.util.network_utils import check_captive_portal
 from mycroft.util.log import LOG
 
 from .activities import (
@@ -437,11 +438,15 @@ class EnclosureMark2(Enclosure):
         The mycroft.network-ready event indicates that any logic that needs to
         use the local network can now be executed.
         """
-        if self.force_system_clock_update:
-            self._synchronize_system_clock()
+        if check_captive_portal():
+            LOG.info("Captive portal page was detected")
+            self.bus.emit(Message("hardware.portal-detected"))
+        else:
+            if self.force_system_clock_update:
+                self._synchronize_system_clock()
 
-        self.bus.emit(Message("mycroft.network-ready"))
-        self.bus.emit(Message("hardware.detect-internet"))
+            self.bus.emit(Message("mycroft.network-ready"))
+            self.bus.emit(Message("hardware.detect-internet"))
 
     def _handle_internet_connected(self, _message=None):
         """Executes logic that depends on an internet connection.

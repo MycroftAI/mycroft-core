@@ -27,7 +27,6 @@ class InternetConnectActivity(Activity):
     """Check for internet connectivity by trying to reach a website"""
 
     def _run(self):
-        # Initial test
         for _ in range(NOT_DETECTED_RETRIES):
             is_connected = connected()
             if is_connected:

@@ -60,8 +60,9 @@ class DeviceState(str, Enum):
 class NetworkDevice:
     """DBus network device"""
 
-    DISCONNECT_WAIT = 30.0
-    """Seconds to wait before double-checking disconnected state.
+    DISCONNECT_RETRIES = 20
+    DISCONNECT_WAIT = 1.0
+    """Seconds to wait before re-checking disconnected state.
 
     Devices pass through a disconnected state when switching modes, so we don't
     want to report "not connected" too early.
@@ -78,21 +79,20 @@ class NetworkDevice:
         A "not ready" device will be checked again when one if its properties
         has changed.
         """
-        # Only check state
-        state = await self.dev_interface.get_state()
-        LOG.info("%s state: %s", self.name, state)
+        state = NM_DEVICE_STATE_DISCONNECTED
+        for i in range(NetworkDevice.DISCONNECT_RETRIES):
+            # Only check state
+            state = await self.dev_interface.get_state()
+            LOG.info("Attempt %s - %s state: %s", i + 1, self.name, state)
 
-        if state == NM_DEVICE_STATE_ACTIVATED:
-            return DeviceState.CONNECTED
+            if state == NM_DEVICE_STATE_ACTIVATED:
+                return DeviceState.CONNECTED
 
-        if state <= NM_DEVICE_STATE_DISCONNECTED:
             # Wait and check again
             await asyncio.sleep(NetworkDevice.DISCONNECT_WAIT)
-            state = await self.dev_interface.get_state()
-            LOG.info("%s state(2): %s", self.name, state)
 
-            if state <= NM_DEVICE_STATE_DISCONNECTED:
-                return DeviceState.NOT_CONNECTED
+        if state <= NM_DEVICE_STATE_DISCONNECTED:
+            return DeviceState.NOT_CONNECTED
 
         return DeviceState.NOT_READY
 

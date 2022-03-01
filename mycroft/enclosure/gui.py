@@ -363,8 +363,7 @@ class SkillGUI:
                 False: 'Default' always show animations.
         """
         self["url"] = url
-        self.show_page("SYSTEM_UrlFrame.qml", override_idle,
-                       override_animations)
+        self.replace_page("SYSTEM_UrlFrame.qml", override_idle)
 
     def release(self):
         """Signal that this skill is no longer using the GUI,

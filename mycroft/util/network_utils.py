@@ -20,6 +20,7 @@ from urllib.request import urlopen
 from urllib.error import URLError
 
 import requests
+from bs4 import BeautifulSoup
 
 from dbus_next import BusType as DBusType
 from dbus_next.aio import MessageBus as DBusMessageBus
@@ -89,9 +90,7 @@ def _connected_dns(host=None, port=53, timeout=3):
         s.connect((host, port))
         return True
     except IOError:
-        LOG.error(
-            "Unable to connect to primary DNS server, " "trying secondary..."
-        )
+        LOG.error("Unable to connect to primary DNS server, " "trying secondary...")
         try:
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             s.settimeout(timeout)
@@ -136,11 +135,30 @@ def check_system_clock_sync_status() -> bool:
                 clock_synchronized = True
                 break
     except subprocess.CalledProcessError as error:
-        LOG.exception(
-            "error while checking system clock sync: %s", error.output
-        )
+        LOG.exception("error while checking system clock sync: %s", error.output)
 
     return clock_synchronized
+
+
+def check_captive_portal() -> bool:
+    """Returns True if a captive portal page is detected"""
+    captive_portal = False
+
+    try:
+        # We need to check a site that doesn't use HTTPS
+        html_doc = requests.get("http://neverssl.com").text
+        soup = BeautifulSoup(html_doc)
+        title = soup.title.string if soup.title else ""
+
+        LOG.info(title)
+
+        # If something different is in the title, we likely were redirected
+        # to the portal page.
+        captive_portal = "neverssl" not in title.lower()
+    except Exception:
+        LOG.exception("Error checking for captive portal")
+
+    return captive_portal
 
 
 # -----------------------------------------------------------------------------
