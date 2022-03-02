@@ -19,7 +19,6 @@ from threading import Thread, Event, Lock
 from time import sleep, time, monotonic
 from inspect import signature
 
-from mycroft.api import is_paired
 from mycroft.enclosure.api import EnclosureAPI
 from mycroft.configuration import Configuration
 from mycroft.messagebus.message import Message
@@ -213,7 +212,7 @@ class SkillManager(Thread):
         self._remove_git_locks()
 
         # Sync backend and skills.
-        if is_paired() and not self.upload_queue.started:
+        if not self.upload_queue.started:
             self._start_settings_update()
 
         # Scan the file folder that contains Skills.  If a Skill is updated,
@@ -226,8 +225,7 @@ class SkillManager(Thread):
 
                 self._load_new_skills()
                 self._update_skills()
-                if (is_paired() and self.upload_queue.started and
-                        len(self.upload_queue) > 0):
+                if self.upload_queue.started and len(self.upload_queue) > 0:
                     self.msm.clear_cache()
                     self.skill_updater.post_manifest()
                     self.upload_queue.send()
@@ -235,7 +233,7 @@ class SkillManager(Thread):
                 self._watchdog()
                 sleep(2)  # Pause briefly before beginning next scan
             except Exception:
-                LOG.exception('Something really unexpected has occured '
+                LOG.exception('Something really unexpected has occurred '
                               'and the skill manager loop safety harness was '
                               'hit.')
                 sleep(30)

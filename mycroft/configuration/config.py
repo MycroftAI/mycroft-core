@@ -18,6 +18,7 @@ import inflection
 import json
 import os
 import re
+from http import HTTPStatus
 from os.path import exists, isfile, join, dirname
 
 from requests import RequestException
@@ -142,11 +143,6 @@ class RemoteConf(LocalConf):
 
         cache = cache or join(xdg.BaseDirectory.xdg_cache_home, 'mycroft',
                               'web_cache.json')
-        from mycroft.api import is_paired
-        if not is_paired():
-            self.load_local(cache)
-            return
-
         try:
             # Here to avoid cyclic import
             from mycroft.api import DeviceApi
@@ -170,12 +166,12 @@ class RemoteConf(LocalConf):
             for key in config:
                 self.__setitem__(key, config[key])
             self.store(cache)
-
-        except RequestException as e:
-            LOG.error("RequestException fetching remote configuration: {}"
-                      .format(str(e)))
+        except RequestException as exception:
+            if exception.response.status_code == HTTPStatus.UNAUTHORIZED:
+                LOG.warning("Remote config not fetched - device not paired")
+            else:
+                LOG.exception("Failed to fetch remote configuration")
             self.load_local(cache)
-
         except Exception as e:
             LOG.error("Failed to fetch remote configuration: %s" % repr(e),
                       exc_info=True)
