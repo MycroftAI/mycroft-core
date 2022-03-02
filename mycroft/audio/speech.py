@@ -159,7 +159,7 @@ def handle_speak(event):
                     LOG.error("Error in mute_and_speak", exc_info=True)
 
             if cache_only:
-                bus.emit(event.reply("speak.reply", {"key": tts_session_id}))
+                bus.emit(event.reply("speak.cache.reply", {"key": tts_session_id}))
         else:
             mute_and_speak(utterance, ident, listen)
 
@@ -347,6 +347,7 @@ def init(messagebus):
     bus.on("mycroft.audio.speech.pause", handle_pause)
     bus.on("mycroft.audio.speech.resume", handle_resume)
     bus.on("speak", handle_speak)
+    bus.on("speak.cache", handle_speak)
 
 
 def shutdown():

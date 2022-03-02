@@ -1222,9 +1222,9 @@ class MycroftSkill:
             data["cache_expire"] = expire.isoformat()
 
         message = dig_for_message()
-        m = message.forward("speak", data) if message else Message("speak", data)
+        m = message.forward("speak.cache", data) if message else Message("speak.cache", data)
 
-        reply = self.bus.wait_for_response(m, "speak.reply", timeout=timeout)
+        reply = self.bus.wait_for_response(m, "speak.cache.reply", timeout=timeout)
 
         if reply:
             return reply.data["key"]
