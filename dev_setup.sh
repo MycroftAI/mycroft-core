@@ -460,7 +460,7 @@ function install_venv() {
     $opt_python -m venv "${VIRTUALENV_ROOT}/" --without-pip
 
     # Check if old script for python 3.6 is needed
-    if "${VIRTUALENV_ROOT}/bin/${opt_python}" --version | grep " 3.6"; then
+    if "${VIRTUALENV_ROOT}/bin/${opt_python}" --version | grep " 3.6" > /dev/null; then
         GET_PIP_URL="https://bootstrap.pypa.io/pip/3.6/get-pip.py"
     else
         GET_PIP_URL="https://bootstrap.pypa.io/get-pip.py"
