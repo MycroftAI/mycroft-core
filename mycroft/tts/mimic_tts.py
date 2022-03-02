@@ -130,8 +130,6 @@ class Mimic(TTS):
         )
         self.default_binary = get_mimic_binary()
 
-        self.clear_cache()
-
         # Download subscriber voices if needed
         self.subscriber_voices = get_subscriber_voices()
         self.is_subscriber = DeviceApi().is_subscriber
