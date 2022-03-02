@@ -224,14 +224,12 @@ class AudioUserInterface:
 
     def _duck_volume(self):
         """Stop TTS and lower background stream volumes during voice commands"""
-        self._ahal.stop_foreground(ForegroundChannel.SPEECH)
         self._ahal.set_background_volume(0.3)
         LOG.info("Ducked volume")
 
     def _unduck_volume(self):
         """Restore volumes after voice commands"""
         self._ahal.set_background_volume(1.0)
-        self._ahal.resume_foreground(ForegroundChannel.SPEECH)
         LOG.info("Unducked volume")
 
     # -------------------------------------------------------------------------
@@ -245,7 +243,9 @@ class AudioUserInterface:
     def handle_start_listening(self, _message):
         """Play sound when Mycroft begins recording a command"""
 
+        self._ignore_session_id = self._tts_session_id
         self._duck_volume()
+        self._stop_tts()
         self._play_effect(self._start_listening_uri)
 
     def _play_effect(self, uri: str, volume: typing.Optional[float] = None):
@@ -278,6 +278,8 @@ class AudioUserInterface:
         if (activity_id == self._activity_id) or (not activity_id):
             self._activity_id = None
             self._unduck_volume()
+
+        self._ignore_session_id = None
 
     def _drain_speech_queue(self):
         """Ensures the text to speech queue is emptied"""

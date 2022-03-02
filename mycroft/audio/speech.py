@@ -303,6 +303,7 @@ def _speak_from_cache(key: str, keep: bool = False, listen: bool = False) -> boo
 
     create_signal("isSpeaking")
 
+    session_id = str(uuid4())
     num_chunks = len(session.cache_paths)
     for chunk_idx, cache_path in enumerate(session.cache_paths):
         audio_uri = "file://" + str(cache_path)
@@ -311,7 +312,7 @@ def _speak_from_cache(key: str, keep: bool = False, listen: bool = False) -> boo
                 "mycroft.tts.speak-chunk",
                 data={
                     "uri": audio_uri,
-                    "session_id": key,
+                    "session_id": session_id,
                     "chunk_index": chunk_idx,
                     "num_chunks": num_chunks,
                     "listen": listen if chunk_idx == (num_chunks - 1) else False,
