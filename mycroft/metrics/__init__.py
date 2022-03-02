@@ -13,13 +13,14 @@
 # limitations under the License.
 #
 import json
+from http import HTTPStatus
 from queue import Queue, Empty
 import threading
 import time
 
 import requests
 
-from mycroft.api import DeviceApi, is_paired
+from mycroft.api import DeviceApi
 from mycroft.configuration import Configuration
 from mycroft.session import SessionManager
 from mycroft.util.log import LOG
@@ -61,11 +62,15 @@ def report_metric(name, data):
         data (dict): JSON dictionary to report. Must be valid JSON
     """
     try:
-        if is_paired() and Configuration().get()['opt_in']:
+        if Configuration().get()['opt_in']:
             DeviceApi().report_metric(name, data)
-    except requests.RequestException as e:
-        LOG.error('Metric couldn\'t be uploaded, due to a network error ({})'
-                  .format(e))
+    except requests.RequestException as exception:
+        if exception.response.status_code == HTTPStatus.UNAUTHORIZED:
+            LOG.warning('Metric not uploaded - device not paired')
+        else:
+            LOG.exception(
+                'Metric couldn\'t be uploaded, due to a network error'
+            )
 
 
 def report_timing(ident, system, timing, additional_data=None):

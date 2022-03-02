@@ -59,14 +59,17 @@ import json
 import os
 from os.path import dirname
 import re
+from http import HTTPStatus
 from pathlib import Path
 from threading import Timer
 from xdg.BaseDirectory import xdg_cache_home
 
+import requests
 import yaml
 
-from mycroft.api import DeviceApi, is_paired
+from mycroft.api import DeviceApi
 from mycroft.configuration import Configuration
+from mycroft.identity import IdentityManager
 from mycroft.messagebus.message import Message
 from mycroft.util import camel_case_split
 from mycroft.util.log import LOG
@@ -230,23 +233,21 @@ class SettingsMetaUploader:
         if not self.sync_enabled:
             return
         synced = False
-        if is_paired():
+        identity = IdentityManager().get()
+        if identity.uuid:
             self.api = DeviceApi()
-            if self.api.identity.uuid:
-                settings_meta_file_exists = (
-                    self.json_path.is_file() or
-                    self.yaml_path.is_file()
-                )
-                if settings_meta_file_exists:
-                    self._load_settings_meta_file()
+            settings_meta_file_exists = (
+                self.json_path.is_file() or
+                self.yaml_path.is_file()
+            )
+            if settings_meta_file_exists:
+                self._load_settings_meta_file()
 
-                self._update_settings_meta()
-                LOG.debug('Uploading settings meta for ' + self.skill_gid)
-                synced = self._issue_api_call()
-            else:
-                LOG.debug('settingsmeta.json not uploaded - no identity')
+            self._update_settings_meta()
+            LOG.debug('Uploading settings meta for ' + self.skill_gid)
+            synced = self._issue_api_call()
         else:
-            LOG.debug('settingsmeta.json not uploaded - device is not paired')
+            LOG.debug('settingsmeta.json not uploaded - no identity')
 
         if not synced and not self._stopped:
             self.upload_timer = Timer(ONE_MINUTE, self.upload)
@@ -270,6 +271,11 @@ class SettingsMetaUploader:
                     self.settings_meta = json.load(meta_file)
                 else:
                     self.settings_meta = yaml.safe_load(meta_file)
+        except requests.HTTPError as http_error:
+            if http_error.response.status_code == HTTPStatus.UNAUTHORIZED:
+                LOG.warning("Settings not uploaded - device not paired")
+            else:
+                LOG.exception("Settings not uploaded")
         except Exception:
             log_msg = "Failed to load settingsmeta file: "
             LOG.exception(log_msg + str(self.settings_meta_path))
@@ -382,19 +388,16 @@ class SkillSettingsDownloader:
         """
         if not self.sync_enabled:
             return
-        if is_paired():
-            remote_settings = self._get_remote_settings()
-            if remote_settings:
-                settings_changed = self.last_download_result != remote_settings
-                if settings_changed:
-                    LOG.debug('Skill settings changed since last download')
-                    self._emit_settings_change_events(remote_settings)
-                    self.last_download_result = remote_settings
-                    save_remote_settings_cache(remote_settings)
-                else:
-                    LOG.debug('No skill settings changes since last download')
-        else:
-            LOG.debug('Settings not downloaded - device is not paired')
+        remote_settings = self._get_remote_settings()
+        if remote_settings:
+            settings_changed = self.last_download_result != remote_settings
+            if settings_changed:
+                LOG.debug('Skill settings changed since last download')
+                self._emit_settings_change_events(remote_settings)
+                self.last_download_result = remote_settings
+                save_remote_settings_cache(remote_settings)
+            else:
+                LOG.debug('No skill settings changes since last download')
         # If this method is called outside of the timer loop, ensure the
         # existing timer is canceled before starting a new one.
         if self.download_timer:
@@ -411,11 +414,16 @@ class SkillSettingsDownloader:
         Returns:
             skill_settings (dict or None): returns a dict on success, else None
         """
+        remote_settings = None
         try:
             remote_settings = self.api.get_skill_settings()
+        except requests.HTTPError as http_error:
+            if http_error.response.status_code == HTTPStatus.UNAUTHORIZED:
+                LOG.warning("Settings not downloaded - device not paired")
+            else:
+                LOG.exception("Settings not downloaded")
         except Exception:
             LOG.exception('Failed to download remote settings from server.')
-            remote_settings = None
 
         return remote_settings
 
