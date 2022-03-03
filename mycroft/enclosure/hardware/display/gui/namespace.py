@@ -460,7 +460,11 @@ class NamespaceManager:
     def _remove_namespace_via_timer(self, namespace_name: str):
         """Removes a namespace and the corresponding timer instance."""
         self._remove_namespace(namespace_name)
-        del self.remove_namespace_timers[namespace_name]
+        try:
+            del self.remove_namespace_timers[namespace_name]
+        except KeyError:
+            LOG.warning(f"{namespace_name} not found in "
+                         "remove_namespace_timers dict during removal.")
 
     def _remove_namespace(self, namespace_name: str):
         """Removes a namespace from the active namespace stack.
