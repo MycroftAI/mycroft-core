@@ -425,8 +425,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
             silence_seconds=0.5,
             min_seconds=1,
             max_seconds=self.recording_timeout,
-            silence_method=SilenceMethod.VAD_AND_CURRENT,
-            current_energy_threshold=1000.0,
+            silence_method=SilenceMethod.VAD_ONLY,
         )
 
     @property
@@ -725,6 +724,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         # Used to adjust threshold for ambient noise.
         energies = []
         energy = 0.0
+        mic_write_counter = 0
 
         # These are frames immediately after wake word is detected
         # that we want to keep to send to STT
@@ -762,18 +762,12 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
                         # serial detections
                         audio_buffer.clear()
                     else:
-                        energy = SilenceDetector.get_debiased_energy(chunk)
-                        energies.append(energy)
-
-                        if len(energies) >= 4:
-                            # Adjust energy threshold once per second
-                            # avg_energy = sum(energies) / len(energies)
-                            max_energy = max(energies)
-                            self.silence_detector.current_energy_threshold = max_energy * 2
-
-                        if len(energies) >= 12:
-                            # Clear energy history after 3 seconds
-                            energies = []
+                        # Periodically output energy level stats. This can be used to
+                        # visualize the microphone input, e.g. a needle on a meter.
+                        if mic_write_counter % 3:
+                            self._watchdog()
+                            self.write_mic_level(energy, source)
+                        mic_write_counter += 1
 
     @staticmethod
     def _create_audio_data(raw_data, source):
@@ -810,7 +804,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         # any, as we expect the user and Mycroft to not be talking.
         # NOTE: adjust_for_ambient_noise() doc claims it will stop early if
         #       speech is detected, but there is no code to actually do that.
-        self.adjust_for_ambient_noise(source, 1.0)
+        # self.adjust_for_ambient_noise(source, 1.0)
 
         LOG.debug("Waiting for wake word...")
         ww_data, lang = self._wait_until_wake_word(source, sec_per_buffer)
@@ -844,7 +838,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
 
         return audio_data, lang
 
-    def adjust_for_ambient_noise(self, source, seconds):
+    def adjust_for_ambient_noise(self, source, seconds=1.0):
         chunks_per_second = source.CHUNK / source.SAMPLE_RATE
         num_chunks = int(seconds / chunks_per_second)
 

@@ -82,23 +82,21 @@ class AudioProducer(Thread):
                     # If self.recognizer.overflow_exc is False (default)
                     # input buffer overflow IOErrors due to not consuming the
                     # buffers quickly enough will be silently ignored.
-                    LOG.exception('IOError Exception in AudioProducer')
+                    LOG.error('IOError Exception in AudioProducer')
                     if e.errno == pyaudio.paInputOverflowed:
                         pass  # Ignore overflow errors
                     elif restart_attempts < MAX_MIC_RESTARTS:
                         # restart the mic
                         restart_attempts += 1
-                        LOG.info('Restarting the microphone...')
+                        LOG.debug('Restarting the microphone...')
                         source.restart()
-                        LOG.info('Restarted...')
+                        LOG.debug('Restarted...')
                     else:
                         LOG.error('Restarting mic doesn\'t seem to work. '
                                   'Stopping...')
                         raise
                 except Exception:
                     LOG.exception("error in audio producer")
-                    LOG.debug(
-                        'Probably XRUN Exception in AudioProducer, Restarting Mic')
                     source.restart()
                     LOG.debug('Mic Restarted.')
                     # raise
