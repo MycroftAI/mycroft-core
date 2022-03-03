@@ -1,4 +1,4 @@
-"""Silence detection using webrtcvad."""
+"""Silence detection using Silero VAD."""
 import audioop
 import logging
 import math
@@ -7,8 +7,10 @@ from collections import deque
 from dataclasses import dataclass
 from enum import Enum
 
-import webrtcvad
+import numpy as np
 
+from mycroft.util import resolve_resource_file
+from .silero_vad import SileroVoiceActivityDetector
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -64,18 +66,18 @@ class SilenceResult:
 
 
 class SilenceDetector:
-    """Detect speech/silence using webrtcvad.
+    """Detect speech/silence using Silero VAD.
 
     Attributes
     ----------
-    vad_mode: int = 3
-        Sensitivity of webrtcvad (1-3), 1 is most sensitive
+    vad_threshold: float = 0.2
+        Value in [0-1], below which is considered silence
 
     sample_rate: int = 16000
         Sample rate of audio chunks (hertz)
 
     chunk_size: int = 960
-        Must be 10, 20, or 30 ms in duration
+        Must be 30, 60, or 100 ms in duration
 
     skip_seconds: float = 0
         Seconds of audio to skip before voice command detection starts
@@ -110,7 +112,7 @@ class SilenceDetector:
 
     def __init__(
         self,
-        vad_mode: int = 3,
+        vad_threshold: float = 0.2,
         sample_rate: int = 16000,
         chunk_size: int = 960,
         skip_seconds: float = 0,
@@ -124,7 +126,7 @@ class SilenceDetector:
         current_energy_threshold: typing.Optional[float] = None,
         silence_method: SilenceMethod = SilenceMethod.VAD_ONLY,
     ):
-        self.vad_mode = vad_mode
+        self.vad_threshold = vad_threshold
         self.sample_rate = sample_rate
         self.sample_width = 2  # 16-bit
         self.sample_channels = 1  # mono
@@ -178,20 +180,12 @@ class SilenceDetector:
             self.use_current = False
 
         # Voice detector
-        self.vad: typing.Optional[webrtcvad.Vad] = None
+        self.vad: typing.Optional[SileroVoiceActivityDetector] = None
         if self.use_vad:
-            assert self.vad_mode in range(
-                1, 4
-            ), f"VAD mode must be 1-3 (got {vad_mode})"
-
             chunk_ms = 1000 * ((self.chunk_size / self.sample_width) / self.sample_rate)
-            assert chunk_ms in [10, 20, 30], (
-                "Sample rate and chunk size must make for 10, 20, or 30 ms buffer sizes,"
-                + f" assuming 16-bit mono audio (got {chunk_ms} ms)"
+            self.vad = SileroVoiceActivityDetector(
+                resolve_resource_file("silero_vad.onnx")
             )
-
-            self.vad = webrtcvad.Vad()
-            self.vad.set_mode(self.vad_mode)
 
         self.seconds_per_buffer = (
             self.chunk_size / self.sample_width
@@ -370,9 +364,8 @@ class SilenceDetector:
         if self.use_vad:
             # Use VAD to detect speech
             assert self.vad is not None
-            all_silence = all_silence and (
-                not self.vad.is_speech(chunk, self.sample_rate)
-            )
+            audio_array = np.frombuffer(chunk, dtype=np.int16)
+            all_silence = all_silence and (self.vad(audio_array) < self.vad_threshold)
 
         if self.use_ratio or self.use_current:
             # Compute debiased energy of audio chunk

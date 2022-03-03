@@ -398,8 +398,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
             silence_seconds=0.5,
             min_seconds=1,
             max_seconds=self.recording_timeout,
-            silence_method=SilenceMethod.VAD_AND_CURRENT,
-            current_energy_threshold=1000.0,
+            silence_method=SilenceMethod.VAD_ONLY,
         )
 
     @property
@@ -599,9 +598,6 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         """
         mic_write_counter = 0
 
-        # History of audio energies.
-        # Used to adjust threshold for ambient noise.
-        energies: typing.List[float] = []
         energy: float = 0.0
 
         audio_data = None
@@ -616,19 +612,6 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
 
             if said_wake_word:
                 break
-            else:
-                energy = SilenceDetector.get_debiased_energy(chunk)
-                energies.append(energy)
-
-                if len(energies) >= 4:
-                    # Adjust energy threshold once per second
-                    # avg_energy = sum(energies) / len(energies)
-                    max_energy = max(energies)
-                    self.silence_detector.current_energy_threshold = max_energy * 2
-
-                if len(energies) >= 12:
-                    # Clear energy history after 3 seconds
-                    energies = []
 
             # Periodically output energy level stats. This can be used to
             # visualize the microphone input, e.g. a needle on a meter.
@@ -672,13 +655,6 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
 
         #        bytes_per_sec = source.SAMPLE_RATE * source.SAMPLE_WIDTH
         sec_per_buffer = float(source.CHUNK) / source.SAMPLE_RATE
-
-        # Every time a new 'listen()' request begins, reset the threshold
-        # used for silence detection.  This is as good of a reset point as
-        # any, as we expect the user and Mycroft to not be talking.
-        # NOTE: adjust_for_ambient_noise() doc claims it will stop early if
-        #       speech is detected, but there is no code to actually do that.
-        self.adjust_for_ambient_noise(source, 1.0)
 
         ww_data = self._wait_until_wake_word(source, sec_per_buffer)
 
@@ -724,28 +700,3 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
             LOG.debug("Thinking...")
 
         return audio_data
-
-    def adjust_for_ambient_noise(self, source, seconds):
-        chunks_per_second = source.CHUNK / source.SAMPLE_RATE
-        num_chunks = int(seconds / chunks_per_second)
-
-        energies = []
-        for chunk in itertools.islice(source.stream.iter_chunks(), num_chunks):
-            energy = SilenceDetector.get_debiased_energy(chunk)
-            energies.append(energy)
-
-        if energies:
-            avg_energy = sum(energies) / len(energies)
-            self.silence_detector.current_energy_threshold = avg_energy
-            LOG.info("Silence threshold adjusted to %s",
-                    self.silence_detector.current_energy_threshold)
-
-    def _adjust_threshold(self, energy, seconds_per_buffer):
-        if self.dynamic_energy_threshold and energy > 0:
-            # account for different chunk sizes and rates
-            damping = (
-                self.dynamic_energy_adjustment_damping ** seconds_per_buffer)
-            target_energy = energy * self.energy_ratio
-            self.energy_threshold = (
-                self.energy_threshold * damping +
-                target_energy * (1 - damping))
