@@ -64,13 +64,15 @@ def report_metric(name, data):
     try:
         if Configuration().get()['opt_in']:
             DeviceApi().report_metric(name, data)
-    except requests.RequestException as exception:
-        if exception.response.status_code == HTTPStatus.UNAUTHORIZED:
+    except requests.HTTPError as http_error:
+        if http_error.response.status_code == HTTPStatus.UNAUTHORIZED:
             LOG.warning('Metric not uploaded - device not paired')
         else:
             LOG.exception(
                 'Metric couldn\'t be uploaded, due to a network error'
             )
+    except requests.RequestException:
+        LOG.exception('Metric couldn\'t be uploaded, due to a network error')
 
 
 def report_timing(ident, system, timing, additional_data=None):

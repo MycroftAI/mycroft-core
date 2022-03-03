@@ -21,7 +21,7 @@ import re
 from http import HTTPStatus
 from os.path import exists, isfile, join, dirname
 
-from requests import RequestException
+from requests import RequestException, HTTPError
 import xdg.BaseDirectory
 
 from mycroft.util.combo_lock import ComboLock
@@ -166,11 +166,13 @@ class RemoteConf(LocalConf):
             for key in config:
                 self.__setitem__(key, config[key])
             self.store(cache)
-        except RequestException as exception:
-            if exception.response.status_code == HTTPStatus.UNAUTHORIZED:
+        except HTTPError as http_error:
+            if http_error.response.status_code == HTTPStatus.UNAUTHORIZED:
                 LOG.warning("Remote config not fetched - device not paired")
             else:
                 LOG.exception("Failed to fetch remote configuration")
+        except RequestException:
+            LOG.exception("Failed to fetch remote configuration")
             self.load_local(cache)
         except Exception as e:
             LOG.error("Failed to fetch remote configuration: %s" % repr(e),
