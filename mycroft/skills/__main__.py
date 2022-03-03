@@ -211,8 +211,8 @@ def main(alive_hook=on_alive, started_hook=on_started, ready_hook=on_ready,
                                  error_hook=error_hook)
 
     device_primer = DevicePrimer(bus)
-    device_primer.prepare_device()
     skill_manager.start()
+    device_primer.prepare_device()
 
     wait_for_exit_signal()
 
