@@ -2,7 +2,15 @@
 
 ## [Unreleased](https://github.com/OpenVoiceOS/ovos-core/tree/HEAD)
 
-[Full Changelog](https://github.com/OpenVoiceOS/ovos-core/compare/V0.0.2a11...HEAD)
+[Full Changelog](https://github.com/OpenVoiceOS/ovos-core/compare/V0.0.2a12...HEAD)
+
+**Merged pull requests:**
+
+- call device prepare after skill manager has started [\#80](https://github.com/OpenVoiceOS/ovos-core/pull/80) ([AIIX](https://github.com/AIIX))
+
+## [V0.0.2a12](https://github.com/OpenVoiceOS/ovos-core/tree/V0.0.2a12) (2022-03-01)
+
+[Full Changelog](https://github.com/OpenVoiceOS/ovos-core/compare/V0.0.2a11...V0.0.2a12)
 
 **Merged pull requests:**
 
