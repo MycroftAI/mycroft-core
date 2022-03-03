@@ -279,8 +279,6 @@ class AudioUserInterface:
             self._activity_id = None
             self._unduck_volume()
 
-        self._ignore_session_id = None
-
     def _drain_speech_queue(self):
         """Ensures the text to speech queue is emptied"""
         while not self._speech_queue.empty():
