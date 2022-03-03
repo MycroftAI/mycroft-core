@@ -167,7 +167,7 @@ class RemoteConf(LocalConf):
                 self.__setitem__(key, config[key])
             self.store(cache)
         except RequestException as exception:
-            if exception.response.status_code == HTTPStatus.UNAUTHORIZED:
+            if exception.response and (exception.response.status_code == HTTPStatus.UNAUTHORIZED):
                 LOG.warning("Remote config not fetched - device not paired")
             else:
                 LOG.exception("Failed to fetch remote configuration")
