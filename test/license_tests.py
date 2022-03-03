@@ -17,10 +17,11 @@ license_overrides = {
     'petact': 'MIT',
     "sonopy": "Apache-2.0",
     "precise-runner": "Apache-2.0",
-    'psutil': 'BSD3'
+    'psutil': 'BSD3',
+    "vosk": "Apache-2.0"
 }
 # explicitly allow these packages that would fail otherwise
-whitelist = []
+whitelist = ['ovos-skill-installer']
 
 # validation flags
 allow_nonfree = False

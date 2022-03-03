@@ -9,13 +9,14 @@ combo-lock~=0.2
 PyYAML~=5.4
 
 ovos-utils~=0.0.18
-ovos-plugin-manager~=0.0.10
+ovos-plugin-manager~=0.0.11a1
 ovos-tts-plugin-mimic>=0.2.6
 ovos-tts-plugin-mimic2>=0.1.4
 ovos-tts-plugin-google-tx>=0.0.3
 ovos-ww-plugin-pocketsphinx>=0.1.2
 ovos-ww-plugin-precise-lite>=0.1.1
 ovos-ww-plugin-precise>=0.1.1
+ovos-stt-plugin-vosk>=0.1.3a2
 ovos_workshop>=0.0.5
 ovos_PHAL>=0.0.1
 

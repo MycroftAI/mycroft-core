@@ -63,9 +63,10 @@ class MycroftSTT(STT):
 
 class STTFactory(OVOSSTTFactory):
     @staticmethod
-    def create():
-        config = Configuration.get().get("stt", {})
+    def create(config=None):
+        config = config or Configuration.get().get("stt", {})
         module = config.get("module", "mycroft")
+        LOG.info(f"Creating STT engine: {module}")
         if module == "mycroft":
             return MycroftSTT()
         return OVOSSTTFactory.create(config)

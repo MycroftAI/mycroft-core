@@ -3,3 +3,4 @@ PyAudio~=0.2.11
 ovos-ww-plugin-pocketsphinx>=0.1.2
 ovos-ww-plugin-precise-lite>=0.1.1
 ovos-ww-plugin-precise>=0.1.1
+ovos-stt-plugin-vosk>=0.1.3a2

@@ -12,20 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import json
 import time
+from queue import Queue, Empty
 from threading import Thread
+
 import pyaudio
 from pyee import EventEmitter
+
 from mycroft.client.speech.hotword_factory import HotWordFactory
 from mycroft.client.speech.mic import MutableMicrophone, ResponsiveRecognizer
 from mycroft.configuration import Configuration
 from mycroft.metrics import Stopwatch, report_timing
 from mycroft.session import SessionManager
 from mycroft.stt import STTFactory
-from mycroft.util.log import LOG
 from mycroft.util import find_input_device
-from queue import Queue, Empty
-import json
+from mycroft.util.log import LOG
 
 MAX_MIC_RESTARTS = 20
 
@@ -195,7 +197,14 @@ class AudioConsumer(Thread):
 
         try:
             # Invoke the STT engine on the audio clip
-            text = self.loop.stt.execute(audio, language=lang)
+            try:
+                text = self.loop.stt.execute(audio, language=lang)
+            except Exception as e:
+                if self.loop.fallback_stt:
+                    LOG.warning(f"Using fallback STT, main plugin failed: {e}")
+                    text = self.loop.fallback_stt.execute(audio, language=lang)
+                else:
+                    raise e
             if text is not None:
                 text = text.lower().strip()
                 LOG.debug("STT: " + text)
@@ -240,14 +249,14 @@ class RecognizerLoop(EventEmitter):
                 (optional, can be set later via self.bind )
     """
 
-    def __init__(self, bus, watchdog=None, stt=None):
+    def __init__(self, bus, watchdog=None, stt=None, fallback_stt=None):
         super(RecognizerLoop, self).__init__()
         self._watchdog = watchdog
         self.mute_calls = 0
         self.stt = stt
+        self.fallback_stt = fallback_stt
         self.bus = bus
         self.engines = {}
-        self.stt = None
         self.queue = None
         self.audio_consumer = None
         self.audio_producer = None
@@ -255,8 +264,10 @@ class RecognizerLoop(EventEmitter):
 
         self._load_config()
 
-    def bind(self, stt):
+    def bind(self, stt, fallback_stt=None):
         self.stt = stt
+        if fallback_stt:
+            self.fallback_stt = fallback_stt
 
     def _load_config(self):
         """Load configuration parameters from configuration."""
@@ -320,11 +331,34 @@ class RecognizerLoop(EventEmitter):
             except Exception as e:
                 LOG.error("Failed to load hotword: " + word)
 
+    @staticmethod
+    def get_fallback_stt():
+        config_core = Configuration.get()
+        stt_config = config_core.get('stt', {})
+        engine = stt_config.get("fallback_module")
+        if not engine:
+            LOG.warning("No fallback STT configured")
+        else:
+            plugin_config = stt_config.get(engine) or {}
+            plugin_config["lang"] = plugin_config.get("lang") or \
+                                    config_core.get("lang", "en-us")
+            clazz = STTFactory.get_class({"module": engine,
+                                             engine: plugin_config})
+            if clazz:
+                return clazz
+            else:
+                LOG.warning(f"Could not find plugin: {engine}")
+        LOG.error(f"Failed to create fallback STT")
+
     def start_async(self):
         """Start consumer and producer threads."""
         self.state.running = True
         if not self.stt:
             self.stt = STTFactory.create()
+        if not self.fallback_stt:
+            clazz = self.get_fallback_stt()
+            self.fallback_stt = clazz()
+
         self.queue = Queue()
         self.audio_consumer = AudioConsumer(self)
         self.audio_consumer.start()
