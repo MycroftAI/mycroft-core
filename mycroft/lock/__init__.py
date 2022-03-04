@@ -155,8 +155,7 @@ class Lock:  # python 3+ 'class Lock'
         lock file for writting and store the current process ID (PID)
         as text.
         """
-        if not os.path.exists(Lock.DIRECTORY):
-            os.makedirs(Lock.DIRECTORY)
+        os.makedirs(Lock.DIRECTORY, exist_ok=True)
         with open(self.path, 'w') as L:
             L.write('{}'.format(self.__pid))
 
