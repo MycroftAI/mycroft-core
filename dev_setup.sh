@@ -70,6 +70,7 @@ opt_forcemimicbuild=false
 opt_allowroot=false
 opt_skipmimicbuild=false
 opt_python=python3
+disable_precise_later=false
 param=''
 
 for var in "$@" ; do
