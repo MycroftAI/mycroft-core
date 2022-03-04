@@ -9,7 +9,7 @@ combo-lock~=0.2
 PyYAML~=5.4
 
 ovos-utils~=0.0.20a2
-ovos-plugin-manager~=0.0.11a1
+ovos-plugin-manager~=0.0.12
 ovos-tts-plugin-mimic>=0.2.6
 ovos-tts-plugin-mimic2>=0.1.4
 ovos-tts-plugin-google-tx>=0.0.3
@@ -27,4 +27,3 @@ adapt-parser~=0.5
 padatious~=0.4.8
 fann2==1.0.7
 padaos~=0.1
-onnxruntime>=1.6,<2.0

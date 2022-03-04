@@ -47,6 +47,8 @@ from mycroft.client.speech.data_structures import RollingMean, \
     CyclicAudioBuffer
 from mycroft.client.speech.silence import SilenceDetector, SilenceResultType, SilenceMethod
 
+from ovos_plugin_manager.vad import OVOSVADFactory
+
 
 WakeWordData = namedtuple('WakeWordData',
                           ['audio', 'found', 'stopped', 'end_audio'])
@@ -241,7 +243,9 @@ def get_silence(num_bytes):
 
 
 class NoiseTracker:
-    """Noise tracker, used to deterimine if an audio utterance is complete.
+    """DEPRECATED! use SilenceDetector instead, only provided for backwards compatibility imports
+
+    Noise tracker, used to deterimine if an audio utterance is complete.
 
     The current implementation expects a number of loud chunks (not necessary
     in one continous sequence) followed by a short period of continous quiet
@@ -419,13 +423,43 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         # The wake word must fit in this time
         self.test_ww_sec = listener_config.get("test_ww_sec", 3)
 
-        # Use webrtcvad for silence detection
+        # Use vad for silence detection
+        vad_config = listener_config.get("VAD", {})
+        method = vad_config.get("silence_method", "ratio_only")
+        for m in SilenceMethod:
+            if m.lower() == method.lower():
+                method = m
+                break
+        else:
+            LOG.error(f"{method} is invalid!")
+            method = SilenceMethod.VAD_AND_RATIO
+            LOG.warning(f"Casting silence method to {method}")
+
+
+        LOG.info(f"VAD method: {method}")
+
+        module = vad_config.get('module')
+        if "vad" in method and module:
+            # dont load plugin if not being used
+            LOG.info(f"Creating VAD engine: {vad_config.get('module')}")
+            vad_plugin = OVOSVADFactory.create(vad_config)
+        else:
+            if "vad" in method:
+                LOG.warning(f"{method} selected, but VAD plugin not available!")
+                method = SilenceMethod.RATIO_ONLY
+                LOG.warning(f"Casting silence method to {method}")
+            vad_plugin = None
+
         self.silence_detector = SilenceDetector(
-            speech_seconds=0.1,
-            silence_seconds=0.5,
-            min_seconds=1,
+            speech_seconds=vad_config.get("speech_seconds", 0.1),
+            silence_seconds=vad_config.get("silence_seconds", 0.5),
+            min_seconds=vad_config.get("min_seconds", 1),
             max_seconds=self.recording_timeout,
-            silence_method=SilenceMethod.VAD_ONLY,
+            before_seconds=vad_config.get("before_seconds", 0.5),
+            current_energy_threshold=vad_config.get("initial_energy_threshold", 1000.0),
+            silence_method=method,
+            max_current_ratio_threshold=vad_config.get("max_current_ratio_threshold", 2),
+            plugin=vad_plugin
         )
 
     @property
@@ -762,6 +796,19 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
                         # serial detections
                         audio_buffer.clear()
                     else:
+                        energy = SilenceDetector.get_debiased_energy(chunk)
+                        energies.append(energy)
+
+                        if len(energies) >= 4:
+                            # Adjust energy threshold once per second
+                            # avg_energy = sum(energies) / len(energies)
+                            max_energy = max(energies)
+                            self.silence_detector.current_energy_threshold = max_energy * 2
+
+                        if len(energies) >= 12:
+                            # Clear energy history after 3 seconds
+                            energies = []
+
                         # Periodically output energy level stats. This can be used to
                         # visualize the microphone input, e.g. a needle on a meter.
                         if mic_write_counter % 3:
@@ -804,7 +851,8 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         # any, as we expect the user and Mycroft to not be talking.
         # NOTE: adjust_for_ambient_noise() doc claims it will stop early if
         #       speech is detected, but there is no code to actually do that.
-        # self.adjust_for_ambient_noise(source, 1.0)
+        # TODO consider (re)moving this and making configurable
+        self.adjust_for_ambient_noise(source, 0.3)
 
         LOG.debug("Waiting for wake word...")
         ww_data, lang = self._wait_until_wake_word(source, sec_per_buffer)

@@ -1,18 +1,23 @@
-"""Silence detection using Silero VAD."""
+# Copyright 2022 Mycroft AI Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
 import audioop
-import logging
 import math
 import typing
 from collections import deque
 from dataclasses import dataclass
 from enum import Enum
-
-import numpy as np
-
-from mycroft.util import resolve_resource_file
-from .silero_vad import SileroVoiceActivityDetector
-
-_LOGGER = logging.getLogger(__name__)
 
 
 class SilenceMethod(str, Enum):
@@ -112,7 +117,6 @@ class SilenceDetector:
 
     def __init__(
         self,
-        vad_threshold: float = 0.2,
         sample_rate: int = 16000,
         chunk_size: int = 960,
         skip_seconds: float = 0,
@@ -125,8 +129,8 @@ class SilenceDetector:
         max_current_ratio_threshold: typing.Optional[float] = None,
         current_energy_threshold: typing.Optional[float] = None,
         silence_method: SilenceMethod = SilenceMethod.VAD_ONLY,
+        plugin: str = None
     ):
-        self.vad_threshold = vad_threshold
         self.sample_rate = sample_rate
         self.sample_width = 2  # 16-bit
         self.sample_channels = 1  # mono
@@ -180,12 +184,11 @@ class SilenceDetector:
             self.use_current = False
 
         # Voice detector
-        self.vad: typing.Optional[SileroVoiceActivityDetector] = None
-        if self.use_vad:
-            chunk_ms = 1000 * ((self.chunk_size / self.sample_width) / self.sample_rate)
-            self.vad = SileroVoiceActivityDetector(
-                resolve_resource_file("silero_vad.onnx")
-            )
+        self.vad = plugin
+        if not plugin:
+            self.use_vad = False
+            if not self.use_current and not self.use_ratio:
+                self.use_ratio = True
 
         self.seconds_per_buffer = (
             self.chunk_size / self.sample_width
@@ -362,10 +365,8 @@ class SilenceDetector:
         all_silence = True
 
         if self.use_vad:
-            # Use VAD to detect speech
             assert self.vad is not None
-            audio_array = np.frombuffer(chunk, dtype=np.int16)
-            all_silence = all_silence and (self.vad(audio_array) < self.vad_threshold)
+            all_silence = all_silence and self.vad.is_silence(chunk)
 
         if self.use_ratio or self.use_current:
             # Compute debiased energy of audio chunk
