@@ -146,7 +146,7 @@ def check_captive_portal() -> bool:
 
     try:
         # We need to check a site that doesn't use HTTPS
-        html_doc = requests.get("http://neverssl.com").text
+        html_doc = requests.get("http://start.mycroft.ai/portal-check.html").text
         soup = BeautifulSoup(html_doc)
         title = soup.title.string if soup.title else ""
 
@@ -154,7 +154,8 @@ def check_captive_portal() -> bool:
 
         # If something different is in the title, we likely were redirected
         # to the portal page.
-        captive_portal = "neverssl" not in title.lower()
+        if title.lower().strip() == "portal check":
+            captive_portal = True
     except Exception:
         LOG.exception("Error checking for captive portal")
 
