@@ -154,7 +154,7 @@ def check_captive_portal() -> bool:
 
         # If something different is in the title, we likely were redirected
         # to the portal page.
-        if title.lower().strip() == "portal check":
+        if title.lower().strip() != "portal check":
             captive_portal = True
     except Exception:
         LOG.exception("Error checking for captive portal")
