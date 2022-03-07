@@ -214,8 +214,7 @@ class AudioConsumer(Thread):
             return text
         except Exception as e:
             send_unknown_intent()
-            LOG.error(e)
-            LOG.error("Speech Recognition could not understand audio")
+            LOG.exception("Speech Recognition could not understand audio")
             return None
 
 

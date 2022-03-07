@@ -15,17 +15,16 @@
 import audioop
 import time
 from time import sleep, time as get_time
+import itertools
 
 from collections import deque, namedtuple
 import datetime
-import json
 import os
-from os.path import isdir, join
+from os.path import join
 import pyaudio
 import requests
 import speech_recognition
 from hashlib import md5
-from io import BytesIO, StringIO
 from speech_recognition import (
     Microphone,
     AudioSource,
@@ -34,6 +33,7 @@ from speech_recognition import (
 from tempfile import gettempdir
 from threading import Thread, Lock
 from mycroft.messagebus.message import Message
+from threading import Lock, Event
 from mycroft.api import DeviceApi
 from mycroft.configuration import Configuration
 from mycroft.session import SessionManager
@@ -54,31 +54,48 @@ WakeWordData = namedtuple('WakeWordData',
 
 
 class MutableStream:
-    def __init__(self, wrapped_stream, format, muted=False):
+    def __init__(self, wrapped_stream, format, muted=False, frames_per_buffer=4000):
         assert wrapped_stream is not None
         self.wrapped_stream = wrapped_stream
 
-        self.SAMPLE_WIDTH = pyaudio.get_sample_size(format)
+        self.format = format
+        self.frames_per_buffer = frames_per_buffer
+        self.SAMPLE_WIDTH = pyaudio.get_sample_size(self.format)
+        self.bytes_per_buffer = self.frames_per_buffer * self.SAMPLE_WIDTH
         self.muted_buffer = b''.join([b'\x00' * self.SAMPLE_WIDTH])
         self.read_lock = Lock()
 
+        self.chunk = bytes(self.bytes_per_buffer)
+        self.chunk_ready = Event()
+
+        # The size of this queue is important.
+        # Too small, and chunks could be missed.
+        # Too large, and there will be a delay in wake word recognition.
+        self.chunk_deque = deque(maxlen=8)
+
         self.muted = muted
-        if muted:
-            self.mute()
+
+        # Begin listening
+        self.wrapped_stream.start_stream()
 
     def mute(self):
         """Stop the stream and set the muted flag."""
-        with self.read_lock:
-            self.muted = True
-            self.wrapped_stream.stop_stream()
+        self.muted = True
 
     def unmute(self):
         """Start the stream and clear the muted flag."""
-        with self.read_lock:
-            self.muted = False
-            self.wrapped_stream.start_stream()
+        self.muted = False
 
-    def read(self, size, of_exc=False):
+    def iter_chunks(self):
+        with self.read_lock:
+            while True:
+                while self.chunk_deque:
+                    yield self.chunk_deque.popleft()
+
+                self.chunk_ready.clear()
+                self.chunk_ready.wait()
+
+    def read(self, size=1024, of_exc=False):
         """Read data from stream.
 
         Args:
@@ -89,32 +106,25 @@ class MutableStream:
         Returns:
             (bytes) Data read from device
         """
+        # If muted during read return empty buffer. This ensures no
+        # reads occur while the stream is stopped
+        if self.muted:
+            return self.muted_buffer
+
         frames = deque()
         remaining = size
-        with self.read_lock:
-            while remaining > 0:
-                # If muted during read return empty buffer. This ensures no
-                # reads occur while the stream is stopped
-                if self.muted:
-                    return self.muted_buffer
 
-                to_read = min(self.wrapped_stream.get_read_available(),
-                              remaining)
-                if to_read <= 0:
-                    sleep(.01)
-                    continue
-                result = self.wrapped_stream.read(to_read,
-                                                  exception_on_overflow=of_exc)
-                frames.append(result)
-                remaining -= to_read
+        for chunk in self.iter_chunks():
+            frames.append(chunk)
+            remaining -= len(chunk)
+            if remaining <= 0:
+                break
 
-        input_latency = self.wrapped_stream.get_input_latency()
-        if input_latency > 0.2:
-            LOG.warning("High input latency: %f" % input_latency)
         audio = b"".join(list(frames))
         return audio
 
     def close(self):
+        self.wrapped_stream.stop_stream()
         self.wrapped_stream.close()
         self.wrapped_stream = None
 
@@ -139,19 +149,46 @@ class MutableMicrophone(Microphone):
             self.mute()
 
     def __enter__(self):
-        return self._start()
+        exit_flag = False
+        while not exit_flag:
+            try:
+                return self._start()
+            except Exception:
+                LOG.exception("Can't start mic!")
+            sleep(1)
+
+    def _stream_callback(self, in_data, frame_count, time_info, status):
+        """Callback from pyaudio.
+
+        Rather than buffer chunks, we simply assigned the current chunk to the
+        class instance and signal that it's ready.
+        """
+        self.stream.chunk_deque.append(in_data)
+        self.stream.chunk_ready.set()
+        return (None, pyaudio.paContinue)
 
     def _start(self):
         """Open the selected device and setup the stream."""
         assert self.stream is None, \
             "This audio source is already inside a context manager"
         self.audio = pyaudio.PyAudio()
-        self.stream = MutableStream(self.audio.open(
-            input_device_index=self.device_index, channels=1,
-            format=self.format, rate=self.SAMPLE_RATE,
+
+        wrapped_stream = self.audio.open(
+            format=self.format,
             frames_per_buffer=self.CHUNK,
-            input=True,  # stream is an input stream
-        ), self.format, self.muted)
+            stream_callback=self._stream_callback,
+            input_device_index=self.device_index,
+            rate=self.SAMPLE_RATE,
+            channels=1,
+            input=True  # stream is an input stream
+        )
+
+        self.stream = MutableStream(
+            wrapped_stream,
+            format=self.format,
+            muted=self.muted,
+            frames_per_buffer=self.CHUNK
+        )
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
@@ -396,8 +433,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
             except (requests.RequestException, AttributeError):
                 pass  # These are expected and won't be reported
             except Exception as e:
-                LOG.debug('Unhandled exception while determining device_id, '
-                          'Error: {}'.format(repr(e)))
+                LOG.error(f'Unhandled exception while determining device_id, Error: {e}')
 
         return self._account_id or '0'
 
@@ -566,7 +602,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
 
     def trigger_listen(self):
         """Externally trigger listening."""
-        LOG.debug('Listen triggered from external source.')
+        LOG.info('Listen triggered from external source.')
         self._listen_triggered = True
 
     def _upload_hotword(self, audio, metadata):
@@ -716,50 +752,51 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         said_wake_word = False
         audio_data = silence
         while not said_wake_word and not self._stop_signaled:
-            if self._skip_wake_word():
-                return WakeWordData(audio_data, False,
-                                    self._stop_signaled, ww_frames), \
-                       self.config.get("lang", "en-us")
-            chunk = self.record_sound_chunk(source)
-            audio_buffer.append(chunk)
-            ww_frames.append(chunk)
+            for chunk in source.stream.iter_chunks():
+                if self._skip_wake_word():
+                    return WakeWordData(audio_data, False,
+                                        self._stop_signaled, ww_frames), \
+                           self.config.get("lang", "en-us")
 
-            energy = self.calc_energy(chunk, source.SAMPLE_WIDTH)
-            audio_mean.append_sample(energy)
+                audio_buffer.append(chunk)
+                ww_frames.append(chunk)
 
-            if energy < self.energy_threshold * self.multiplier:
-                self._adjust_threshold(energy, sec_per_buffer)
-            # maintain the threshold using average
-            if self.energy_threshold < energy < audio_mean.value * 1.5:
-                # bump the threshold to just above this value
-                self.energy_threshold = energy * 1.2
+                energy = self.calc_energy(chunk, source.SAMPLE_WIDTH)
+                audio_mean.append_sample(energy)
 
-            # Periodically output energy level stats. This can be used to
-            # visualize the microphone input, e.g. a needle on a meter.
-            if mic_write_counter % 3:
-                self._watchdog()
-                self.write_mic_level(energy, source)
-            mic_write_counter += 1
+                if energy < self.energy_threshold * self.multiplier:
+                    self._adjust_threshold(energy, sec_per_buffer)
+                # maintain the threshold using average
+                if self.energy_threshold < energy < audio_mean.value * 1.5:
+                    # bump the threshold to just above this value
+                    self.energy_threshold = energy * 1.2
 
-            buffers_since_check += 1.0
-            self.feed_hotwords(chunk)
-            if buffers_since_check > buffers_per_check:
-                buffers_since_check -= buffers_per_check
-                audio_data = audio_buffer.get_last(test_size) + silence
-                said_hot_word = False
-                for hotword in self.check_for_hotwords(audio_data):
-                    said_hot_word = True
-                    listen = self.loop.engines[hotword]["listen"]
-                    stt_lang = self.loop.engines[hotword]["stt_lang"]
-                    self._handle_hotword_found(hotword, audio_data, source)
-                    if listen and not self.loop.state.sleeping:
-                        return WakeWordData(audio_data, said_wake_word,
-                                            self._stop_signaled, ww_frames), stt_lang
+                # Periodically output energy level stats. This can be used to
+                # visualize the microphone input, e.g. a needle on a meter.
+                if mic_write_counter % 3:
+                    self._watchdog()
+                    self.write_mic_level(energy, source)
+                mic_write_counter += 1
 
-                if said_hot_word:
-                    # reset bytearray to store wake word audio in, else many
-                    # serial detections
-                    audio_buffer.clear()
+                buffers_since_check += 1.0
+                self.feed_hotwords(chunk)
+                if buffers_since_check > buffers_per_check:
+                    buffers_since_check -= buffers_per_check
+                    audio_data = audio_buffer.get_last(test_size) + silence
+                    said_hot_word = False
+                    for hotword in self.check_for_hotwords(audio_data):
+                        said_hot_word = True
+                        listen = self.loop.engines[hotword]["listen"]
+                        stt_lang = self.loop.engines[hotword]["stt_lang"]
+                        self._handle_hotword_found(hotword, audio_data, source)
+                        if listen and not self.loop.state.sleeping:
+                            return WakeWordData(audio_data, said_wake_word,
+                                                self._stop_signaled, ww_frames), stt_lang
+
+                    if said_hot_word:
+                        # reset bytearray to store wake word audio in, else many
+                        # serial detections
+                        audio_buffer.clear()
 
     @staticmethod
     def _create_audio_data(raw_data, source):
