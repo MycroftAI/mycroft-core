@@ -74,3 +74,12 @@ jobs:
         uses: pypa/gh-action-pypi-publish@master
         with:
           password: ${{secrets.PYPI_TOKEN}}
+      - name: Send message to Matrix bots channel
+        id: matrix-chat-message
+        uses: fadenb/matrix-chat-message@v0.0.6
+        with:
+          homeserver: 'matrix.org'
+          token: ${{ secrets.MATRIX_TOKEN }}
+          channel: '!WjxEKjjINpyBRPFgxl:krbel.duckdns.org'
+          message: |
+            New ovos-core release! ${{ steps.version.outputs.version }}
