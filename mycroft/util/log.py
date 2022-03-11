@@ -12,10 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
-
-"""
-Mycroft Logging module.
+"""Mycroft Logging module.
 
 This module provides the LOG pseudo function quickly creating a logger instance
 for use.
@@ -23,12 +20,13 @@ for use.
 The default log level of the logger created here can ONLY be set in
 /etc/mycroft/mycroft.conf or ~/.config/mycroft/mycroft.conf
 
-The default log level can also be programatically be changed by setting the
+The default log level can also be programmatically be changed by setting the
 LOG.level parameter.
 """
 
 import inspect
 import logging
+import logging.config
 import sys
 
 import mycroft
@@ -135,3 +133,43 @@ class LOG:
                 name = 'Mycroft'
 
         func(cls.create_logger(name), *args, **kwargs)
+
+
+def _generate_log_config(service):
+    log_format = (
+        "{asctime} | {levelname:8} | {process:5} | {thread:5} | "
+        "{name}.{funcName} | {message}"
+    )
+    default_formatter = {"format": log_format, "style": "{"}
+    console_handler = {
+        "class": "logging.StreamHandler",
+        "formatter": "default",
+        "stream": "ext://sys.stdout"
+    }
+    file_handler = {
+        "class": "logging.handlers.TimedRotatingFileHandler",
+        "formatter": "default",
+        "filename": f"/var/log/mycroft/{service}.log",
+        "backupCount": 7,
+        "when": "midnight"
+    }
+
+    return {
+        "version": 1,
+        "formatters": {"default": default_formatter},
+        "handlers": {
+            "console": console_handler,
+            "file": file_handler
+        },
+        "root": {"level": "INFO", "handlers": ["file"]}
+    }
+
+
+def get_service_logger(service):
+    log_config = _generate_log_config(service)
+    mycroft_logger = {
+        f"mycroft": {"level": "INFO", "handlers": ["file"], "propagate": 0}
+    }
+    log_config["loggers"] = mycroft_logger
+    logging.config.dictConfig(log_config)
+    logging.getLogger("mycroft")
