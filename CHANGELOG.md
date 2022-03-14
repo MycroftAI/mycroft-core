@@ -2,7 +2,15 @@
 
 ## [Unreleased](https://github.com/OpenVoiceOS/ovos-core/tree/HEAD)
 
-[Full Changelog](https://github.com/OpenVoiceOS/ovos-core/compare/V0.0.2a14...HEAD)
+[Full Changelog](https://github.com/OpenVoiceOS/ovos-core/compare/V0.0.2a15...HEAD)
+
+**Fixed bugs:**
+
+- Handle empty priority/blacklist configuration params [\#85](https://github.com/OpenVoiceOS/ovos-core/pull/85) ([NeonDaniel](https://github.com/NeonDaniel))
+
+## [V0.0.2a15](https://github.com/OpenVoiceOS/ovos-core/tree/V0.0.2a15) (2022-03-07)
+
+[Full Changelog](https://github.com/OpenVoiceOS/ovos-core/compare/V0.0.2a14...V0.0.2a15)
 
 **Merged pull requests:**
 
@@ -21,7 +29,7 @@
 
 [Full Changelog](https://github.com/OpenVoiceOS/ovos-core/compare/V0.0.2a12...V0.0.2a13)
 
-**Merged pull requests:**
+**Fixed bugs:**
 
 - call device prepare after skill manager has started [\#80](https://github.com/OpenVoiceOS/ovos-core/pull/80) ([AIIX](https://github.com/AIIX))
 
