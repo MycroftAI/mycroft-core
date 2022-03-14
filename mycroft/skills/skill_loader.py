@@ -318,7 +318,7 @@ class SkillLoader:
     @property
     def is_blacklisted(self):
         """Boolean value representing whether or not a skill is blacklisted."""
-        blacklist = self.config['skills'].get('blacklisted_skills', [])
+        blacklist = self.config['skills'].get('blacklisted_skills') or []
         if self.skill_id in blacklist:
             return True
         else:

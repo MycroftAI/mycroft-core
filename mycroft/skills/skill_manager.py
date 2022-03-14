@@ -300,7 +300,7 @@ class SkillManager(Thread):
     def load_priority(self):
         skill_ids = {os.path.basename(skill_path): skill_path
                      for skill_path in self._get_skill_directories()}
-        priority_skills = self.skills_config.get("priority_skills", [])
+        priority_skills = self.skills_config.get("priority_skills") or []
         for skill_id in priority_skills:
             skill_path = skill_ids.get(skill_id)
             if skill_path is not None:
