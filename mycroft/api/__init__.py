@@ -40,7 +40,7 @@ class InternetDown(RequestException):
 UUID = '{MYCROFT_UUID}'
 
 
-def _get_pantacor_device_id():
+def get_pantacor_device_id():
     """Quick hack to read a file owned by root on a pantacor device."""
     # TODO: replace this with reading a file accessible by the mycroft user
     cmd = ['sudo', 'cat', '/pantavisor/device-id']
@@ -244,34 +244,32 @@ class DeviceApi(Api):
     def activate(self, state, token):
         version = VersionManager.get()
         platform = "unknown"
-        platform_build = ""
-        pantacor_device_id = None
 
         # load just the local configs to get platform info
         config = Configuration.get(cache=False, remote=False)
         if "enclosure" in config:
             platform = config.get("enclosure").get("platform", "unknown")
-            platform_build = config.get("enclosure").get("platform_build", "")
-            packaging_type = config.get("enclosure").get("packaging_type")
-            if packaging_type is not None and packaging_type == "pantacor":
-                pantacor_device_id = _get_pantacor_device_id()
 
         request_data = dict(
             state=state,
             token=token,
             core_version=version.get("coreVersion"),
             platform=platform,
-            platform_build=platform_build,
             enclosure_version=version.get("enclosureVersion")
         )
-        if pantacor_device_id:
-            request_data.update(pantacor_device_id=pantacor_device_id)
 
-        return self.request({
-            "method": "POST",
-            "path": "/activate",
-            "json": request_data
-        })
+        return self.request(
+            dict(method="POST", path="/activate", json=request_data)
+        )
+
+    def sync_pantacor_config(self, pantacor_device_id):
+        request_data = dict(
+            mycroft_device_id=self.identity.uuid,
+            pantacor_device_id=pantacor_device_id
+        )
+        return self.request(
+            dict(method="POST", path="/pantacor", json=request_data)
+        )
 
     def update_version(self):
         version = VersionManager.get()
