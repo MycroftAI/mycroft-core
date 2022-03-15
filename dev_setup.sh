@@ -38,6 +38,7 @@ Do you wish to continue? (y/n)'
             rm -f /var/tmp/mycroft_web_cache.json
             rm -rf "${TMPDIR:-/tmp}/mycroft"
             rm -rf "$HOME/.mycroft"
+            rm -f "skills"  # The Skills directory symlink
             sudo rm -rf "/opt/mycroft"
             exit 0
             ;;
