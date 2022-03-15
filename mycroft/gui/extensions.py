@@ -7,6 +7,7 @@ from ovos_utils.system import ssh_enable, ssh_disable
 
 from json_database import JsonStorageXDG
 from mycroft.gui.homescreen import HomescreenManager
+from mycroft.gui.interfaces.smartspeaker import SmartSpeakerExtensionGuiInterface
 
 
 class ExtensionsManager():
@@ -76,6 +77,8 @@ class SmartSpeakerExtension():
 
         self.device_paired = is_paired()
         self.backend = "unknown"
+        self.gui_interface = SmartSpeakerExtensionGuiInterface(
+            self.bus, self.homescreen_manager)
 
         try:
             self.bus.on("ovos.pairing.process.completed",
