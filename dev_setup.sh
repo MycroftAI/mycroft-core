@@ -28,7 +28,11 @@ TOP=$(pwd -L)
 function clean_mycroft_files() {
     echo '
 This will completely remove any files installed by mycroft (including pairing
-information).
+information). 
+
+NOTE: This will not remove Mimic (if you chose to compile it), or other files
+generated within the mycroft-core directory.
+
 Do you wish to continue? (y/n)'
     while true; do
         read -N1 -s key
