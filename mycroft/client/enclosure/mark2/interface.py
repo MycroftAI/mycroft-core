@@ -166,6 +166,9 @@ class EnclosureMark2(Enclosure):
         self.hardware = HardwareEnclosure("Mark2", "sj201r4")
         self.hardware.client_volume_handler = self.async_volume_handler
 
+        self.hardware.client_on_mute = self.on_hardware_mute
+        self.hardware.client_on_unmute = self.on_hardware_unmute
+
         # start the temperature monitor thread
         self.temperatureMonitorThread = TemperatureMonitorThread(
             self.hardware.fan, self.hardware.leds, self.hardware.palette
@@ -546,3 +549,14 @@ class EnclosureMark2(Enclosure):
             interval=self._idle_dim_timeout,
             name="DimScreen",
         )
+
+
+    def on_hardware_mute(self):
+        """Called when hardware switch is set to mute"""
+        # Triggers red border
+        self.bus.emit(Message("mycroft.mic.mute"))
+
+    def on_hardware_unmute(self):
+        """Called when hardware switch is set to unmute"""
+        # Removes red border
+        self.bus.emit(Message("mycroft.mic.unmute"))

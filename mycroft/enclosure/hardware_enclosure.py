@@ -85,6 +85,10 @@ class HardwareEnclosure:
         # client volume notification
         self.client_volume_handler = None
 
+        # client mute notificate
+        self.client_on_mute = None
+        self.client_on_unmute = None
+
     def get_capabilities(self):
         return self.capabilities
 
@@ -134,11 +138,17 @@ class HardwareEnclosure:
                         self.mute_led, 
                         self.palette.GREEN, 
                         0.5)
+
+                if self.client_on_unmute:
+                    self.client_on_unmute()
             else:
                 self.leds._set_led_with_brightness(
                         self.mute_led, 
                         self.palette.RED, 
                         0.5)
+
+                if self.client_on_mute:
+                    self.client_on_mute()
 
     def handle_vol_down(self):
         self.shadow_volume = self.hardware_volume.get_volume()
