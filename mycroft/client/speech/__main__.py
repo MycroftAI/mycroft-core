@@ -126,7 +126,7 @@ def handle_mic_mute(event):
 
 def handle_mic_unmute(event):
     """Unmute the listener system."""
-    loop.unmute()
+    loop.force_unmute()
 
 
 def handle_mic_listen(_):
@@ -188,7 +188,7 @@ def handle_audio_end(event):
     it will remain muted.
     """
     if config.get("listener").get("mute_during_output"):
-        loop.unmute()  # restore
+        loop.force_unmute()  # restore
 
 
 def handle_stop(event):
