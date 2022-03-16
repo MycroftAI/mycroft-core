@@ -210,10 +210,11 @@ class NetworkConnectActivity(Activity):
         while True:
             all_disconnected = True
 
-            for device in devices:
-                state = await device.is_connected()
+            connected_aws = [device.is_connected() for device in devices]
+            for connected_result in asyncio.as_completed(connected_aws):
+                state = await connected_result
                 if state == DeviceState.CONNECTED:
-                    LOG.info("Device connected: %s", device.name)
+                    LOG.info("Device connected")
                     return True
 
                 if state == DeviceState.NOT_READY:
