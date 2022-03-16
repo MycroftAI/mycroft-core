@@ -2,7 +2,15 @@
 
 ## [Unreleased](https://github.com/OpenVoiceOS/ovos-core/tree/HEAD)
 
-[Full Changelog](https://github.com/OpenVoiceOS/ovos-core/compare/V0.0.2a16...HEAD)
+[Full Changelog](https://github.com/OpenVoiceOS/ovos-core/compare/V0.0.2a17...HEAD)
+
+**Merged pull requests:**
+
+- deprecate DevicePrimer [\#87](https://github.com/OpenVoiceOS/ovos-core/pull/87) ([JarbasAl](https://github.com/JarbasAl))
+
+## [V0.0.2a17](https://github.com/OpenVoiceOS/ovos-core/tree/V0.0.2a17) (2022-03-15)
+
+[Full Changelog](https://github.com/OpenVoiceOS/ovos-core/compare/V0.0.2a16...V0.0.2a17)
 
 **Implemented enhancements:**
 
