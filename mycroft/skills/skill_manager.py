@@ -212,16 +212,24 @@ class SkillManager(Thread):
             if is_ready:
                 break
             elif monotonic() - start >= 60:
-                raise Exception(
+                raise TimeoutError(
                     f'Timeout waiting for services start. services={services}')
             else:
                 sleep(3)
         return is_ready
 
     def handle_check_device_readiness(self, message):
-        if self.is_device_ready():
-            LOG.info("Mycroft is all loaded and ready to roll!")
-            self.bus.emit(message.reply('mycroft.ready'))
+        ready = False
+        while not ready:
+            try:
+                ready = self.is_device_ready()
+            except TimeoutError:
+                if is_paired():
+                    LOG.warning("mycroft should already have reported ready!")
+                sleep(5)
+
+        LOG.info("Mycroft is all loaded and ready to roll!")
+        self.bus.emit(message.reply('mycroft.ready'))
 
     def check_services_ready(self, services):
         """Report if all specified services are ready.
