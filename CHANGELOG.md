@@ -2,7 +2,19 @@
 
 ## [Unreleased](https://github.com/OpenVoiceOS/ovos-core/tree/HEAD)
 
-[Full Changelog](https://github.com/OpenVoiceOS/ovos-core/compare/V0.0.2a17...HEAD)
+[Full Changelog](https://github.com/OpenVoiceOS/ovos-core/compare/V0.0.2a18...HEAD)
+
+**Fixed bugs:**
+
+- Fix/ready timeout [\#88](https://github.com/OpenVoiceOS/ovos-core/pull/88) ([NeonJarbas](https://github.com/NeonJarbas))
+
+**Closed issues:**
+
+- \_ensure\_device\_is\_paired\(\) is called before load\_priority skills it should be called after [\#79](https://github.com/OpenVoiceOS/ovos-core/issues/79)
+
+## [V0.0.2a18](https://github.com/OpenVoiceOS/ovos-core/tree/V0.0.2a18) (2022-03-16)
+
+[Full Changelog](https://github.com/OpenVoiceOS/ovos-core/compare/V0.0.2a17...V0.0.2a18)
 
 **Merged pull requests:**
 
