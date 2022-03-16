@@ -400,6 +400,8 @@ class RecognizerLoop(EventEmitter):
         if self.microphone:
             self.microphone.mute()
 
+        LOG.info("Muted")
+
     def unmute(self):
         """Unmute mic if as many unmute calls as mute calls have been received.
         """
@@ -409,6 +411,8 @@ class RecognizerLoop(EventEmitter):
         if self.mute_calls <= 0 and self.microphone:
             self.microphone.unmute()
             self.mute_calls = 0
+
+            LOG.info("Unmuted")
 
     def force_unmute(self):
         """Completely unmute mic regardless of the number of calls to mute."""

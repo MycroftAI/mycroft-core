@@ -262,6 +262,10 @@ def main(ready_hook=on_ready, error_hook=on_error, stopping_hook=on_stopping,
         # Loop must be created first because it's used in the bus handlers
         loop = RecognizerLoop(watchdog)
 
+        # Start in a muted state
+        loop.mute()
+        loop.mute_calls = 0
+
         connect_bus_events(bus)
 
         # Register handlers on internal RecognizerLoop bus
