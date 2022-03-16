@@ -98,8 +98,13 @@ class MutableStream:
         Rather than buffer chunks, we simply assigned the current chunk to the
         class instance and signal that it's ready.
         """
-        # self.chunk = in_data
-        self.chunk_deque.append(in_data)
+        if self.muted:
+            # Silence
+            self.chunk_deque.append(bytes(len(in_data)))
+        else:
+            # Actual data
+            self.chunk_deque.append(in_data)
+
         self.chunk_ready.set()
 
         return (None, pyaudio.paContinue)
