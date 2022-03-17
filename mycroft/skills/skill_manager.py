@@ -190,8 +190,8 @@ class SkillManager(Thread):
             'mycroft.skills.settings.update',
             self.settings_downloader.download
         )
-        self.bus.on('mycroft.skills.trained',
-                    self.handle_check_device_readiness)
+        self.bus.once('mycroft.skills.initialized',
+                      self.handle_check_device_readiness)
 
     def is_device_ready(self):
         is_ready = False
