@@ -129,7 +129,7 @@ def handle_speak(event):
             # utterance = re.sub(r'\b([A-za-z][\.])(\s+)', r'\g<1>', utterance)
 
             chunks = re.split(
-                r"(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\;|\?|\!|\,|\:)\s", utterance
+                r"(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\;|\?|\!)\s", utterance
             )
             # Apply the listen flag to the last chunk, set the rest to False
             chunks = [
