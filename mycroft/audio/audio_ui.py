@@ -6,6 +6,7 @@ import tempfile
 import threading
 import time
 import typing
+from collections import deque
 from dataclasses import dataclass
 from enum import IntEnum
 from pathlib import Path
@@ -130,7 +131,7 @@ class AudioUserInterface:
             self.config["sounds"]["acknowledge"]
         )
 
-        self._ignore_session_id: typing.Optional[str] = None
+        self._ignore_session_ids: typing.Deque[str] = deque(maxlen=100)
 
         self._bg_position_timer = RepeatingTimer(1.0, self.send_stream_position)
 
@@ -208,16 +209,16 @@ class AudioUserInterface:
 
     def handle_tts_stop(self, _message):
         """Called in response to a 'stop' command"""
-        self._ignore_session_id = self._tts_session_id
-
         self._stop_tts()
 
-        if self._tts_session_id is not None:
-            self._finish_tts_session(session_id=self._tts_session_id)
+    def _stop_tts(self):
+        LOG.info("Stopping TTS")
+
+        if self._tts_session_id:
+            self._ignore_session_ids.append(self._tts_session_id)
 
         self._tts_session_id = None
 
-    def _stop_tts(self):
         self._drain_speech_queue()
         self._ahal.stop_foreground(ForegroundChannel.SPEECH)
         self._speech_finished.set()
@@ -243,7 +244,6 @@ class AudioUserInterface:
     def handle_start_listening(self, _message):
         """Play sound when Mycroft begins recording a command"""
 
-        self._ignore_session_id = self._tts_session_id
         self._duck_volume()
         self._stop_tts()
         self._play_effect(self._start_listening_uri)
@@ -292,7 +292,7 @@ class AudioUserInterface:
         num_chunks = message.data.get("num_chunks", 1)
         listen = message.data.get("listen", False)
 
-        if session_id == self._ignore_session_id:
+        if session_id in self._ignore_session_ids:
             # Drop chunks from previously stopped session
             LOG.info("Ignoring TTS chunk from session: %s", session_id)
             return
@@ -339,34 +339,37 @@ class AudioUserInterface:
                 if request is None:
                     break
 
-                self._tts_session_id = request.session_id
+                if request.session_id not in self._ignore_session_ids:
+                    self._tts_session_id = request.session_id
 
-                if request.is_first_chunk:
-                    self.bus.emit(Message("recognizer_loop:audio_output_start"))
+                    if request.is_first_chunk:
+                        self.bus.emit(Message("recognizer_loop:audio_output_start"))
 
-                # TODO: Support other URI types
-                assert request.uri.startswith("file://")
-                file_path = request.uri[len("file://") :]
+                    # TODO: Support other URI types
+                    assert request.uri.startswith("file://")
+                    file_path = request.uri[len("file://") :]
 
-                # Play TTS chunk
-                self._speech_finished.clear()
-                duration_sec = self._ahal.play_foreground(
-                    ForegroundChannel.SPEECH, file_path, media_id=request.session_id,
-                )
+                    # Play TTS chunk
+                    self._speech_finished.clear()
+                    duration_sec = self._ahal.play_foreground(
+                        ForegroundChannel.SPEECH,
+                        file_path,
+                        media_id=request.session_id,
+                    )
 
-                assert duration_sec is not None
-                LOG.info(
-                    "Speaking TTS chunk %s/%s for %s sec from session %s",
-                    request.chunk_index + 1,
-                    request.num_chunks,
-                    duration_sec,
-                    request.session_id,
-                )
+                    assert duration_sec is not None
+                    LOG.info(
+                        "Speaking TTS chunk %s/%s for %s sec from session %s",
+                        request.chunk_index + 1,
+                        request.num_chunks,
+                        duration_sec,
+                        request.session_id,
+                    )
 
-                # Wait at most a half second after TTS should have been finished.
-                # This event is set whenever TTS is cleared.
-                timeout = duration_sec + 0.5
-                self._speech_finished.wait(timeout=timeout)
+                    # Wait at most a half second after TTS should have been finished.
+                    # This event is set whenever TTS is cleared.
+                    timeout = duration_sec + 0.5
+                    self._speech_finished.wait(timeout=timeout)
 
                 if request.is_last_chunk:
                     self._finish_tts_session(

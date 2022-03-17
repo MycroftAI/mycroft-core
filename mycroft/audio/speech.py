@@ -92,7 +92,8 @@ def handle_speak(event):
                 # Successfully spoken from cache
                 return
 
-        tts_session_id = cache_key or str(uuid4())
+        activity_id = event.data.get("activity_id")
+        tts_session_id = cache_key or activity_id or str(uuid4())
         if cache_only:
             # Create new TTS session
             expire_after: typing.Optional[datetime] = None
@@ -128,7 +129,7 @@ def handle_speak(event):
             # utterance = re.sub(r'\b([A-za-z][\.])(\s+)', r'\g<1>', utterance)
 
             chunks = re.split(
-                r"(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\;|\?)\s", utterance
+                r"(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\;|\?|\!|\,|\:)\s", utterance
             )
             # Apply the listen flag to the last chunk, set the rest to False
             chunks = [

@@ -1150,6 +1150,7 @@ class MycroftSkill:
             "skill_id": self.skill_id,
             "cache_key": cache_key,
             "cache_keep": cache_keep,
+            "activity_id": self._activity_id,
         }
         message = dig_for_message()
         m = message.forward("speak", data) if message else Message("speak", data)
