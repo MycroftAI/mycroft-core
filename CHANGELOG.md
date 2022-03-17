@@ -2,7 +2,15 @@
 
 ## [Unreleased](https://github.com/OpenVoiceOS/ovos-core/tree/HEAD)
 
-[Full Changelog](https://github.com/OpenVoiceOS/ovos-core/compare/V0.0.2a18...HEAD)
+[Full Changelog](https://github.com/OpenVoiceOS/ovos-core/compare/V0.0.2a19...HEAD)
+
+**Merged pull requests:**
+
+- refator/process\_utils from ovos\_utils [\#90](https://github.com/OpenVoiceOS/ovos-core/pull/90) ([NeonJarbas](https://github.com/NeonJarbas))
+
+## [V0.0.2a19](https://github.com/OpenVoiceOS/ovos-core/tree/V0.0.2a19) (2022-03-16)
+
+[Full Changelog](https://github.com/OpenVoiceOS/ovos-core/compare/V0.0.2a18...V0.0.2a19)
 
 **Fixed bugs:**
 
