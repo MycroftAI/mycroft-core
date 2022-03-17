@@ -337,14 +337,16 @@ class RecognizerLoop(EventEmitter):
         config_core = Configuration.get()
         stt_config = config_core.get('stt', {})
         engine = stt_config.get("fallback_module")
-        if not engine:
+        if engine == stt_config.get("module", "mycroft"):
+            LOG.warning("Fallback STT is the same as default STT")
+        elif not engine:
             LOG.warning("No fallback STT configured")
         else:
             plugin_config = stt_config.get(engine) or {}
             plugin_config["lang"] = plugin_config.get("lang") or \
                                     config_core.get("lang", "en-us")
             clazz = STTFactory.get_class({"module": engine,
-                                             engine: plugin_config})
+                                          engine: plugin_config})
             if clazz:
                 return clazz
             else:
