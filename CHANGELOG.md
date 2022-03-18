@@ -2,7 +2,16 @@
 
 ## [Unreleased](https://github.com/OpenVoiceOS/ovos-core/tree/HEAD)
 
-[Full Changelog](https://github.com/OpenVoiceOS/ovos-core/compare/V0.0.2a21...HEAD)
+[Full Changelog](https://github.com/OpenVoiceOS/ovos-core/compare/V0.0.2a22...HEAD)
+
+**Fixed bugs:**
+
+- fix/loop\_race\_condition [\#93](https://github.com/OpenVoiceOS/ovos-core/pull/93) ([NeonJarbas](https://github.com/NeonJarbas))
+- fix/mycroft\_ready [\#92](https://github.com/OpenVoiceOS/ovos-core/pull/92) ([NeonJarbas](https://github.com/NeonJarbas))
+
+## [V0.0.2a22](https://github.com/OpenVoiceOS/ovos-core/tree/V0.0.2a22) (2022-03-17)
+
+[Full Changelog](https://github.com/OpenVoiceOS/ovos-core/compare/V0.0.2a21...V0.0.2a22)
 
 **Fixed bugs:**
 
