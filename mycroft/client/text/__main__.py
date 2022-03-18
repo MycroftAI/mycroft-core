@@ -46,9 +46,21 @@ def main():
         log_dir = os.path.expanduser(config['log_dir'])
         start_log_monitor(os.path.join(log_dir, 'skills.log'))
         start_log_monitor(os.path.join(log_dir, 'voice.log'))
+        start_log_monitor(os.path.join(log_dir, 'audio.log'))
+        start_log_monitor(os.path.join(log_dir, 'phal.log'))
+        start_log_monitor(os.path.join(log_dir, 'skills.error.log'))
+        start_log_monitor(os.path.join(log_dir, 'voice.error.log'))
+        start_log_monitor(os.path.join(log_dir, 'audio.error.log'))
+        start_log_monitor(os.path.join(log_dir, 'phal.error.log'))
     else:
         start_log_monitor("/var/log/mycroft/skills.log")
         start_log_monitor("/var/log/mycroft/voice.log")
+        start_log_monitor("/var/log/mycroft/phal.log")
+        start_log_monitor("/var/log/mycroft/audio.log")
+        start_log_monitor("/var/log/mycroft/skills.error.log")
+        start_log_monitor("/var/log/mycroft/voice.error.log")
+        start_log_monitor("/var/log/mycroft/phal.error.log")
+        start_log_monitor("/var/log/mycroft/audio.error.log")
 
     # Monitor IPC file containing microphone level info
     start_mic_monitor(os.path.join(get_ipc_directory(), "mic_level"))

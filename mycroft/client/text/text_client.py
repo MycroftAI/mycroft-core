@@ -18,7 +18,7 @@ from math import ceil
 
 from mycroft.client.text.gui_server import start_qml_gui
 
-from mycroft.tts import TTS
+from ovos_plugin_manager.templates.tts import TTS
 
 import os
 import os.path
