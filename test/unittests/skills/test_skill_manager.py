@@ -108,6 +108,7 @@ class TestSkillManager(MycroftUnitTestBase):
             'skillmanager.activate',
             'mycroft.paired',
             'mycroft.skills.settings.update',
+            'mycroft.skills.initialized',
             'mycroft.skills.trained',
             'mycroft.skills.is_alive',
             'mycroft.skills.is_ready',

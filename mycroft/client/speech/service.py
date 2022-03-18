@@ -53,12 +53,13 @@ class SpeechClient(Thread):
 
         self.config = Configuration.get()
         self.bus = start_message_bus_client("VOICE")
-        self.connect_bus_events()
+
         self.status.bind(self.bus)
 
         # Register handlers on internal RecognizerLoop bus
         self.loop = RecognizerLoop(self.bus, watchdog)
         self.connect_loop_events()
+        self.connect_bus_events()
 
     # loop events
     def handle_record_begin(self):
