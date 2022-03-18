@@ -2,7 +2,15 @@
 
 ## [Unreleased](https://github.com/OpenVoiceOS/ovos-core/tree/HEAD)
 
-[Full Changelog](https://github.com/OpenVoiceOS/ovos-core/compare/V0.0.2a22...HEAD)
+[Full Changelog](https://github.com/OpenVoiceOS/ovos-core/compare/V0.0.2a23...HEAD)
+
+**Fixed bugs:**
+
+- monitor all logs [\#94](https://github.com/OpenVoiceOS/ovos-core/pull/94) ([NeonJarbas](https://github.com/NeonJarbas))
+
+## [V0.0.2a23](https://github.com/OpenVoiceOS/ovos-core/tree/V0.0.2a23) (2022-03-18)
+
+[Full Changelog](https://github.com/OpenVoiceOS/ovos-core/compare/V0.0.2a22...V0.0.2a23)
 
 **Fixed bugs:**
 
