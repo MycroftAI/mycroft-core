@@ -92,11 +92,9 @@ def mute_and_speak(utterance, ident, listen=False):
     LOG.info("Speak: " + utterance)
     try:
         tts.execute(utterance, ident, listen)
-    except RemoteTTSException as e:
+    except Exception as e:
         LOG.error(e)
         execute_fallback_tts(utterance, ident, listen)
-    except Exception:
-        LOG.exception('TTS execution failed.')
 
 
 def _get_tts_fallback():
