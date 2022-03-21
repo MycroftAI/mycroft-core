@@ -457,6 +457,8 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
             bytearray: complete audio buffer recorded, including any
                        silence at the end of the user's utterance
         """
+        if stream:
+            stream.stream_start()
 
         num_chunks = 0
 
@@ -464,6 +466,9 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         for chunk in source.stream.iter_chunks():
             if check_for_signal('buttonPress'):
                 break
+
+            if stream:
+                stream.stream_chunk(chunk)
 
             result = self.silence_detector.process(chunk)
             if result.type in { SilenceResultType.PHRASE_END, SilenceResultType.TIMEOUT }:
