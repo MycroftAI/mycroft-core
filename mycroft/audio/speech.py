@@ -18,7 +18,7 @@ from threading import Lock
 
 from mycroft.configuration import Configuration
 from mycroft.metrics import report_timing, Stopwatch
-from mycroft.tts import TTSFactory
+from mycroft.tts import TTSFactory, TTS
 from mycroft.util import check_for_signal
 from mycroft.util.log import LOG
 from mycroft.messagebus.message import Message
@@ -93,7 +93,7 @@ def mute_and_speak(utterance, ident, listen=False):
     try:
         tts.execute(utterance, ident, listen)
     except Exception as e:
-        LOG.error(e)
+        LOG.exception("TTS synth failed!")
         execute_fallback_tts(utterance, ident, listen)
 
 
@@ -126,7 +126,7 @@ def execute_fallback_tts(utterance, ident, listen):
         tts.execute(utterance, ident, listen)
         return
     except Exception as e:
-        LOG.error("TTS FAILURE! utterance : " + str(utterance))
+        LOG.exception("TTS FAILURE! utterance : " + str(utterance))
 
 
 def mimic_fallback_tts(utterance, ident, listen):
@@ -179,9 +179,6 @@ def shutdown():
 
     Stop any playing audio and make sure threads are joined correctly.
     """
-    if tts:
-        tts.playback.stop()
-        tts.playback.join()
-    if fallback_tts:
-        fallback_tts.playback.stop()
-        fallback_tts.playback.join()
+    if TTS.playback:
+        TTS.playback.shutdown()
+        TTS.playback.join()
