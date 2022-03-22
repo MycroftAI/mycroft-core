@@ -28,6 +28,7 @@ pipeline {
                 anyOf {
                     branch 'dev'
                     branch 'master'
+                    branch 'mark-ii/qa'
                     changeRequest target: 'dev'
                 }
             }
