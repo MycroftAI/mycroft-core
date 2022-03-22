@@ -77,7 +77,7 @@ class HotWordEngine:
         self.key_phrase = str(key_phrase).lower()
 
         if config is None:
-            config = Configuration.get().get("hot_words", {})
+            config = Configuration.get().get("hotwords", {})
             config = config.get(self.key_phrase, {})
         self.config = config
 
