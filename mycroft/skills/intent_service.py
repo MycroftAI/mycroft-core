@@ -28,6 +28,7 @@ from .intent_services import (
     PadatiousService,
     PadatiousMatcher,
     IntentMatch,
+    RegexService,
 )
 from .intent_service_interface import open_intent_envelope
 
@@ -89,6 +90,7 @@ class IntentService:
         self.skill_names = {}
         self.skill_categories = {}
         config = Configuration.get()
+        self.regex_service = RegexService(bus, config)
         self.adapt_service = AdaptService(config.get("context", {}))
         try:
             self.padatious_service = PadatiousService(bus, config["padatious"])
@@ -328,6 +330,7 @@ class IntentService:
             # These are listed in priority order.
             match_funcs = [
                 self._converse,
+                self.regex_service.match_intent,
                 padatious_matcher.match_high,
                 self.adapt_service.match_intent,
                 self.fallback.high_prio,

@@ -146,6 +146,18 @@ class IntentServiceInterface:
             'name': entity_name
         }))
 
+    def register_regex_intent(self, intent_name, pattern_str):
+        """Register a regex intent.
+
+        Args:
+            intent_name(str): intent identifier
+            pattern_str(str): regex pattern
+        """
+        data = {"pattern": pattern_str,
+                "name": intent_name}
+        self.bus.emit(Message("regex:register_intent", data))
+        self.registered_intents.append((intent_name.split(':')[-1], data))
+
     def __iter__(self):
         """Iterator over the registered intents.
 

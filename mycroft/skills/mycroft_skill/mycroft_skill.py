@@ -922,6 +922,8 @@ class MycroftSkill:
         """
         if isinstance(intent_parser, IntentBuilder):
             intent_parser = intent_parser.build()
+        if isinstance(intent_parser, re.Pattern):
+            return self.register_regex_intent(intent_parser, handler)
         if isinstance(intent_parser, str) and intent_parser.endswith(".intent"):
             return self.register_intent_file(intent_parser, handler)
         elif not isinstance(intent_parser, Intent):
@@ -985,6 +987,22 @@ class MycroftSkill:
 
         name = "{}:{}".format(self.skill_id, entity_file)
         self.intent_service.register_padatious_entity(name, str(entity.file_path))
+
+    def register_regex_intent(self, intent_pattern, handler):
+        """Register a regular expression pattern with the intent service
+
+        Args:
+            intent_file: compiled regex pattern that matches the entire
+                         utterance
+            handler:     function to register with intent
+        """
+        name = "{}:{}".format(self.skill_id, intent_pattern.pattern)
+        self.intent_service.register_regex_intent(
+            name, intent_pattern.pattern
+        )
+        if handler:
+            self.add_event(name, handler, "mycroft.skill.handler")
+
 
     def handle_enable_intent(self, message):
         """Listener to enable a registered intent if it belongs to this skill.
