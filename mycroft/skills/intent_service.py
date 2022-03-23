@@ -330,9 +330,9 @@ class IntentService:
             # These are listed in priority order.
             match_funcs = [
                 self._converse,
-                self.regex_service.match_intent,
                 padatious_matcher.match_high,
                 self.adapt_service.match_intent,
+                self.regex_service.match_intent,
                 self.fallback.high_prio,
                 padatious_matcher.match_medium,
                 self.fallback.medium_prio,
