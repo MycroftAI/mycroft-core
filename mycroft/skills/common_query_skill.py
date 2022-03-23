@@ -20,6 +20,7 @@ from .mycroft_skill import MycroftSkill
 from mycroft.configuration import Configuration
 from mycroft.util.file_utils import resolve_resource_file
 from mycroft.messagebus.message import Message
+from mycroft.util.log import LOG
 
 
 class CQSMatchLevel(IntEnum):
@@ -140,8 +141,8 @@ class CommonQuerySkill(MycroftSkill, ABC):
             consumed_pct = 1.0
         consumed_pct /= 10
 
-        # bonus for more sentences
-        num_sentences = float(float(len(answer.split("."))) / float(10))
+        # penalty for more sentences
+        num_sentences = -float(float(len(answer.split("."))) / float(10))
 
         # Add bonus if match has visuals and the device supports them.
         bonus = 0.0
