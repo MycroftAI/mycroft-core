@@ -146,13 +146,21 @@ class IntentServiceInterface:
             'name': entity_name
         }))
 
-    def register_regex_intent(self, intent_name, pattern_str):
+    def register_regex_intent(self, intent_name, filename):
         """Register a regex intent.
 
         Args:
             intent_name(str): intent identifier
-            pattern_str(str): regex pattern
+            filename(str): complete file path for regex file
         """
+        if not isinstance(filename, str):
+            raise ValueError('Filename path must be a string')
+        if not exists(filename):
+            raise FileNotFoundError('Unable to find "{}"'.format(filename))
+
+        with open(filename, "r", encoding="utf-8") as regex_file:
+            pattern_str = regex_file.read().strip()
+
         data = {"pattern": pattern_str,
                 "name": intent_name}
         self.bus.emit(Message("regex:register_intent", data))

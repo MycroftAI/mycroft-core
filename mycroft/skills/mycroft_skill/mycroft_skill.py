@@ -922,10 +922,10 @@ class MycroftSkill:
         """
         if isinstance(intent_parser, IntentBuilder):
             intent_parser = intent_parser.build()
-        if isinstance(intent_parser, re.Pattern):
-            return self.register_regex_intent(intent_parser, handler)
         if isinstance(intent_parser, str) and intent_parser.endswith(".intent"):
             return self.register_intent_file(intent_parser, handler)
+        if isinstance(intent_parser, str) and intent_parser.endswith(".rx"):
+            return self.register_regex_intent(intent_parser, handler)
         elif not isinstance(intent_parser, Intent):
             raise ValueError('"' + str(intent_parser) + '" is not an Intent')
 
@@ -988,18 +988,20 @@ class MycroftSkill:
         name = "{}:{}".format(self.skill_id, entity_file)
         self.intent_service.register_padatious_entity(name, str(entity.file_path))
 
-    def register_regex_intent(self, intent_pattern, handler):
+    def register_regex_intent(self, intent_file, handler):
         """Register a regular expression pattern with the intent service
 
         Args:
-            intent_file: compiled regex pattern that matches the entire
+            intent_file: path to file with regex pattern that matches the entire
                          utterance
             handler:     function to register with intent
         """
-        name = "{}:{}".format(self.skill_id, intent_pattern.pattern)
-        self.intent_service.register_regex_intent(
-            name, intent_pattern.pattern
-        )
+        regex = ResourceFile(self.resources.types.regex, intent_file)
+        if regex.file_path is None:
+            raise FileNotFoundError('Unable to find "{}"'.format(intent_file))
+
+        name = "{}:{}".format(self.skill_id, intent_file)
+        self.intent_service.register_regex_intent(name, str(regex.file_path))
         if handler:
             self.add_event(name, handler, "mycroft.skill.handler")
 

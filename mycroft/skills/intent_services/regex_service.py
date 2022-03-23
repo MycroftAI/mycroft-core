@@ -33,7 +33,9 @@ class RegexService:
         name = message.data["name"]
         pattern = message.data["pattern"]
 
-        self.patterns[name] = re.compile(pattern)
+        compiled_pattern = re.compile(pattern)
+        self.patterns[name] = compiled_pattern
+        LOG.info("Registered regex intent: %s", compiled_pattern.pattern)
 
     def match_intent(self, utterances, _=None, __=None):
         """Run regex matches.
@@ -54,6 +56,7 @@ class RegexService:
                 for variant in utt:
                     match = pattern.match(variant)
                     if match:
+                        LOG.info("'%s' matched %s", variant, pattern.pattern)
                         skill_id = name.split(":")[0]
                         return IntentMatch("regex", name, match.groupdict(), skill_id)
 
