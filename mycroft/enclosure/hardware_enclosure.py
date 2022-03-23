@@ -15,10 +15,8 @@
 import importlib
 import threading
 import time
-from mycroft.util import create_signal
-import RPi.GPIO as GPIO
-import os
-from mycroft.util.log import LOG
+
+from mycroft.util import LOG, create_signal
 
 
 class HardwareEnclosure:
