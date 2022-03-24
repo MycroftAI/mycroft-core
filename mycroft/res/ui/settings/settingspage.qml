@@ -4,10 +4,12 @@ import QtQuick.Controls 2.0
 import org.kde.kirigami 2.5 as Kirigami
 import org.kde.plasma.core 2.0 as PlasmaCore
 import Mycroft 1.0 as Mycroft
+import QtGraphicalEffects 1.12
 
 Item {
     id: deviceSettingsView
     anchors.fill: parent
+    z: 2
     
     Item {
         id: topArea
@@ -23,7 +25,7 @@ Item {
             anchors.centerIn: parent
             font.bold: true
             text: "Device Settings"
-            color: "white"
+            color: Kirigami.Theme.textColor
         }
     }
 
@@ -32,7 +34,7 @@ Item {
         anchors.topMargin: Kirigami.Units.largeSpacing
         anchors.left: parent.left
         anchors.right: parent.right
-        anchors.bottom: areaSep.top
+        anchors.bottom: bottomArea.top
         anchors.bottomMargin: Kirigami.Units.largeSpacing
         
         ListView {
@@ -41,7 +43,7 @@ Item {
             model: SettingsModel{}
             boundsBehavior: Flickable.StopAtBounds
             delegate: Kirigami.AbstractListItem {
-                activeBackgroundColor: Qt.rgba(1, 0, 0, 0.7)
+                activeBackgroundColor: Qt.rgba(Kirigami.Theme.highlightColor.r, Kirigami.Theme.highlightColor.g, Kirigami.Theme.highlightColor.b, 0.7)
                 contentItem: Item {
                 implicitWidth: delegateLayout.implicitWidth;
                 implicitHeight: delegateLayout.implicitHeight;
@@ -59,10 +61,17 @@ Item {
                             spacing: Math.round(units.gridUnit / 2)
                 
                             Image {
+                                id: iconSettingHolder
                                 Layout.alignment: Qt.AlignVCenter | Qt.AlignLeft
                                 Layout.preferredHeight: units.iconSizes.medium
                                 Layout.preferredWidth: units.iconSizes.medium
                                 source: model.settingIcon
+
+                                ColorOverlay {
+                                    anchors.fill: parent
+                                    source: iconSettingHolder
+                                    color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.7)
+                                }
                             }
 
                             
@@ -76,6 +85,7 @@ Item {
                                 font.weight: Font.DemiBold
                                 text: model.settingName
                                 textFormat: Text.PlainText
+                                color: Kirigami.Theme.textColor
                                 level: 2
                             }
                         }
@@ -89,21 +99,21 @@ Item {
         }
     }
     
-    Kirigami.Separator {
-        id: areaSep
-        anchors.bottom: bottomArea.top
-        anchors.left: parent.left
-        anchors.right: parent.right
-        height: 1
-    }
-    
     Item {
         id: bottomArea
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.bottom: parent.bottom
-        anchors.bottomMargin: Kirigami.Units.largeSpacing * 1.15
-        height: backIcon.implicitHeight + Kirigami.Units.largeSpacing * 1.15
+        height: Mycroft.Units.gridUnit * 6
+
+        Kirigami.Separator {
+            id: areaSep
+            anchors.top: parent.top
+            anchors.left: parent.left
+            anchors.right: parent.right
+            color: Kirigami.Theme.highlightColor
+            height: 2
+        }
 
         RowLayout {
             anchors.fill: parent
@@ -113,6 +123,13 @@ Item {
                 source: "images/back.png"
                 Layout.preferredHeight: Kirigami.Units.iconSizes.medium
                 Layout.preferredWidth: Kirigami.Units.iconSizes.medium
+
+                ColorOverlay {
+                    anchors.fill: parent
+                    source: backIcon
+                    cached: true
+                    color: Kirigami.Theme.textColor
+                }
             }
             
             Kirigami.Heading {
@@ -120,6 +137,7 @@ Item {
                 wrapMode: Text.WordWrap
                 font.bold: true
                 text: "Home"
+                color: Kirigami.Theme.textColor
                 verticalAlignment: Text.AlignVCenter
                 Layout.fillWidth: true
                 Layout.preferredHeight: Kirigami.Units.gridUnit * 2

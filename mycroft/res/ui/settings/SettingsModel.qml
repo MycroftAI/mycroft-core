@@ -14,6 +14,12 @@ ListModel {
         settingCall: "show homescreen settings"
     }
     ListElement {
+        settingIcon: "images/paint.svg"
+        settingName: "Customize"
+        settingEvent: "mycroft.device.settings.customize"
+        settingCall: ""
+    }
+    ListElement {
         settingIcon: "images/ssh.svg"
         settingName: "Enable SSH"
         settingEvent: "mycroft.device.settings.ssh"

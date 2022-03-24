@@ -32,6 +32,8 @@ class SmartSpeakerExtensionGuiInterface(GUIInterface):
                               self.handle_device_developer_disable_dash)
         self.register_handler("mycroft.device.show.idle",
                               self.handle_show_homescreen)
+        self.register_handler("mycroft.device.settings.customize",
+                              self.handle_device_customize_settings)
 
     def handle_device_settings(self, message):
         """ Display device settings page. """
@@ -91,6 +93,10 @@ class SmartSpeakerExtensionGuiInterface(GUIInterface):
             self["dashboard_url"] = ""
             self["dashboard_user"] = ""
             self["dashboard_password"] = ""
+
+    def handle_device_customize_settings(self, message):
+        self['state'] = 'settings/customize_settings'
+        self.show_page("SYSTEM_AdditionalSettings.qml", override_idle=True)
 
     def handle_get_dash_status(self):
         self.bus.emit(Message("ovos.PHAL.dashboard.get.status"))

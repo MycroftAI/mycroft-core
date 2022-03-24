@@ -21,6 +21,7 @@ import QtQuick.Controls 2.0
 import org.kde.kirigami 2.5 as Kirigami
 import org.kde.plasma.core 2.0 as PlasmaCore
 import Mycroft 1.0 as Mycroft
+import QtGraphicalEffects 1.12
 
 Item {
     id: homeScreenSettingsView
@@ -58,7 +59,7 @@ Item {
             anchors.centerIn: parent
             font.bold: true
             text: "Homescreen Settings"
-            color: "white"
+            color: Kirigami.Theme.textColor
         }
     }
 
@@ -67,7 +68,7 @@ Item {
         anchors.topMargin: Kirigami.Units.largeSpacing
         anchors.left: parent.left
         anchors.right: parent.right
-        anchors.bottom: areaSep.top
+        anchors.bottom: bottomArea.top
         
       ListView {
             id: listIdleFaces
@@ -99,6 +100,7 @@ Item {
                                 elide: Text.ElideRight
                                 font.weight: Font.DemiBold
                                 verticalAlignment: Text.AlignVCenter
+                                color: Kirigami.Theme.textColor
                                 text: modelData.name
                                 textFormat: Text.PlainText
                                 level: 2
@@ -127,21 +129,21 @@ Item {
         }
     }
     
-    Kirigami.Separator {
-        id: areaSep
-        anchors.bottom: bottomArea.top
-        anchors.left: parent.left
-        anchors.right: parent.right
-        height: 1
-    }
-    
     Item {
         id: bottomArea
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.bottom: parent.bottom
-        anchors.bottomMargin: Kirigami.Units.largeSpacing * 1.15
-        height: backIcon.implicitHeight + Kirigami.Units.largeSpacing * 1.15
+        height: Mycroft.Units.gridUnit * 6
+
+        Kirigami.Separator {
+            id: areaSep
+            anchors.top: parent.top
+            anchors.left: parent.left
+            anchors.right: parent.right
+            color: Kirigami.Theme.highlightColor
+            height: 2
+        }
 
         RowLayout {
             anchors.fill: parent
@@ -151,6 +153,13 @@ Item {
                 source: "images/back.png"
                 Layout.preferredHeight: Kirigami.Units.iconSizes.medium
                 Layout.preferredWidth: Kirigami.Units.iconSizes.medium
+
+                ColorOverlay {
+                    anchors.fill: parent
+                    source: backIcon
+                    cached: true
+                    color: Kirigami.Theme.textColor
+                }
             }
             
             Kirigami.Heading {
@@ -158,6 +167,7 @@ Item {
                 wrapMode: Text.WordWrap
                 font.bold: true
                 text: "Device Settings"
+                color: Kirigami.Theme.textColor
                 verticalAlignment: Text.AlignVCenter
                 Layout.fillWidth: true
                 Layout.preferredHeight: Kirigami.Units.gridUnit * 2

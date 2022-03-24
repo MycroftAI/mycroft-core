@@ -21,11 +21,12 @@ import QtQuick.Controls 2.0
 import org.kde.kirigami 2.5 as Kirigami
 import org.kde.plasma.core 2.0 as PlasmaCore
 import Mycroft 1.0 as Mycroft
+import QtGraphicalEffects 1.12
 
 Item {
     id: developerSettingsView
     anchors.fill: parent
-    property bool dashActive: sessionData.dashboard_enabled
+    property bool dashActive: sessionData.dashboard_enabled ? Boolean(sessionData.dashboard_enabled) : false
     property bool busyVisible: false
 
     onDashActiveChanged: {
@@ -46,7 +47,7 @@ Item {
             anchors.centerIn: parent
             font.bold: true
             text: "Developer Settings"
-            color: "white"
+            color: Kirigami.Theme.textColor
         }
     }
 
@@ -56,7 +57,7 @@ Item {
         anchors.top: topArea.bottom
         anchors.left: parent.left
         anchors.right: parent.right
-        anchors.bottom: areaSep.top
+        anchors.bottom: bottomArea.top
         visible: developerSettingsView.busyVisible
         enabled: visible
 
@@ -74,7 +75,7 @@ Item {
         anchors.topMargin: Kirigami.Units.largeSpacing
         anchors.left: parent.left
         anchors.right: parent.right
-        anchors.bottom: areaSep.top
+        anchors.bottom: bottomArea.top
         
         ColumnLayout {
             anchors.left: parent.left
@@ -86,6 +87,7 @@ Item {
                 level: 3
                 Layout.fillWidth: true
                 wrapMode: Text.WordWrap
+                color: Kirigami.Theme.textColor
                 text: "Enabling OVOS Dashboard will provide you access to control various services on this device, the OVOS Dashboard can be accessed on any device located in your LAN network"
             }
             
@@ -129,6 +131,7 @@ Item {
                 Layout.fillWidth: true
                 wrapMode: Text.WordWrap
                 level: 3
+                color: Kirigami.Theme.textColor
                 text: "Dashboard Address: " +  sessionData.dashboard_url
                 visible: dashActive
                 enabled: visible
@@ -138,6 +141,7 @@ Item {
                 Layout.fillWidth: true
                 wrapMode: Text.WordWrap
                 level: 3
+                color: Kirigami.Theme.textColor
                 text: "Dashboard Username: " + sessionData.dashboard_user
                 visible: dashActive
                 enabled: visible
@@ -147,19 +151,12 @@ Item {
                 Layout.fillWidth: true
                 wrapMode: Text.WordWrap
                 level: 3
+                color: Kirigami.Theme.textColor
                 text: "Dashboard Password: " + sessionData.dashboard_password
                 visible: dashActive
                 enabled: visible
             }
         }
-    }
-
-    Kirigami.Separator {
-        id: areaSep
-        anchors.bottom: bottomArea.top
-        anchors.left: parent.left
-        anchors.right: parent.right
-        height: 1
     }
     
     Item {
@@ -167,8 +164,16 @@ Item {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.bottom: parent.bottom
-        anchors.bottomMargin: Kirigami.Units.largeSpacing * 1.15
-        height: backIcon.implicitHeight + Kirigami.Units.largeSpacing * 1.15
+        height: Mycroft.Units.gridUnit * 6
+
+        Kirigami.Separator {
+            id: areaSep
+            anchors.top: parent.top
+            anchors.left: parent.left
+            anchors.right: parent.right
+            color: Kirigami.Theme.highlightColor
+            height: 2
+        }
 
         RowLayout {
             anchors.fill: parent
@@ -178,6 +183,13 @@ Item {
                 source: "images/back.png"
                 Layout.preferredHeight: Kirigami.Units.iconSizes.medium
                 Layout.preferredWidth: Kirigami.Units.iconSizes.medium
+
+                ColorOverlay {
+                    anchors.fill: parent
+                    source: backIcon
+                    cached: true
+                    color: Kirigami.Theme.textColor
+                }
             }
             
             Kirigami.Heading {
@@ -185,6 +197,7 @@ Item {
                 wrapMode: Text.WordWrap
                 font.bold: true
                 text: "Device Settings"
+                color: Kirigami.Theme.textColor
                 verticalAlignment: Text.AlignVCenter
                 Layout.fillWidth: true
                 Layout.preferredHeight: Kirigami.Units.gridUnit * 2
