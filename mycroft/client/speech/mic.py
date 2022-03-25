@@ -546,10 +546,14 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         num_chunks = 0
 
         self.silence_detector.start()
+        if stream:
+            stream.stream_start()
         for chunk in source.stream.iter_chunks():
             if check_for_signal('buttonPress'):
                 break
 
+            if stream:
+                stream.stream_chunk(chunk)
             result = self.silence_detector.process(chunk)
             if result.type in { SilenceResultType.PHRASE_END, SilenceResultType.TIMEOUT }:
                 break
@@ -864,7 +868,6 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
 
         LOG.debug("Recording...")
         self.loop.emit("recognizer_loop:record_begin")
-
         frame_data = self._record_phrase(
             source,
             sec_per_buffer,

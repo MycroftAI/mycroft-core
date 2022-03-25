@@ -42,13 +42,13 @@ class AudioStreamHandler:
         self.queue = queue
 
     def stream_start(self):
-        self.queue.put((STREAM_START, None))
+        self.queue.put((STREAM_START, None, None))
 
-    def stream_chunk(self, chunk):
-        self.queue.put((STREAM_DATA, chunk))
+    def stream_chunk(self, chunk, lang=None):
+        self.queue.put((STREAM_DATA, chunk, lang))
 
     def stream_stop(self):
-        self.queue.put((STREAM_STOP, None))
+        self.queue.put((STREAM_STOP, None, None))
 
 
 class AudioProducer(Thread):
