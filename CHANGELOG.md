@@ -2,7 +2,15 @@
 
 ## [Unreleased](https://github.com/OpenVoiceOS/ovos-core/tree/HEAD)
 
-[Full Changelog](https://github.com/OpenVoiceOS/ovos-core/compare/V0.0.2a26...HEAD)
+[Full Changelog](https://github.com/OpenVoiceOS/ovos-core/compare/V0.0.2a27...HEAD)
+
+**Fixed bugs:**
+
+- Fix bug in streaming STT audio stream handling [\#98](https://github.com/OpenVoiceOS/ovos-core/pull/98) ([NeonDaniel](https://github.com/NeonDaniel))
+
+## [V0.0.2a27](https://github.com/OpenVoiceOS/ovos-core/tree/V0.0.2a27) (2022-03-24)
+
+[Full Changelog](https://github.com/OpenVoiceOS/ovos-core/compare/V0.0.2a26...V0.0.2a27)
 
 **Implemented enhancements:**
 
