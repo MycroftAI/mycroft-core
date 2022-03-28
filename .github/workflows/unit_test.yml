@@ -76,5 +76,5 @@ jobs:
       env:
         SHELLCHECK_OPTS: -x
       with:
-        ignore_names: 'stop-mycroft.sh venv-activate.sh run_test_suite.sh'
+        ignore_names: 'venv-activate.sh run_test_suite.sh'
 #        ignore_paths: doc mycroft test requirements
