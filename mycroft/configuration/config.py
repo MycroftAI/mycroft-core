@@ -22,6 +22,7 @@ from os.path import dirname, exists, isfile, join
 import xdg.BaseDirectory
 from requests import HTTPError, RequestException
 
+from mycroft.util import camel_case_split
 from mycroft.util.combo_lock import ComboLock
 from mycroft.util.file_utils import get_temp_path
 from mycroft.util.json_helper import load_commented_json, merge_dict
@@ -53,7 +54,8 @@ def translate_remote(config, setting):
         if k not in IGNORED_SETTINGS:
             # Translate the CamelCase values stored remotely into the
             # Python-style names used within mycroft-core.
-            key = inflection.underscore(re.sub(r"Setting(s)?", "", k))
+            key = re.sub(r"Setting(s)?", "", k)
+            key = camel_case_split(key).replace(" ", "_").lower()
             if isinstance(v, dict):
                 config[key] = config.get(key, {})
                 translate_remote(config[key], v)
