@@ -1,4 +1,3 @@
-
 # Copyright 2017 Mycroft AI Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,7 +19,6 @@ import re
 from http import HTTPStatus
 from os.path import dirname, exists, isfile, join
 
-import inflection
 import xdg.BaseDirectory
 from requests import HTTPError, RequestException
 
@@ -29,13 +27,11 @@ from mycroft.util.file_utils import get_temp_path
 from mycroft.util.json_helper import load_commented_json, merge_dict
 from mycroft.util.log import LOG
 
-from .locations import (DEFAULT_CONFIG, OLD_USER_CONFIG, SYSTEM_CONFIG,
-                        USER_CONFIG)
+from .locations import DEFAULT_CONFIG, OLD_USER_CONFIG, SYSTEM_CONFIG, USER_CONFIG
 
 
 def is_remote_list(values):
-    """Check if list corresponds to a backend formatted collection of dicts
-    """
+    """Check if list corresponds to a backend formatted collection of dicts"""
     for v in values:
         if not isinstance(v, dict):
             return False
@@ -89,7 +85,8 @@ def translate_list(config, values):
 
 class LocalConf(dict):
     """Config dictionary from file."""
-    _lock = ComboLock(get_temp_path('local-conf.lock'))
+
+    _lock = ComboLock(get_temp_path("local-conf.lock"))
 
     def __init__(self, path):
         super(LocalConf, self).__init__()
@@ -128,7 +125,7 @@ class LocalConf(dict):
             if not exists(config_dir):
                 os.makedirs(config_dir)
 
-            with open(path, 'w') as f:
+            with open(path, "w") as f:
                 json.dump(self, f, indent=2)
 
     def merge(self, conf):
@@ -136,16 +133,19 @@ class LocalConf(dict):
 
 
 class RemoteConf(LocalConf):
-    _lock = ComboLock(get_temp_path('remote-conf.lock'))
+    _lock = ComboLock(get_temp_path("remote-conf.lock"))
     """Config dictionary fetched from mycroft.ai."""
+
     def __init__(self, cache=None):
         super(RemoteConf, self).__init__(None)
 
-        cache = cache or join(xdg.BaseDirectory.xdg_cache_home, 'mycroft',
-                              'web_cache.json')
+        cache = cache or join(
+            xdg.BaseDirectory.xdg_cache_home, "mycroft", "web_cache.json"
+        )
         try:
             # Here to avoid cyclic import
             from mycroft.api import DeviceApi
+
             api = DeviceApi()
             setting = api.get_settings()
 
@@ -153,10 +153,11 @@ class RemoteConf(LocalConf):
             try:
                 location = api.get_location()
             except RequestException as e:
-                LOG.error("RequestException fetching remote location: {}"
-                          .format(str(e)))
+                LOG.error(
+                    "RequestException fetching remote location: {}".format(str(e))
+                )
                 if exists(cache) and isfile(cache):
-                    location = load_commented_json(cache).get('location')
+                    location = load_commented_json(cache).get("location")
 
             if location:
                 setting["location"] = location
@@ -175,24 +176,28 @@ class RemoteConf(LocalConf):
             LOG.exception("Failed to fetch remote configuration")
             self.load_local(cache)
         except Exception as e:
-            LOG.error("Failed to fetch remote configuration: %s" % repr(e),
-                      exc_info=True)
+            LOG.error(
+                "Failed to fetch remote configuration: %s" % repr(e), exc_info=True
+            )
             self.load_local(cache)
 
 
 def _log_old_location_deprecation():
-    LOG.warning("\n ===============================================\n"
-                " ==             DEPRECATION WARNING           ==\n"
-                " ===============================================\n"
-                f" You still have a config file at {OLD_USER_CONFIG}\n"
-                " Note that this location is deprecated and will"
-                " not be used in the future\n"
-                " Please move it to "
-                f"{join(xdg.BaseDirectory.xdg_config_home, 'mycroft')}")
+    LOG.warning(
+        "\n ===============================================\n"
+        " ==             DEPRECATION WARNING           ==\n"
+        " ===============================================\n"
+        f" You still have a config file at {OLD_USER_CONFIG}\n"
+        " Note that this location is deprecated and will"
+        " not be used in the future\n"
+        " Please move it to "
+        f"{join(xdg.BaseDirectory.xdg_config_home, 'mycroft')}"
+    )
 
 
 class Configuration:
     """Namespace for operations on the configuration singleton."""
+
     __config = {}  # Cached config
     __patch = {}  # Patch config that skills can update to override config
 
@@ -237,8 +242,8 @@ class Configuration:
             # Then use XDG config
             # This includes both the user config and
             # /etc/xdg/mycroft/mycroft.conf
-            for conf_dir in xdg.BaseDirectory.load_config_paths('mycroft'):
-                configs.append(LocalConf(join(conf_dir, 'mycroft.conf')))
+            for conf_dir in xdg.BaseDirectory.load_config_paths("mycroft"):
+                configs.append(LocalConf(join(conf_dir, "mycroft.conf")))
 
             # Then check the old user config
             if isfile(OLD_USER_CONFIG):
