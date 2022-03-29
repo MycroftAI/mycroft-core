@@ -14,23 +14,23 @@
 # limitations under the License.
 #
 
-import inflection
 import json
 import os
 import re
 from http import HTTPStatus
-from os.path import exists, isfile, join, dirname
+from os.path import dirname, exists, isfile, join
 
-from requests import RequestException, HTTPError
+import inflection
 import xdg.BaseDirectory
+from requests import HTTPError, RequestException
 
 from mycroft.util.combo_lock import ComboLock
 from mycroft.util.file_utils import get_temp_path
 from mycroft.util.json_helper import load_commented_json, merge_dict
 from mycroft.util.log import LOG
 
-from .locations import DEFAULT_CONFIG, USER_CONFIG, OLD_USER_CONFIG
-from .locations import SYSTEM_CONFIG
+from .locations import (DEFAULT_CONFIG, OLD_USER_CONFIG, SYSTEM_CONFIG,
+                        USER_CONFIG)
 
 
 def is_remote_list(values):
