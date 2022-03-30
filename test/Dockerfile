@@ -80,10 +80,10 @@ RUN md5sum requirements.txt tests.txt extra-audiobackend.txt extra-stt.txt extra
 # Add the mycroft core virtual environment to the system path.
 ENV PATH /opt/mycroft/mycroft-core/.venv/bin:$PATH
 
-# Install Mark I default skills
-RUN msm -p mycroft_mark_1 default
+# Install Mark II default skills
+RUN msm -p mycroft_mark_2 default
 COPY . /opt/mycroft/mycroft-core
-RUN .venv/bin/python -m pip install --no-deps /opt/mycroft/mycroft-core
+# RUN .venv/bin/python -m pip install --no-deps /opt/mycroft/mycroft-core
 EXPOSE 8181
 
 
