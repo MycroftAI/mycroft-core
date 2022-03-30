@@ -28,3 +28,4 @@ pyxdg==0.27
 dbus-next==0.2.3
 pysdl2==0.9.11
 onnxruntime>=1.6,<2.0
+beautifulsoup4~=4.10.0
