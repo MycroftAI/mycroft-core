@@ -18,7 +18,7 @@ lingua-franca==0.4.2
 msm==0.8.9
 msk==0.3.16
 mycroft-messagebus-client==0.9.4
-adapt-parser==1.0.0x
+https://github.com/MycroftAI/adapt/tarball/feature/exclude_and_exactly
 padatious==0.4.8
 fann2==1.0.7
 padaos==0.1.9
