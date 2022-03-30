@@ -63,7 +63,7 @@ RUN python3 -m venv "/opt/mycroft/mycroft-core/.venv"
 # Install required Python packages.  Generate hash, which mycroft core uses to
 # determine if any changes have been made since it last started
 WORKDIR /opt/mycroft/mycroft-core
-RUN .venv/bin/python -m pip install pip==20.0.2
+RUN .venv/bin/python -m pip install pip==22.0.4
 COPY requirements/requirements.txt .
 RUN .venv/bin/python -m pip install -r requirements.txt
 COPY requirements/extra-audiobackend.txt .
