@@ -48,10 +48,9 @@ jobs:
     - name: Install Python packages for testing
       run: pip install -r requirements/tests.txt
     - name: Setup mycroft core
-      # Only build mimic for one Python version; others should not differ
+      # Do not build mimic 1 for the Mark II branch
       run: |
-        if [[ ${{ matrix.python-version }} == 3.9 ]]; then ./dev_setup.sh; fi
-        if [[ ${{ matrix.python-version }} != 3.9 ]]; then ./dev_setup.sh -sm; fi
+        ./dev_setup.sh -sm;
       env:
         CI: true
     - name: Linting and code style
