@@ -57,7 +57,7 @@ jobs:
     - name: Linting and code style
       run: |
         pycodestyle mycroft test
-        flake8 mycroft test --count --select=E9,F63,F7,F82 --show-source --statistics --max-line-length=88
+        flake8 mycroft test --max-line-length=88 --count --select=E9,F63,F7,F82 --show-source --statistics
     - name: Run unit tests
       # Only generate the html report for one of the versions, others should not differ
       run: |
