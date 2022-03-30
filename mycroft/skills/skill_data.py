@@ -35,8 +35,8 @@ SkillResourceTypes = namedtuple(
         "regex",
         "template",
         "vocabulary",
-        "word"
-    ]
+        "word",
+    ],
 )
 
 
@@ -110,7 +110,7 @@ class ResourceType:
             regex="regex",
             template="dialog",
             vocab="vocab",
-            word="dialog"
+            word="dialog",
         )
 
         return subdirectories[self.resource_type]
@@ -231,6 +231,7 @@ class VocabularyFile(ResourceFile):
 
 class NamedValueFile(ResourceFile):
     """Defines a named value file, which maps a variable to a values."""
+
     def __init__(self, resource_type, resource_name):
         super().__init__(resource_type, resource_name)
         self.delimiter = ","
@@ -330,7 +331,7 @@ class SkillResources:
             regex=ResourceType("regex", ".rx", self.language),
             template=ResourceType("template", ".template", self.language),
             vocabulary=ResourceType("vocab", ".voc", self.language),
-            word=ResourceType("word", ".word", self.language)
+            word=ResourceType("word", ".word", self.language),
         )
         for resource_type in resource_types.values():
             resource_type.locate_base_directory(self.skill_directory)
@@ -502,7 +503,7 @@ class SkillResources:
 
     @staticmethod
     def _make_unique_regex_group(
-            regexes: List[str], alphanumeric_skill_id: str
+        regexes: List[str], alphanumeric_skill_id: str
     ) -> List[str]:
         """Adds skill ID to group ID in a regular expression for uniqueness.
 
@@ -610,6 +611,18 @@ def to_alnum(skill_id):
         (str) String of letters
     """
     return "".join(c if c.isalnum() else "_" for c in str(skill_id))
+
+
+def munge_regex(regex, skill_id):
+    """Insert skill id as letters into match groups.
+    Args:
+        regex (str): regex string
+        skill_id (str): skill identifier
+    Returns:
+        (str) munged regex
+    """
+    base = "(?P<" + to_alnum(skill_id)
+    return base.join(regex.split("(?P<"))
 
 
 def munge_intent_parser(intent_parser, name, skill_id):

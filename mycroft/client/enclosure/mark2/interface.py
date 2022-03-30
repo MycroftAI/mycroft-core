@@ -91,7 +91,7 @@ class LedThread(threading.Thread):
         self.queue = Queue()
         self.animation_running = False
         self.animation_name: typing.Optional[str] = None
-        self._context: typing.Dict[str, Any] = dict()
+        self._context: typing.Dict[str, typing.Any] = dict()
 
         super().__init__()
 
@@ -481,14 +481,17 @@ class EnclosureMark2(Enclosure):
         bus_address = dbus_config.get("bus_address")
 
         network_activity = NetworkConnectActivity(
-            "hardware.network-detection", self.bus, dbus_address=bus_address,
+            "hardware.network-detection",
+            self.bus,
+            dbus_address=bus_address,
         )
         network_activity.run()
 
     def _detect_internet(self):
         """Check internet connectivity with network_utils"""
         internet_activity = InternetConnectActivity(
-            "hardware.internet-detection", self.bus,
+            "hardware.internet-detection",
+            self.bus,
         )
         internet_activity.run()
 
@@ -549,7 +552,6 @@ class EnclosureMark2(Enclosure):
             interval=self._idle_dim_timeout,
             name="DimScreen",
         )
-
 
     def on_hardware_mute(self):
         """Called when hardware switch is set to mute"""

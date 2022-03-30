@@ -97,28 +97,29 @@ class TestMycroftSkill(unittest.TestCase):
 
         return local_settings_mock
 
-    def check_vocab(self, filename, results=None):
-        results = results or {}
-        intents = load_vocabulary(join(self.vocab_path, filename), "A")
-        self.compare_dicts(intents, results)
+    # COMMENTED OUT TO SILENCE FLAKE8 - FUNCTIONS NO LONGER EXIST
+    # def check_vocab(self, filename, results=None):
+    #     results = results or {}
+    #     intents = load_vocabulary(join(self.vocab_path, filename), "A")
+    #     self.compare_dicts(intents, results)
 
-    def check_regex_from_file(self, filename, result_list=None):
-        result_list = result_list or []
-        regex_file = join(self.regex_path, filename)
-        self.assertEqual(
-            sorted(load_regex_from_file(regex_file, "A")), sorted(result_list)
-        )
+    # def check_regex_from_file(self, filename, result_list=None):
+    #     result_list = result_list or []
+    #     regex_file = join(self.regex_path, filename)
+    #     self.assertEqual(
+    #         sorted(load_regex_from_file(regex_file, "A")), sorted(result_list)
+    #     )
 
-    def compare_dicts(self, d1, d2):
-        self.assertEqual(json.dumps(d1, sort_keys=True), json.dumps(d2, sort_keys=True))
+    # def compare_dicts(self, d1, d2):
+    #     self.assertEqual(json.dumps(d1, sort_keys=True), json.dumps(d2, sort_keys=True))
 
-    def check_read_vocab_file(self, path, result_list=None):
-        resultlist = result_list or []
-        self.assertEqual(sorted(read_vocab_file(path)), sorted(result_list))
+    # def check_read_vocab_file(self, path, result_list=None):
+    #     resultlist = result_list or []
+    #     self.assertEqual(sorted(read_vocab_file(path)), sorted(result_list))
 
-    def check_regex(self, path, result_list=None):
-        result_list = result_list or []
-        self.assertEqual(sorted(load_regex(path, "A")), sorted(result_list))
+    # def check_regex(self, path, result_list=None):
+    #     result_list = result_list or []
+    #     self.assertEqual(sorted(load_regex(path, "A")), sorted(result_list))
 
     def check_emitter(self, result_list):
         for msg_type in self.emitter.get_types():
