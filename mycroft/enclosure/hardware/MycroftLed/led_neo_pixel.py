@@ -44,27 +44,27 @@ class Led:
         process = Popen(cmd, shell=True)
 
     def fill(self, color):
-        """ set all leds to the same color """
+        """set all leds to the same color"""
         self.leds = list((color,) * self.num_leds)
         self._update_leds()
 
     def set_leds(self, input_leds):
-        """ set all leds from list of tuples """
+        """set all leds from list of tuples"""
         for x in range(self.num_leds):
             self.leds[x] = input_leds[x]
         self._update_leds()
 
     def get_leds(self):
-        """ get a list of color rgb tuples """
+        """get a list of color rgb tuples"""
         return self.leds
 
     def set_led(self, which, color):
-        """ set a led to some color where color is an RGB tuple """
+        """set a led to some color where color is an RGB tuple"""
         self.leds[which % self.num_leds] = color
         self._update_leds()
 
     def get_led(self, which):
-        """ get the color (rgb tuple) of a particular led. """
+        """get the color (rgb tuple) of a particular led."""
         return self.leds[which % self.num_leds]
 
     def _set_led(self, which, color):

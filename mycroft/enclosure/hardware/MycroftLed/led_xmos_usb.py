@@ -18,7 +18,7 @@ from mycroft.enclosure.hardware.MycroftLed.MycroftLed import MycroftLed
 
 class Led(MycroftLed):
     """note: we try to minimize the number of led writes
-       by not writing the same value to the same led"""
+    by not writing the same value to the same led"""
 
     real_num_leds = 12  # physical
     num_leds = 10  # logical

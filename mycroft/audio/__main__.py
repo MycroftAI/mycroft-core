@@ -16,19 +16,15 @@
 
     This handles playback of audio and speech
 """
+import mycroft.audio.speech as speech
 from mycroft.messagebus import Message
-from mycroft.util import (
-    check_for_signal,
-    reset_sigint_handler,
-    start_message_bus_client,
-    wait_for_exit_signal
-)
+from mycroft.util import (check_for_signal, reset_sigint_handler,
+                          start_message_bus_client, wait_for_exit_signal)
 from mycroft.util.log import LOG
 from mycroft.util.process_utils import ProcessStatus, StatusCallbackMap
 
-import mycroft.audio.speech as speech
-
 from .audio_ui import AudioUserInterface
+
 
 def on_ready():
     LOG.info('Audio service is ready.')

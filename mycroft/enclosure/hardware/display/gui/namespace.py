@@ -49,12 +49,12 @@ from .bus import (
     create_gui_service,
     determine_if_gui_connected,
     get_gui_websocket_config,
-    send_message_to_gui
+    send_message_to_gui,
 )
 
 namespace_lock = Lock()
 
-RESERVED_KEYS = ['__from', '__idle']
+RESERVED_KEYS = ["__from", "__idle"]
 
 
 class Namespace:
@@ -75,6 +75,7 @@ class Namespace:
             displayed at the same time
         data: a key/value pair representing the data used to populate the GUI
     """
+
     def __init__(self, name: str):
         self.name = name
         self.persistent = False
@@ -84,24 +85,24 @@ class Namespace:
 
     def add(self):
         """Adds a namespace to the list of active namespaces."""
-        LOG.info(f"Adding \"{self.name}\" to active GUI namespaces")
+        LOG.info(f'Adding "{self.name}" to active GUI namespaces')
         message = dict(
             type="mycroft.session.list.insert",
             namespace="mycroft.system.active_skills",
             position=0,
-            data=[dict(skill_id=self.name)]
+            data=[dict(skill_id=self.name)],
         )
         send_message_to_gui(message)
 
     def activate(self, position: int):
         """Activates an namespace already in the list of active namespaces."""
-        LOG.info(f"Activating GUI namespace \"{self.name}\"")
+        LOG.info(f'Activating GUI namespace "{self.name}"')
         message = {
             "type": "mycroft.session.list.move",
             "namespace": "mycroft.system.active_skills",
             "from": position,
             "to": 0,
-            "items_number": 1
+            "items_number": 1,
         }
         send_message_to_gui(message)
 
@@ -112,7 +113,7 @@ class Namespace:
             type="mycroft.session.list.remove",
             namespace="mycroft.system.active_skills",
             position=position,
-            items_number=1
+            items_number=1,
         )
         send_message_to_gui(message)
         self.pages = list()
@@ -126,9 +127,7 @@ class Namespace:
             value: The attribute's value
         """
         message = dict(
-            type="mycroft.session.set",
-            namespace=self.name,
-            data={name: value}
+            type="mycroft.session.set", namespace=self.name, data={name: value}
         )
         send_message_to_gui(message)
 
@@ -186,7 +185,7 @@ class Namespace:
             type="mycroft.gui.list.insert",
             namespace=self.name,
             position=0,
-            data=[dict(url=page) for page in new_pages]
+            data=[dict(url=page) for page in new_pages],
         )
         send_message_to_gui(message)
 
@@ -202,7 +201,7 @@ class Namespace:
             type="mycroft.events.triggered",
             namespace=self.name,
             event_name="page_gained_focus",
-            data=dict(number=page_index)
+            data=dict(number=page_index),
         )
         send_message_to_gui(message)
 
@@ -219,7 +218,7 @@ class Namespace:
                 type="mycroft.gui.list.remove",
                 namespace=self.name,
                 position=position,
-                items_number=1
+                items_number=1,
             )
             send_message_to_gui(message)
 
@@ -232,9 +231,9 @@ def _validate_page_message(message: Message):
             from a namespace.
     """
     valid = (
-        "page" in message.data
-        and "__from" in message.data
-        and isinstance(message.data["page"], list)
+        "page" in message.data and
+        "__from" in message.data and
+        isinstance(message.data["page"], list)
     )
     if not valid:
         if message.msg_type == "gui.page.show":
@@ -270,6 +269,7 @@ class NamespaceManager:
             a persistence expressed in seconds
         idle_display_skill: skill ID of the skill that controls the idle screen
     """
+
     def __init__(self, core_bus: MessageBusClient):
         self.core_bus = core_bus
         self.gui_bus = create_gui_service(self)
@@ -296,11 +296,9 @@ class NamespaceManager:
             message: the message requesting namespace removal
         """
         try:
-            namespace_name = message.data['__from']
+            namespace_name = message.data["__from"]
         except KeyError:
-            LOG.error(
-                "Request to delete namespace failed: no namespace specified"
-            )
+            LOG.error("Request to delete namespace failed: no namespace specified")
         else:
             with namespace_lock:
                 self._remove_namespace(namespace_name)
@@ -315,14 +313,14 @@ class NamespaceManager:
         """
         try:
             message = dict(
-                type='mycroft.events.triggered',
-                namespace=message.data.get('__from'),
-                event_name=message.data.get('event_name'),
-                params=message.data.get('params')
+                type="mycroft.events.triggered",
+                namespace=message.data.get("__from"),
+                event_name=message.data.get("event_name"),
+                params=message.data.get("params"),
             )
             send_message_to_gui(message)
         except Exception:
-            LOG.exception('Could not send event trigger')
+            LOG.exception("Could not send event trigger")
 
     def handle_delete_page(self, message: Message):
         """Handles request to remove one or more pages from a namespace.
@@ -450,9 +448,7 @@ class NamespaceManager:
             namespace: the namespace to be removed
         """
         remove_namespace_timer = Timer(
-            namespace.duration,
-            self._remove_namespace_via_timer,
-            args=(namespace.name,)
+            namespace.duration, self._remove_namespace_via_timer, args=(namespace.name,)
         )
         remove_namespace_timer.start()
         self.remove_namespace_timers[namespace.name] = remove_namespace_timer
@@ -463,8 +459,10 @@ class NamespaceManager:
         try:
             del self.remove_namespace_timers[namespace_name]
         except KeyError:
-            LOG.warning(f"{namespace_name} not found in "
-                         "remove_namespace_timers dict during removal.")
+            LOG.warning(
+                f"{namespace_name} not found in "
+                "remove_namespace_timers dict during removal."
+            )
 
     def _remove_namespace(self, namespace_name: str):
         """Removes a namespace from the active namespace stack.
@@ -482,9 +480,7 @@ class NamespaceManager:
     def _emit_namespace_displayed_event(self):
         displaying_namespace = self.active_namespaces[0]
         message_data = dict(skill_id=displaying_namespace.name)
-        self.core_bus.emit(
-            Message("gui.namespace.displayed", data=message_data)
-        )
+        self.core_bus.emit(Message("gui.namespace.displayed", data=message_data))
 
     def handle_status_request(self, message: Message):
         """Handles a GUI status request by replying with the connection status.
@@ -505,11 +501,10 @@ class NamespaceManager:
             message: the request to set attribute values
         """
         try:
-            namespace_name = message.data['__from']
+            namespace_name = message.data["__from"]
         except KeyError:
             LOG.error(
-                "Request to set gui attribute value failed: no "
-                "namespace specified"
+                "Request to set gui attribute value failed: no " "namespace specified"
             )
         else:
             with namespace_lock:

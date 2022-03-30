@@ -252,7 +252,7 @@ class AudioUserInterface:
         """Play sound effect from uri"""
         if uri:
             assert uri.startswith("file://"), "Only file URIs are supported for effects"
-            file_path = uri[len("file://") :]
+            file_path = uri[len("file://"):]
             self._ahal.play_foreground(
                 ForegroundChannel.EFFECT, file_path, cache=True, volume=volume
             )
@@ -347,7 +347,7 @@ class AudioUserInterface:
 
                     # TODO: Support other URI types
                     assert request.uri.startswith("file://")
-                    file_path = request.uri[len("file://") :]
+                    file_path = request.uri[len("file://"):]
 
                     # Play TTS chunk
                     self._speech_finished.clear()
@@ -382,7 +382,10 @@ class AudioUserInterface:
     def _finish_tts_session(self, session_id: str, listen: bool = False):
         # Report speaking finished for speak(wait=True)
         self.bus.emit(
-            Message("mycroft.tts.speaking-finished", data={"session_id": session_id},)
+            Message(
+                "mycroft.tts.speaking-finished",
+                data={"session_id": session_id},
+            )
         )
 
         self.bus.emit(Message("recognizer_loop:audio_output_end"))

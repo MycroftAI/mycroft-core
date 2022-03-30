@@ -28,6 +28,7 @@ class Switch:
     and interrupt driven. Also note switches are
     pulled up so the active state is actually zero.
     """
+
     # GPIO pin numbers
     """ old sj201 mappings
     _SW_ACTION = 22
@@ -56,7 +57,7 @@ class Switch:
             "user_volup_handler": "button",
             "user_voldown_handler": "button",
             "user_action_handler": "button",
-            "user_mute_handler": "slider"
+            "user_mute_handler": "slider",
         }
 
         # use BCM GPIO pin numbering
@@ -95,25 +96,30 @@ class Switch:
         self.mute_handler = self.handle_mute
 
         # attach callbacks
-        GPIO.add_event_detect(self._SW_ACTION,
-                              GPIO.BOTH,
-                              callback=self.action_handler,
-                              bouncetime=debounce)
+        GPIO.add_event_detect(
+            self._SW_ACTION,
+            GPIO.BOTH,
+            callback=self.action_handler,
+            bouncetime=debounce,
+        )
 
-        GPIO.add_event_detect(self._SW_VOL_UP,
-                              GPIO.BOTH,
-                              callback=self.vol_up_handler,
-                              bouncetime=debounce)
+        GPIO.add_event_detect(
+            self._SW_VOL_UP,
+            GPIO.BOTH,
+            callback=self.vol_up_handler,
+            bouncetime=debounce,
+        )
 
-        GPIO.add_event_detect(self._SW_VOL_DOWN,
-                              GPIO.BOTH,
-                              callback=self.vol_down_handler,
-                              bouncetime=debounce)
+        GPIO.add_event_detect(
+            self._SW_VOL_DOWN,
+            GPIO.BOTH,
+            callback=self.vol_down_handler,
+            bouncetime=debounce,
+        )
 
-        GPIO.add_event_detect(self._SW_MUTE,
-                              GPIO.BOTH,
-                              callback=self.mute_handler,
-                              bouncetime=debounce)
+        GPIO.add_event_detect(
+            self._SW_MUTE, GPIO.BOTH, callback=self.mute_handler, bouncetime=debounce
+        )
 
         # user overides
         self.user_voldown_handler = None

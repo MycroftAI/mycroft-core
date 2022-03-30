@@ -12,18 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-class SkillControl():
+
+
+class SkillControl:
     """
-    the SkillControl class is used by the 
+    the SkillControl class is used by the
     system to make skills conform to
     system level requirements.
 
-    state - is used by the skill itself to 
+    state - is used by the skill itself to
     manage its behavior. currently the
-    system does not look at a skill's 
-    state (though this could change 
+    system does not look at a skill's
+    state (though this could change
     in the future) and there are no state
-    values defined at the system level. 
+    values defined at the system level.
 
     states - is a dict keyed by skill state
     of intent lists. it is only used by the
@@ -31,13 +33,13 @@ class SkillControl():
     intents based on the skill's state.
 
     category - the category defines the skill
-    category. skill categories are used by 
-    the system to manage intent priority. 
+    category. skill categories are used by
+    the system to manage intent priority.
     for example, during converse, skills of
     category 'system' are given preference.
     old style skills do not use any of this
     and are assigned a default category of
-    'undefined' during instantiation. As a 
+    'undefined' during instantiation. As a
     result, currently the system only recognizes
     the 'undefined' category and the 'system'
     category. This is done intentionally
@@ -46,10 +48,10 @@ class SkillControl():
 
 
     default values to be overidden
-    by the skill constructor in its 
+    by the skill constructor in its
     constructor.
     """
-    state = 'inactive'
-    states = None
-    category = 'undefined'
 
+    state = "inactive"
+    states = None
+    category = "undefined"

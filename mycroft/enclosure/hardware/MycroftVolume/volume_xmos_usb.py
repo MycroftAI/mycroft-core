@@ -26,9 +26,7 @@ class Volume(MycroftVolume):
     fifty_two_zeros = "0 " * 52
     vfctrl_cmd = "sudo "  # remove when udev rule fixed
     # vfctrl_cmd = ""      # remove when udev rule fixed
-    vfctrl_cmd += (
-        "vfctrl_usb SET_I2C_WITH_REG"
-    )
+    vfctrl_cmd += "vfctrl_usb SET_I2C_WITH_REG"
 
     def __init__(self):
         self.level = self.default_volume

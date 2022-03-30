@@ -387,7 +387,7 @@ class AudioService:
             # TODO fix this band aid - why is current None?
             try:
                 self.current.restore_volume()
-            except:
+            except Exception:
                 pass
 
         if self.current:

@@ -111,7 +111,8 @@ class TestMycroftSkill(unittest.TestCase):
     #     )
 
     # def compare_dicts(self, d1, d2):
-    #     self.assertEqual(json.dumps(d1, sort_keys=True), json.dumps(d2, sort_keys=True))
+    #     self.assertEqual(json.dumps(d1, sort_keys=True),
+    #                      json.dumps(d2, sort_keys=True))
 
     # def check_read_vocab_file(self, path, result_list=None):
     #     resultlist = result_list or []

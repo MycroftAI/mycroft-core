@@ -16,15 +16,16 @@ import abc
 
 
 class MycroftVolume:
-    """ abstract base class for a Mycroft Volume
-     all volume classes must provide at least 
-     these basic methods """
+    """abstract base class for a Mycroft Volume
+    all volume classes must provide at least
+    these basic methods"""
+
     __metaclass__ = abc.ABCMeta
 
     @abc.abstractmethod
     def set_hw_volume(self, vol):
         """takes in value between 0.0 - 1.0
-           converts to internal format"""
+        converts to internal format"""
         return
 
     @abc.abstractmethod
@@ -35,4 +36,3 @@ class MycroftVolume:
     def get_capabilities(self):
         """returns capabilities object"""
         return
-

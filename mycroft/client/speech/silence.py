@@ -191,7 +191,8 @@ class SilenceDetector:
             self.chunk_size / self.sample_width
         ) / self.sample_rate
 
-        # Store some number of seconds of audio data immediately before voice command starts
+        # Store some number of seconds of audio data
+        # immediately before voice command starts
         self.before_buffers = int(
             math.ceil(self.before_seconds / self.seconds_per_buffer)
         )
@@ -278,7 +279,7 @@ class SilenceDetector:
         while len(self.current_chunk) > self.chunk_size:
             # Extract chunk
             chunk = self.current_chunk[: self.chunk_size]
-            self.current_chunk = self.current_chunk[self.chunk_size :]
+            self.current_chunk = self.current_chunk[self.chunk_size:]
 
             if self.skip_buffers_left > 0:
                 # Skip audio at beginning

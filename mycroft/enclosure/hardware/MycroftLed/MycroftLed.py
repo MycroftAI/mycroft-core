@@ -16,8 +16,9 @@ import abc
 
 
 class MycroftLed:
-    """ abstract base class for a Mycroft Led
-     all leds must provide at least these basic methods """
+    """abstract base class for a Mycroft Led
+    all leds must provide at least these basic methods"""
+
     __metaclass__ = abc.ABCMeta
 
     @abc.abstractmethod
@@ -28,18 +29,18 @@ class MycroftLed:
     def set_led(self, which_led, color, immediate):
         """Set the color of a specific LED.
 
-           Arguments:
-            which_led (Int): the index of the LED to be changed
-            color (Tuple): the RGB color as a three integer Tuple
-            immediate (Bool): whether to change now or wait for the next call of show()
+        Arguments:
+         which_led (Int): the index of the LED to be changed
+         color (Tuple): the RGB color as a three integer Tuple
+         immediate (Bool): whether to change now or wait for the next call of show()
         """
         return
-    
+
     @abc.abstractmethod
     def fill(self, color):
         """set all leds to the supplied color
-           Arguments:
-            color (Tuple): the RGB color as a three integer Tuple
+        Arguments:
+         color (Tuple): the RGB color as a three integer Tuple
         """
         return
 
@@ -56,9 +57,9 @@ class MycroftLed:
     @abc.abstractmethod
     def set_leds(self, leds):
         """updates buffer from leds and update hardware
-           Arguments:
+        Arguments:
 
-            leds [(of tuples),()]: the RGB color as a three integer Tuple
+         leds [(of tuples),()]: the RGB color as a three integer Tuple
         """
         return
 
@@ -66,4 +67,3 @@ class MycroftLed:
     def get_capabilities(self):
         """returns capabilities object"""
         return
-

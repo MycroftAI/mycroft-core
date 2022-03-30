@@ -14,15 +14,19 @@ class EnclosureCapabilities:
 
     Example Mark2 Output with mouse and keyboard plugged in:
         (.venv) mycroft@localhost:~$ python hdw_test.py
-        Kbds:[{'name': 'Lite-On Technology Corp. USB Multimedia Keyboard', 'extra': ''}]
-        Mice:[{'name': 'PIXART USB OPTICAL MOUSE', 'extra': ''}, {'name': 'FT5406 memory based driver', 'extra': 'Touch Screen'}]
-        Screens:[{'name': 'DRM emulated', 'resolution': '800,480', 'pel_size': '32', 'extra': ''}]
+        Kbds:[{'name': 'Lite-On Technology Corp. USB Multimedia Keyboard',
+                       'extra': ''}]
+        Mice:[{'name': 'PIXART USB OPTICAL MOUSE', 'extra': ''},
+              {'name': 'FT5406 memory based driver', 'extra': 'Touch Screen'}]
+        Screens:[{'name': 'DRM emulated', 'resolution': '800,480', 'pel_size': '32',
+                  'extra': ''}]
 
     Example Mark2 Output with nothing plugged in.
         (.venv) mycroft@localhost:~$ python hdw_test.py
         Kbds:[]
         Mice:[{'name': 'FT5406 memory based driver', 'extra': 'Touch Screen'}]
-        Screens:[{'name': 'DRM emulated', 'resolution': '800,480', 'pel_size': '32', 'extra': ''}]
+        Screens:[{'name': 'DRM emulated', 'resolution': '800,480', 'pel_size': '32',
+                  'extra': ''}]
 
     """
 
@@ -52,12 +56,12 @@ class EnclosureCapabilities:
 
         try:
             out = out.decode("utf8")
-        except:
+        except Exception:
             pass
 
         try:
             err = err.decode("utf8")
-        except:
+        except Exception:
             pass
 
         return out, err

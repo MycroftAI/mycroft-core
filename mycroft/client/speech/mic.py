@@ -29,11 +29,7 @@ import requests
 import speech_recognition
 from hashlib import md5
 from io import BytesIO, StringIO
-from speech_recognition import (
-    Microphone,
-    AudioSource,
-    AudioData
-)
+from speech_recognition import Microphone, AudioSource, AudioData
 from tempfile import gettempdir
 from threading import Thread, Lock
 
@@ -51,12 +47,13 @@ from .data_structures import RollingMean, CyclicAudioBuffer
 from .silence import SilenceDetector, SilenceResultType, SilenceMethod
 
 
-WakeWordData = namedtuple('WakeWordData',
-                          ['audio', 'found', 'stopped', 'end_audio'])
+WakeWordData = namedtuple("WakeWordData", ["audio", "found", "stopped", "end_audio"])
 
 
 class MutableStream:
-    def __init__(self, audio, format, frames_per_buffer:int, muted=False, **pyaudio_settings):
+    def __init__(
+        self, audio, format, frames_per_buffer: int, muted=False, **pyaudio_settings
+    ):
         self.wrapped_stream = audio.open(
             format=format,
             frames_per_buffer=frames_per_buffer,
@@ -138,11 +135,16 @@ class MutableStream:
 
 
 class MutableMicrophone(Microphone):
-    def __init__(self, device_index=None, sample_rate=16000, chunk_size=1024,
-                 mute=False):
+    def __init__(
+        self, device_index=None, sample_rate=16000, chunk_size=1024, mute=False
+    ):
         chunk_size = 4000
-        Microphone.__init__(self, device_index=device_index,
-                            sample_rate=sample_rate, chunk_size=chunk_size)
+        Microphone.__init__(
+            self,
+            device_index=device_index,
+            sample_rate=sample_rate,
+            chunk_size=chunk_size,
+        )
         self.muted = False
         if mute:
             self.mute()
@@ -156,11 +158,11 @@ class MutableMicrophone(Microphone):
                 LOG.exception("Can't start mic!")
             sleep(1)
 
-
     def _start(self):
         """Open the selected device and setup the stream."""
-        assert self.stream is None, \
-            "This audio source is already inside a context manager"
+        assert (
+            self.stream is None
+        ), "This audio source is already inside a context manager"
         self.audio = pyaudio.PyAudio()
         self.stream = MutableStream(
             self.audio,
@@ -170,7 +172,7 @@ class MutableMicrophone(Microphone):
             rate=self.SAMPLE_RATE,
             channels=1,
             input=True,  # stream is an input stream
-            muted=self.muted
+            muted=self.muted,
         )
         return self
 
@@ -184,7 +186,7 @@ class MutableMicrophone(Microphone):
                 self.stream.stop_stream()
             self.stream.close()
         except Exception:
-            LOG.exception('Failed to stop mic input stream')
+            LOG.exception("Failed to stop mic input stream")
             # Let's pretend nothing is wrong...
 
         self.stream = None
@@ -221,7 +223,7 @@ class MutableMicrophone(Microphone):
 
 
 def get_silence(num_bytes):
-    return b'\0' * num_bytes
+    return b"\0" * num_bytes
 
 
 class NoiseTracker:
@@ -243,8 +245,15 @@ class NoiseTracker:
                                     default 0.25 seconds.
     """
 
-    def __init__(self, minimum, maximum, sec_per_buffer, loud_time_limit,
-                 silence_time_limit, silence_after_loud_time=0.25):
+    def __init__(
+        self,
+        minimum,
+        maximum,
+        sec_per_buffer,
+        loud_time_limit,
+        silence_time_limit,
+        silence_after_loud_time=0.25,
+    ):
         self.min_level = minimum
         self.max_level = maximum
         self.sec_per_buffer = sec_per_buffer
@@ -325,13 +334,12 @@ class NoiseTracker:
         Alternatively if a lot of silence was recorded without detecting
         a loud enough phrase.
         """
-        too_much_silence = (self.silence_duration > self.max_silence_duration)
+        too_much_silence = self.silence_duration > self.max_silence_duration
         if too_much_silence:
-            LOG.debug('Too much silence recorded without start of sentence '
-                      'detected')
-        return ((self._quiet_enough() and
-                 self.silence_duration > self.silence_after_loud) and
-                (self._loud_enough() or too_much_silence))
+            LOG.debug("Too much silence recorded without start of sentence " "detected")
+        return (
+            self._quiet_enough() and self.silence_duration > self.silence_after_loud
+        ) and (self._loud_enough() or too_much_silence)
 
 
 class ResponsiveRecognizer(speech_recognition.Recognizer):
@@ -352,28 +360,28 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
     def __init__(self, wake_word_recognizer, watchdog=None):
         self._watchdog = watchdog or (lambda: None)  # Default to dummy func
         self.config = Configuration.get()
-        listener_config = self.config.get('listener')
-        self.upload_url = listener_config['wake_word_upload']['url']
-        self.upload_disabled = listener_config['wake_word_upload']['disable']
+        listener_config = self.config.get("listener")
+        self.upload_url = listener_config["wake_word_upload"]["url"]
+        self.upload_disabled = listener_config["wake_word_upload"]["disable"]
         self.wake_word_name = wake_word_recognizer.key_phrase
 
-        self.overflow_exc = listener_config.get('overflow_exception', False)
+        self.overflow_exc = listener_config.get("overflow_exception", False)
 
         super().__init__()
         self.wake_word_recognizer = wake_word_recognizer
         self.audio = pyaudio.PyAudio()
-        self.multiplier = listener_config.get('multiplier')
-        self.energy_ratio = listener_config.get('energy_ratio')
+        self.multiplier = listener_config.get("multiplier")
+        self.energy_ratio = listener_config.get("energy_ratio")
 
         # Check the config for the flag to save wake words, utterances
         # and for a path under which to save them
-        self.save_utterances = listener_config.get('save_utterances', False)
-        self.save_wake_words = listener_config.get('record_wake_words', False)
-        self.save_path = listener_config.get('save_path', gettempdir())
-        self.saved_wake_words_dir = join(self.save_path, 'mycroft_wake_words')
+        self.save_utterances = listener_config.get("save_utterances", False)
+        self.save_wake_words = listener_config.get("record_wake_words", False)
+        self.save_path = listener_config.get("save_path", gettempdir())
+        self.saved_wake_words_dir = join(self.save_path, "mycroft_wake_words")
         if self.save_wake_words and not isdir(self.saved_wake_words_dir):
             os.mkdir(self.saved_wake_words_dir)
-        self.saved_utterances_dir = join(self.save_path, 'mycroft_utterances')
+        self.saved_utterances_dir = join(self.save_path, "mycroft_utterances")
         if self.save_utterances and not isdir(self.saved_utterances_dir):
             os.mkdir(self.saved_utterances_dir)
 
@@ -389,13 +397,13 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
 
         # The maximum seconds a phrase can be recorded,
         # provided there is noise the entire time
-        self.recording_timeout = listener_config.get('recording_timeout',
-                                                     10.0)
+        self.recording_timeout = listener_config.get("recording_timeout", 10.0)
 
         # The maximum time it will continue to record silence
         # when not enough noise has been detected
         self.recording_timeout_with_silence = listener_config.get(
-            'recording_timeout_with_silence', 3.0)
+            "recording_timeout_with_silence", 3.0
+        )
 
         # Use webrtcvad for silence detection
         self.silence_detector = SilenceDetector(
@@ -415,14 +423,16 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         """
         if not self._account_id:
             try:
-                self._account_id = DeviceApi().get()['user']['uuid']
+                self._account_id = DeviceApi().get()["user"]["uuid"]
             except (requests.RequestException, AttributeError):
                 pass  # These are expected and won't be reported
             except Exception as e:
-                LOG.error('Unhandled exception while determining device_id, '
-                          'Error: {}'.format(repr(e)))
+                LOG.error(
+                    "Unhandled exception while determining device_id, "
+                    "Error: {}".format(repr(e))
+                )
 
-        return self._account_id or '0'
+        return self._account_id or "0"
 
     def record_sound_chunk(self, source):
         return source.stream.read(source.CHUNK, self.overflow_exc)
@@ -431,13 +441,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
     def calc_energy(sound_chunk, sample_width):
         return audioop.rms(sound_chunk, sample_width)
 
-    def _record_phrase(
-        self,
-        source,
-        sec_per_buffer,
-        stream=None,
-        ww_frames=None
-    ):
+    def _record_phrase(self, source, sec_per_buffer, stream=None, ww_frames=None):
         """Record an entire spoken phrase.
 
         Essentially, this code waits for a period of silence and then returns
@@ -464,14 +468,14 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
 
         self.silence_detector.start()
         for chunk in source.stream.iter_chunks():
-            if check_for_signal('buttonPress'):
+            if check_for_signal("buttonPress"):
                 break
 
             if stream:
                 stream.stream_chunk(chunk)
 
             result = self.silence_detector.process(chunk)
-            if result.type in { SilenceResultType.PHRASE_END, SilenceResultType.TIMEOUT }:
+            if result.type in {SilenceResultType.PHRASE_END, SilenceResultType.TIMEOUT}:
                 break
 
             # Periodically write the energy level to the mic level file.
@@ -486,12 +490,11 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         if not self.mic_level_enabled:
             return
 
-        with open(self.mic_level_file, 'w') as f:
-            f.write('Energy:  cur={} thresh={:.3f} muted={}'.format(
-                energy,
-                self.energy_threshold,
-                int(source.muted)
-            )
+        with open(self.mic_level_file, "w") as f:
+            f.write(
+                "Energy:  cur={} thresh={:.3f} muted={}".format(
+                    energy, self.energy_threshold, int(source.muted)
+                )
             )
 
     def _skip_wake_word(self):
@@ -504,11 +507,11 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
 
         # Pressing the Mark 1 button can start recording (unless
         # it is being used to mean 'stop' instead)
-        if check_for_signal('buttonPress', 1):
+        if check_for_signal("buttonPress", 1):
             # give other processes time to consume this signal if
             # it was meant to be a 'stop'
             sleep(0.25)
-            if check_for_signal('buttonPress'):
+            if check_for_signal("buttonPress"):
                 # Signal is still here, assume it was intended to
                 # begin recording
                 LOG.info("Button Pressed, wakeword not needed")
@@ -522,25 +525,25 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
 
     def _compile_metadata(self):
         ww_module = self.wake_word_recognizer.__class__.__name__
-        if ww_module == 'PreciseHotword':
+        if ww_module == "PreciseHotword":
             model_path = self.wake_word_recognizer.precise_model
-            with open(model_path, 'rb') as f:
+            with open(model_path, "rb") as f:
                 model_hash = md5(f.read()).hexdigest()
         else:
-            model_hash = '0'
+            model_hash = "0"
 
         return {
-            'name': self.wake_word_name.replace(' ', '-'),
-            'engine': md5(ww_module.encode('utf-8')).hexdigest(),
-            'time': str(int(1000 * get_time())),
-            'sessionId': SessionManager.get().session_id,
-            'accountId': self.account_id,
-            'model': str(model_hash)
+            "name": self.wake_word_name.replace(" ", "-"),
+            "engine": md5(ww_module.encode("utf-8")).hexdigest(),
+            "time": str(int(1000 * get_time())),
+            "sessionId": SessionManager.get().session_id,
+            "accountId": self.account_id,
+            "model": str(model_hash),
         }
 
     def trigger_listen(self):
         """Externally trigger listening."""
-        LOG.info('Listen triggered from external source.')
+        LOG.info("Listen triggered from external source.")
         self._listen_triggered = True
 
     def _upload_wakeword(self, audio, metadata):
@@ -563,8 +566,10 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
             emitter: bus emitter to send information on.
         """
         SessionManager.touch()
-        payload = {'utterance': self.wake_word_name,
-                   'session': SessionManager.get().session_id}
+        payload = {
+            "utterance": self.wake_word_name,
+            "session": SessionManager.get().session_id,
+        }
         emitter.emit("recognizer_loop:wakeword", payload)
 
     def _write_wakeword_to_disk(self, audio, metadata):
@@ -574,10 +579,11 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
             audio: Audio data to write
             metadata: List of metadata about the captured wakeword
         """
-        filename = join(self.saved_wake_words_dir,
-                        '_'.join(str(metadata[k]) for k in sorted(metadata)) +
-                        '.wav')
-        with open(filename, 'wb') as f:
+        filename = join(
+            self.saved_wake_words_dir,
+            "_".join(str(metadata[k]) for k in sorted(metadata)) + ".wav",
+        )
+        with open(filename, "wb") as f:
             f.write(audio.get_wav_data())
 
     def _handle_wakeword_found(self, audio_data, source):
@@ -588,8 +594,8 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         to the cloud in case the user has opted into the data sharing.
         """
         # Save and upload positive wake words as appropriate
-        upload_allowed = (self.config['opt_in'] and not self.upload_disabled)
-        if (self.save_wake_words or upload_allowed):
+        upload_allowed = self.config["opt_in"] and not self.upload_disabled
+        if self.save_wake_words or upload_allowed:
             audio = self._create_audio_data(audio_data, source)
             metadata = self._compile_metadata()
             if self.save_wake_words:
@@ -631,8 +637,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
             mic_write_counter += 1
 
         self._listen_triggered = False
-        return WakeWordData(audio_data, said_wake_word,
-                            self._stop_signaled, ww_frames)
+        return WakeWordData(audio_data, said_wake_word, self._stop_signaled, ww_frames)
 
     @staticmethod
     def _create_audio_data(raw_data, source):
@@ -641,7 +646,6 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         as the source and the specified frame_data
         """
         return AudioData(raw_data, source.SAMPLE_RATE, source.SAMPLE_WIDTH)
-
 
     def listen(self, source, emitter, stream=None):
         """Listens for chunks of audio that Mycroft should perform STT on.
@@ -690,22 +694,14 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         # Notify system of recording start
         emitter.emit("recognizer_loop:record_begin")
 
-        frame_data = self._record_phrase(
-            source,
-            sec_per_buffer,
-            stream,
-            ww_frames
-        )
+        frame_data = self._record_phrase(source, sec_per_buffer, stream, ww_frames)
         audio_data = self._create_audio_data(frame_data, source)
         emitter.emit("recognizer_loop:record_end")
         if self.save_utterances:
             LOG.info("Recording utterance")
             stamp = str(datetime.datetime.now())
-            filename = "/{}/{}.wav".format(
-                self.saved_utterances_dir,
-                stamp
-            )
-            with open(filename, 'wb') as filea:
+            filename = "/{}/{}.wav".format(self.saved_utterances_dir, stamp)
+            with open(filename, "wb") as filea:
                 filea.write(audio_data.get_wav_data())
             LOG.debug("Thinking...")
 

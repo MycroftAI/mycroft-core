@@ -23,20 +23,22 @@ MAX_VOL = 84
 
 
 class Volume(MycroftVolume):
-    dev_addr = 0x2f
-    vol_set_reg = 0x4c
+    dev_addr = 0x2F
+    vol_set_reg = 0x4C
     bus = ""
 
     def write_ti_data(self, addr, val):
-        LOG.debug("Write TI Data [DevAddr=%s] %s = %s" %
-                  (hex(self.dev_addr), hex(addr), hex(val)))
+        LOG.debug(
+            "Write TI Data [DevAddr=%s] %s = %s"
+            % (hex(self.dev_addr), hex(addr), hex(val))
+        )
         self.bus.write_byte_data(self.dev_addr, addr, int(val))
         time.sleep(0.1)
 
     def ti_start_sequence(self):
-        '''
+        """
         Start Sequence for the TAS5806
-        '''
+        """
         LOG.info("Start the TI Amp")
         self.write_ti_data(0x01, 0x11)  # reset chip
         self.write_ti_data(0x78, 0x80)  # clear fault - works
@@ -58,21 +60,21 @@ class Volume(MycroftVolume):
         self.bus.close()
 
     def calc_log_y(self, x):
-        """ given x produce y. takes in an int
+        """given x produce y. takes in an int
         0-100 returns a log oriented hardware
         value with larger steps for low volumes
-        and smaller steps for loud volumes """
+        and smaller steps for loud volumes"""
         if x < 0:
             x = 0
 
         if x > 100:
             x = 100
 
-        x0 = 0      # input range low
-        x1 = 100    # input range hi
+        x0 = 0  # input range low
+        x1 = 100  # input range hi
 
-        y0 = MAX_VOL    # max hw vol
-        y1 = 210        # min hw val
+        y0 = MAX_VOL  # max hw vol
+        y1 = 210  # min hw val
 
         p1 = (x - x0) / (x1 - x0)
         p2 = log(y0) - log(y1)
@@ -81,19 +83,19 @@ class Volume(MycroftVolume):
         return round(exp(pval))
 
     def calc_log_x(self, y):
-        """ given y produce x. takes in an int
-        30-210 returns a value from 0-100 """
+        """given y produce x. takes in an int
+        30-210 returns a value from 0-100"""
         if y < 0:
             y = MAX_VOL
 
         if y > 210:
             y = 210
 
-        x0 = 0      # input range low
-        x1 = 100    # input range hi
+        x0 = 0  # input range low
+        x1 = 100  # input range hi
 
-        y0 = MAX_VOL    # max hw vol
-        y1 = 210        # min hw val
+        y0 = MAX_VOL  # max hw vol
+        y1 = 210  # min hw val
 
         x = x1 - x0
         p1 = (log(y) - log(y0)) / (log(y1) - log(y0))
@@ -120,15 +122,13 @@ class Volume(MycroftVolume):
     def get_volume(self):
         # returns a float from 0.0 - 1.0
         LOG.debug(
-            "Driver:sj201Rev4: Getting logical volume from ti val %s" % (self.level,))
+            "Driver:sj201Rev4: Getting logical volume from ti val %s" % (self.level,)
+        )
         return round(1.0 - float(self.calc_log_x(self._get_hw_volume())) / 100.0, 2)
 
     def __init__(self):
         self.level = 0.5
-        self.capabilities = {
-            "range": (0.0, 1.0),
-            "type": "MycroftTIAmp"
-        }
+        self.capabilities = {"range": (0.0, 1.0), "type": "MycroftTIAmp"}
 
         # auto start
         self.bus = SMBus(1)

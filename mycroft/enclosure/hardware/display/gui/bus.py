@@ -50,20 +50,18 @@ def get_gui_websocket_config():
 
 def create_gui_service(enclosure) -> Application:
     """Initiate a websocket for communicating with the GUI service."""
-    LOG.info('Starting message bus for GUI...')
+    LOG.info("Starting message bus for GUI...")
     websocket_config = get_gui_websocket_config()
     # Disable all tornado logging so mycroft loglevel isn't overridden
-    parse_command_line(['--logging=None'])
+    parse_command_line(["--logging=None"])
 
-    routes = [(websocket_config['route'], GUIWebsocketHandler)]
+    routes = [(websocket_config["route"], GUIWebsocketHandler)]
     application = Application(routes, debug=True)
     application.enclosure = enclosure
-    application.listen(
-        websocket_config['base_port'], websocket_config['host']
-    )
+    application.listen(websocket_config["base_port"], websocket_config["host"])
 
     create_daemon(ioloop.IOLoop.instance().start)
-    LOG.info('GUI Message bus started!')
+    LOG.info("GUI Message bus started!")
     return application
 
 
@@ -83,72 +81,85 @@ def determine_if_gui_connected():
 
 class GUIWebsocketHandler(WebSocketHandler):
     """Defines the websocket pipeline between the GUI and Mycroft."""
+
     clients = []
 
     def open(self):
         GUIWebsocketHandler.clients.append(self)
-        LOG.info('New Connection opened!')
+        LOG.info("New Connection opened!")
         self.synchronize()
 
     def on_close(self):
-        LOG.info('Closing {}'.format(id(self)))
+        LOG.info("Closing {}".format(id(self)))
         GUIWebsocketHandler.clients.remove(self)
 
     def synchronize(self):
-        """ Upload namespaces, pages and data to the last connected. """
+        """Upload namespaces, pages and data to the last connected."""
         namespace_pos = 0
         enclosure = self.application.enclosure
 
         for namespace in enclosure.active_namespaces:
-            LOG.info('Sync {}'.format(namespace.name))
+            LOG.info("Sync {}".format(namespace.name))
             # Insert namespace
-            self.send({"type": "mycroft.session.list.insert",
-                       "namespace": "mycroft.system.active_skills",
-                       "position": namespace_pos,
-                       "data": [{"skill_id": namespace.name}]
-                       })
+            self.send(
+                {
+                    "type": "mycroft.session.list.insert",
+                    "namespace": "mycroft.system.active_skills",
+                    "position": namespace_pos,
+                    "data": [{"skill_id": namespace.name}],
+                }
+            )
             # Insert pages
-            self.send({"type": "mycroft.gui.list.insert",
-                       "namespace": namespace.name,
-                       "position": 0,
-                       "data": [{"url": p} for p in namespace.pages]
-                       })
+            self.send(
+                {
+                    "type": "mycroft.gui.list.insert",
+                    "namespace": namespace.name,
+                    "position": 0,
+                    "data": [{"url": p} for p in namespace.pages],
+                }
+            )
             # Insert data
             for key, value in namespace.data.items():
-                self.send({"type": "mycroft.session.set",
-                           "namespace": namespace.name,
-                           "data": {key: value}
-                           })
+                self.send(
+                    {
+                        "type": "mycroft.session.set",
+                        "namespace": namespace.name,
+                        "data": {key: value},
+                    }
+                )
             namespace_pos += 1
 
     def on_message(self, message):
         LOG.info("Received: {}".format(message))
         msg = json.loads(message)
-        if (msg.get('type') == "mycroft.events.triggered" and
-                (msg.get('event_name') == 'page_gained_focus' or
-                    msg.get('event_name') == 'system.gui.user.interaction')):
+        if msg.get("type") == "mycroft.events.triggered" and (
+            msg.get("event_name") == "page_gained_focus" or
+            msg.get("event_name") == "system.gui.user.interaction"
+        ):
             # System event, a page was changed
-            msg_type = 'gui.page_interaction'
-            msg_data = {'namespace': msg['namespace'],
-                        'page_number': msg['parameters'].get('number'),
-                        'skill_id': msg['parameters'].get('skillId')}
-        elif msg.get('type') == "mycroft.events.triggered":
+            msg_type = "gui.page_interaction"
+            msg_data = {
+                "namespace": msg["namespace"],
+                "page_number": msg["parameters"].get("number"),
+                "skill_id": msg["parameters"].get("skillId"),
+            }
+        elif msg.get("type") == "mycroft.events.triggered":
             # A normal event was triggered
-            msg_type = '{}.{}'.format(msg['namespace'], msg['event_name'])
-            msg_data = msg['parameters']
+            msg_type = "{}.{}".format(msg["namespace"], msg["event_name"])
+            msg_data = msg["parameters"]
 
-        elif msg.get('type') == 'mycroft.session.set':
+        elif msg.get("type") == "mycroft.session.set":
             # A value was changed send it back to the skill
-            msg_type = '{}.{}'.format(msg['namespace'], 'set')
-            msg_data = msg['data']
+            msg_type = "{}.{}".format(msg["namespace"], "set")
+            msg_data = msg["data"]
 
         message = Message(msg_type, msg_data)
-        LOG.info('Forwarding to bus...')
+        LOG.info("Forwarding to bus...")
         self.application.enclosure.core_bus.emit(message)
-        LOG.info('Done!')
+        LOG.info("Done!")
 
     def write_message(self, *arg, **kwarg):
-        """Wraps WebSocketHandler.write_message() with a lock. """
+        """Wraps WebSocketHandler.write_message() with a lock."""
         try:
             asyncio.get_event_loop()
         except RuntimeError:

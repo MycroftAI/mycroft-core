@@ -201,9 +201,9 @@ class CommonPlaySkill(MycroftSkill, ABC):
 
     def CPS_release_output_focus(self):
         """Stop anything playing on the audioservice."""
-        # audioservice gets confused sometimes 
+        # audioservice gets confused sometimes
         # so we unconfuse it here
-        #if self.audioservice.is_playing:
+        # if self.audioservice.is_playing:
         # TODO fix me
         if True:
             self.audioservice.stop()
@@ -213,7 +213,6 @@ class CommonPlaySkill(MycroftSkill, ABC):
 
     def stop(self):
         self.log.warning("Creepy Internal Error 102 - skill missing stop method")
-
 
     ######################################################################
     # Abstract methods

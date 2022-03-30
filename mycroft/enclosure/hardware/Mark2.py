@@ -14,41 +14,42 @@
 
 # Mark2 current capabilities
 
-class Capabilities():
+
+class Capabilities:
     capabilities = {
-            "sj201r4":{
-                     "Led":{"name":"led_sj201r4", "type":"MycroftLed"},
-                     "Switch":{"name":"switch_gpio", "type":"MycroftSwitch"},
-                     "Volume":{"name":"volume_sj201r4", "type":"MycroftVolume"},
-                     "Fan":{"name":"fan_sj201r4", "type":"MycroftFan"},
-                     "Palette":{"name":"default_palette", "type":"MycroftPalette"}
-                },
-            "xmos_all":{
-                     "Led":{"name":"led_xmos_usb", "type":"MycroftLed"},
-                     "Switch":{"name":"switch_xmos_usb", "type":"MycroftSwitch"},
-                     "Volume":{"name":"volume_xmos_usb", "type":"MycroftVolume"},
-                     "Palette":{"name":"default_palette", "type":"MycroftPalette"}
-                },
-            "xmos_volume_gpio_switches_neo_pixel_leds":{
-                     "Led":{"name":"led_neo_pixel", "type":"MycroftLed"},
-                     "Switch":{"name":"switch_gpio", "type":"MycroftSwitch"},
-                     "Volume":{"name":"volume_xmos_usb", "type":"MycroftVolume"},
-                     "Palette":{"name":"default_palette", "type":"MycroftPalette"}
-                },
-            "i2c_volume_gpio_switches_neo_pixel_leds":{
-                     "Led":{"name":"led_neo_pixel", "type":"MycroftLed"},
-                     "Switch":{"name":"switch_gpio", "type":"MycroftSwitch"},
-                     "Volume":{"name":"volume_i2c", "type":"MycroftVolume"},
-                     "Palette":{"name":"default_palette", "type":"MycroftPalette"}
-                },
-            "xmos_volume_gpio_switches_xmos_leds":{
-                     "Led":{"name":"led_xmos_usb", "type":"MycroftLed"},
-                     "Switch":{"name":"switch_gpio", "type":"MycroftSwitch"},
-                     "Volume":{"name":"volume_xmos_usb", "type":"MycroftVolume"},
-                     "Palette":{"name":"default_palette", "type":"MycroftPalette"}
-                }
-        }
-    #board_type = "xmos_all"
-    #board_type = "i2c_volume_gpio_switches_neo_pixel_leds"
-    #board_type = "xmos_volume_gpio_switches_xmos_leds"
+        "sj201r4": {
+            "Led": {"name": "led_sj201r4", "type": "MycroftLed"},
+            "Switch": {"name": "switch_gpio", "type": "MycroftSwitch"},
+            "Volume": {"name": "volume_sj201r4", "type": "MycroftVolume"},
+            "Fan": {"name": "fan_sj201r4", "type": "MycroftFan"},
+            "Palette": {"name": "default_palette", "type": "MycroftPalette"},
+        },
+        "xmos_all": {
+            "Led": {"name": "led_xmos_usb", "type": "MycroftLed"},
+            "Switch": {"name": "switch_xmos_usb", "type": "MycroftSwitch"},
+            "Volume": {"name": "volume_xmos_usb", "type": "MycroftVolume"},
+            "Palette": {"name": "default_palette", "type": "MycroftPalette"},
+        },
+        "xmos_volume_gpio_switches_neo_pixel_leds": {
+            "Led": {"name": "led_neo_pixel", "type": "MycroftLed"},
+            "Switch": {"name": "switch_gpio", "type": "MycroftSwitch"},
+            "Volume": {"name": "volume_xmos_usb", "type": "MycroftVolume"},
+            "Palette": {"name": "default_palette", "type": "MycroftPalette"},
+        },
+        "i2c_volume_gpio_switches_neo_pixel_leds": {
+            "Led": {"name": "led_neo_pixel", "type": "MycroftLed"},
+            "Switch": {"name": "switch_gpio", "type": "MycroftSwitch"},
+            "Volume": {"name": "volume_i2c", "type": "MycroftVolume"},
+            "Palette": {"name": "default_palette", "type": "MycroftPalette"},
+        },
+        "xmos_volume_gpio_switches_xmos_leds": {
+            "Led": {"name": "led_xmos_usb", "type": "MycroftLed"},
+            "Switch": {"name": "switch_gpio", "type": "MycroftSwitch"},
+            "Volume": {"name": "volume_xmos_usb", "type": "MycroftVolume"},
+            "Palette": {"name": "default_palette", "type": "MycroftPalette"},
+        },
+    }
+    # board_type = "xmos_all"
+    # board_type = "i2c_volume_gpio_switches_neo_pixel_leds"
+    # board_type = "xmos_volume_gpio_switches_xmos_leds"
     board_type = "sj201r4"

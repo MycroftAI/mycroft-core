@@ -16,8 +16,9 @@ import abc
 
 
 class MycroftSwitch:
-    """ abstract base class for a Mycroft Switch Array
-     all switches must provide at least these basic methods """
+    """abstract base class for a Mycroft Switch Array
+    all switches must provide at least these basic methods"""
+
     __metaclass__ = abc.ABCMeta
 
     @abc.abstractmethod
@@ -44,4 +45,3 @@ class MycroftSwitch:
     @abc.abstractmethod
     def get_capabilities(self):
         return
-

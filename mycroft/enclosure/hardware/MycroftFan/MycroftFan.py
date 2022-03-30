@@ -16,15 +16,16 @@ import abc
 
 
 class MycroftFan:
-    """ abstract base class for a Mycroft Fan
-     all fan classes must provide at least 
-     these basic methods """
+    """abstract base class for a Mycroft Fan
+    all fan classes must provide at least
+    these basic methods"""
+
     __metaclass__ = abc.ABCMeta
 
     @abc.abstractmethod
     def set_fan_speed(self, new_speed):
         """takes in value between 0 - 100
-           converts to internal format"""
+        converts to internal format"""
         return
 
     @abc.abstractmethod
@@ -35,4 +36,3 @@ class MycroftFan:
     def get_cpu_temp(self):
         """returns temp in celsius"""
         return
-

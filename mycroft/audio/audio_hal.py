@@ -158,10 +158,10 @@ class AudioHAL:
         LOG.debug("Initializing SDL mixer")
 
         ret = mixer.Mix_Init(
-            mixer.MIX_INIT_MP3
-            | mixer.MIX_INIT_FLAC
-            | mixer.MIX_INIT_OGG
-            | mixer.MIX_INIT_OPUS
+            mixer.MIX_INIT_MP3 |
+            mixer.MIX_INIT_FLAC |
+            mixer.MIX_INIT_OGG |
+            mixer.MIX_INIT_OPUS
         )
         self._check_sdl(ret)
 
@@ -333,7 +333,7 @@ class AudioHAL:
                 "dummy",
                 "--no-video",
                 "--sout",
-                f"#transcode{{acodec=s16l,samplerate={self.audio_sample_rate},channels={self.audio_channels}}}:std{{access=file,mux=wav,dst=-}}",
+                f"#transcode{{acodec=s16l,samplerate={self.audio_sample_rate},channels={self.audio_channels}}}:std{{access=file,mux=wav,dst=-}}",  # noqa: E501
                 self._bg_playlist_file.name,
             ],
             stdout=subprocess.PIPE,
