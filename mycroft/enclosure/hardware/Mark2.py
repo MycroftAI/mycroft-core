@@ -14,6 +14,8 @@
 
 # Mark2 current capabilities
 
+from mycroft.configuration import Configuration
+
 
 class Capabilities:
     capabilities = {
@@ -48,8 +50,13 @@ class Capabilities:
             "Volume": {"name": "volume_xmos_usb", "type": "MycroftVolume"},
             "Palette": {"name": "default_palette", "type": "MycroftPalette"},
         },
+        "dummy": {
+            "Fan": {"name": "fan_dummy", "type": "MycroftFan"},
+            "Led": {"name": "led_dummy", "type": "MycroftLed"},
+            "Switch": {"name": "switch_dummy", "type": "MycroftSwitch"},
+            "Volume": {"name": "volume_dummy", "type": "MycroftVolume"},
+            "Palette": {"name": "default_palette", "type": "MycroftPalette"},
+        },
     }
-    # board_type = "xmos_all"
-    # board_type = "i2c_volume_gpio_switches_neo_pixel_leds"
-    # board_type = "xmos_volume_gpio_switches_xmos_leds"
-    board_type = "sj201r4"
+
+    default_board_type = "sj201r4"

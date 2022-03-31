@@ -20,6 +20,7 @@ import typing
 from queue import Queue
 
 from mycroft.client.enclosure.base import Enclosure
+from mycroft.configuration import Configuration
 from mycroft.enclosure.hardware.display import NamespaceManager
 from mycroft.enclosure.hardware_enclosure import HardwareEnclosure
 from mycroft.messagebus.message import Message
@@ -162,8 +163,10 @@ class EnclosureMark2(Enclosure):
         # (ala pulseaudio, etc) do it here!
         self.current_volume = 0.5  # hardware/board level volume
 
-        # TODO these need to come from a config value
-        self.hardware = HardwareEnclosure("Mark2", "sj201r4")
+        self.config = Configuration.get().get("enclosure", {})
+        self.board_type = self.config.get("board_type")
+        self.hardware = HardwareEnclosure("Mark2", self.board_type)
+
         self.hardware.client_volume_handler = self.async_volume_handler
 
         self.hardware.client_on_mute = self.on_hardware_mute
@@ -520,25 +523,27 @@ class EnclosureMark2(Enclosure):
 
     def _dim_screen(self, _message=None, value=0):
         """Dim the backlight on the screen (Mark II only)"""
-        subprocess.check_call(
-            [
-                "sudo",
-                "bash",
-                "-c",
-                f"echo {value} > /sys/class/backlight/rpi_backlight/brightness",
-            ]
-        )
+        if self.board_type != "dummy":
+            subprocess.check_call(
+                [
+                    "sudo",
+                    "bash",
+                    "-c",
+                    f"echo {value} > /sys/class/backlight/rpi_backlight/brightness",
+                ]
+            )
 
     def _undim_screen(self, value=255):
         """Undim the backlight on the screen (Mark II only)"""
-        subprocess.check_call(
-            [
-                "sudo",
-                "bash",
-                "-c",
-                f"echo {value} > /sys/class/backlight/rpi_backlight/brightness",
-            ]
-        )
+        if self.board_type != "dummy":
+            subprocess.check_call(
+                [
+                    "sudo",
+                    "bash",
+                    "-c",
+                    f"echo {value} > /sys/class/backlight/rpi_backlight/brightness",
+                ]
+            )
 
     def _schedule_screen_dim(self):
         """Dims the screen after a period of inactivity."""

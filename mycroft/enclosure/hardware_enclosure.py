@@ -39,7 +39,7 @@ class HardwareEnclosure:
         module = importlib.import_module(capabilities_module)
         enclosure_capabilities = module.Capabilities()
         if self.board_type is None:
-            self.board_type = enclosure_capabilities.board_type
+            self.board_type = enclosure_capabilities.default_board_type
         self.capabilities = enclosure_capabilities.capabilities[self.board_type]
 
         # eventually this could also be driven by the capabilities
