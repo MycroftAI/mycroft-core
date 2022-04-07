@@ -380,14 +380,15 @@ function fedora_install() {
 
 
 function arch_install() {
-        pkgs="git python python-pip python-setuptools python-virtualenv python-gobject libffi swig portaudio mpg123 screen flac curl icu libjpeg-turbo base-devel jq"
+    pkgs=( git python python-pip python-setuptools python-virtualenv python-gobject libffi swig portaudio mpg123 screen flac curl icu libjpeg-turbo base-devel jq )
 
     if ! pacman -Qs pipewire-pulse > /dev/null
     then
-        pkgs="{pkgs} pulseaudio pulseaudio-alsa"
+        pulse_pkgs=( pulseaudio pulseaudio-alsa )
+        pkgs=( "${pkgs[@]}" "${pulse_pkgs[@]}" )
     fi
 
-    $SUDO pacman -S --needed --noconfirm "$pkgs"
+    $SUDO pacman -S --needed --noconfirm "${pkgs[@]}"
 
     pacman -Qs '^fann$' &> /dev/null || (
         git clone  https://aur.archlinux.org/fann.git
