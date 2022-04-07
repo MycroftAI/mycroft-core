@@ -22,7 +22,8 @@ export LANGUAGE=en
 # exit on any error
 set -Ee
 
-cd $(dirname $0)
+ROOT_DIRNAME=$(dirname "$0")
+cd "$ROOT_DIRNAME"
 TOP=$(pwd -L)
 
 function clean_mycroft_files() {
@@ -35,7 +36,7 @@ generated within the mycroft-core directory.
 
 Do you wish to continue? (y/n)'
     while true; do
-        read -N1 -s key
+        read -rN1 -s key
         case $key in
         [Yy])
             sudo rm -rf /var/log/mycroft
@@ -146,7 +147,7 @@ function get_YN() {
     # Loop until the user hits the Y or the N key
     echo -e -n "Choice [${CYAN}Y${RESET}/${CYAN}N${RESET}]: "
     while true; do
-        read -N1 -s key
+        read -rN1 -s key
         case $key in
         [Yy])
             return 0
@@ -271,9 +272,11 @@ Would you like this to be added to your PATH in the .profile?'
         if [[ ! -f ~/.profile_mycroft ]] ; then
             # Only add the following to the .profile if .profile_mycroft
             # doesn't exist, indicating this script has not been run before
-            echo '' >> ~/.profile
-            echo '# include Mycroft commands' >> ~/.profile
-            echo 'source ~/.profile_mycroft' >> ~/.profile
+            {
+                echo ''
+                echo '# include Mycroft commands'
+                echo 'source ~/.profile_mycroft'
+            } >> ~/.profile
         fi
 
         echo "
@@ -295,9 +298,9 @@ fi" > ~/.profile_mycroft
         echo 'This script will create that folder for you.  This requires sudo'
         echo 'permission and might ask you for a password...'
         setup_user=$USER
-        setup_group=$(id -gn $USER)
+        setup_group=$(id -gn "$USER")
         $SUDO mkdir -p /opt/mycroft/skills
-        $SUDO chown -R ${setup_user}:${setup_group} /opt/mycroft
+        $SUDO chown -R "${setup_user}":"${setup_group}" /opt/mycroft
         echo 'Created!'
     fi
     if [[ ! -d skills ]] ; then
@@ -325,7 +328,7 @@ If unsure answer yes.
 fi
 
 function os_is() {
-    [[ $(grep "^ID=" /etc/os-release | awk -F'=' '/^ID/ {print $2}' | sed 's/\"//g') == $1 ]]
+    [[ $(grep "^ID=" /etc/os-release | awk -F'=' '/^ID/ {print $2}' | sed 's/\"//g') == "$1" ]]
 }
 
 function os_is_like() {
@@ -345,11 +348,11 @@ function redhat_common_install() {
 }
 
 function debian_install() {
-    APT_PACKAGE_LIST="git python3 python3-dev python3-setuptools libtool \
+    APT_PACKAGE_LIST=(git python3 python3-dev python3-setuptools libtool \
         libffi-dev libssl-dev autoconf automake bison swig libglib2.0-dev \
         portaudio19-dev mpg123 screen flac curl libicu-dev pkg-config \
         libjpeg-dev libfann-dev build-essential jq pulseaudio \
-        pulseaudio-utils"
+        pulseaudio-utils)
 
     if dpkg -V libjack-jackd2-0 > /dev/null 2>&1 && [[ -z ${CI} ]] ; then
         echo "
@@ -357,10 +360,10 @@ We have detected that your computer has the libjack-jackd2-0 package installed.
 Mycroft requires a conflicting package, and will likely uninstall this package.
 On some systems, this can cause other programs to be marked for removal.
 Please review the following package changes carefully."
-        read -p "Press enter to continue"
-        $SUDO apt-get install $APT_PACKAGE_LIST
+        read -rp "Press enter to continue"
+        $SUDO apt-get install "${APT_PACKAGE_LIST[@]}"
     else
-        $SUDO apt-get install -y $APT_PACKAGE_LIST
+        $SUDO apt-get install -y "${APT_PACKAGE_LIST[@]}"
     fi
 }
 
@@ -451,7 +454,7 @@ function install_deps() {
 ${YELLOW}Make sure to manually install:$BLUE git python3 python-setuptools python-venv pygobject libtool libffi libjpg openssl autoconf bison swig glib2.0 portaudio19 mpg123 flac curl fann g++ jq\n$RESET"
 
         echo 'Warning: Failed to install all dependencies. Continue? y/N'
-        read -n1 continue
+        read -rn1 continue
         if [[ $continue != 'y' ]] ; then
             exit 1
         fi
@@ -499,7 +502,7 @@ else
     # first, look for a build of mimic in the folder
     has_mimic=''
     if [[ -f ${TOP}/mimic/bin/mimic ]] ; then
-        has_mimic=$(${TOP}/mimic/bin/mimic -lv | grep Voice) || true
+        has_mimic=$("${TOP}"/mimic/bin/mimic -lv | grep Voice) || true
     fi
 
     # in not, check the system path
@@ -526,6 +529,7 @@ if [[ ! -x ${VIRTUALENV_ROOT}/bin/activate ]] ; then
 fi
 
 # Start the virtual environment
+# shellcheck source=/dev/null
 source "${VIRTUALENV_ROOT}/bin/activate"
 cd "$TOP"
 
@@ -534,7 +538,7 @@ HOOK_FILE='./.git/hooks/pre-commit'
 if [[ -n $INSTALL_PRECOMMIT_HOOK ]] || grep -q 'MYCROFT DEV SETUP' $HOOK_FILE; then
     if [[ ! -f $HOOK_FILE ]] || grep -q 'MYCROFT DEV SETUP' $HOOK_FILE; then
         echo 'Installing PEP8 check as precommit-hook'
-        echo "#! $(which python)" > $HOOK_FILE
+        echo "#! $(command -v python)" > $HOOK_FILE
         echo '# MYCROFT DEV SETUP' >> $HOOK_FILE
         cat ./scripts/pre-commit >> $HOOK_FILE
         chmod +x $HOOK_FILE
@@ -552,17 +556,15 @@ if [[ ! -f $VENV_PATH_FILE ]] ; then
     echo "import sys; new=sys.path[sys.__plen:]; del sys.path[sys.__plen:]; p=getattr(sys,'__egginsert',0); sys.path[p:p]=new; sys.__egginsert = p+len(new)" >> "$VENV_PATH_FILE" || return 1
 fi
 
-if ! grep -q "$TOP" $VENV_PATH_FILE ; then
+if ! grep -q "$TOP" "$VENV_PATH_FILE" ; then
     echo 'Adding mycroft-core to virtualenv path'
-    sed -i.tmp '1 a\
-'"$TOP"'
-' "$VENV_PATH_FILE"
+    sed -i.tmp "1 a$TOP" "$VENV_PATH_FILE"
 fi
 
 # install required python modules
 if ! pip install -r requirements/requirements.txt ; then
     echo 'Warning: Failed to install required dependencies. Continue? y/N'
-    read -n1 continue
+    read -rn1 continue
     if [[ $continue != 'y' ]] ; then
         exit 1
     fi
@@ -573,7 +575,7 @@ if [[ ! $(pip install -r requirements/extra-audiobackend.txt) ||
 	! $(pip install -r requirements/extra-stt.txt) ||
 	! $(pip install -r requirements/extra-mark1.txt) ]] ; then
     echo 'Warning: Failed to install some optional dependencies. Continue? y/N'
-    read -n1 continue
+    read -rn1 continue
     if [[ $continue != 'y' ]] ; then
         exit 1
     fi
@@ -585,7 +587,7 @@ if ! pip install -r requirements/tests.txt ; then
 fi
 
 SYSMEM=$(free | awk '/^Mem:/ { print $2 }')
-MAXCORES=$(($SYSMEM / 2202010))
+MAXCORES=$((SYSMEM / 2202010))
 MINCORES=1
 CORES=$(nproc)
 
