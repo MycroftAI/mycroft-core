@@ -136,6 +136,9 @@ def before_all(context):
 
 
 def before_feature(context, feature):
+    # We are seeing the first tests in Timer and Volume fail for no reason.
+    # So let the system rest for a moment...
+    sleep(5)
     context.log.info('Starting tests for {}'.format(feature.name))
     for scenario in feature.scenarios:
         patch_scenario_with_autoretry(scenario, max_attempts=2)
