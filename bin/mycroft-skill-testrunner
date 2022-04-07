@@ -31,8 +31,8 @@ function vktest-clear() {
     # A clean directory will have `steps/` and `environment.py`
     if [ "$num_feature_files" -gt "2" ] ; then
         echo "Removing Feature files..."
-        rm "${DIR}"/../test/integrationtests/voight_kampff/features/*.feature
-        rm "${DIR}"/../test/integrationtests/voight_kampff/features/*.config.json
+        rm -f "${DIR}"/../test/integrationtests/voight_kampff/features/*.feature
+        rm -f "${DIR}"/../test/integrationtests/voight_kampff/features/*.config.json
     fi
     STEPS_DIR="$FEATURES_DIR/steps"
     num_steps_files=$(count-files "$STEPS_DIR")
@@ -42,7 +42,7 @@ function vktest-clear() {
         mkdir "$TMP_DIR"
         mv "$STEPS_DIR/configuration.py" "$TMP_DIR"
         mv "$STEPS_DIR/utterance_responses.py" "$TMP_DIR"
-        rm "${STEPS_DIR}"/*.py
+        rm -f "${STEPS_DIR}"/*.py
         mv "${TMP_DIR}"/* "$STEPS_DIR"
         rmdir "$TMP_DIR"
     fi
