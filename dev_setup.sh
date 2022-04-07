@@ -387,7 +387,7 @@ function arch_install() {
         pkgs="{pkgs} pulseaudio pulseaudio-alsa"
     fi
 
-    $SUDO pacman -S --needed --noconfirm $pkgs
+    $SUDO pacman -S --needed --noconfirm "$pkgs"
 
     pacman -Qs '^fann$' &> /dev/null || (
         git clone  https://aur.archlinux.org/fann.git
