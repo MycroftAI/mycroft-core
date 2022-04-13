@@ -19,6 +19,7 @@ directory.  The executable gets added to the bin directory when installed
 (see setup.py)
 """
 import time
+from dataclasses import dataclass
 
 from lingua_franca import load_languages
 
@@ -79,10 +80,15 @@ def main(alive_hook=on_alive, started_hook=on_started, ready_hook=on_ready,
     SkillApi.connect_bus(bus)
 
     # _wait_for_internet_connection()
+    padatious_training = _intent_training_status()
+
+    def handle_intents_trained(_):
+        padatious_training.complete = True
+    bus.once('mycroft.skills.trained', handle_intents_trained)
     skill_manager = SkillManager(bus, watchdog)
     skill_manager.load_on_startup()
 
-    while not skill_manager.is_all_loaded():
+    while not all((skill_manager.is_all_loaded(), padatious_training.complete)):
         time.sleep(0.1)
     _set_initialize_ended_status(bus, status)
     skill_manager.start()
@@ -120,6 +126,11 @@ def _register_intent_services(bus):
         FallbackSkill.make_intent_failure_handler(bus)
     )
     return service
+
+
+@dataclass
+class _intent_training_status:
+    complete: bool = False
 
 
 def _wait_for_internet_connection():
