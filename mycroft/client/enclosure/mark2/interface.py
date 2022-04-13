@@ -353,8 +353,9 @@ class EnclosureMark2(Enclosure):
         if self.current_volume > 1.0:
             self.current_volume = self.current_volume / 10
         LOG.info(f"Current volume {self.current_volume}")
+        is_muted = self.current_volume == 0.0
         self.bus.emit(
-            message.response(data={"percent": self.current_volume, "muted": False})
+            message.response(data={"percent": self.current_volume, "muted": is_muted})
         )
 
     def on_capabilities_get(self, message):
