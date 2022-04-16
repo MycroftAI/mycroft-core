@@ -1,0 +1,229 @@
+https://github.com/IanHarvey/bluepy/issues/313 
+ 
+ Cannot use bluepy without sudo #313
+Closed
+spachner opened this issue on 4 Oct 2018 · 10 comments
+Comments
+@spachner
+spachner commented on 4 Oct 2018
+
+Hi,
+
+I am starting with bluepy and found that I cannot call the scanner without sudo.
+
+$ python3 scanner.py
+Traceback (most recent call last):
+  File "scanner.py", line 18, in <module>
+    scanner.scan(10.0, passive=True)
+  File "/home/spachner/.local/lib/python3.6/site-packages/bluepy/btle.py", line 734, in scan
+    self.start(passive=passive)
+  File "/home/spachner/.local/lib/python3.6/site-packages/bluepy/btle.py", line 672, in start
+    self._mgmtCmd("le on")
+  File "/home/spachner/.local/lib/python3.6/site-packages/bluepy/btle.py", line 283, in _mgmtCmd
+    "Failed to execute mgmt cmd '%s'" % (cmd))
+bluepy.btle.BTLEException: Failed to execute mgmt cmd 'le on'
+
+Calling with sudo works fine:
+
+$ sudo python3 scanner.py
+2018-10-03 18:31:28 38:01:95:0a:4f:d8 [(255, 'Manufacturer', '750042040180ae3801950a4fd83a01950a4fd701000000000000')]
+2018-10-03 18:31:28 38:01:95:0a:4f:d8 [(255, 'Manufacturer', '750042040180ae3801950a4fd83a01950a4fd701000000000000')]
+
+How avoid using sudo?
+
+Thanks in advance
+
+spachner
+@nescio007
+nescio007 commented on 10 Oct 2018 •
+
+The linux protocol stack needs additional capabilities. If you do not want to run your script as root (or under sudo), you may also give the required capabilities to the bluepy-helper binary, that comes with bluepy.
+E.g.
+
+sudo setcap 'cap_net_raw,cap_net_admin+eip' bluepy-helper
+
+For more details check this stackexchange thread: https://unix.stackexchange.com/a/182559
+@IanHarvey
+Owner
+IanHarvey commented on 13 Nov 2018
+
+On my Pi (currently Debian Stretch) the above command just gives a very unhelpful
+
+  fatal error: Invalid argument
+
+The following two commands do, however, fix it:
+
+  sudo setcap cap_net_raw+e  <PATH>/bluepy-helper
+  sudo setcap cap_net_admin+eip  <PATH>/bluepy-helper
+
+Where <PATH> is the place where bluepy-helper is installed; it's easiest to just search for this, e.g.
+
+  find /usr/local/lib -name bluepy-helper
+
+@spachner
+Author
+spachner commented on 13 Nov 2018
+
+Hi nescio007,
+
+many thanks for the advice. Works perfect on Ubuntu 17.10. I found bluepy-helper being installed at /home/spachner/.local/lib/python3.6/site-packages/bluepy/bluepy-helper
+
+regards
+
+spachner
+@spachner spachner closed this on 13 Nov 2018
+@Artiom-M
+Artiom-M commented on 16 Mar 2019
+
+Why don't include the setcap call to the install tool?
+@mivola
+mivola commented on 19 Mar 2019 •
+
+I have the exact same issue on my Raspberry Pi Zero W with Raspbian Stretch lite (4.14). I tried all possible combinations of setcap (also looking into #190), without any success.
+
+pi@zeropi01:/usr/local/lib/python3.5/dist-packages/bluepy $ sudo setcap 'cap_net_raw,cap_net_admin+eip' bluepy-helper
+pi@zeropi01:/usr/local/lib/python3.5/dist-packages/bluepy $ getcap bluepy-helper
+bluepy-helper = cap_net_admin,cap_net_raw+eip
+
+pi@zeropi01:~/projects/bluepy/bluepy $ python3 scanner.py
+Traceback (most recent call last):
+  File "scanner.py", line 18, in <module>
+    scanner.scan(10.0, passive=True)
+  File "/home/pi/.local/lib/python3.5/site-packages/bluepy/btle.py", line 852, in scan
+    self.start(passive=passive)
+  File "/home/pi/.local/lib/python3.5/site-packages/bluepy/btle.py", line 790, in start
+    self._mgmtCmd("le on")
+  File "/home/pi/.local/lib/python3.5/site-packages/bluepy/btle.py", line 312, in _mgmtCmd
+    raise BTLEManagementError("Failed to execute management command '%s'" % (cmd), rsp)
+bluepy.btle.BTLEManagementError: Failed to execute management command 'le on' (code: 20, error: Permission Denied)
+
+The strange thing is: after setting the capabilities, I was able to execute 'le on' manually without using sudo:
+
+pi@zeropi01:/usr/local/lib/python3.5/dist-packages/bluepy $ sudo setcap '' bluepy-helper
+pi@zeropi01:/usr/local/lib/python3.5/dist-packages/bluepy $ ./bluepy-helper 0
+# bluepy-helper.c version 1.3.0 built at 12:54:59 on Dec  3 2018
+le on
+rsp=$mgmtcode=$mgmterrestat=h14emsg='Permission Denied
+quit
+pi@zeropi01:/usr/local/lib/python3.5/dist-packages/bluepy $ sudo setcap 'cap_net_raw,cap_net_admin+eip' bluepy-helper
+pi@zeropi01:/usr/local/lib/python3.5/dist-packages/bluepy $ ./bluepy-helper 0
+# bluepy-helper.c version 1.3.0 built at 12:54:59 on Dec  3 2018
+le on
+rsp=$mgmtcode=$success
+quit
+
+Any ideas what might be going wrong here?
+
+Thanks a lot!
+Michael
+@mivola mivola mentioned this issue on 19 Mar 2019
+demo.py & examples fail with "Failed to obtain all builtin devices" undera/pylgbst#23
+Closed
+@tylertroy
+tylertroy commented on 12 Dec 2019
+
+Adding a note here since all other solutions suggestions failed in my case.
+
+As per noble/noble#682 (comment)
+
+The setcap command fails if your executable node is in an encrypted directory. I.e. if you chose to encrypt your home directory during install and bluepy-helper was located somewhere in home. Reported in that thread to be a bug in encryptfs. If you move the executable outside of the encrypted directory it is purported to work.
+
+Feel free to follow up with a less-hacky solution if you happen upon one.
+@alindl
+alindl commented on 23 Apr 2020
+
+    I have the exact same issue on my Raspberry Pi Zero W with Raspbian Stretch lite (4.14). I tried all possible combinations of setcap (also looking into #190), without any success.
+
+    pi@zeropi01:/usr/local/lib/python3.5/dist-packages/bluepy $ sudo setcap 'cap_net_raw,cap_net_admin+eip' bluepy-helper
+    pi@zeropi01:/usr/local/lib/python3.5/dist-packages/bluepy $ getcap bluepy-helper
+    bluepy-helper = cap_net_admin,cap_net_raw+eip
+
+    pi@zeropi01:~/projects/bluepy/bluepy $ python3 scanner.py
+    Traceback (most recent call last):
+      File "scanner.py", line 18, in <module>
+        scanner.scan(10.0, passive=True)
+      File "/home/pi/.local/lib/python3.5/site-packages/bluepy/btle.py", line 852, in scan
+        self.start(passive=passive)
+      File "/home/pi/.local/lib/python3.5/site-packages/bluepy/btle.py", line 790, in start
+        self._mgmtCmd("le on")
+      File "/home/pi/.local/lib/python3.5/site-packages/bluepy/btle.py", line 312, in _mgmtCmd
+        raise BTLEManagementError("Failed to execute management command '%s'" % (cmd), rsp)
+    bluepy.btle.BTLEManagementError: Failed to execute management command 'le on' (code: 20, error: Permission Denied)
+
+    The strange thing is: after setting the capabilities, I was able to execute 'le on' manually without using sudo:
+
+    pi@zeropi01:/usr/local/lib/python3.5/dist-packages/bluepy $ sudo setcap '' bluepy-helper
+    pi@zeropi01:/usr/local/lib/python3.5/dist-packages/bluepy $ ./bluepy-helper 0
+    # bluepy-helper.c version 1.3.0 built at 12:54:59 on Dec  3 2018
+    le on
+    rsp=$mgmtcode=$mgmterrestat=h14emsg='Permission Denied
+    quit
+    pi@zeropi01:/usr/local/lib/python3.5/dist-packages/bluepy $ sudo setcap 'cap_net_raw,cap_net_admin+eip' bluepy-helper
+    pi@zeropi01:/usr/local/lib/python3.5/dist-packages/bluepy $ ./bluepy-helper 0
+    # bluepy-helper.c version 1.3.0 built at 12:54:59 on Dec  3 2018
+    le on
+    rsp=$mgmtcode=$success
+    quit
+
+    Any ideas what might be going wrong here?
+
+    Thanks a lot!
+    Michael
+
+Did you find out how to fix this? I'm having exactly the same problem.
+@nescio007
+nescio007 commented on 23 Apr 2020 •
+
+@alindl @mivola From the logs it seems that you have two bluepy installations:
+
+    Your system-wide installation at /usr/local/lib/python3.5/dist-packages/bluepy
+    A user-local installation at ~/.local/lib/python3.5/site-packages/bluepy
+
+It appears that you added the capabilities to the helper-binary of the system-wide installations, but then tried to use the local one, which has its own helper-binary that was not given additional capabilities.
+
+TL;DR: when using pip install --user or virtualenv, make sure you set the capabilities on the correct helper-binary ;)
+@alindl
+alindl commented on 23 Apr 2020 •
+
+    @alindl @mivola From the logs it seems that you have two bluepy installations:
+
+    * Your system-wide installation at `/usr/local/lib/python3.5/dist-packages/bluepy`
+
+    * A user-local installation at `~/.local/lib/python3.5/site-packages/bluepy`
+
+    It appears that you added the capabilities to the helper-binary of the system-wide installations, but then tried to use the local one (which has it's own helper-binary that was not given additional capabilities).
+
+    TL;DR: when using pip install --user or virtualenv, make sure you set the capabilities on the correct helper-binary ;)
+
+I should ask more questions, because I JUST figured it out myself as your message was plopping up here. That's the second time that happened this week sweat_smile So yeah, that was the problem and it's working now.
+@ctrl-shift-esc ctrl-shift-esc mentioned this issue on 19 Jun 2020
+Problems when trying to set capabilities #412
+Open
+@awneil
+awneil commented on 17 Jun 2021
+
+    @alindl @mivola From the logs it seems that you have two bluepy installations:
+
+I also had 2 installations, because it seemed that the command-line would use Python-2, whereas Thonny used Python-3:
+
+/usr/local/lib/python2.7/dist-packages/bluepy/bluepy-helper
+/usr/local/lib/python3.7/dist-packages/bluepy/bluepy-helper
+
+so the
+
+sudo setcap cap_net_raw+e      <PATH>/bluepy-helper
+sudo setcap cap_net_admin+eip  <PATH>/bluepy-helper
+
+commands had to be repeated for each installation
+@ideris01 ideris01 mentioned this issue on 8 Oct 2021
+Switchbot new Integration Aborted Unexpected error message when trying to set it up home-assistant/core#57250
+Closed
+@RenierM26 RenierM26 mentioned this issue on 4 Nov 2021
+Switchbot Integration Aborted home-assistant/core#58547
+Open
+@sverrham sverrham mentioned this issue on 4 Feb
+Error starting for first time custom-components/sensor.airthings_wave#73
+Closed
+@klenze klenze mentioned this issue on 10 Feb
+Give the user a hint the first time they encounter a permision error. #471
+Open 

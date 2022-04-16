@@ -327,7 +327,7 @@ function os_is_like() {
 }
 
 function redhat_common_install() {
-    $SUDO yum install -y cmake gcc-c++ git python3-devel libtool libffi-devel openssl-devel autoconf automake bison swig portaudio-devel mpg123 flac curl libicu-devel libjpeg-devel fann-devel pulseaudio
+    $SUDO yum install -y cmake gcc-c++ git python3-devel libtool libffi-devel openssl-devel autoconf automake bison swig portaudio-devel mpg123 flac curl libicu-devel libjpeg-devel fann-devel pulseaudio libbluetooth-dev
     git clone https://github.com/libfann/fann.git
     cd fann
     git checkout b211dc3db3a6a2540a34fbe8995bf2df63fc9939
@@ -343,7 +343,7 @@ function debian_install() {
         libffi-dev libssl-dev autoconf automake bison swig libglib2.0-dev \
         portaudio19-dev mpg123 screen flac curl libicu-dev pkg-config \
         libjpeg-dev libfann-dev build-essential jq pulseaudio \
-        pulseaudio-utils"
+        pulseaudio-utils libbluetooth-dev"
 
     if dpkg -V libjack-jackd2-0 > /dev/null 2>&1 && [[ -z ${CI} ]] ; then
         echo "
