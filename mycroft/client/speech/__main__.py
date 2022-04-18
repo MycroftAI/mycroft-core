@@ -29,6 +29,7 @@ from mycroft.util import (
 )
 from mycroft.util.log import LOG
 from mycroft.util.process_utils import ProcessStatus, StatusCallbackMap
+from mycroft.util.signal import create_signal
 
 bus = None  # Mycroft messagebus connection
 lock = Lock()
@@ -169,6 +170,11 @@ def handle_stop(event):
     loop.force_unmute()
 
 
+def handle_stop_record(event):
+    """Send a signal to stop recording."""
+    create_signal('stopRecord')
+
+
 def handle_open():
     # TODO: Move this into the Enclosure (not speech client)
     # Reset the UI to indicate ready for speech processing
@@ -212,6 +218,7 @@ def connect_bus_events(bus):
     bus.on('recognizer_loop:audio_output_start', handle_audio_start)
     bus.on('recognizer_loop:audio_output_end', handle_audio_end)
     bus.on('mycroft.stop', handle_stop)
+    bus.on('mycroft.mic.stop_record', handle_stop_record)
 
 
 def main(ready_hook=on_ready, error_hook=on_error, stopping_hook=on_stopping,

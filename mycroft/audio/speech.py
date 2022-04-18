@@ -81,7 +81,8 @@ def handle_speak(event):
             for chunk, listen in chunks:
                 # Check if somthing has aborted the speech
                 if (_last_stop_signal > start or
-                        check_for_signal('buttonPress')):
+                        check_for_signal('buttonPress') or
+                        check_for_signal('stopRecord')):
                     # Clear any newly queued speech
                     tts.playback.clear()
                     break
