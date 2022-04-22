@@ -348,6 +348,21 @@ class DeepSpeechServerSTT(STT):
         return response.text
 
 
+class CoquiServerSTT(STT):
+    """
+        STT interface for the coqui stt server:
+        https://gitlab.mi.hdm-stuttgart.de/heisler/stt-coqui-server
+        use this if you want to host Coqui stt yourself
+    """
+    def __init__(self):
+        super(CoquiServerSTT, self).__init__()
+
+    def execute(self, audio, language=None):
+        language = language or self.lang
+        response = post(self.config.get("uri"), data=audio.get_wav_data())
+        return response.json()['text']
+
+
 class StreamThread(Thread, metaclass=ABCMeta):
     """ABC class to be used with StreamingSTT class implementations.
 
@@ -640,6 +655,7 @@ class STTFactory:
         "govivace": GoVivaceSTT,
         "houndify": HoundifySTT,
         "deepspeech_server": DeepSpeechServerSTT,
+        "coqui_server": CoquiServerSTT,
         "deepspeech_stream_server": DeepSpeechStreamServerSTT,
         "mycroft_deepspeech": MycroftDeepSpeechSTT,
         "yandex": YandexSTT
