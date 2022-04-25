@@ -1015,10 +1015,40 @@ class MycroftSkill:
                          '.intent'
             handler:     function to register with intent
         """
-        name = '{}:{}'.format(self.skill_id, intent_file)
         filename = self.find_resource(intent_file, 'vocab')
         if not filename:
             raise FileNotFoundError('Unable to find "{}"'.format(intent_file))
+        self.register_intent_file_path(filename, intent_file, handler)
+
+    def register_intent_file_path(self, filename, intent_name, handler):
+        """Register an file as an Intent with the intent service.
+
+        For example:
+
+        === food.order.intent ===
+        Order some {food}.
+        Order some {food} from {place}.
+        I'm hungry.
+        Grab some {food} from {place}.
+
+        Optionally, you can also use <register_entity_file>
+        to specify some examples of {food} and {place}
+
+        In addition, instead of writing out multiple variations
+        of the same sentence you can write:
+
+        === food.order.intent ===
+        (Order | Grab) some {food} (from {place} | ).
+        I'm hungry.
+
+        Args:
+            filename:    path of file that contains example queries
+                         that should activate the intent.  Must end with
+                         '.intent'
+            intent_name: name of the Intent to be created
+            handler:     function to register with intent
+        """
+        name = '{}:{}'.format(self.skill_id, intent_name)
         self.intent_service.register_padatious_intent(name, filename)
         if handler:
             self.add_event(name, handler, 'mycroft.skill.handler')
@@ -1045,8 +1075,27 @@ class MycroftSkill:
         filename = self.find_resource(entity_file + ".entity", 'vocab')
         if not filename:
             raise FileNotFoundError('Unable to find "{}"'.format(entity_file))
+        self.register_entity_file_path(filename, entity_file)
 
-        name = '{}:{}'.format(self.skill_id, entity_file)
+    def register_entity_file_path(self, filename, entity_name):
+        """Register an Entity file with a name with the intent service.
+
+        An Entity file lists the exact values that an entity can hold.
+        For example:
+
+        === ask.day.intent ===
+        Is it {weekend}?
+
+        === weekend.entity ===
+        Saturday
+        Sunday
+
+        Args:
+            filename (string):  name of file that contains examples of an
+                                   entity.  Must end with '.entity'
+            entityt_name (string): name of the entity to be created
+        """
+        name = '{}:{}'.format(self.skill_id, entity_name)
         self.intent_service.register_padatious_entity(name, filename)
 
     def handle_enable_intent(self, message):
