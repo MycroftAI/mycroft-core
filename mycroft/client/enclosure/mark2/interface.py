@@ -548,16 +548,17 @@ class EnclosureMark2(Enclosure):
 
     def _schedule_screen_dim(self):
         """Dims the screen after a period of inactivity."""
-        if self._idle_dim_timeout <= 0:
-            # No dimming
-            return
+        # Dimming disabled
+        # if self._idle_dim_timeout <= 0:
+        #     # No dimming
+        #     return
 
-        self.event_scheduler.schedule_repeating_event(
-            self._dim_screen,
-            when=None,
-            interval=self._idle_dim_timeout,
-            name="DimScreen",
-        )
+        # self.event_scheduler.schedule_repeating_event(
+        #     self._dim_screen,
+        #     when=None,
+        #     interval=self._idle_dim_timeout,
+        #     name="DimScreen",
+        # )
 
     def on_hardware_mute(self):
         """Called when hardware switch is set to mute"""
