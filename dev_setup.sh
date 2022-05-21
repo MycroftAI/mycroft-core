@@ -115,7 +115,7 @@ for var in "$@" ; do
     fi
     if [[ $var == '-n' || $var == '--no-error' ]] ; then
         # Do NOT exit on errors
-    set +Ee
+        set +Ee
     fi
     if [[ $var == '-sm' ]] ; then
         opt_skipmimicbuild=true
