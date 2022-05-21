@@ -75,6 +75,23 @@ Mycroft Forums (https://community.mycroft.ai/)
 '
 }
 
+# Parse the command line
+opt_forcemimicbuild=false
+opt_allowroot=false
+opt_skipmimicbuild=false
+opt_python=python3
+disable_precise_later=false
+param=''
+
+if found_exe sudo ; then
+    SUDO=sudo
+elif found_exe doas ; then
+    SUDO=doas
+elif [[ $opt_allowroot != true ]]; then
+    echo 'This script requires "sudo" to install system packages. Please install it, then re-run this script.'
+    exit 1
+fi
+
 # create and set permissions for logging
 if [[ ! -w /var/log/mycroft/ ]] ; then
     # Creating and setting permissions
@@ -84,14 +101,6 @@ if [[ ! -w /var/log/mycroft/ ]] ; then
     fi
     $SUDO chmod 777 /var/log/mycroft/
 fi
-
-# Parse the command line
-opt_forcemimicbuild=false
-opt_allowroot=false
-opt_skipmimicbuild=false
-opt_python=python3
-disable_precise_later=false
-param=''
 
 for var in "$@" ; do
     # Check if parameter should be read
@@ -145,16 +154,6 @@ fi
 function found_exe() {
     hash "$1" 2>/dev/null
 }
-
-
-if found_exe sudo ; then
-    SUDO=sudo
-elif found_exe doas ; then
-    SUDO=doas
-elif [[ $opt_allowroot != true ]]; then
-    echo 'This script requires "sudo" to install system packages. Please install it, then re-run this script.' | tee /var/log/mycroft/setup.log
-    exit 1
-fi
 
 
 function get_YN() {
