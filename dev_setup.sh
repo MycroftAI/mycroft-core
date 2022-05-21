@@ -75,6 +75,10 @@ Mycroft Forums (https://community.mycroft.ai/)
 '
 }
 
+function found_exe() {
+    hash "$1" 2>/dev/null
+}
+
 # Parse the command line
 opt_forcemimicbuild=false
 opt_allowroot=false
@@ -149,12 +153,6 @@ if [[ $(id -u) -eq 0 && $opt_allowroot != true ]] ; then
     echo 'If you really need to for this, rerun with --allow-root' | tee /var/log/mycroft/setup.log
     exit 1
 fi
-
-
-function found_exe() {
-    hash "$1" 2>/dev/null
-}
-
 
 function get_YN() {
     # Loop until the user hits the Y or the N key
