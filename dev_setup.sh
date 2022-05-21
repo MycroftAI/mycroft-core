@@ -75,6 +75,16 @@ Mycroft Forums (https://community.mycroft.ai/)
 '
 }
 
+# create and set permissions for logging
+if [[ ! -w /var/log/mycroft/ ]] ; then
+    # Creating and setting permissions
+    echo 'Creating /var/log/mycroft/ directory'
+    if [[ ! -d /var/log/mycroft/ ]] ; then
+        $SUDO mkdir /var/log/mycroft/
+    fi
+    $SUDO chmod 777 /var/log/mycroft/
+fi
+
 # Parse the command line
 opt_forcemimicbuild=false
 opt_allowroot=false
@@ -641,16 +651,6 @@ chmod +x bin/mycroft-pip
 chmod +x bin/mycroft-say-to
 chmod +x bin/mycroft-skill-testrunner
 chmod +x bin/mycroft-speak
-
-# create and set permissions for logging
-if [[ ! -w /var/log/mycroft/ ]] ; then
-    # Creating and setting permissions
-    echo 'Creating /var/log/mycroft/ directory' | tee /var/log/mycroft/setup.log
-    if [[ ! -d /var/log/mycroft/ ]] ; then
-        $SUDO mkdir /var/log/mycroft/
-    fi
-    $SUDO chmod 777 /var/log/mycroft/
-fi
 
 #Store a fingerprint of setup
 md5sum requirements/requirements.txt requirements/extra-audiobackend.txt requirements/extra-stt.txt requirements/extra-mark1.txt requirements/tests.txt dev_setup.sh > .installed
