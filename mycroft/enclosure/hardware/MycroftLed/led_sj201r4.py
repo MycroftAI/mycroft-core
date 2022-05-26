@@ -57,9 +57,13 @@ class Led(MycroftLed):
         # os.system(cmd)
         # LOG.debug("Execute %s" % (cmd,))
 
-        self.bus.write_i2c_block_data(
-            self.device_addr, pixel, [red_val, green_val, blue_val]
-        )
+        try:
+            self.bus.write_i2c_block_data(
+                self.device_addr, pixel, [red_val, green_val, blue_val]
+            )
+        except:
+            LOG.error("Exception writing LEDs!")
+
 
     def _set_led_with_brightness(self, pixel, color, blevel):
         self._set_led(pixel, list(map(self.adjust_brightness, color, (blevel,) * 3)))
@@ -82,7 +86,10 @@ class Led(MycroftLed):
         rgb = [int(self.adjust_brightness(c, self.brightness)) for c in color[:3]]
 
         # Write all colors at once
-        self.bus.write_i2c_block_data(self.device_addr, 0, rgb * self.num_leds)
+        try:
+            self.bus.write_i2c_block_data(self.device_addr, 0, rgb * self.num_leds)
+        except:
+            LOG.error("Exception writing LEDs!")
 
     def set_leds(self, new_leds):
         """set leds from tuple array"""
