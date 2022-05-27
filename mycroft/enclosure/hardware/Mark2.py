@@ -19,6 +19,13 @@ from mycroft.configuration import Configuration
 
 class Capabilities:
     capabilities = {
+        "sj201r5": {
+            "Led": {"name": "led_dummy", "type": "MycroftLed"},
+            "Switch": {"name": "switch_gpio", "type": "MycroftSwitch"},
+            "Volume": {"name": "volume_sj201r4", "type": "MycroftVolume"},
+            "Fan": {"name": "fan_sj201r5", "type": "MycroftFan"},
+            "Palette": {"name": "default_palette", "type": "MycroftPalette"},
+        },
         "sj201r4": {
             "Led": {"name": "led_sj201r4", "type": "MycroftLed"},
             "Switch": {"name": "switch_gpio", "type": "MycroftSwitch"},
@@ -59,4 +66,4 @@ class Capabilities:
         },
     }
 
-    default_board_type = "sj201r4"
+    default_board_type = "sj201r5"
