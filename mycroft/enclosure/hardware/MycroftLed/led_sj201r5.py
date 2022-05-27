@@ -23,7 +23,6 @@ class Led(MycroftLed):
     black = (0, 0, 0)  # TODO pull from pallette
 
     def __init__(self):
-        LOG.error("SJ201R5!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!INIT")
         pixel_pin = board.D12
         ORDER = neopixel.GRB
         self.brightness = 0.2
