@@ -651,3 +651,5 @@ chmod +x bin/mycroft-speak
 
 #Store a fingerprint of setup
 md5sum requirements/requirements.txt requirements/extra-audiobackend.txt requirements/extra-stt.txt requirements/extra-mark1.txt requirements/tests.txt dev_setup.sh > .installed
+
+echo 'Mycroft setup complete! Logs can be found at /var/log/mycroft/setup.log'
