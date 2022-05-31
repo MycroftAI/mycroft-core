@@ -431,7 +431,6 @@ function alpine_install() {
 		mpg123 \
 		pcre2-dev \
 		portaudio-dev \
-		pulseaudio-dev \
 		pulseaudio-utils \
 		py3-pip \
 		py3-setuptools \
