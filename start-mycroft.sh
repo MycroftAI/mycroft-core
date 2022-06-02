@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/sh
 
 # Copyright 2017 Mycroft AI Inc.
 #
@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-SOURCE="${BASH_SOURCE[0]}"
+SOURCE="$0"
 
 script=${0}
 script=${script##*/}
@@ -22,7 +22,7 @@ cd -P "$( dirname "$SOURCE" )" || exit 1 # Enter scripts folder or fail!
 DIR="$( pwd )"
 VIRTUALENV_ROOT=${VIRTUALENV_ROOT:-"${DIR}/.venv"}
 
-function help() {
+help() {
     echo "${script}:  Mycroft command/service launcher"
     echo "usage: ${script} [COMMAND] [restart] [params]"
     echo
@@ -60,7 +60,7 @@ function help() {
 }
 
 _module=""
-function name-to-script-path() {
+name_to_script_path() {
     case ${1} in
         "bus")               _module="mycroft.messagebus.service" ;;
         "skills")            _module="mycroft.skills" ;;
@@ -77,47 +77,47 @@ function name-to-script-path() {
     esac
 }
 
-function source-venv() {
+source_venv() {
     # Enter Python virtual environment, unless under Docker
     if [ ! -f "/.dockerenv" ] ; then
-        source "${VIRTUALENV_ROOT}/bin/activate"
+        . "${VIRTUALENV_ROOT}/bin/activate"
     fi
 }
 
 first_time=true
-function init-once() {
+init_once() {
     if ($first_time) ; then
         echo "Initializing..."
         "${DIR}/scripts/prepare-msm.sh"
-        source-venv
+        source_venv
         first_time=false
     fi
 }
 
-function launch-process() {
-    init-once
+launch_process() {
+    init_once
 
-    name-to-script-path "${1}"
+    name_to_script_path "${1}"
 
     # Launch process in foreground
     echo "Starting $1"
     python3 -m ${_module} "$@"
 }
 
-function require-process() {
+require_process() {
     # Launch process if not found
-    name-to-script-path "${1}"
+    name_to_script_path "${1}"
     if ! pgrep -f "python3 (.*)-m ${_module}" > /dev/null ; then
         # Start required process
-        launch-background "${1}"
+        launch_background "${1}"
     fi
 }
 
-function launch-background() {
-    init-once
+launch_background() {
+    init_once
 
     # Check if given module is running and start (or restart if running)
-    name-to-script-path "${1}"
+    name_to_script_path "${1}"
     if pgrep -f "python3 (.*)-m ${_module}" > /dev/null ; then
         if ($_force_restart) ; then
             echo "Restarting: ${1}"
@@ -131,7 +131,7 @@ function launch-background() {
     fi
 
     # Security warning/reminder for the user
-    if [[ "${1}" == "bus" ]] ; then
+    if [ "${1}" = "bus" ] ; then
         echo "CAUTION: The Mycroft bus is an open websocket with no built-in security"
         echo "         measures.  You are responsible for protecting the local port"
         echo "         8181 with a firewall as appropriate."
@@ -141,29 +141,29 @@ function launch-background() {
     python3 -m ${_module} "$@" >> "/var/log/mycroft/${1}.log" 2>&1 &
 }
 
-function launch-all() {
+launch_all() {
     echo "Starting all mycroft-core services"
-    launch-background bus
-    launch-background skills
-    launch-background audio
-    launch-background voice
-    launch-background enclosure
+    launch_background bus
+    launch_background skills
+    launch_background audio
+    launch_background voice
+    launch_background enclosure
 }
 
-function check-dependencies() {
+check_dependencies() {
     if [ -f .dev_opts.json ] ; then
         auto_update=$( jq -r ".auto_update" < .dev_opts.json 2> /dev/null)
     else
         auto_update="false"
     fi
-    if [ "$auto_update" == "true" ] ; then
+    if [ "$auto_update" = "true" ] ; then
         # Check github repo for updates (e.g. a new release)
         git pull
     fi
 
-    if [ ! -f .installed ] || ! md5sum -c &> /dev/null < .installed ; then
+    if [ ! -f .installed ] || ! md5sum -c > /dev/null 2>&1 < .installed ; then
         # Critical files have changed, dev_setup.sh should be run again
-        if [ "$auto_update" == "true" ] ; then
+        if [ "$auto_update" = "true" ] ; then
             echo "Updating dependencies..."
             bash dev_setup.sh
         else
@@ -179,83 +179,91 @@ function check-dependencies() {
 
 _opt=$1
 _force_restart=false
+
+if [ $# -eq 0 ]; then
+	help
+	return
+fi
+
 shift
-if [[ "${1}" == "restart" ]] || [[ "${_opt}" == "restart" ]] ; then
+if [ "${1}" = "restart" ] || [ "${_opt}" = "restart" ] ; then
     _force_restart=true
-    if [[ "${_opt}" == "restart" ]] ; then
+    if [ "${_opt}" = "restart" ] ; then
         # Support "start-mycroft.sh restart all" as well as "start-mycroft.sh all restart"
         _opt=$1
     fi
-    shift
+
+    if [ $# -gt 0 ]; then
+	    shift
+    fi
 fi
 
-
-if [[ ! "${_opt}" == "cli" ]] ; then
-    check-dependencies
+if [ ! "${_opt}" = "cli" ] ; then
+    check_dependencies
 fi
 
 case ${_opt} in
     "all")
-        launch-all
+        launch_all
         ;;
 
     "bus")
-        launch-background "${_opt}"
+        launch_background "${_opt}"
         ;;
     "audio")
-        launch-background "${_opt}"
+        launch_background "${_opt}"
         ;;
     "skills")
-        launch-background "${_opt}"
+        launch_background "${_opt}"
         ;;
     "voice")
-        launch-background "${_opt}"
+        launch_background "${_opt}"
         ;;
 
     "debug")
-        launch-all
-        launch-process cli
+        launch_all
+        launch_process cli
         ;;
 
     "cli")
-        require-process bus
-        require-process skills
-        launch-process "${_opt}"
+        require_process bus
+        require_process skills
+        launch_process "${_opt}"
         ;;
 
     # TODO: Restore support for Wifi Setup on a Picroft, etc.
     # "wifi")
-    #    launch-background ${_opt}
+    #    launch_background ${_opt}
     #    ;;
     "unittest")
-        source-venv
+        source_venv
         pytest test/unittests/ --cov=mycroft "$@"
         ;;
     "singleunittest")
-        source-venv
+        source_venv
         pytest "$@"
         ;;
     "skillstest")
-        source-venv
+        source_venv
         pytest test/integrationtests/skills/discover_tests.py "$@"
         ;;
     "vktest")
-        source "$DIR/bin/mycroft-skill-testrunner" vktest "$@"
+        "$DIR/bin/mycroft-skill-testrunner" vktest "$@"
         ;;
     "audiotest")
-        launch-process "${_opt}"
+        launch_process "${_opt}"
         ;;
     "wakewordtest")
-        launch-process "${_opt}"
+        launch_process "${_opt}"
         ;;
     "sdkdoc")
-        source-venv
+        source_venv
         cd doc || exit 1  # Exit if doc directory doesn't exist
         make "$@"
         cd ..
         ;;
     "enclosure")
-        launch-background "${_opt}"
+        launch_background "${_opt}"
         ;;
 
     *)
