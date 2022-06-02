@@ -419,7 +419,26 @@ function gentoo_install() {
 }
 
 function alpine_install() {
-    $SUDO apk add --virtual makedeps-mycroft-core alpine-sdk git python3 py3-pip py3-setuptools py3-virtualenv mpg123 vorbis-tools pulseaudio-utils fann-dev automake autoconf libtool pcre2-dev pulseaudio-dev alsa-lib-dev swig python3-dev portaudio-dev libjpeg-turbo-dev
+    $SUDO apk add --virtual .makedeps-mycroft-core \
+		alpine-sdk \
+		alsa-lib-dev \
+		autoconf \
+		automake \
+		fann-dev \
+		git \
+		libjpeg-turbo-dev \
+		libtool \
+		mpg123 \
+		pcre2-dev \
+		portaudio-dev \
+		pulseaudio-utils \
+		py3-pip \
+		py3-setuptools \
+		py3-virtualenv \
+		python3 \
+		python3-dev \
+		swig \
+		vorbis-tools
 }
 
 function install_deps() {
