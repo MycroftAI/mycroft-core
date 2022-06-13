@@ -322,17 +322,16 @@ class EnclosureMark2(Enclosure):
         # TODO duck it anyway using set vol
         # LOG.warning("Mark2 volume duck deprecated! use volume set instead.")
         # TODO make configurable 'duck_vol'
-        # self.hardware.hardware_volume.set_volume(float(0.1))
+        volume = float(message.data["percent"])
+        self.hardware.hardware_volume.set_volume(volume)
         # Use amixer in volume skill to avoid AGC issue.
-        pass
 
     def on_volume_unduck(self, message):
         # TODO duck it anyway using set vol
         # LOG.warning("Mark2 volume unduck deprecated!
         #              use volume set instead.")
-        # self.hardware.hardware_volume.set_volume(float(self.current_volume))
+        self.hardware.hardware_volume.set_volume(float(self.current_volume))
         # Use amixer in volume skill to avoid AGC issue.
-        pass
 
     def on_volume_set(self, message):
         self.current_volume = message.data.get("percent", self.current_volume)
