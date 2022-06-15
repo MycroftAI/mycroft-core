@@ -26,8 +26,8 @@ current_pkg=$( cat /etc/apt/sources.list.d/repo.mycroft.ai.list )
 stable_pkg="deb http://repo.mycroft.ai/repos/apt/debian debian main"
 unstable_pkg="deb http://repo.mycroft.ai/repos/apt/debian debian-unstable main"
 
-mark_1_package_list="mycroft-mark-1 mycroft-core mycroft-wifi-setup"
-picroft_package_list="mycroft-picroft mycroft-core mycroft-wifi-setup"
+mark_1_package_list=(mycroft-mark-1 mycroft-core mycroft-wifi-setup)
+picroft_package_list=(mycroft-picroft mycroft-core mycroft-wifi-setup)
 
 # Determine the platform
 mycroft_platform="null"
@@ -44,7 +44,7 @@ fi
 function service_ctl() {
     service=${1}
     action=${2}
-    sudo /etc/init.d/${service} ${action}
+    sudo "/etc/init.d/${service}" "${action}"
 }
 
 function stop_mycroft() {
@@ -115,39 +115,39 @@ function github_init_scripts() {
 
         # switch to point a github install and run as the current user
         # TODO Verify all of these
-        sudo sed -i 's_.*SCRIPT=.*_SCRIPT="'${path}'/start-mycroft.sh audio"_g' /etc/init.d/mycroft-audio
-        sudo sed -i 's_.*RUNAS=.*_RUNAS='${user}'_g' /etc/init.d/mycroft-audio
+        sudo sed -i 's_.*SCRIPT=.*_SCRIPT="'"${path}"'/start-mycroft.sh audio"_g' /etc/init.d/mycroft-audio
+        sudo sed -i 's_.*RUNAS=.*_RUNAS='"${user}"'_g' /etc/init.d/mycroft-audio
         sudo sed -i 's_stop() {_stop() {\nPID=$(ps ax | grep mycroft/audio/ | awk '"'NR==1{print \$1; exit}'"')\necho "${PID}" > "$PIDFILE"_g' /etc/init.d/mycroft-audio
 
-        sudo sed -i 's_.*SCRIPT=.*_SCRIPT="'${path}'/start-mycroft.sh enclosure"_g' /etc/init.d/mycroft-enclosure-client
-        sudo sed -i 's_.*RUNAS=.*_RUNAS='${user}'_g' /etc/init.d/mycroft-enclosure-client
+        sudo sed -i 's_.*SCRIPT=.*_SCRIPT="'"${path}"'/start-mycroft.sh enclosure"_g' /etc/init.d/mycroft-enclosure-client
+        sudo sed -i 's_.*RUNAS=.*_RUNAS='"${user}"'_g' /etc/init.d/mycroft-enclosure-client
         sudo sed -i 's_stop() {_stop() {\nPID=$(ps ax | grep mycroft/client/enclosure/ | awk '"'NR==1{print \$1; exit}'"')\necho "${PID}" > "$PIDFILE"_g' /etc/init.d/mycroft-enclosure-client
 
-        sudo sed -i 's_.*SCRIPT=.*_SCRIPT="'${path}'/start-mycroft.sh bus"_g' /etc/init.d/mycroft-messagebus
-        sudo sed -i 's_.*RUNAS=.*_RUNAS='${user}'_g' /etc/init.d/mycroft-messagebus
+        sudo sed -i 's_.*SCRIPT=.*_SCRIPT="'"${path}"'/start-mycroft.sh bus"_g' /etc/init.d/mycroft-messagebus
+        sudo sed -i 's_.*RUNAS=.*_RUNAS='"${user}"'_g' /etc/init.d/mycroft-messagebus
         sudo sed -i 's_stop() {_stop() {\nPID=$(ps ax | grep mycroft/messagebus/ | awk '"'NR==1{print \$1; exit}'"')\necho "${PID}" > "$PIDFILE"_g' /etc/init.d/mycroft-messagebus
 
-        sudo sed -i 's_.*SCRIPT=.*_SCRIPT="'${path}'/start-mycroft.sh skills"_g' /etc/init.d/mycroft-skills
-        sudo sed -i 's_.*RUNAS=.*_RUNAS='${user}'_g' /etc/init.d/mycroft-skills
+        sudo sed -i 's_.*SCRIPT=.*_SCRIPT="'"${path}"'/start-mycroft.sh skills"_g' /etc/init.d/mycroft-skills
+        sudo sed -i 's_.*RUNAS=.*_RUNAS='"${user}"'_g' /etc/init.d/mycroft-skills
         sudo sed -i 's_stop() {_stop() {\nPID=$(ps ax | grep mycroft/skills/ | awk '"'NR==1{print \$1; exit}'"')\necho "${PID}" > "$PIDFILE"_g' /etc/init.d/mycroft-skills
 
-        sudo sed -i 's_.*SCRIPT=.*_SCRIPT="'${path}'/start-mycroft.sh voice"_g' /etc/init.d/mycroft-speech-client
-        sudo sed -i 's_.*RUNAS=.*_RUNAS='${user}'_g' /etc/init.d/mycroft-speech-client
+        sudo sed -i 's_.*SCRIPT=.*_SCRIPT="'"${path}"'/start-mycroft.sh voice"_g' /etc/init.d/mycroft-speech-client
+        sudo sed -i 's_.*RUNAS=.*_RUNAS='"${user}"'_g' /etc/init.d/mycroft-speech-client
         sudo sed -i 's_stop() {_stop() {\nPID=$(ps ax | grep mycroft/client/speech | awk '"'NR==1{print \$1; exit}'"')\necho "${PID}" > "$PIDFILE"_g' /etc/init.d/mycroft-speech-client
 
         # soft link the current user to the mycroft user's identity folder
-        chown ${user}:${user} /home/mycroft/.mycroft/identity/identity2.json
-        if [ ! -e ${HOME}/.mycroft ] ; then
-            mkdir ${HOME}/.mycroft
+        chown "${user}:${user}" /home/mycroft/.mycroft/identity/identity2.json
+        if [ ! -e "${HOME}/.mycroft" ] ; then
+            mkdir "${HOME}/.mycroft"
         fi
-        if [ ! -e ${HOME}/.mycroft/identity ] ; then
-            sudo ln -s /home/mycroft/.mycroft/identity ${HOME}/.mycroft/
+        if [ ! -e "${HOME}/.mycroft/identity" ] ; then
+            sudo ln -s /home/mycroft/.mycroft/identity "${HOME}/.mycroft/"
         fi
 
-        sudo chown -R ${user}:${user} /var/log/mycroft*
-        sudo chown -R ${user}:${user} /var/run/mycroft*
-        sudo chown -R ${user}:${user} /tmp/mycroft
-        sudo chown -R ${user}:${user} /var/tmp/mycroft_web_cache.json
+        sudo chown -R "${user}:${user}" /var/log/mycroft*
+        sudo chown -R "${user}:${user}" /var/run/mycroft*
+        sudo chown -R "${user}:${user}" /tmp/mycroft
+        sudo chown -R "${user}:${user}" /var/tmp/mycroft_web_cache.json
 
         # reload daemon scripts
         sudo systemctl daemon-reload
@@ -159,24 +159,24 @@ function github_init_scripts() {
 function invoke_apt() {
     if [ ${mycroft_platform} == "mycroft_mark_1" ] ; then
         echo "${1}ing the mycroft-mark-1 metapackage..."
-        sudo apt-get ${1} mycroft-mark-1 -y
+        sudo apt-get "${1}" mycroft-mark-1 -y
     elif [ ${mycroft_platform} == "picroft" ] ; then
         echo "${1}ing the mycroft-picroft metapackage..."
-        sudo apt-get ${1} mycroft-picroft -y
+        sudo apt-get "${1}" mycroft-picroft -y
     else
         # for unknown, just update the generic package
         echo "${1}ing the generic mycroft-core package..."
-        sudo apt-get ${1} mycroft-core -y
+        sudo apt-get "${1}" mycroft-core -y
     fi
 }
 
 function remove_all() {
     if [ ${mycroft_platform} == "mycroft_mark_1" ] ; then
         echo "Removing the mycroft mark-1 packages..."
-        sudo apt-get remove ${mark_1_package_list} -y
+        sudo apt-get remove "${mark_1_package_list[@]}" -y
     elif [ ${mycroft_platform} == "picroft" ] ; then
         echo "Removing the picroft packages..."
-        sudo apt-get remove ${picroft_package_list} -y
+        sudo apt-get remove "${picroft_package_list[@]}" -y
     else
         # for unknown, just update the generic package
         echo "Removing the generic mycroft-core package..."
@@ -197,8 +197,7 @@ function stable_to_unstable_server() {
     conf_path=/home/mycroft/.mycroft/
 
     # check if on stable (home-test.mycroft.ai) already
-    cmp --silent ${conf_path}/mycroft.conf ${conf_path}/mycroft.conf.unstable
-    if [ $? -eq 0 ] ; then
+       if ! cmp --silent "${conf_path}/mycroft.conf" "${conf_path}/mycroft.conf.unstable" ; then
        echo "Already set to use the home-test.mycroft.ai server"
        return
     fi
@@ -206,15 +205,16 @@ function stable_to_unstable_server() {
     # point to test server
     echo "Changing mycroft.conf to point to test server api-test.mycroft.ai"
     if [ -f ${conf_path}mycroft.conf ] ; then
-        cp ${conf_path}mycroft.conf ${conf_path}mycroft.conf.stable
+        cp "${conf_path}mycroft.conf" "${conf_path}mycroft.conf.stable"
     else
         echo "could not find mycroft.conf, was it deleted?"
     fi
     if [ -f ${conf_path}mycroft.conf.unstable ] ; then
-        cp ${conf_path}mycroft.conf.unstable ${conf_path}mycroft.conf
+        cp ${conf_path}mycroft.conf.unstable "${conf_path}mycroft.conf"
     else
         rm -r ${conf_path}mycroft.conf
-        echo '{"server": {"url":"https://api-test.mycroft.ai", "version":"v1", "update":true, "metrics":false }}' $( cat ${conf_path}mycroft.conf.stable ) | jq -s add > ${conf_path}mycroft.conf
+        conf_data=$( cat "${conf_path}mycroft.conf.stable")
+        echo '{"server": {"url":"https://api-test.mycroft.ai", "version":"v1", "update":true, "metrics":false }}' "${conf_data}" | jq -s add > "${conf_path}mycroft.conf"
     fi
 
     # saving identity2.json to stable state
@@ -238,8 +238,7 @@ function unstable_to_stable_server() {
     conf_path=/home/mycroft/.mycroft/
 
     # check if on stable (home.mycroft.ai) already
-    cmp --silent ${conf_path}/mycroft.conf ${conf_path}/mycroft.conf.stable
-    if [ $? -eq 0 ] ; then
+    if cmp --silent ${conf_path}/mycroft.conf ${conf_path}/mycroft.conf.stable; then
         echo "Already set to use the home.mycroft.ai server"
         return
     fi
@@ -247,7 +246,9 @@ function unstable_to_stable_server() {
     # point api to production server
     echo "Changing mycroft.conf to point to production server api.mycroft.ai"
     if [ -f ${conf_path}mycroft.conf ] ; then
-        echo '{"server": {"url":"https://api-test.mycroft.ai", "version":"v1", "update":true, "metrics":false }}' $( cat ${conf_path}mycroft.conf ) | jq -s add > ${conf_path}mycroft.conf.unstable
+        base_config='{"server": {"url":"https://api-test.mycroft.ai", "version":"v1", "update":true, "metrics":false }}'
+        current_config=$( cat "${conf_path}mycroft.conf" )
+        echo "$base_config" "$current_config" | jq -s add > "${conf_path}mycroft.conf.unstable"
     else
         echo "could not find mycroft.conf, was it deleted?"
     fi
@@ -319,16 +320,15 @@ elif [ "${change_to}" == "stable" ] ; then
 
 elif [ "${change_to}" == "github" ] ; then
     echo "Switching to github..."
-    if [ ! -d ${path} ] ; then
+    if [ ! -d "${path}" ] ; then
         mkdir --parents "${path}"
-        cd "${path}"
-        cd ..
+        cd "${path}/.." || exit
         git clone https://github.com/MycroftAI/mycroft-core.git "${path}"
     fi
 
     sudo chmod -x /etc/cron.hourly/mycroft-core # Disable updates
 
-    if [ -d ${path} ] ; then
+    if [ -d "${path}" ] ; then
         if  [ -f /usr/local/bin/mimic ] ; then
             echo "Mimic file exists"
             mimic_flag="-sm"
@@ -336,9 +336,9 @@ elif [ "${change_to}" == "github" ] ; then
             echo "file doesn't exist"
             mimic_flag=""
         fi
-        cd ${path}
+        cd "${path}" || exit
         # Build the dev environment
-        ${path}/dev_setup.sh --allow-root ${mimic_flag}
+        "${path}"/dev_setup.sh --allow-root "${mimic_flag}"
 
         # Switch init scripts to start the github version
         github_init_scripts

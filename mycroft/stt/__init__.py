@@ -37,6 +37,18 @@ class STT(metaclass=ABCMeta):
         self.recognizer = Recognizer()
         self.can_stream = False
 
+    @property
+    def available_languages(self) -> set:
+        """Return languages supported by this STT implementation in this state
+
+        This property should be overridden by the derived class to advertise
+        what languages that engine supports.
+
+        Returns:
+            set: supported languages
+        """
+        return set()
+
     @staticmethod
     def init_language(config_core):
         """Helper method to get language code from Mycroft config."""

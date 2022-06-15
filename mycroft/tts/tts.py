@@ -39,22 +39,43 @@ from mycroft.util.plugins import load_plugin
 from queue import Queue, Empty
 from .cache import hash_sentence, TextToSpeechCache
 
-
 _TTS_ENV = deepcopy(os.environ)
 _TTS_ENV['PULSE_PROP'] = 'media.role=phone'
 
-
 EMPTY_PLAYBACK_QUEUE_TUPLE = (None, None, None, None, None)
+
+SSML_TAGS = re.compile(r'<[^>]*>')
+WHITESPACE_AFTER_PERIOD = re.compile(r'\b([A-za-z][\.])(\s+)')
+SENTENCE_DELIMITERS = re.compile(
+    r'(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\;|\?)\s'
+)
+
+
+def default_preprocess_utterance(utterance):
+    """Default method for preprocessing Mycroft utterances for TTS.
+
+    Args:
+        utteance (str): Input utterance
+
+    Returns:
+        [str]: list of preprocessed sentences
+    """
+
+    utterance = WHITESPACE_AFTER_PERIOD.sub(r'\g<1>', utterance)
+    chunks = SENTENCE_DELIMITERS.split(utterance)
+    return chunks
 
 
 class PlaybackThread(Thread):
     """Thread class for playing back tts audio and sending
     viseme data to enclosure.
     """
-
     def __init__(self, queue):
         super(PlaybackThread, self).__init__()
         self.queue = queue
+        self.tts = []
+        self.bus = None
+
         self._terminated = False
         self._processing_queue = False
         self.enclosure = None
@@ -66,7 +87,28 @@ class PlaybackThread(Thread):
             self.pulse_env = None
 
     def init(self, tts):
-        self.tts = tts
+        """DEPRECATED! Init the TTS Playback thread.
+
+        TODO: 22.02 Remove this
+        """
+        self.attach_tts(tts)
+        self.set_bus(tts.bus)
+
+    def set_bus(self, bus):
+        """Provide bus instance to the TTS Playback thread.
+
+        Args:
+            bus (MycroftBusClient): bus client
+        """
+        self.bus = bus
+
+    def attach_tts(self, tts):
+        """Add TTS to be cache checked."""
+        self.tts.append(tts)
+
+    def detach_tts(self, tts):
+        """Remove TTS from cache check."""
+        self.tts.remove(tts)
 
     def clear_queue(self):
         """Remove all pending playbacks."""
@@ -90,7 +132,7 @@ class PlaybackThread(Thread):
         the loop then wait for the playback process to finish before starting
         checking the next position in queue.
 
-        If the queue is empty the tts.end_audio() is called possibly triggering
+        If the queue is empty the end_audio() is called possibly triggering
         listening.
         """
         while not self._terminated:
@@ -100,7 +142,7 @@ class PlaybackThread(Thread):
                 self.blink(0.5)
                 if not self._processing_queue:
                     self._processing_queue = True
-                    self.tts.begin_audio()
+                    self.begin_audio()
 
                 stopwatch = Stopwatch()
                 with stopwatch:
@@ -116,7 +158,7 @@ class PlaybackThread(Thread):
                 report_timing(ident, 'speech_playback', stopwatch)
 
                 if self.queue.empty():
-                    self.tts.end_audio(listen)
+                    self.end_audio(listen)
                     self._processing_queue = False
                 self.blink(0.2)
             except Empty:
@@ -124,8 +166,41 @@ class PlaybackThread(Thread):
             except Exception as e:
                 LOG.exception(e)
                 if self._processing_queue:
-                    self.tts.end_audio(listen)
+                    self.end_audio(listen)
                     self._processing_queue = False
+
+    def begin_audio(self):
+        """Perform befining of speech actions."""
+        # Create signals informing start of speech
+        if self.bus:
+            self.bus.emit(Message("recognizer_loop:audio_output_start"))
+        else:
+            LOG.warning("Speech started before bus was attached.")
+
+    def end_audio(self, listen):
+        """Perform end of speech output actions.
+
+        Will inform the system that speech has ended and trigger the TTS's
+        cache checks. Listening will be triggered if requested.
+
+        Args:
+            listen (bool): True if listening event should be emitted
+        """
+        if self.bus:
+            # Send end of speech signals to the system
+            self.bus.emit(Message("recognizer_loop:audio_output_end"))
+            if listen:
+                self.bus.emit(Message('mycroft.mic.listen'))
+
+            # Clear cache for all attached tts objects
+            # This is basically the only safe time
+            for tts in self.tts:
+                tts.cache.curate()
+
+            # This check will clear the filesystem IPC "signal"
+            check_for_signal("isSpeaking")
+        else:
+            LOG.warning("Speech started before bus was attached.")
 
     def show_visemes(self, pairs):
         """Send viseme data to enclosure
@@ -167,6 +242,8 @@ class TTS(metaclass=ABCMeta):
         phonetic_spelling (bool): Whether to spell certain words phonetically
         ssml_tags (list): Supported ssml properties. Ex. ['speak', 'prosody']
     """
+    queue = None
+    playback = None
 
     def __init__(self, lang, config, validator, audio_ext='wav',
                  phonetic_spelling=True, ssml_tags=None):
@@ -183,15 +260,30 @@ class TTS(metaclass=ABCMeta):
         self.filename = get_temp_path('tts.wav')
         self.enclosure = None
         random.seed()
-        self.queue = Queue()
-        self.playback = PlaybackThread(self.queue)
-        self.playback.start()
+
+        if TTS.queue is None:
+            TTS.queue = Queue()
+            TTS.playback = PlaybackThread(TTS.queue)
+            TTS.playback.start()
+
         self.spellings = self.load_spellings()
         self.tts_name = type(self).__name__
         self.cache = TextToSpeechCache(
             self.config, self.tts_name, self.audio_ext
         )
         self.cache.clear()
+
+    @property
+    def available_languages(self) -> set:
+        """Return languages supported by this TTS implementation in this state
+
+        This property should be overridden by the derived class to advertise
+        what languages that engine supports.
+
+        Returns:
+            set: supported languages
+        """
+        return set()
 
     def load_spellings(self):
         """Load phonetic spellings of words as dictionary."""
@@ -240,9 +332,10 @@ class TTS(metaclass=ABCMeta):
             bus:    Mycroft messagebus connection
         """
         self.bus = bus
-        self.playback.init(self)
+        TTS.playback.set_bus(bus)
+        TTS.playback.attach_tts(self)
         self.enclosure = EnclosureAPI(self.bus)
-        self.playback.enclosure = self.enclosure
+        TTS.playback.enclosure = self.enclosure
 
     def get_tts(self, sentence, wav_file):
         """Abstract method that a tts implementation needs to implement.
@@ -294,7 +387,7 @@ class TTS(metaclass=ABCMeta):
             return self.remove_ssml(utterance)
 
         # find ssml tags in string
-        tags = re.findall('<[^>]*>', utterance)
+        tags = SSML_TAGS.findall(utterance)
 
         for tag in tags:
             if any(supported in tag for supported in self.ssml_tags):
@@ -305,6 +398,21 @@ class TTS(metaclass=ABCMeta):
 
         # return text with supported ssml tags only
         return utterance.replace("  ", " ")
+
+    def preprocess_utterance(self, utterance):
+        """Preprocess utterance into list of chunks suitable for the TTS.
+
+        Perform general chunking and TTS specific chunking.
+        """
+        # Remove any whitespace present after the period,
+        # if a character (only alpha) ends with a period
+        # ex: A. Lincoln -> A.Lincoln
+        # so that we don't split at the period
+        chunks = default_preprocess_utterance(utterance)
+        result = []
+        for chunk in chunks:
+            result += self._preprocess_sentence(chunk)
+        return result
 
     def _preprocess_sentence(self, sentence):
         """Default preprocessing is no preprocessing.
@@ -335,13 +443,7 @@ class TTS(metaclass=ABCMeta):
         sentence = self.validate_ssml(sentence)
 
         create_signal("isSpeaking")
-        try:
-            self._execute(sentence, ident, listen)
-        except Exception:
-            # If an error occurs end the audio sequence through an empty entry
-            self.queue.put(EMPTY_PLAYBACK_QUEUE_TUPLE)
-            # Re-raise to allow the Exception to be handled externally as well.
-            raise
+        self._execute(sentence, ident, listen)
 
     def _execute(self, sentence, ident, listen):
         if self.phonetic_spelling:
@@ -350,6 +452,8 @@ class TTS(metaclass=ABCMeta):
                     sentence = sentence.replace(word,
                                                 self.spellings[word.lower()])
 
+        # TODO: 22.02 This is no longer needed and can be removed
+        # Just kept for compatibility for now
         chunks = self._preprocess_sentence(sentence)
         # Apply the listen flag to the last chunk, set the rest to False
         chunks = [(chunks[i], listen if i == len(chunks) - 1 else False)
@@ -397,7 +501,7 @@ class TTS(metaclass=ABCMeta):
                     audio_file, phoneme_file
                 )
             viseme = self.viseme(phonemes) if phonemes else None
-            self.queue.put(
+            TTS.queue.put(
                 (self.audio_ext, str(audio_file.path), viseme, ident, l)
             )
 
@@ -477,10 +581,6 @@ class TTS(metaclass=ABCMeta):
                 LOG.debug("Failed to read .PHO from cache")
         return None
 
-    def __del__(self):
-        self.playback.stop()
-        self.playback.join()
-
 
 class TTSValidator(metaclass=ABCMeta):
     """TTS Validator abstract class to be implemented by all TTS engines.
@@ -488,7 +588,6 @@ class TTSValidator(metaclass=ABCMeta):
     It exposes and implements ``validate(tts)`` function as a template to
     validate the TTS engines.
     """
-
     def __init__(self, tts):
         self.tts = tts
 
@@ -560,7 +659,6 @@ class TTSFactory:
     from mycroft.tts.spdsay_tts import SpdSay
     from mycroft.tts.bing_tts import BingTTS
     from mycroft.tts.ibm_tts import WatsonTTS
-    from mycroft.tts.responsive_voice_tts import ResponsiveVoice
     from mycroft.tts.mimic2_tts import Mimic2
     from mycroft.tts.yandex_tts import YandexTTS
     from mycroft.tts.dummy_tts import DummyTTS
@@ -578,7 +676,6 @@ class TTSFactory:
         "spdsay": SpdSay,
         "watson": WatsonTTS,
         "bing": BingTTS,
-        "responsive_voice": ResponsiveVoice,
         "yandex": YandexTTS,
         "polly": PollyTTS,
         "mozilla": MozillaTTS,

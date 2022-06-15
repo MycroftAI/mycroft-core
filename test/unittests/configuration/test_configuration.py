@@ -32,38 +32,6 @@ class TestConfiguration(TestCase):
         self.assertTrue(rc['test_config'])
         self.assertEqual(rc['location']['city']['name'], 'Stockholm')
 
-    @patch('json.dump')
-    @patch('mycroft.configuration.config.exists')
-    @patch('mycroft.configuration.config.isfile')
-    @patch('mycroft.configuration.config.load_commented_json')
-    def test_local(self, mock_json_loader, mock_isfile, mock_exists,
-                   mock_json_dump):
-        local_conf = {'answer': 42, 'falling_objects': ['flower pot', 'whale']}
-        mock_exists.return_value = True
-        mock_isfile.return_value = True
-        mock_json_loader.return_value = local_conf
-        lc = mycroft.configuration.LocalConf('test')
-        self.assertEqual(lc, local_conf)
-
-        # Test merge method
-        merge_conf = {'falling_objects': None, 'has_towel': True}
-        lc.merge(merge_conf)
-        self.assertEqual(lc['falling_objects'], None)
-        self.assertEqual(lc['has_towel'], True)
-
-        # test store
-        lc.store('test_conf.json')
-        self.assertEqual(mock_json_dump.call_args[0][0], lc)
-        # exists but is not file
-        mock_isfile.return_value = False
-        lc = mycroft.configuration.LocalConf('test')
-        self.assertEqual(lc, {})
-
-        # does not exist
-        mock_exists.return_value = False
-        lc = mycroft.configuration.LocalConf('test')
-        self.assertEqual(lc, {})
-
     @patch('mycroft.configuration.config.RemoteConf')
     @patch('mycroft.configuration.config.LocalConf')
     def test_update(self, mock_remote, mock_local):
@@ -78,3 +46,71 @@ class TestConfiguration(TestCase):
 
     def tearDown(self):
         mycroft.configuration.Configuration.load_config_stack([{}], True)
+
+
+@patch('mycroft.configuration.config.exists')
+@patch('mycroft.configuration.config.isfile')
+@patch('mycroft.configuration.config.load_commented_json')
+class TestLocalConf(TestCase):
+    """Test cases for LocalConf class."""
+    def test_create(self, mock_json_loader, mock_isfile, mock_exists):
+        """Test that initialization and creation works as expected."""
+        local_conf = {'answer': 42, 'falling_objects': ['flower pot', 'whale']}
+        mock_exists.return_value = True
+        mock_isfile.return_value = True
+        mock_json_loader.return_value = local_conf
+        lc = mycroft.configuration.LocalConf('test')
+        self.assertEqual(lc, local_conf)
+
+    def test_merge(self, mock_json_loader, mock_isfile, mock_exists):
+        """Check that configurations are merged correctly."""
+        local_conf = {'answer': 42, 'falling_objects': ['flower pot', 'whale']}
+        mock_exists.return_value = True
+        mock_isfile.return_value = True
+        mock_json_loader.return_value = local_conf
+        lc = mycroft.configuration.LocalConf('test')
+
+        merge_conf = {'falling_objects': None, 'has_towel': True}
+
+        lc.merge(merge_conf)
+        self.assertEqual(lc['falling_objects'], None)
+        self.assertEqual(lc['has_towel'], True)
+
+    @patch('json.dump')
+    def test_store(self, mock_json_dump, mock_json_loader, mock_isfile,
+                   mock_exists):
+        """Check that the config is stored correctly."""
+        local_conf = {'answer': 42, 'falling_objects': ['flower pot', 'whale']}
+        mock_exists.return_value = True
+        mock_isfile.return_value = True
+        mock_json_loader.return_value = local_conf
+        lc = mycroft.configuration.LocalConf('test')
+
+        lc.store('test_conf.json')
+        self.assertEqual(mock_json_dump.call_args[0][0], lc)
+        # exists but is not file
+        mock_isfile.return_value = False
+        lc = mycroft.configuration.LocalConf('test')
+        self.assertEqual(lc, {})
+
+        # does not exist
+        mock_exists.return_value = False
+        lc = mycroft.configuration.LocalConf('test')
+        self.assertEqual(lc, {})
+
+    @patch('json.dump')
+    def test_store_invalid(self, mock_json_dump, mock_json_loader, mock_isfile,
+                           mock_exists):
+        """Storing shouldn't happen when config content is invalid."""
+        mock_exists.return_value = True
+        mock_isfile.return_value = True
+
+        def raise_error(*arg, **kwarg):
+            raise Exception('Test exception')
+
+        mock_json_loader.side_effect = raise_error
+
+        lc = mycroft.configuration.LocalConf('invalid')
+        self.assertFalse(lc.is_valid)
+        self.assertFalse(lc.store())
+        mock_json_dump.assert_not_called()

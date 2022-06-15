@@ -1168,9 +1168,8 @@ class MycroftSkill:
             entity:         word to register
             entity_type:    Intent handler entity to tie the word to
         """
-        self.bus.emit(Message('register_vocab', {
-            'start': entity, 'end': to_alnum(self.skill_id) + entity_type
-        }))
+        keyword_type = to_alnum(self.skill_id) + entity_type
+        self.intent_service.register_adapt_keyword(keyword_type, entity)
 
     def register_regex(self, regex_str):
         """Register a new regex.

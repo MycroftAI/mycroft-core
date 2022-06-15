@@ -41,7 +41,7 @@ def remove_submodule_refs(module_name):
         module_name: name of skill module.
     """
     submodules = []
-    LOG.debug('Skill module'.format(module_name))
+    LOG.debug('Skill module: {}'.format(module_name))
     # Collect found submodules
     for m in sys.modules:
         if m.startswith(module_name + '.'):

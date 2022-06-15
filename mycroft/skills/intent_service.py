@@ -21,7 +21,10 @@ from mycroft.util.log import LOG
 from mycroft.util.parse import normalize
 from mycroft.metrics import report_timing, Stopwatch
 from .intent_services import (
-    AdaptService, AdaptIntent, FallbackService, PadatiousService, IntentMatch
+    AdaptService, AdaptIntent,
+    FallbackService,
+    PadatiousService, PadatiousMatcher,
+    IntentMatch
 )
 from .intent_service_interface import open_intent_envelope
 
@@ -280,13 +283,16 @@ class IntentService:
 
             stopwatch = Stopwatch()
 
+            # Create matchers
+            padatious_matcher = PadatiousMatcher(self.padatious_service)
+
             # List of functions to use to match the utterance with intent.
             # These are listed in priority order.
             match_funcs = [
-                self._converse, self.padatious_service.match_high,
+                self._converse, padatious_matcher.match_high,
                 self.adapt_service.match_intent, self.fallback.high_prio,
-                self.padatious_service.match_medium, self.fallback.medium_prio,
-                self.padatious_service.match_low, self.fallback.low_prio
+                padatious_matcher.match_medium, self.fallback.medium_prio,
+                padatious_matcher.match_low, self.fallback.low_prio
             ]
 
             match = None
@@ -305,6 +311,10 @@ class IntentService:
                 # Launch skill if not handled by the match function
                 if match.intent_type:
                     reply = message.reply(match.intent_type, match.intent_data)
+                    # Add back original list of utterances for intent handlers
+                    # match.intent_data only includes the utterance with the
+                    # highest confidence.
+                    reply.data["utterances"] = utterances
                     self.bus.emit(reply)
 
             else:
@@ -354,12 +364,18 @@ class IntentService:
         Args:
             message (Message): message containing vocab info
         """
-        start_concept = message.data.get('start')
-        end_concept = message.data.get('end')
+        # TODO: 22.02 Remove backwards compatibility
+        if _is_old_style_keyword_message(message):
+            LOG.warning('Deprecated: Registering keywords with old message. '
+                        'This will be removed in v22.02.')
+            _update_keyword_message(message)
+
+        entity_value = message.data.get('entity_value')
+        entity_type = message.data.get('entity_type')
         regex_str = message.data.get('regex')
         alias_of = message.data.get('alias_of')
-        self.adapt_service.register_vocab(start_concept, end_concept,
-                                          alias_of, regex_str)
+        self.adapt_service.register_vocabulary(entity_value, entity_type,
+                                               alias_of, regex_str)
         self.registered_vocab.append(message.data)
 
     def handle_register_intent(self, message):
@@ -434,17 +450,20 @@ class IntentService:
         lang = message.data.get("lang", "en-us")
         combined = _normalize_all_utterances([utterance])
 
+        # Create matchers
+        padatious_matcher = PadatiousMatcher(self.padatious_service)
+
         # List of functions to use to match the utterance with intent.
         # These are listed in priority order.
         # TODO once we have a mechanism for checking if a fallback will
         #  trigger without actually triggering it, those should be added here
         match_funcs = [
-            self.padatious_service.match_high,
+            padatious_matcher.match_high,
             self.adapt_service.match_intent,
             # self.fallback.high_prio,
-            self.padatious_service.match_medium,
+            padatious_matcher.match_medium,
             # self.fallback.medium_prio,
-            self.padatious_service.match_low,
+            padatious_matcher.match_low,
             # self.fallback.low_prio
         ]
         # Loop through the matching functions until a match is found.
@@ -550,3 +569,29 @@ class IntentService:
         self.bus.emit(message.reply(
             "intent.service.padatious.entities.manifest",
             {"entities": self.padatious_service.registered_entities}))
+
+
+def _is_old_style_keyword_message(message):
+    """Simple check that the message is not using the updated format.
+
+    TODO: Remove in v22.02
+
+    Args:
+        message (Message): Message object to check
+
+    Returns:
+        (bool) True if this is an old messagem, else False
+    """
+    return ('entity_value' not in message.data and 'start' in message.data)
+
+
+def _update_keyword_message(message):
+    """Make old style keyword registration message compatible.
+
+    Copies old keys in message data to new names.
+
+    Args:
+        message (Message): Message to update
+    """
+    message.data['entity_value'] = message.data['start']
+    message.data['entity_type'] = message.data['end']

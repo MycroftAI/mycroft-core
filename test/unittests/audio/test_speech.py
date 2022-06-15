@@ -23,6 +23,7 @@ from os.path import exists
 
 import mycroft.audio.speech as speech
 from mycroft.messagebus import Message
+from mycroft.tts.tts import default_preprocess_utterance
 from mycroft.tts.remote_tts import RemoteTTSTimeoutException
 
 """Tests for speech dispatch service."""
@@ -36,6 +37,8 @@ def setup_mocks(config_mock, tts_factory_mock):
     config_mock.get.return_value = {}
 
     tts_factory_mock.create.return_value = tts_mock
+
+    tts_mock.preprocess_utterance.side_effect = default_preprocess_utterance
     config_mock.reset_mock()
     tts_factory_mock.reset_mock()
     tts_mock.reset_mock()

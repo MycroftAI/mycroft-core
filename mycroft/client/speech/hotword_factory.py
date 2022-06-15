@@ -77,7 +77,7 @@ class HotWordEngine:
         self.key_phrase = str(key_phrase).lower()
 
         if config is None:
-            config = Configuration.get().get("hot_words", {})
+            config = Configuration.get().get("hotwords", {})
             config = config.get(self.key_phrase, {})
         self.config = config
 
@@ -201,7 +201,7 @@ class PreciseHotword(HotWordEngine):
         # Make sure we pick the key we need from wherever it's located,
         # but save to a writeable location only
         local_conf = LocalConf(
-            join(xdg.BaseDirectory.save_config_path('mycroft'), 'mycroft.conf')
+            join(xdg.BaseDirectory.xdg_config_home, 'mycroft', 'mycroft.conf')
         )
 
         for conf_dir in xdg.BaseDirectory.load_config_paths('mycroft'):

@@ -70,6 +70,13 @@ class GoogleTTS(TTS):
         self._google_lang = None
         super(GoogleTTS, self).__init__(lang, config, GoogleTTSValidator(
             self), 'mp3')
+        LOG.warning(
+            "The Google TTS module uses the gTTS Python package which itself "
+            "interfaces with the Google Translate text-to-speech API. This is "
+            "not intended for commercial or production usage. The service "
+            "may break at any time, and you are subject to their Terms of "
+            "Service that can be found at https://policies.google.com/terms"
+        )
 
     @property
     def google_lang(self):

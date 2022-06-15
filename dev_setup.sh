@@ -22,22 +22,28 @@ export LANGUAGE=en
 # exit on any error
 set -Ee
 
-cd $(dirname $0)
+ROOT_DIRNAME=$(dirname "$0")
+cd "$ROOT_DIRNAME"
 TOP=$(pwd -L)
 
 function clean_mycroft_files() {
     echo '
 This will completely remove any files installed by mycroft (including pairing
-information).
+information). 
+
+NOTE: This will not remove Mimic (if you chose to compile it), or other files
+generated within the mycroft-core directory.
+
 Do you wish to continue? (y/n)'
     while true; do
-        read -N1 -s key
+        read -rN1 -s key
         case $key in
         [Yy])
             sudo rm -rf /var/log/mycroft
             rm -f /var/tmp/mycroft_web_cache.json
             rm -rf "${TMPDIR:-/tmp}/mycroft"
             rm -rf "$HOME/.mycroft"
+            rm -f "skills"  # The Skills directory symlink
             sudo rm -rf "/opt/mycroft"
             exit 0
             ;;
@@ -70,6 +76,7 @@ opt_forcemimicbuild=false
 opt_allowroot=false
 opt_skipmimicbuild=false
 opt_python=python3
+disable_precise_later=false
 param=''
 
 for var in "$@" ; do
@@ -140,7 +147,7 @@ function get_YN() {
     # Loop until the user hits the Y or the N key
     echo -e -n "Choice [${CYAN}Y${RESET}/${CYAN}N${RESET}]: "
     while true; do
-        read -N1 -s key
+        read -rN1 -s key
         case $key in
         [Yy])
             return 0
@@ -176,8 +183,8 @@ your environment.'
     sleep 0.5
     # The AVX instruction set is an x86 construct
     # ARM has a range of equivalents, unsure which are (un)supported by TF.
-    if ! grep -q avx /proc/cpuinfo && [[ ! $(uname -m) == 'arm'* ]]; then
-      echo "
+    if ! grep -q avx /proc/cpuinfo && ! [[ $(uname -m) == 'arm'* || $(uname -m) == 'aarch64' ]]; then
+        echo "
 The Precise Wake Word Engine requires the AVX instruction set, which is
 not supported on your CPU. Do you want to fall back to the PocketSphinx
 engine? Advanced users can build the precise engine with an older
@@ -185,20 +192,20 @@ version of TensorFlow (v1.13) if desired and change use_precise to true
 in mycroft.conf.
   Y)es, I want to use the PocketSphinx engine or my own.
   N)o, stop the installation."
-      if get_YN ; then
-        if [[ ! -f /etc/mycroft/mycroft.conf ]]; then
-          $SUDO mkdir -p /etc/mycroft
-          $SUDO touch /etc/mycroft/mycroft.conf
-          $SUDO bash -c 'echo "{ \"use_precise\": true }" > /etc/mycroft/mycroft.conf'
+        if get_YN ; then
+            if [[ ! -f /etc/mycroft/mycroft.conf ]]; then
+                $SUDO mkdir -p /etc/mycroft
+                $SUDO touch /etc/mycroft/mycroft.conf
+                $SUDO bash -c 'echo "{ \"use_precise\": false }" > /etc/mycroft/mycroft.conf'
+            else
+                # Ensure dependency installed to merge configs
+                disable_precise_later=true
+            fi
         else
-          $SUDO bash -c 'jq ". + { \"use_precise\": true }" /etc/mycroft/mycroft.conf > tmp.mycroft.conf' 
-          $SUDO mv -f tmp.mycroft.conf /etc/mycroft/mycroft.conf
+            echo -e "$HIGHLIGHT N - quit the installation $RESET"
+            exit 1
         fi
-      else
-        echo -e "$HIGHLIGHT N - quit the installation $RESET"
-        exit 1
-      fi
-      echo
+        echo
     fi
     echo "
 Do you want to run on 'master' or against a dev branch?  Unless you are
@@ -265,9 +272,11 @@ Would you like this to be added to your PATH in the .profile?'
         if [[ ! -f ~/.profile_mycroft ]] ; then
             # Only add the following to the .profile if .profile_mycroft
             # doesn't exist, indicating this script has not been run before
-            echo '' >> ~/.profile
-            echo '# include Mycroft commands' >> ~/.profile
-            echo 'source ~/.profile_mycroft' >> ~/.profile
+            {
+                echo ''
+                echo '# include Mycroft commands'
+                echo 'source ~/.profile_mycroft'
+            } >> ~/.profile
         fi
 
         echo "
@@ -289,9 +298,9 @@ fi" > ~/.profile_mycroft
         echo 'This script will create that folder for you.  This requires sudo'
         echo 'permission and might ask you for a password...'
         setup_user=$USER
-        setup_group=$(id -gn $USER)
+        setup_group=$(id -gn "$USER")
         $SUDO mkdir -p /opt/mycroft/skills
-        $SUDO chown -R ${setup_user}:${setup_group} /opt/mycroft
+        $SUDO chown -R "${setup_user}":"${setup_group}" /opt/mycroft
         echo 'Created!'
     fi
     if [[ ! -d skills ]] ; then
@@ -319,7 +328,7 @@ If unsure answer yes.
 fi
 
 function os_is() {
-    [[ $(grep "^ID=" /etc/os-release | awk -F'=' '/^ID/ {print $2}' | sed 's/\"//g') == $1 ]]
+    [[ $(grep "^ID=" /etc/os-release | awk -F'=' '/^ID/ {print $2}' | sed 's/\"//g') == "$1" ]]
 }
 
 function os_is_like() {
@@ -339,11 +348,11 @@ function redhat_common_install() {
 }
 
 function debian_install() {
-    APT_PACKAGE_LIST="git python3 python3-dev python3-setuptools libtool \
+    APT_PACKAGE_LIST=(git python3 python3-dev python3-setuptools libtool \
         libffi-dev libssl-dev autoconf automake bison swig libglib2.0-dev \
         portaudio19-dev mpg123 screen flac curl libicu-dev pkg-config \
         libjpeg-dev libfann-dev build-essential jq pulseaudio \
-        pulseaudio-utils"
+        pulseaudio-utils)
 
     if dpkg -V libjack-jackd2-0 > /dev/null 2>&1 && [[ -z ${CI} ]] ; then
         echo "
@@ -351,10 +360,10 @@ We have detected that your computer has the libjack-jackd2-0 package installed.
 Mycroft requires a conflicting package, and will likely uninstall this package.
 On some systems, this can cause other programs to be marked for removal.
 Please review the following package changes carefully."
-        read -p "Press enter to continue"
-        $SUDO apt-get install $APT_PACKAGE_LIST
+        read -rp "Press enter to continue"
+        $SUDO apt-get install "${APT_PACKAGE_LIST[@]}"
     else
-        $SUDO apt-get install -y $APT_PACKAGE_LIST
+        $SUDO apt-get install -y "${APT_PACKAGE_LIST[@]}"
     fi
 }
 
@@ -371,7 +380,15 @@ function fedora_install() {
 
 
 function arch_install() {
-    $SUDO pacman -S --needed --noconfirm git python python-pip python-setuptools python-virtualenv python-gobject libffi swig portaudio mpg123 screen flac curl icu libjpeg-turbo base-devel jq pulseaudio pulseaudio-alsa
+    pkgs=( git python python-pip python-setuptools python-virtualenv python-gobject libffi swig portaudio mpg123 screen flac curl icu libjpeg-turbo base-devel jq )
+
+    if ! pacman -Qs pipewire-pulse > /dev/null
+    then
+        pulse_pkgs=( pulseaudio pulseaudio-alsa )
+        pkgs=( "${pkgs[@]}" "${pulse_pkgs[@]}" )
+    fi
+
+    $SUDO pacman -S --needed --noconfirm "${pkgs[@]}"
 
     pacman -Qs '^fann$' &> /dev/null || (
         git clone  https://aur.archlinux.org/fann.git
@@ -398,11 +415,30 @@ function redhat_install() {
 }
 
 function gentoo_install() {
-    $SUDO emerge --noreplace dev-vcs/git dev-lang/python dev-python/setuptools dev-python/pygobject dev-python/requests sys-devel/libtool virtual/libffi virtual/jpeg dev-libs/openssl sys-devel/autoconf sys-devel/bison dev-lang/swig dev-libs/glib media-libs/portaudio media-sound/mpg123 media-libs/flac net-misc/curl sci-mathematics/fann sys-devel/gcc app-misc/jq media-libs/alsa-lib dev-libs/icu
+    $SUDO emerge --noreplace dev-vcs/git dev-lang/python dev-python/setuptools dev-python/pygobject dev-python/requests sys-devel/libtool dev-libs/libffi virtual/jpeg dev-libs/openssl sys-devel/autoconf sys-devel/bison dev-lang/swig dev-libs/glib media-libs/portaudio media-sound/mpg123 media-libs/flac net-misc/curl sci-mathematics/fann sys-devel/gcc app-misc/jq media-libs/alsa-lib dev-libs/icu
 }
 
 function alpine_install() {
-    $SUDO apk add --virtual makedeps-mycroft-core alpine-sdk git python3 py3-pip py3-setuptools py3-virtualenv mpg123 vorbis-tools pulseaudio-utils fann-dev automake autoconf libtool pcre2-dev pulseaudio-dev alsa-lib-dev swig python3-dev portaudio-dev libjpeg-turbo-dev
+    $SUDO apk add --virtual .makedeps-mycroft-core \
+		alpine-sdk \
+		alsa-lib-dev \
+		autoconf \
+		automake \
+		fann-dev \
+		git \
+		libjpeg-turbo-dev \
+		libtool \
+		mpg123 \
+		pcre2-dev \
+		portaudio-dev \
+		pulseaudio-utils \
+		py3-pip \
+		py3-setuptools \
+		py3-virtualenv \
+		python3 \
+		python3-dev \
+		swig \
+		vorbis-tools
 }
 
 function install_deps() {
@@ -445,7 +481,7 @@ function install_deps() {
 ${YELLOW}Make sure to manually install:$BLUE git python3 python-setuptools python-venv pygobject libtool libffi libjpg openssl autoconf bison swig glib2.0 portaudio19 mpg123 flac curl fann g++ jq\n$RESET"
 
         echo 'Warning: Failed to install all dependencies. Continue? y/N'
-        read -n1 continue
+        read -rn1 continue
         if [[ $continue != 'y' ]] ; then
             exit 1
         fi
@@ -457,15 +493,29 @@ VIRTUALENV_ROOT=${VIRTUALENV_ROOT:-"${TOP}/.venv"}
 
 function install_venv() {
     $opt_python -m venv "${VIRTUALENV_ROOT}/" --without-pip
+
+    # Check if old script for python 3.6 is needed
+    if "${VIRTUALENV_ROOT}/bin/${opt_python}" --version | grep " 3.6" > /dev/null; then
+        GET_PIP_URL="https://bootstrap.pypa.io/pip/3.6/get-pip.py"
+    else
+        GET_PIP_URL="https://bootstrap.pypa.io/get-pip.py"
+    fi
+
     # Force version of pip for reproducability, but there is nothing special
     # about this version.  Update whenever a new version is released and
     # verified functional.
-    curl https://bootstrap.pypa.io/get-pip.py | "${VIRTUALENV_ROOT}/bin/python" - 'pip==20.0.2'
+    curl "${GET_PIP_URL}" | "${VIRTUALENV_ROOT}/bin/${opt_python}" - 'pip==20.0.2'
     # Function status depending on if pip exists
     [[ -x ${VIRTUALENV_ROOT}/bin/pip ]]
 }
 
 install_deps
+
+# It's later. Update existing config with jq.
+if [[ $disable_precise_later == true ]]; then
+    $SUDO bash -c 'jq ". + { \"use_precise\": false }" /etc/mycroft/mycroft.conf > tmp.mycroft.conf' 
+                    $SUDO mv -f tmp.mycroft.conf /etc/mycroft/mycroft.conf
+fi
 
 # Configure to use the standard commit template for
 # this repo only.
@@ -479,7 +529,7 @@ else
     # first, look for a build of mimic in the folder
     has_mimic=''
     if [[ -f ${TOP}/mimic/bin/mimic ]] ; then
-        has_mimic=$(${TOP}/mimic/bin/mimic -lv | grep Voice) || true
+        has_mimic=$("${TOP}"/mimic/bin/mimic -lv | grep Voice) || true
     fi
 
     # in not, check the system path
@@ -506,6 +556,7 @@ if [[ ! -x ${VIRTUALENV_ROOT}/bin/activate ]] ; then
 fi
 
 # Start the virtual environment
+# shellcheck source=/dev/null
 source "${VIRTUALENV_ROOT}/bin/activate"
 cd "$TOP"
 
@@ -514,7 +565,7 @@ HOOK_FILE='./.git/hooks/pre-commit'
 if [[ -n $INSTALL_PRECOMMIT_HOOK ]] || grep -q 'MYCROFT DEV SETUP' $HOOK_FILE; then
     if [[ ! -f $HOOK_FILE ]] || grep -q 'MYCROFT DEV SETUP' $HOOK_FILE; then
         echo 'Installing PEP8 check as precommit-hook'
-        echo "#! $(which python)" > $HOOK_FILE
+        echo "#! $(command -v python)" > $HOOK_FILE
         echo '# MYCROFT DEV SETUP' >> $HOOK_FILE
         cat ./scripts/pre-commit >> $HOOK_FILE
         chmod +x $HOOK_FILE
@@ -532,17 +583,15 @@ if [[ ! -f $VENV_PATH_FILE ]] ; then
     echo "import sys; new=sys.path[sys.__plen:]; del sys.path[sys.__plen:]; p=getattr(sys,'__egginsert',0); sys.path[p:p]=new; sys.__egginsert = p+len(new)" >> "$VENV_PATH_FILE" || return 1
 fi
 
-if ! grep -q "$TOP" $VENV_PATH_FILE ; then
+if ! grep -q "$TOP" "$VENV_PATH_FILE" ; then
     echo 'Adding mycroft-core to virtualenv path'
-    sed -i.tmp '1 a\
-'"$TOP"'
-' "$VENV_PATH_FILE"
+    sed -i.tmp "1 a$TOP" "$VENV_PATH_FILE"
 fi
 
 # install required python modules
 if ! pip install -r requirements/requirements.txt ; then
     echo 'Warning: Failed to install required dependencies. Continue? y/N'
-    read -n1 continue
+    read -rn1 continue
     if [[ $continue != 'y' ]] ; then
         exit 1
     fi
@@ -553,7 +602,7 @@ if [[ ! $(pip install -r requirements/extra-audiobackend.txt) ||
 	! $(pip install -r requirements/extra-stt.txt) ||
 	! $(pip install -r requirements/extra-mark1.txt) ]] ; then
     echo 'Warning: Failed to install some optional dependencies. Continue? y/N'
-    read -n1 continue
+    read -rn1 continue
     if [[ $continue != 'y' ]] ; then
         exit 1
     fi
@@ -565,7 +614,7 @@ if ! pip install -r requirements/tests.txt ; then
 fi
 
 SYSMEM=$(free | awk '/^Mem:/ { print $2 }')
-MAXCORES=$(($SYSMEM / 2202010))
+MAXCORES=$((SYSMEM / 2202010))
 MINCORES=1
 CORES=$(nproc)
 
@@ -590,7 +639,7 @@ cd "$TOP"
 
 if [[ $build_mimic == 'y' || $build_mimic == 'Y' ]] ; then
     echo 'WARNING: The following can take a long time to run!'
-    "${TOP}/scripts/install-mimic.sh" " $CORES"
+    "${TOP}/scripts/install-mimic.sh" "$CORES"
 else
     echo 'Skipping mimic build.'
 fi
