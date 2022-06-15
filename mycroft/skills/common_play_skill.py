@@ -104,8 +104,17 @@ class CommonPlaySkill(MycroftSkill, ABC):
         if result:
             match = result[0]
             level = result[1]
-            callback = result[2] if len(result) > 2 else None
-            confidence = self.__calc_confidence(match, search_phrase, level)
+            callback = result[2]
+            tags = callback['tags']
+            if type(tags) is not list:
+                tags = [tags]
+
+            confidence = 0.0
+            if callback.get('confidence',None) is None:
+                confidence = self.__calc_confidence(tags, search_phrase, level)
+            else:
+                confidence = callback['confidence']
+
             self.bus.emit(message.response({"phrase": search_phrase,
                                             "skill_id": self.skill_id,
                                             "callback_data": callback,
@@ -117,42 +126,21 @@ class CommonPlaySkill(MycroftSkill, ABC):
                                             "skill_id": self.skill_id,
                                             "searching": False}))
 
-    def __calc_confidence(self, match, phrase, level):
-        """Translate confidence level and match to a 0-1 value.
+    def __calc_confidence(self, tags, phrase, level):
+        # very low if i gotta do it
+        phrase = set( phrase.split(" ") )
+        unique_tags = {}
+        for tag in tags:
+            words = tag.split(" ")
+            for word in words:
+                unique_tags[word] = word
 
-        "play pandora"
-        "play pandora is my girlfriend"
-        "play tom waits on pandora"
-
-        Assume the more of the words that get consumed, the better the match
-
-        Args:
-            match (str): Matching string
-            phrase (str): original input phrase
-            level (CPSMatchLevel): match level
-        """
-        consumed_pct = len(match.split()) / len(phrase.split())
-        if consumed_pct > 1.0:
-            consumed_pct = 1.0 / consumed_pct  # deal with over/under-matching
-
-        # We'll use this to modify the level, but don't want it to allow a
-        # match to jump to the next match level.  So bonus is 0 - 0.05 (1/20)
-        bonus = consumed_pct / 20.0
-
-        if level == CPSMatchLevel.EXACT:
-            return 1.0
-        elif level == CPSMatchLevel.MULTI_KEY:
-            return 0.9 + bonus
-        elif level == CPSMatchLevel.TITLE:
-            return 0.8 + bonus
-        elif level == CPSMatchLevel.ARTIST:
-            return 0.7 + bonus
-        elif level == CPSMatchLevel.CATEGORY:
-            return 0.6 + bonus
-        elif level == CPSMatchLevel.GENERIC:
-            return 0.5 + bonus
-        else:
-            return 0.0  # should never happen
+        tags = set( unique_tags )
+        l1 = len(phrase)
+        l2 = len(tags.intersection(phrase))
+        if l2 == 0 or l1 == 0:
+            return 0.0
+        return float( (float(l2) / float(l1)) ) / 10.0
 
     def __handle_play_start(self, message):
         """Bus handler for starting playback using the skill."""
