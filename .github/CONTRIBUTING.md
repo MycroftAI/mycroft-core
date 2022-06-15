@@ -56,7 +56,7 @@ git push -f
 
 * Push your changes to a topic branch in your fork of the repository.
 * Open a pull request to the original repository and choose the right original branch you want to patch.
-	_Advanced users may install the `hub` gem and use the [`hub pull-request` command](https://github.com/defunkt/hub#git-pull-request)._
+	_Advanced users may install the `hub` gem and use the [`hub pull-request` command](https://hub.github.com/#developer)._
 * If not done in commit messages (which you really should do) please reference and update your issue with the code changes. But _please do not close the issue yourself_.
 * Even if you have write access to the repository, do not directly push or merge pull-requests. Let another team member review your pull request and approve.
 
