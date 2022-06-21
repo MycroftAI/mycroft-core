@@ -12,7 +12,7 @@ pocketsphinx==0.1.0
 pillow==8.3.2
 python-dateutil==2.6.0
 fasteners==0.14.1
-PyYAML==5.4
+PyYAML~=5.4
 
 lingua-franca==0.4.2
 msm==0.8.9
