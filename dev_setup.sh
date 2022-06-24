@@ -68,7 +68,15 @@ Options:
     -p arg, --python arg    Sets the python version to use
     -r, --allow-root        Allow to be run as root (e.g. sudo)
     -sm                     Skip mimic build
+
+Need more help? Please visit:
+Mycroft Chat (https://chat.mycroft.ai/)
+Mycroft Forums (https://community.mycroft.ai/)
 '
+}
+
+function found_exe() {
+    hash "$1" 2>/dev/null
 }
 
 # Parse the command line
@@ -78,6 +86,25 @@ opt_skipmimicbuild=false
 opt_python=python3
 disable_precise_later=false
 param=''
+
+if found_exe sudo ; then
+    SUDO=sudo
+elif found_exe doas ; then
+    SUDO=doas
+elif [[ $opt_allowroot != true ]]; then
+    echo 'This script requires "sudo" to install system packages. Please install it, then re-run this script.'
+    exit 1
+fi
+
+# create and set permissions for logging
+if [[ ! -w /var/log/mycroft/ ]] ; then
+    # Creating and setting permissions
+    echo 'Creating /var/log/mycroft/ directory'
+    if [[ ! -d /var/log/mycroft/ ]] ; then
+        $SUDO mkdir /var/log/mycroft/
+    fi
+    $SUDO chmod 777 /var/log/mycroft/
+fi
 
 for var in "$@" ; do
     # Check if parameter should be read
@@ -111,7 +138,7 @@ for var in "$@" ; do
     fi
     if [[ $var == '-n' || $var == '--no-error' ]] ; then
         # Do NOT exit on errors
-	set +Ee
+        set +Ee
     fi
     if [[ $var == '-sm' ]] ; then
         opt_skipmimicbuild=true
@@ -122,26 +149,10 @@ for var in "$@" ; do
 done
 
 if [[ $(id -u) -eq 0 && $opt_allowroot != true ]] ; then
-    echo 'This script should not be run as root or with sudo.'
-    echo 'If you really need to for this, rerun with --allow-root'
+    echo 'This script should not be run as root or with sudo.' | tee -a /var/log/mycroft/setup.log
+    echo 'If you really need to for this, rerun with --allow-root' | tee -a /var/log/mycroft/setup.log
     exit 1
 fi
-
-
-function found_exe() {
-    hash "$1" 2>/dev/null
-}
-
-
-if found_exe sudo ; then
-    SUDO=sudo
-elif found_exe doas ; then
-    SUDO=doas
-elif [[ $opt_allowroot != true ]]; then
-    echo 'This script requires "sudo" to install system packages. Please install it, then re-run this script.'
-    exit 1
-fi
-
 
 function get_YN() {
     # Loop until the user hits the Y or the N key
@@ -202,7 +213,7 @@ in mycroft.conf.
                 disable_precise_later=true
             fi
         else
-            echo -e "$HIGHLIGHT N - quit the installation $RESET"
+            echo -e "$HIGHLIGHT N - quit the installation $RESET" | tee -a /var/log/mycroft/setup.log
             exit 1
         fi
         echo
@@ -214,11 +225,11 @@ a developer modifying mycroft-core itself, you should run on the
   Y)es, run on the stable 'master' branch
   N)o, I want to run unstable branches"
     if get_YN ; then
-        echo -e "$HIGHLIGHT Y - using 'master' branch $RESET"
+        echo -e "$HIGHLIGHT Y - using 'master' branch $RESET" | tee -a /var/log/mycroft/setup.log
         branch=master
         git checkout ${branch}
     else
-        echo -e "$HIGHLIGHT N - using an unstable branch $RESET"
+        echo -e "$HIGHLIGHT N - using an unstable branch $RESET" | tee -a /var/log/mycroft/setup.log
         branch=dev
     fi
 
@@ -231,10 +242,10 @@ those running against the 'master' branch.
   Y)es, automatically check for updates
   N)o, I will be responsible for keeping Mycroft updated."
     if get_YN ; then
-        echo -e "$HIGHLIGHT Y - update automatically $RESET"
+        echo -e "$HIGHLIGHT Y - update automatically $RESET" | tee -a /var/log/mycroft/setup.log
         autoupdate=true
     else
-        echo -e "$HIGHLIGHT N - update manually using 'git pull' $RESET"
+        echo -e "$HIGHLIGHT N - update manually using 'git pull' $RESET" | tee -a /var/log/mycroft/setup.log
         autoupdate=false
     fi
 
@@ -252,9 +263,9 @@ on slower machines.  This can be skipped, but Mycroft will be unable to
 talk if you lose network connectivity.  Would you like to build Mimic
 locally?'
         if get_YN ; then
-            echo -e "$HIGHLIGHT Y - Mimic will be built $RESET"
+            echo -e "$HIGHLIGHT Y - Mimic will be built $RESET" | tee -a /var/log/mycroft/setup.log
         else
-            echo -e "$HIGHLIGHT N - skip Mimic build $RESET"
+            echo -e "$HIGHLIGHT N - skip Mimic build $RESET" | tee -a /var/log/mycroft/setup.log
             opt_skipmimicbuild=true
         fi
     fi
@@ -267,7 +278,7 @@ There are several Mycroft helper commands in the bin folder.  These
 can be added to your system PATH, making it simpler to use Mycroft.
 Would you like this to be added to your PATH in the .profile?'
     if get_YN ; then
-        echo -e "$HIGHLIGHT Y - Adding Mycroft commands to your PATH $RESET"
+        echo -e "$HIGHLIGHT Y - Adding Mycroft commands to your PATH $RESET" | tee -a /var/log/mycroft/setup.log
 
         if [[ ! -f ~/.profile_mycroft ]] ; then
             # Only add the following to the .profile if .profile_mycroft
@@ -287,7 +298,7 @@ if [ -d \"${TOP}/bin\" ] ; then
 fi" > ~/.profile_mycroft
         echo -e "Type ${CYAN}mycroft-help$RESET to see available commands."
     else
-        echo -e "$HIGHLIGHT N - PATH left unchanged $RESET"
+        echo -e "$HIGHLIGHT N - PATH left unchanged $RESET" | tee -a /var/log/mycroft/setup.log
     fi
 
     # Create a link to the 'skills' folder.
@@ -316,14 +327,14 @@ fi" > ~/.profile_mycroft
 If unsure answer yes.
 '
     if get_YN ; then
-        echo 'Will install PEP8 pre-commit hook...'
+        echo 'Will install PEP8 pre-commit hook...' | tee -a /var/log/mycroft/setup.log
         INSTALL_PRECOMMIT_HOOK=true
     fi
 
     # Save options
     echo '{"use_branch": "'$branch'", "auto_update": '$autoupdate'}' > .dev_opts.json
 
-    echo -e '\nInteractive portion complete, now installing dependencies...\n'
+    echo -e '\nInteractive portion complete, now installing dependencies...\n' | tee -a /var/log/mycroft/setup.log
     sleep 5
 fi
 
@@ -445,42 +456,42 @@ function install_deps() {
     echo 'Installing packages...'
     if found_exe zypper ; then
         # OpenSUSE
-        echo "$GREEN Installing packages for OpenSUSE...$RESET"
+        echo "$GREEN Installing packages for OpenSUSE...$RESET" | tee -a /var/log/mycroft/setup.log
         open_suse_install
     elif found_exe yum && os_is centos ; then
         # CentOS
-        echo "$GREEN Installing packages for Centos...$RESET"
+        echo "$GREEN Installing packages for Centos...$RESET" | tee -a /var/log/mycroft/setup.log
         centos_install
     elif found_exe yum && os_is rhel ; then
         # Redhat Enterprise Linux
-        echo "$GREEN Installing packages for Red Hat...$RESET"
+        echo "$GREEN Installing packages for Red Hat...$RESET" | tee -a /var/log/mycroft/setup.log
         redhat_install
     elif os_is_like debian || os_is debian || os_is_like ubuntu || os_is ubuntu || os_is linuxmint; then
         # Debian / Ubuntu / Mint
-        echo "$GREEN Installing packages for Debian/Ubuntu/Mint...$RESET"
+        echo "$GREEN Installing packages for Debian/Ubuntu/Mint...$RESET" | tee -a /var/log/mycroft/setup.log
         debian_install
     elif os_is_like fedora || os_is fedora; then
         # Fedora
-        echo "$GREEN Installing packages for Fedora...$RESET"
+        echo "$GREEN Installing packages for Fedora...$RESET" | tee -a /var/log/mycroft/setup.log
         fedora_install
     elif found_exe pacman && (os_is arch || os_is_like arch); then
         # Arch Linux
-        echo "$GREEN Installing packages for Arch...$RESET"
+        echo "$GREEN Installing packages for Arch...$RESET" | tee -a /var/log/mycroft/setup.log
         arch_install
     elif found_exe emerge && os_is gentoo; then
         # Gentoo Linux
-        echo "$GREEN Installing packages for Gentoo Linux ...$RESET"
+        echo "$GREEN Installing packages for Gentoo Linux ...$RESET" | tee -a /var/log/mycroft/setup.log
         gentoo_install
     elif found_exe apk && os_is alpine; then
         # Alpine Linux
-        echo "$GREEN Installing packages for Alpine Linux...$RESET"
+        echo "$GREEN Installing packages for Alpine Linux...$RESET" | tee -a /var/log/mycroft/setup.log
         alpine_install
     else
-    	echo
+        echo
         echo -e "${YELLOW}Could not find package manager
-${YELLOW}Make sure to manually install:$BLUE git python3 python-setuptools python-venv pygobject libtool libffi libjpg openssl autoconf bison swig glib2.0 portaudio19 mpg123 flac curl fann g++ jq\n$RESET"
+${YELLOW}Make sure to manually install:$BLUE git python3 python-setuptools python-venv pygobject libtool libffi libjpg openssl autoconf bison swig glib2.0 portaudio19 mpg123 flac curl fann g++ jq\n$RESET" | tee -a /var/log/mycroft/setup.log
 
-        echo 'Warning: Failed to install all dependencies. Continue? y/N'
+        echo 'Warning: Failed to install all dependencies. Continue? y/N' | tee -a /var/log/mycroft/setup.log
         read -rn1 continue
         if [[ $continue != 'y' ]] ; then
             exit 1
@@ -550,7 +561,7 @@ fi
 
 if [[ ! -x ${VIRTUALENV_ROOT}/bin/activate ]] ; then
     if ! install_venv ; then
-        echo 'Failed to set up virtualenv for mycroft, exiting setup.'
+        echo 'Failed to set up virtualenv for mycroft, exiting setup.' | tee -a /var/log/mycroft/setup.log
         exit 1
     fi
 fi
@@ -564,7 +575,7 @@ cd "$TOP"
 HOOK_FILE='./.git/hooks/pre-commit'
 if [[ -n $INSTALL_PRECOMMIT_HOOK ]] || grep -q 'MYCROFT DEV SETUP' $HOOK_FILE; then
     if [[ ! -f $HOOK_FILE ]] || grep -q 'MYCROFT DEV SETUP' $HOOK_FILE; then
-        echo 'Installing PEP8 check as precommit-hook'
+        echo 'Installing PEP8 check as precommit-hook' | tee -a /var/log/mycroft/setup.log
         echo "#! $(command -v python)" > $HOOK_FILE
         echo '# MYCROFT DEV SETUP' >> $HOOK_FILE
         cat ./scripts/pre-commit >> $HOOK_FILE
@@ -584,13 +595,13 @@ if [[ ! -f $VENV_PATH_FILE ]] ; then
 fi
 
 if ! grep -q "$TOP" "$VENV_PATH_FILE" ; then
-    echo 'Adding mycroft-core to virtualenv path'
+    echo 'Adding mycroft-core to virtualenv path' | tee -a /var/log/mycroft/setup.log
     sed -i.tmp "1 a$TOP" "$VENV_PATH_FILE"
 fi
 
 # install required python modules
 if ! pip install -r requirements/requirements.txt ; then
-    echo 'Warning: Failed to install required dependencies. Continue? y/N'
+    echo 'Warning: Failed to install required dependencies. Continue? y/N' | tee -a /var/log/mycroft/setup.log
     read -rn1 continue
     if [[ $continue != 'y' ]] ; then
         exit 1
@@ -599,9 +610,9 @@ fi
 
 # install optional python modules
 if [[ ! $(pip install -r requirements/extra-audiobackend.txt) ||
-	! $(pip install -r requirements/extra-stt.txt) ||
-	! $(pip install -r requirements/extra-mark1.txt) ]] ; then
-    echo 'Warning: Failed to install some optional dependencies. Continue? y/N'
+    ! $(pip install -r requirements/extra-stt.txt) ||
+    ! $(pip install -r requirements/extra-mark1.txt) ]] ; then
+    echo 'Warning: Failed to install some optional dependencies. Continue? y/N' | tee -a /var/log/mycroft/setup.log
     read -rn1 continue
     if [[ $continue != 'y' ]] ; then
         exit 1
@@ -610,7 +621,7 @@ fi
 
 
 if ! pip install -r requirements/tests.txt ; then
-    echo "Warning: Test requirements failed to install. Note: normal operation should still work fine..."
+    echo "Warning: Test requirements failed to install. Note: normal operation should still work fine..." | tee -a /var/log/mycroft/setup.log
 fi
 
 SYSMEM=$(free | awk '/^Mem:/ { print $2 }')
@@ -630,7 +641,7 @@ elif [[ $MAXCORES -lt $CORES ]] ; then
     CORES=$MAXCORES
 fi
 
-echo "Building with $CORES cores."
+echo "Building with $CORES cores." | tee -a /var/log/mycroft/setup.log
 
 #build and install pocketsphinx
 #build and install mimic
@@ -638,10 +649,10 @@ echo "Building with $CORES cores."
 cd "$TOP"
 
 if [[ $build_mimic == 'y' || $build_mimic == 'Y' ]] ; then
-    echo 'WARNING: The following can take a long time to run!'
+    echo 'WARNING: The following can take a long time to run!' | tee -a /var/log/mycroft/setup.log
     "${TOP}/scripts/install-mimic.sh" "$CORES"
 else
-    echo 'Skipping mimic build.'
+    echo 'Skipping mimic build.' | tee -a /var/log/mycroft/setup.log
 fi
 
 # set permissions for common scripts
@@ -657,15 +668,7 @@ chmod +x bin/mycroft-say-to
 chmod +x bin/mycroft-skill-testrunner
 chmod +x bin/mycroft-speak
 
-# create and set permissions for logging
-if [[ ! -w /var/log/mycroft/ ]] ; then
-    # Creating and setting permissions
-    echo 'Creating /var/log/mycroft/ directory'
-    if [[ ! -d /var/log/mycroft/ ]] ; then
-        $SUDO mkdir /var/log/mycroft/
-    fi
-    $SUDO chmod 777 /var/log/mycroft/
-fi
-
 #Store a fingerprint of setup
 md5sum requirements/requirements.txt requirements/extra-audiobackend.txt requirements/extra-stt.txt requirements/extra-mark1.txt requirements/tests.txt dev_setup.sh > .installed
+
+echo 'Mycroft setup complete! Logs can be found at /var/log/mycroft/setup.log' | tee -a /var/log/mycroft/setup.log
