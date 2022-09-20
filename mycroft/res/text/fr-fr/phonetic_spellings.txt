@@ -1,1 +1,8 @@
-mycroft: maycroft
+jalepeno: hallipeenyo
+ai: A.I.
+ia: I.A.
+mycroftai: mycroft A.I.
+spotify: spot-ify
+corgi: core-gee
+ip: I.P.
+wikipedia: wickee-peedia
