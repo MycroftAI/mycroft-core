@@ -333,6 +333,10 @@ class TestMycroftSkill(unittest.TestCase):
         """Test register intent files using register_intent."""
         self._test_intent_file(SimpleSkill6())
 
+    def test_register_intent_intent_file_path(self):
+        """Test register intent files using register_intent_file_path."""
+        self._test_intent_file_path(SimpleSkill7())
+
     def _test_intent_file(self, s):
         s.root_dir = abspath(join(dirname(__file__), 'intent_file'))
         s.bind(self.emitter)
@@ -352,6 +356,29 @@ class TestMycroftSkill(unittest.TestCase):
             {
                 'file_name': join(dirname(__file__), 'intent_file',
                                   'vocab', 'en-us', 'test_ent.entity'),
+                'name': str(s.skill_id) + ':test_ent'
+            }
+        ]
+        self.check_register_object_file(expected_types, expected_results)
+
+    def _test_intent_file_path(self, s):
+        s.bind(self.emitter)
+        s.initialize()
+
+        expected_types = [
+            'padatious:register_intent',
+            'padatious:register_entity'
+        ]
+
+        expected_results = [
+            {
+                'file_name': join(dirname(__file__), 'intent_file',
+                                  'any_path.intent'),
+                'name': str(s.skill_id) + ':test.intent'
+            },
+            {
+                'file_name': join(dirname(__file__), 'intent_file',
+                                  'any_path.entity'),
                 'name': str(s.skill_id) + ':test_ent'
             }
         ]
@@ -702,6 +729,26 @@ class SimpleSkill6(_TestSkill):
     def initialize(self):
         self.register_intent('test.intent', self.handler)
         self.register_entity_file('test_ent.entity')
+
+    def handler(self, message):
+        pass
+
+
+class SimpleSkill7(_TestSkill):
+    """ Test skill for padatious intent """
+    skill_id = 'A'
+
+    def initialize(self):
+        root = abspath(join(dirname(__file__), 'intent_file'))
+        self.register_intent_file_path(
+            join(root, 'any_path.intent'),
+            'test.intent',
+            self.handler,
+        )
+        self.register_entity_file_path(
+            join(root, 'any_path.entity'),
+            'test_ent',
+        )
 
     def handler(self, message):
         pass
