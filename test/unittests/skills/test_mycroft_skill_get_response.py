@@ -193,6 +193,44 @@ class TestMycroftSkillAskYesNo(TestCase):
         self.assertEqual(response, 'yes')
 
 
+class TestMycroftSkillAskConfirm(TestCase):
+    def test_ask_confirm_yes(self):
+        """Check that a positive response is interpreted as a yes."""
+        skill = create_skill()
+        skill.get_response = mock.Mock()
+        skill.get_response.return_value = 'yeah please'
+
+        response = skill.ask_confirm('Do you like breakfast')
+        self.assertTrue(response)
+
+    def test_ask_confirm_no(self):
+        """Check that a negative response is interpreted as a no."""
+        skill = create_skill()
+        skill.get_response = mock.Mock()
+        skill.get_response.return_value = 'nope'
+
+        response = skill.ask_confirm('Do you like breakfast')
+        self.assertFalse(response)
+
+    def test_ask_confirm_other(self):
+        """Check that any other response returns None."""
+        skill = create_skill()
+        skill.get_response = mock.Mock()
+        skill.get_response.return_value = 'vegemite'
+
+        response = skill.ask_confirm('Do you like breakfast')
+        self.assertEqual(response, None)
+
+    def test_ask_confirm_no_response(self):
+        """Check that any other response returns None."""
+        skill = create_skill()
+        skill.get_response = mock.Mock()
+        skill.get_response.return_value = None
+
+        response = skill.ask_confirm('Do you like breakfast')
+        self.assertEqual(response, None)
+
+
 class TestMycroftAskSelection(TestCase):
     def test_selection_number(self):
         """Test selection by number."""
