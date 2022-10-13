@@ -23,6 +23,7 @@ from os import walk
 from os.path import join, abspath, dirname, basename, exists
 from pathlib import Path
 from threading import Event, Timer
+from hashlib import md5
 
 from xdg import BaseDirectory
 
@@ -1046,7 +1047,8 @@ class MycroftSkill:
         if not filename:
             raise FileNotFoundError('Unable to find "{}"'.format(entity_file))
 
-        name = '{}:{}_{}'.format(self.skill_id, basename(entity_file), str(hex(abs(hash(entity_file))))[2:])
+        name = '{}:{}_{}'.format(self.skill_id, basename(entity_file),
+            str(md5(entity_file.encode('utf-8')).hexdigest()))
         self.intent_service.register_padatious_entity(name, filename)
 
     def handle_enable_intent(self, message):
