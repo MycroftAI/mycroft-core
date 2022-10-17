@@ -1048,7 +1048,7 @@ class MycroftSkill:
             raise FileNotFoundError('Unable to find "{}"'.format(entity_file))
 
         name = '{}:{}_{}'.format(self.skill_id, basename(entity_file),
-            str(md5(entity_file.encode('utf-8')).hexdigest()))
+                                 str(md5(entity_file.encode('utf-8')).hexdigest()))
         self.intent_service.register_padatious_entity(name, filename)
 
     def handle_enable_intent(self, message):
