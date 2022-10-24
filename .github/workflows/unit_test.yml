@@ -22,13 +22,13 @@ jobs:
         # Run for all versions of Python officially supported by mycroft-core
         python-version: [3.6, 3.7, 3.8, 3.9]
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
     - name: Cache pip packages
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       env:
         cache-name: cache-pypi-modules
       with:
@@ -70,7 +70,7 @@ jobs:
     name: Shellcheck
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Shell check mycroft tools
       uses: ludeeus/action-shellcheck@203a3fd018dfe73f8ae7e3aa8da2c149a5f41c33
       env:
