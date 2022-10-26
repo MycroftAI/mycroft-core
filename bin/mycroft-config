@@ -52,7 +52,8 @@ if [ -z "$EDITOR" ] ; then
     if which sensible-editor > /dev/null ; then
         EDITOR="sensible-editor"
     else
-        EDITOR="nano --syntax=json --tempfile"
+        # -t mean --saveonexit (--tempfile in pre 5.0 version)
+        EDITOR="nano --syntax=json -t"
     fi
 fi
 
