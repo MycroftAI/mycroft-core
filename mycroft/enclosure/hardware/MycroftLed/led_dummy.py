@@ -14,7 +14,7 @@
 
 from mycroft.enclosure.hardware.MockSMBus import MockSMBus
 from mycroft.enclosure.hardware.MycroftLed.MycroftLed import MycroftLed
-from mycroft.util.log import LOG
+
 
 class Led(MycroftLed):
     """A dummy LED control class used for testing.

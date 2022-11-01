@@ -15,7 +15,7 @@
 import board
 import neopixel
 from mycroft.enclosure.hardware.MycroftLed.MycroftLed import MycroftLed
-from mycroft.util.log import LOG
+
 
 class Led(MycroftLed):
     real_num_leds = 12  # physical
@@ -23,14 +23,13 @@ class Led(MycroftLed):
     black = (0, 0, 0)  # TODO pull from pallette
 
     def __init__(self):
-        LOG.error("SJ201R5!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!INIT")
         pixel_pin = board.D12
         ORDER = neopixel.GRB
         self.brightness = 0.2
 
         self.pixels = neopixel.NeoPixel(
             pixel_pin,
-            real_num_leds,
+            self.real_num_leds,
             brightness=self.brightness,
             auto_write=False,
             pixel_order=ORDER
@@ -79,7 +78,6 @@ class Led(MycroftLed):
         """fill all leds with the same color"""
         rgb = [int(self.adjust_brightness(c, self.brightness)) for c in color[:3]]
         self.pixels.fill(rgb)
-
 
     def set_leds(self, new_leds):
         """set leds from tuple array"""

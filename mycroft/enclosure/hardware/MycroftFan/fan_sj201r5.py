@@ -1,8 +1,6 @@
-import os
 import subprocess
 import RPi.GPIO as GPIO
-from time import sleep
-from mycroft.util.log import LOG
+
 
 class FanControl:
     # hardware speed range is appx 30-255
@@ -47,13 +45,14 @@ class FanControl:
         return (temp * 1.8) + 32
 
     def speed_to_hdw_val(self, speed):
-        return float( 100.0 - (speed % 101) )
+        return float(100.0 - (speed % 101))
 
     def hdw_val_to_speed(self, hdw_val):
-        return abs( float( hdw_val - 100.0 ) )
+        return abs(float(hdw_val - 100.0))
 
     def hdw_set_speed(self, hdw_speed):
-        self.pi_pwm.ChangeDutyCycle(hdw_speed)        # provide duty cycle in the range 0-100
+        # provide duty cycle in the range 0-100
+        self.pi_pwm.ChangeDutyCycle(hdw_speed)
 
     def set_fan_speed(self, speed):
         self.fan_speed = self.speed_to_hdw_val(speed)
@@ -66,4 +65,3 @@ class FanControl:
         cmd = ["cat", "/sys/class/thermal/thermal_zone0/temp"]
         out, err = self.execute_cmd(cmd)
         return float(out.strip()) / 1000
-
