@@ -352,7 +352,7 @@ class TestMycroftSkill(unittest.TestCase):
             {
                 'file_name': join(dirname(__file__), 'intent_file',
                                   'vocab', 'en-us', 'test_ent.entity'),
-                'name': str(s.skill_id) + ':test_ent'
+                'name': str(s.skill_id) + ':test_ent_87af9db6c8402bcfaa8ebc719ae4427c'
             }
         ]
         self.check_register_object_file(expected_types, expected_results)
