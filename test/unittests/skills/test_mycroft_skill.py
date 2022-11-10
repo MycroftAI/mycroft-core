@@ -111,7 +111,7 @@ class TestMycroftSkill(unittest.TestCase):
                          json.dumps(d2, sort_keys=True))
 
     def check_read_vocab_file(self, path, result_list=None):
-        resultlist = result_list or []
+        result_list = result_list or []
         self.assertEqual(sorted(read_vocab_file(path)), sorted(result_list))
 
     def check_regex(self, path, result_list=None):
