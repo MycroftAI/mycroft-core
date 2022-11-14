@@ -103,7 +103,11 @@ class SkillGUI:
         if self.page:
             # emit notification (but not needed if page has not been shown yet)
             data = self.__session_data.copy()
-            data.update({'__from': self.skill.skill_id})
+            try:
+                data.update({'__from': self.skill.skill_id})
+            except:
+                self.log.warning("No skill ID available")
+
             self.skill.bus.emit(Message("gui.value.set", data))
 
     def __getitem__(self, key):
