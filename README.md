@@ -32,29 +32,49 @@ Mycroft is a hackable open source voice assistant.
 
 ## Getting Started
 
-First, get the code on your system!  The simplest method is via git ([git installation instructions](https://gist.github.com/derhuerst/1b15ff4652a867391f03)):
-- `cd ~/`
-- `git clone https://github.com/MycroftAI/mycroft-core.git`
-- `cd mycroft-core`
-- `bash dev_setup.sh`
+Mycroft might be packaged by your distribution already, in that case installing it might be as simple as `apk add mycroft-core` or equivalent for your distribution.
+Otherwise, the simplest method is downloading the latest release on the [Github releases page](https://github.com/MycroftAI/mycroft-core/releases) and unpacking it somewhere.
+Then run the following commands in the unpacked directory.
 
+```sh
+pip install . # This actually installs Mycroft and it's dependencies
+```
 
-This script sets up dependencies and a [virtualenv][about-virtualenv].  If running in an environment besides Ubuntu/Debian, Arch or Fedora you may need to manually install packages as instructed by dev_setup.sh.
+For development on Mycroft it's recommended to use Git instead ([git installation instructions](https://gist.github.com/derhuerst/1b15ff4652a867391f03)).
+
+```sh
+cd ~/
+git clone https://github.com/MycroftAI/mycroft-core.git
+cd mycroft-core
+./dev_setup.sh
+```
+
+This script sets up dependencies and a [virtualenv][about-virtualenv].  If running in an environment besides Ubuntu/Debian, Arch or Fedora you may need to manually install packages as instructed by `dev_setup.sh`.
 
 [about-virtualenv]:https://virtualenv.pypa.io/en/stable/
 
-NOTE: The default branch for this repository is 'dev', which should be considered a work-in-progress. If you want to clone a more stable version, switch over to the 'master' branch.
+**NOTE:** The default branch for this repository is 'dev', which should be considered a work-in-progress. If you want to clone a more stable version, switch over to the 'master' branch.
 
 ## Running Mycroft
 
-Mycroft provides `start-mycroft.sh` to perform common tasks. This script uses a virtualenv created by `dev_setup.sh`.  Assuming you installed mycroft-core in your home directory run:
-- `cd ~/mycroft-core`
-- `./start-mycroft.sh debug`
+Mycroft provides `mycroft-start` to perform common tasks. Assuming you installed mycroft-core via your systems package manager or via `setup.py`:
 
-The "debug" command will start the background services (microphone listener, skill, messagebus, and audio subsystems) as well as bringing up a text-based Command Line Interface (CLI) you can use to interact with Mycroft and see the contents of the various logs. Alternatively you can run `./start-mycroft.sh all` to begin the services without the command line interface.  Later you can bring up the CLI using `./start-mycroft.sh cli`.
+```sh
+mycroft-start debug
+```
+
+The "debug" command will start the background services (microphone listener, skill, messagebus, and audio subsystems) as well as bringing up a text-based Command Line Interface (CLI) you can use to interact with Mycroft and see the contents of the various logs.
+Alternatively you can run `mycroft-start all` to begin the services without the command line interface.
+Later you can bring up the CLI using `mycroft-start cli`.
 
 The background services can be stopped as a group with:
-- `./stop-mycroft.sh`
+
+```sh
+mycroft-stop
+```
+
+If you want to develop for Mycroft, please use `start-mycroft.sh` and `stop-mycroft.sh` instead of the aforementioned commands.
+These provide extra options for development purposes.
 
 ## Using Mycroft
 
