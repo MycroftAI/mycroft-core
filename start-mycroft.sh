@@ -14,12 +14,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-SOURCE="$0"
-
 script=${0}
 script=${script##*/}
-cd -P "$( dirname "$SOURCE" )" || exit 1 # Enter scripts folder or fail!
-DIR="$( pwd )"
+
+DIR="$(realpath -- "$PWD")"
 VIRTUALENV_ROOT=${VIRTUALENV_ROOT:-"${DIR}/.venv"}
 
 help() {
