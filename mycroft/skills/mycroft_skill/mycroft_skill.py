@@ -671,6 +671,33 @@ class MycroftSkill:
         else:
             return False
 
+    def remove_voc(self, utterance, voc_filename, lang=None):
+        """Removes any entries in a .voc file from the provided string.
+
+        The vocab matching is not case sensitive.
+
+        Args:
+            utterance (str): String to remove entries from
+            voc_filename (str): Name of vocabulary file (e.g. 'yes' for
+                                'res/text/en-us/yes.voc')
+            lang (str): Language code, defaults to self.lang
+        Returns:
+            str: utterance with .voc entries removed
+        """
+        lang = lang or self.lang
+        cache_key = lang + voc_filename
+
+        if cache_key not in self.voc_match_cache:
+            self.voc_match(utterance, voc_filename, lang)
+
+        if utterance:
+            # Check for matches against complete words
+            for entry in self.voc_match_cache.get(cache_key) or []:
+                # Substitute only whole words matching the token
+                utterance = re.sub(r'\b' + entry + r"\b", "", utterance,
+                                   flags=re.IGNORECASE)
+        return utterance
+
     def report_metric(self, name, data):
         """Report a skill metric to the Mycroft servers.
 
