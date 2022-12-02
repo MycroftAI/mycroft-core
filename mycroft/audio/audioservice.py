@@ -484,8 +484,7 @@ class AudioService:
             track_info = self.current.track_info()
         else:
             track_info = {}
-        self.bus.emit(Message('mycroft.audio.service.track_info_reply',
-                              data=track_info))
+        self.bus.emit(message.response(track_info))
 
     def _list_backends(self, message):
         """ Return a dict of available backends. """
