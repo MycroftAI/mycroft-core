@@ -450,28 +450,35 @@ class AudioService:
             self._play(message)
 
     def _play(self, message):
-        """
-            Handler for mycroft.audio.service.play. Starts playback of a
-            tracklist. Also  determines if the user requested a special
-            service.
+        """Start playback of a tracklist.
 
-            Args:
-                message: message bus message, not used but required
+        Also determines if the user requested a special service.
+        Handler for mycroft.audio.service.play
+
+        Args:
+            message: message bus message
         """
         with self.service_lock:
             tracks = message.data['tracks']
             repeat = message.data.get('repeat', False)
             # Find if the user wants to use a specific backend
-            for s in self.service:
-                if ('utterance' in message.data and
-                        s.name in message.data['utterance']):
-                    prefered_service = s
-                    LOG.debug(s.name + ' would be prefered')
-                    break
-            else:
-                prefered_service = None
-            self.play(tracks, prefered_service, repeat)
-            time.sleep(0.5)
+            preferred_service = None
+            for service in self.service:
+                try:
+                    if ('utterance' in message.data and
+                            service.name in message.data['utterance']):
+                        preferred_service = service
+                        LOG.debug(
+                            f'{service.name} audioservice would be preferred')
+                        break
+                except Exception:
+                    LOG.error(
+                        f'Failed to read audio service name: {service}')
+            try:
+                self.play(tracks, preferred_service, repeat)
+                time.sleep(0.5)
+            except Exception as e:
+                LOG.exception(e)
 
     def _track_info(self, message):
         """
