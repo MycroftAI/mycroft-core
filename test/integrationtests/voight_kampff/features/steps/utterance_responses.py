@@ -243,6 +243,7 @@ def then_exactly(context, skill, text):
     assert passed, assert_msg
 
 
+@then('"{skill}" reply should contain "{text}"')
 @then('mycroft reply should contain "{text}"')
 def then_contains(context, text):
     def check_contains(message):
