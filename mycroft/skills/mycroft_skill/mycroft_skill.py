@@ -63,6 +63,10 @@ from ..skill_data import (
 )
 
 
+def skill_id_from_path(skill_directory):
+    return basename(skill_directory)
+
+
 def simple_trace(stack_trace):
     """Generate a simplified traceback.
 
@@ -119,13 +123,13 @@ class MycroftSkill:
     def __init__(self, name=None, bus=None, use_settings=True):
         self.name = name or self.__class__.__name__
         self.resting_name = None
-        self.skill_id = ''  # will be set from the path, so guaranteed unique
         self.settings_meta = None  # set when skill is loaded in SkillLoader
 
         # Get directory of skill
         #: Member variable containing the absolute path of the skill's root
         #: directory. E.g. /opt/mycroft/skills/my-skill.me/
         self.root_dir = dirname(abspath(sys.modules[self.__module__].__file__))
+        self.skill_id = skill_id_from_path(self.root_dir)
 
         self.gui = SkillGUI(self)
 
@@ -165,6 +169,24 @@ class MycroftSkill:
 
         # Skill Public API
         self.public_api = {}
+
+        if bus:
+            self._startup(bus)
+
+    def _startup(self, bus):
+        self.bind(bus)
+        try:
+            self.load_data_files()
+            # Set up intent handlers
+            self._register_decorated()
+            self.register_resting_screen()
+            self.initialize()
+        except Exception as e:
+            # If an exception occurs, make sure to clean up the skill
+            self.default_shutdown()
+            log_msg = 'Skill initialization failed with {}'
+            LOG.exception(log_msg.format(repr(e)))
+            raise e
 
     def _init_settings(self):
         """Setup skill settings."""
