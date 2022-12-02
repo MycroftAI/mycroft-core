@@ -389,6 +389,15 @@ function fedora_install() {
     $SUDO dnf install -y git python3 python3-devel python3-pip python3-setuptools python3-virtualenv pygobject3-devel libtool libffi-devel openssl-devel autoconf bison swig glib2-devel portaudio-devel mpg123 mpg123-plugins-pulseaudio screen curl pkgconfig libicu-devel automake libjpeg-turbo-devel fann-devel gcc-c++ redhat-rpm-config jq make pulseaudio-utils
 }
 
+function blackpanther_install() {
+    if [ -x /usr/bin/sudo ];then
+	$SUDO installing git python3 python3-devel python3-pip python3-setuptools python3-virtualenv python-gobject3-devel libtool lib64ffi-devel openssl-devel autoconf bison swig glib2-devel portaudio-devel mpg123 mpg123-pulse screen curl pkgconfig lib64icu-devel automake lib64jpeg-devel lib64fann-devel gcc-c++ jq make
+    else
+	# own authentication without sudo
+	installing git python3 python3-devel python3-pip python3-setuptools python3-virtualenv python-gobject3-devel libtool lib64ffi-devel openssl-devel autoconf bison swig glib2-devel portaudio-devel mpg123 mpg123-pulse screen curl pkgconfig lib64icu-devel automake lib64jpeg--devel lib64fann-devel gcc-c++ jq make
+    fi
+}
+
 
 function arch_install() {
     pkgs=( git python python-pip python-setuptools python-virtualenv python-gobject libffi swig portaudio mpg123 screen flac curl icu libjpeg-turbo base-devel jq )
@@ -470,6 +479,10 @@ function install_deps() {
         # Debian / Ubuntu / Mint
         echo "$GREEN Installing packages for Debian/Ubuntu/Mint...$RESET" | tee -a /var/log/mycroft/setup.log
         debian_install
+    elif found_exe installing && os_is blackpantheros; then
+        # Fedora
+        echo "$GREEN Installing packages for blackPanther OS...$RESET"
+        blackpanther_install
     elif os_is_like fedora || os_is fedora; then
         # Fedora
         echo "$GREEN Installing packages for Fedora...$RESET" | tee -a /var/log/mycroft/setup.log
