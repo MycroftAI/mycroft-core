@@ -12,9 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import json
 import os
 import time
 from copy import copy, deepcopy
+from io import BytesIO, StringIO
 
 import requests
 from requests import HTTPError, RequestException
@@ -415,6 +417,29 @@ class DeviceApi(Api):
             "path": "/" + UUID + "/skillJson",
             "json": to_send
             })
+
+    def upload_wake_word(self, audio, params):
+        """Helper method for sending files using the device API"""
+        url = self.build_url(
+            dict(path='device/{}/wake-word-file'.format(self.identity.uuid))
+        )
+        request_data = dict(
+            wake_word=params['name'],
+            engine=params['engine_name'],
+            timestamp=params['time'],
+            model=params['model']
+        )
+        headers = dict(Authorization="Bearer " + self.identity.access)
+        response = requests.post(
+            url,
+            headers=headers,
+            files={
+                'audio': BytesIO(audio.get_wav_data()),
+                'metadata': StringIO(json.dumps(request_data))
+            }
+        )
+
+        return self.get_response(response)
 
 
 class STTApi(Api):

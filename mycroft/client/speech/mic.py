@@ -13,25 +13,24 @@
 # limitations under the License.
 #
 import audioop
-from time import sleep, time as get_time
-
-from collections import deque, namedtuple
 import datetime
 import json
 import os
+from collections import deque, namedtuple
+from hashlib import md5
 from os.path import isdir, join
+from time import sleep, time as get_time
+from tempfile import gettempdir
+from threading import Thread, Lock
+
 import pyaudio
 import requests
 import speech_recognition
-from hashlib import md5
-from io import BytesIO, StringIO
 from speech_recognition import (
     Microphone,
     AudioSource,
     AudioData
 )
-from tempfile import gettempdir
-from threading import Thread, Lock
 
 from mycroft.api import DeviceApi
 from mycroft.configuration import Configuration
@@ -43,7 +42,6 @@ from mycroft.util import (
     play_wav
 )
 from mycroft.util.log import LOG
-
 from .data_structures import RollingMean, CyclicAudioBuffer
 
 
@@ -361,6 +359,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         self._listen_triggered = False
 
         self._account_id = None
+        self._device_api = None
 
         # The maximum seconds a phrase can be recorded,
         # provided there is noise the entire time
@@ -373,6 +372,14 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
             'recording_timeout_with_silence', 3.0)
 
     @property
+    def device_api(self):
+        """Lazily instantiate the DeviceApi"""
+        if self._device_api is None:
+            self._device_api = DeviceApi()
+
+        return self._device_api
+
+    @property
     def account_id(self):
         """Fetch account from backend when needed.
 
@@ -381,7 +388,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         """
         if not self._account_id:
             try:
-                self._account_id = DeviceApi().get()['user']['uuid']
+                self._account_id = self.device_api.get()['user']['uuid']
             except (requests.RequestException, AttributeError):
                 pass  # These are expected and won't be reported
             except Exception as e:
@@ -513,14 +520,15 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         else:
             model_hash = '0'
 
-        return {
-            'name': self.wake_word_name.replace(' ', '-'),
-            'engine': md5(ww_module.encode('utf-8')).hexdigest(),
-            'time': str(int(1000 * get_time())),
-            'sessionId': SessionManager.get().session_id,
-            'accountId': self.account_id,
-            'model': str(model_hash)
-        }
+        return dict(
+            name=self.wake_word_name.replace(' ', '-'),
+            engine=md5(ww_module.encode('utf-8')).hexdigest(),
+            engine_name=ww_module.lower().strip('hotword'),
+            time=str(int(1000 * get_time())),
+            sessionId=SessionManager.get().session_id,
+            accountId=self.account_id,
+            model=str(model_hash)
+        )
 
     def trigger_listen(self):
         """Externally trigger listening."""
@@ -528,17 +536,8 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         self._listen_triggered = True
 
     def _upload_wakeword(self, audio, metadata):
-        """Upload the wakeword in a background thread."""
-        LOG.debug(
-            "Wakeword uploading has been disabled. The API endpoint used in "
-            "Mycroft-core v20.2 and below has been deprecated. To contribute "
-            "new wakeword samples please upgrade to v20.8 or above."
-        )
-        # def upload(audio, metadata):
-        #     requests.post(self.upload_url,
-        #                   files={'audio': BytesIO(audio.get_wav_data()),
-        #                          'metadata': StringIO(json.dumps(metadata))})
-        # Thread(target=upload, daemon=True, args=(audio, metadata)).start()
+        """Upload the wake word to the backend servers."""
+        self.device_api.upload_wake_word(audio, metadata)
 
     def _send_wakeword_info(self, emitter):
         """Send messagebus message indicating that a wakeword was received.
@@ -572,8 +571,8 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         to the cloud in case the user has opted into the data sharing.
         """
         # Save and upload positive wake words as appropriate
-        upload_allowed = (self.config['opt_in'] and not self.upload_disabled)
-        if (self.save_wake_words or upload_allowed):
+        upload_allowed = self.config['opt_in'] and not self.upload_disabled
+        if self.save_wake_words or upload_allowed:
             audio = self._create_audio_data(audio_data, source)
             metadata = self._compile_metadata()
             if self.save_wake_words:
