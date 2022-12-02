@@ -188,6 +188,7 @@ def on_error(e='Unknown'):
 
 
 def connect_loop_events(loop):
+    """Register handlers for events on RecognizerLoop bus."""
     loop.on('recognizer_loop:utterance', handle_utterance)
     loop.on('recognizer_loop:speech.recognition.unknown', handle_unknown)
     loop.on('speak', handle_speak)
@@ -198,9 +199,13 @@ def connect_loop_events(loop):
     loop.on('recognizer_loop:no_internet', handle_no_internet)
 
 
-def connect_bus_events(bus):
-    # Register handlers for events on main Mycroft messagebus
+def connect_bus_setup_events(bus):
+    """Register handlers used in setup of process."""
     bus.on('open', handle_open)
+
+
+def connect_bus_events(bus):
+    """Register handlers for events on main Mycroft messagebus."""
     bus.on('complete_intent_failure', handle_complete_intent_failure)
     bus.on('recognizer_loop:sleep', handle_sleep)
     bus.on('recognizer_loop:wake_up', handle_wake_up)
@@ -224,7 +229,7 @@ def main(ready_hook=on_ready, error_hook=on_error, stopping_hook=on_stopping,
         PIDLock("voice")
         config = Configuration.get()
         bus = start_message_bus_client("VOICE")
-        connect_bus_events(bus)
+        connect_bus_setup_events(bus)
         callbacks = StatusCallbackMap(on_ready=ready_hook, on_error=error_hook,
                                       on_stopping=stopping_hook)
         status = ProcessStatus('speech', bus, callbacks)
@@ -233,6 +238,8 @@ def main(ready_hook=on_ready, error_hook=on_error, stopping_hook=on_stopping,
         loop = RecognizerLoop(watchdog)
         connect_loop_events(loop)
         create_daemon(loop.run)
+        # Connect main bus events that require loop
+        connect_bus_events(bus)
         status.set_started()
     except Exception as e:
         error_hook(e)
