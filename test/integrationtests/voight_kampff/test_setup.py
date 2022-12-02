@@ -204,7 +204,10 @@ def create_skills_manager(platform, skills_dir, url, branch):
         MycroftSkillsManager
     """
     repo = SkillRepo(url=url, branch=branch)
-    return MycroftSkillsManager(platform, skills_dir, repo)
+    return MycroftSkillsManager(
+            platform=platform,
+            skills_dir=skills_dir,
+            repo=repo)
 
 
 def main(args):

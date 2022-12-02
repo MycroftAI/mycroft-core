@@ -26,6 +26,8 @@ ROOT_DIRNAME=$(dirname "$0")
 cd "$ROOT_DIRNAME"
 TOP=$(pwd -L)
 
+datadir=${XDG_DATA_HOME:-$HOME/.local/share}/mycroft
+
 function clean_mycroft_files() {
     echo '
 This will completely remove any files installed by mycroft (including pairing
@@ -39,6 +41,9 @@ Do you wish to continue? (y/n)'
         read -rN1 -s key
         case $key in
         [Yy])
+	    rm -r "$datadir"
+
+	    # Legacy locations
             sudo rm -rf /var/log/mycroft
             rm -f /var/tmp/mycroft_web_cache.json
             rm -rf "${TMPDIR:-/tmp}/mycroft"
@@ -108,7 +113,7 @@ fi
 
 for var in "$@" ; do
     # Check if parameter should be read
-    if [[ $param == 'python' ]] ; then
+	if [[ $param == 'python' ]] ; then
         opt_python=$var
         param=""
         continue
@@ -304,20 +309,10 @@ fi" > ~/.profile_mycroft
     # Create a link to the 'skills' folder.
     sleep 0.5
     echo
-    echo 'The standard location for Mycroft skills is under /opt/mycroft/skills.'
-    if [[ ! -d /opt/mycroft/skills ]] ; then
-        echo 'This script will create that folder for you.  This requires sudo'
-        echo 'permission and might ask you for a password...'
-        setup_user=$USER
-        setup_group=$(id -gn "$USER")
-        $SUDO mkdir -p /opt/mycroft/skills
-        $SUDO chown -R "${setup_user}":"${setup_group}" /opt/mycroft
-        echo 'Created!'
-    fi
     if [[ ! -d skills ]] ; then
-        ln -s /opt/mycroft/skills skills
+        ln -s "$datadir"/skills skills
         echo "For convenience, a soft link has been created called 'skills' which leads"
-        echo 'to /opt/mycroft/skills.'
+        echo "to $datadir/skills."
     fi
 
     # Add PEP8 pre-commit hook

@@ -18,6 +18,8 @@ from shutil import rmtree
 from unittest import TestCase
 from unittest.mock import patch
 
+import xdg.BaseDirectory
+
 from .mocks import mock_msm, mock_config, MessageBusMock
 
 
@@ -54,3 +56,4 @@ class MycroftUnitTestBase(TestCase):
 
     def tearDown(self):
         rmtree(str(self.temp_dir))
+        rmtree(xdg.BaseDirectory.save_data_path('mycroft'))

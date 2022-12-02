@@ -99,7 +99,7 @@ def save_settings(skill_dir, skill_settings):
     """Save skill settings to file."""
     settings_path = Path(skill_dir).joinpath('settings.json')
 
-    # Either the file already exists in /opt, or we are writing
+    # Either the file already exists or we are writing
     # to XDG_CONFIG_DIR and always have the permission to make
     # sure the file always exists
     if not Path(settings_path).exists():
