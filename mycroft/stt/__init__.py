@@ -345,6 +345,7 @@ class DeepSpeechServerSTT(STT):
     def execute(self, audio, language=None):
         language = language or self.lang
         response = post(self.config.get("uri"), data=audio.get_wav_data())
+        response.encoding = 'utf-8'
         return response.text
 
 
