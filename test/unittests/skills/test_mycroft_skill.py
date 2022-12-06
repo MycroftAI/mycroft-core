@@ -112,7 +112,7 @@ class TestMycroftSkill(unittest.TestCase):
                          json.dumps(d2, sort_keys=True))
 
     def check_read_vocab_file(self, path, result_list=None):
-        resultlist = result_list or []
+        result_list = result_list or []
         self.assertEqual(sorted(read_vocab_file(path)), sorted(result_list))
 
     def check_regex(self, path, result_list=None):
@@ -353,7 +353,8 @@ class TestMycroftSkill(unittest.TestCase):
             {
                 'file_name': join(dirname(__file__), 'intent_file',
                                   'vocab', 'en-us', 'test_ent.entity'),
-                'name': str(s.skill_id) + ':test_ent'
+                'name': str(s.skill_id) +
+                ':test_ent_87af9db6c8402bcfaa8ebc719ae4427c'
             }
         ]
         self.check_register_object_file(expected_types, expected_results)
