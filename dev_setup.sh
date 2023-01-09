@@ -194,7 +194,17 @@ your environment.'
     sleep 0.5
     # The AVX instruction set is an x86 construct
     # ARM has a range of equivalents, unsure which are (un)supported by TF.
-    if ! grep -q avx /proc/cpuinfo && ! [[ $(uname -m) == 'arm'* || $(uname -m) == 'aarch64' ]]; then
+    FILE=/proc/cpuinfo
+    if [[ -f "$FILE" ]]; then
+        if [[ ! (`grep -q avx /proc/cpuinfo`) && ! ($(uname -m) == 'arm'* || $(uname -m) == 'aarch64') ]]; then
+            AVX=false
+        fi
+    elif [[ os_is == *"darwin"* ]]; then
+        if [[ `sysctl -a | grep machdep.cpu.features | grep -q AVX` ]]; then
+            AVX=true
+        fi
+    fi
+    if [[ ! AVX ]]; then
         echo "
 The Precise Wake Word Engine requires the AVX instruction set, which is
 not supported on your CPU. Do you want to fall back to the PocketSphinx
@@ -339,7 +349,7 @@ If unsure answer yes.
 fi
 
 function os_is() {
-    [[ $(grep "^ID=" /etc/os-release | awk -F'=' '/^ID/ {print $2}' | sed 's/\"//g') == "$1" ]]
+    echo $OSTYPE
 }
 
 function os_is_like() {
@@ -378,17 +388,14 @@ Please review the following package changes carefully."
     fi
 }
 
-
 function open_suse_install() {
     $SUDO zypper install -y git python3 python3-devel libtool libffi-devel libopenssl-devel autoconf automake bison swig portaudio-devel mpg123 flac curl libicu-devel pkg-config libjpeg-devel libfann-devel python3-curses pulseaudio
     $SUDO zypper install -y -t pattern devel_C_C++
 }
 
-
 function fedora_install() {
     $SUDO dnf install -y git python3 python3-devel python3-pip python3-setuptools python3-virtualenv pygobject3-devel libtool libffi-devel openssl-devel autoconf bison swig glib2-devel portaudio-devel mpg123 mpg123-plugins-pulseaudio screen curl pkgconfig libicu-devel automake libjpeg-turbo-devel fann-devel gcc-c++ redhat-rpm-config jq make pulseaudio-utils
 }
-
 
 function arch_install() {
     pkgs=( git python python-pip python-setuptools python-virtualenv python-gobject libffi swig portaudio mpg123 screen flac curl icu libjpeg-turbo base-devel jq )
@@ -409,7 +416,6 @@ function arch_install() {
         rm -rf fann
     )
 }
-
 
 function centos_install() {
     $SUDO yum install epel-release
@@ -452,6 +458,9 @@ function alpine_install() {
 		vorbis-tools
 }
 
+function osx_install() {
+    brew install pygobject3 libffi libjpg autoconf swig glib portaudio mpg123 flac fann jq gnu-sed
+}
 function install_deps() {
     echo 'Installing packages...'
     if found_exe zypper ; then
@@ -466,7 +475,11 @@ function install_deps() {
         # Redhat Enterprise Linux
         echo "$GREEN Installing packages for Red Hat...$RESET" | tee -a /var/log/mycroft/setup.log
         redhat_install
-    elif os_is_like debian || os_is debian || os_is_like ubuntu || os_is ubuntu || os_is linuxmint; then
+    elif found_exe brew && os_is darwin; then
+        # OSX
+        echo "$GREEN Installing packages for OSX... $RESET" | tee -a /var/log/mycroft/setup.log
+        osx_install
+    elif found_exe apt && os_is_like debian || os_is debian || os_is_like ubuntu || os_is ubuntu || os_is linuxmint; then
         # Debian / Ubuntu / Mint
         echo "$GREEN Installing packages for Debian/Ubuntu/Mint...$RESET" | tee -a /var/log/mycroft/setup.log
         debian_install
@@ -573,13 +586,15 @@ cd "$TOP"
 
 # Install pep8 pre-commit hook
 HOOK_FILE='./.git/hooks/pre-commit'
-if [[ -n $INSTALL_PRECOMMIT_HOOK ]] || grep -q 'MYCROFT DEV SETUP' $HOOK_FILE; then
-    if [[ ! -f $HOOK_FILE ]] || grep -q 'MYCROFT DEV SETUP' $HOOK_FILE; then
-        echo 'Installing PEP8 check as precommit-hook' | tee -a /var/log/mycroft/setup.log
-        echo "#! $(command -v python)" > $HOOK_FILE
-        echo '# MYCROFT DEV SETUP' >> $HOOK_FILE
-        cat ./scripts/pre-commit >> $HOOK_FILE
-        chmod +x $HOOK_FILE
+if [[ -n $INSTALL_PRECOMMIT_HOOK ]]; then
+    if [[ ! -f $HOOK_FILE ]]; then
+        if [[ `grep -q 'MYCROFT DEV SETUP' $HOOK_FILE` ]]; then
+            echo 'Installing PEP8 check as precommit-hook' | tee -a /var/log/mycroft/setup.log
+            echo "#! $(command -v python)" > $HOOK_FILE
+            echo '# MYCROFT DEV SETUP' >> $HOOK_FILE
+            cat ./scripts/pre-commit >> $HOOK_FILE
+            chmod +x $HOOK_FILE
+        fi
     fi
 fi
 
@@ -596,9 +611,18 @@ fi
 
 if ! grep -q "$TOP" "$VENV_PATH_FILE" ; then
     echo 'Adding mycroft-core to virtualenv path' | tee -a /var/log/mycroft/setup.log
-    sed -i.tmp "1 a$TOP" "$VENV_PATH_FILE"
+    if os_is darwin; then
+        gsed -i.tmp "1 a$TOP" "$VENV_PATH_FILE"
+    else
+        sed -i.tmp '1 a$TOP' "$VENV_PATH_FILE"
+    fi
 fi
 
+if os_is darwin; then
+    echo '[build_ext]' > ~/.pydistutils.cfg
+    echo 'include_dirs=/usr/local/opt/fann/include/:/usr/local/opt/portaudio/include/' >> ~/.pydistutils.cfg
+    echo 'library_dirs=/usr/local/opt/fann/lib/:/usr/local/opt/portaudio/lib/' >> ~/.pydistutils.cfg
+fi
 # install required python modules
 if ! pip install -r requirements/requirements.txt ; then
     echo 'Warning: Failed to install required dependencies. Continue? y/N' | tee -a /var/log/mycroft/setup.log
@@ -624,7 +648,11 @@ if ! pip install -r requirements/tests.txt ; then
     echo "Warning: Test requirements failed to install. Note: normal operation should still work fine..." | tee -a /var/log/mycroft/setup.log
 fi
 
-SYSMEM=$(free | awk '/^Mem:/ { print $2 }')
+if os_is darwin; then
+    SYSMEM=$(sysctl hw.memsize | awk '/:/ { print $2 }')
+else
+    SYSMEM=$(free | awk '/^Mem:/ { print $2 }')
+fi
 MAXCORES=$((SYSMEM / 2202010))
 MINCORES=1
 CORES=$(nproc)
